@@ -52,165 +52,110 @@ token native gaps still guide optimization; no complete database/shell coverage
 or isolated scratch-cache speedup is claimed.
 
 The current manual branch is `experiment/runtime-composition-20260918`.
-Main still adopts df4006e0. The aggregate and native-indirect compositions remain
-archived after failing their original changed-source wall gates. The indirect
-composition passed all correctness controls, 122 strict/cache commands and three
-exact profiles, then completed the full 40-command token primary with wall ratio
-1.00299236, CPU ratio 0.99040808 and wall A/A envelope 3.379272%. It was parked;
-no larger comparison or unchanged retry was started.
-[Indirect assessment](results/scalar-indirect-screen-token-01/ASSESSMENT.md).
+Main still adopts df4006e0; the new runtime remains experimental. Main4b6ec8bf
+published only the separately qualified std-MIR device-readmission repair,
+preserving peer compiler work. Re-fetch main when integration is actually admitted.
 
-Three disabled observers now narrow the next runtime work. Exact re-emission
-attributes ordinary code generation mainly to region emission and liveness,
-but its total warm host cost is only 66–114ms in these captures. Existing known
-immutable Load/Copy operands account for 0/5/3 block/exhaustive/parser samples.
-Guarded external value forwarding has only 2/2/0 available sites and no selected
-samples. None warrants a runtime implementation or new timing screen yet.
-[Emission stages](results/jit-emission-stages-01/ASSESSMENT.md),
-[immutable reads](results/immutable-read-census-01/ASSESSMENT.md),
-[guarded values](results/guarded-value-census-02/ASSESSMENT.md).
+The prospective composition combines native indirect transitions, checked readonly
+scalar leaves and successor-only spilling on the adopted scratch/scalar runtime.
+Its immutable tool45a1529e / VMfd21a46f keeps exporter cf4b3499 and wrapper45bca4f2.
+Qualification passes666 Rust tests per profile (25 ignored),421 Python tests
+(22 declared skips),122 strict/cache commands, six fresh matched profiles,
+26 fresh selected/prepared compatibility commands and25 full-protocol controls.
+Strict type/borrow checking remains mandatory, including unreachable errors and
+rejection of partially checked artifacts before scalar/indirect execution.
 
-The resumed September 18 inspection confirms the last census finished and its
-closure is intact. No unfinished command from this run was inferred to be active.
-Suggestions remain unchanged. The independent disk monitor reports stale status;
-this task uses fresh disk admission checks and does not repair or restart it.
-The completed indirect primary's compiler intermediates were already retired:
-3,147 files, about 1.47GiB actual space, all 2,532 protected hashes unchanged.
+The original std-MIR manifest is unchanged. Its26 artifact hashes matched after
+a device-number change; separate readmission receipts verify current identities.
+The historical profile comparison failed on18 extra CPU-feature-detection
+instructions. A fresh adopted VM reproduced the exact same path as candidate;
+six fresh profiles then matched every original PC, memory peak and entropy count.
+Preserve the original failure; never mask counts or use entropy replay for timing.
 
-The smaller range-admission census is also complete: 43/59/7 new groups but
-only 14/0/0 block/exhaustive/parser samples. It preserves exact original code and
-all previously selected proofs. Defer smaller runtime guards and keep the
-threshold of eight. Frame-initialization review confirms prior proof extensions and clearing rewrites
-already address that area; register-array zeroing is absent in retained profiles.
-[Range admission](results/range-admission-census-01/ASSESSMENT.md).
+The40-command primary passes: wall0.96398368, CPU0.95353329, wall A/A2.221367%.
+No primary pair is reused in the full campaign. The fresh full comparison now
+has four closed passing cases and594 commands, with15 valid edited pairs per case:
 
-A bounded scalar call-chain census passes after two retained diagnostic failures.
-It admits 57 additional initialized/confined direct-call DAGs but selects no
-Call/Return samples in either current token capture. Defer parent scalar graphs.
-Four private external payload slots find 99 reuses in three functions, but only
-15 block source-address/load samples and none in exhaustive/parser, before capture
-cost. Defer this new runtime cache too.
-[Call-chain scope](results/scalar-chain-census-03/ASSESSMENT.md),
-[external captures](results/guarded-capture-census-01/ASSESSMENT.md).
+| Case | Commands | Wall / adopted | CPU / adopted | Wall A/A | Wall / native |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| token |154|0.96769033|0.96381150|2.728848%|1.59822459|
+| folded |154|0.97865347|0.98459988|1.057504%|0.98477876|
+| pgrust hashfn |154|1.00313849|1.00271664|1.826877%|1.04813587|
+| private rg-aot |132|1.00143096|1.00207350|2.353175%|0.56640976|
 
-Now qualify a new composition of native indirect transitions, successor-only
-spilling and checked readonly scalar leaves on the adopted scalar/scratch runtime.
-Build qualification passed:666 Rust tests in each profile (25 ignored) and414
-Python passes with22 declared skips. Immutable composed tool45a1529e retains the
-adopted compiler binaries. Strict/cache workflows and exact profiles are next.
-Keep all isolated failures; infer no additive gain. Require new complete memory,
-fault, profile, strict/cache and original-test qualification, then the unchanged
-full-token changed-source primary. No aggregate output expansion, new memory
-capture policy or smaller range guard is included. Preserve current main's peer
-compiler-selection fixes when publishing or integrating launcher changes.
+Token passes narrowly. Pgrust/private differences are within control variation
+and establish no incremental gain. Current native ratios are from these matched
+histories; do not substitute older, more favorable hardware/run ratios. All
+original assertions, wrong-edit outcomes, paired bytecode/catalog identities,
+frozen inputs and source restoration pass. The first full setup failed after
+two original-state commands due to a copied scalar-option assertion; it had no
+edited pairs and remains archived. All02 case namespaces are independent of it.
 
-The122 strict/cache commands pass after a narrow std-MIR device readmission:
-all26 metadata hashes were unchanged, and the historical manifest stays immutable.
-The updated launcher passes421 Python tests with22 skips and all seven focused
-readmission controls also pass under system Python3.9. The first retained-profile
-comparison stopped on18 extra instructions in macOS CPU-feature detection. A
-fresh unchanged adopted VM reproduces the same path and exactly matches the
-candidate. Preserve both results and require six fresh profiles before timing.
+Current active campaign: `.work/runtime-composition-full-02`, final Nushell phase.
+Supervisor `runtime-composition-full-nushell-02`, PID82525, started September18
+15:36; case `runtime-composition-edit-nushell-02`. Fresh disk admission passed
+at47.58GiB against the actual frozen47.03GiB reservation (the handoff's26GiB
+estimate was stale). At15:48,17 of132 commands completed and about30GiB remained.
+The wrong-edit and first valid-edit outcomes match. Check terminal receipts and
+current resources; do not infer completion from these progress notes. Preserve
+all `scripts/*.py` and runtime-composition-full sources and its frozen inputs.
+Use840eee0c as the Git binding for those unchanged controller/script sources.
 
-The composed primary passes40 commands: wall ratio0.96398368, CPU0.95353329,
-wall A/A2.221367%, CPU A/A2.115417%. Every original assertion and source-restoration
-check passes; ordinary native remains1/1.57265 of candidate wall time. The screen
-is closed and admitted26 fresh selected/prepared compatibility commands. Next
-freeze the longer five-project histories and both parser guards; do not adopt on
-the screen alone. Main4b6ec8bf publishes only the separately qualified std-MIR
-readmission repair. The runtime stays experimental.
-[Primary assessment](results/runtime-composition-screen-token-01/ASSESSMENT.md).
+Token/rg-aot supervisors ended normally. Folded/pgrust case controllers also
+finished normally, but their outer post-case audits timed out on the shared lock.
+Audit-only recovery verified all existing measurements and repeated none.
+Checkpoints2/3 originally included a reference to the growing live campaign ledger;
+their immutable ledger copies were intact. The closed supplemental repair resolves
+those references through exact original hashes, preserving all original receipts.
+Use each case's checkpoint-evidence-repair.json when auditing those older closures.
+Checkpoint4 is closed and admits only Nushell. No peer process was altered.
 
-All26 fresh selected/prepared compatibility commands passed. The first full
-campaign stopped after two original-state setup commands (native line tables and
-adopted baseline) because a copied launcher assertion still expected scalar calls
-only for candidate. Source restoration and evidence closure pass; zero edited
-pairs were measured, and no performance gate was evaluated. A shared runtime-mode
-validator and two regression controls now cover both full-history controllers.
-Fresh02 case namespaces require full-protocol03 (25 controls); no failed prefix
-will be reused. Parser guard controllers are prepared but remain unexecuted.
+After Nushell, require all726 commands and all five gates. If the outer controller
+again ends only on the post-case lock timeout, prepared recover_final_audit.py
+can finish that audit without a guest execution, preserving any failed timing
+gate. It is unexecuted. Prepared close_projects.py can close project evidence
+separately while marking parser qualification pending; this permits safe retirement
+of completed project caches if necessary. Neither receipt admits runtime adoption.
 
-Full-protocol03 passed and closed all25 controls. The fresh campaign
-`runtime-composition-full-02` is running its token phase under supervisor
-`runtime-composition-full-token-02`, started September18 14:55 with supervisor
-86451. Its case is `runtime-composition-edit-token-02`; require154 commands and
-15 valid pairs before any performance decision. Source files in
-runtime-composition-full and scripts stay frozen. Read terminal receipts before
-assuming completion. Further case groups use --resume on this same campaign,
-only after passing, closing and auditing each complete checkpoint. Parser guard
-controllers and terminal/checkpoint auditors are prepared separately and unrun.
+Then run candidate parser compatibility (`runtime-composition-full/parser.py`,
+run runtime-composition-parser-01,114 original tests), and the prepared16-control
+parser protocol (`runtime-composition-parser-edits/check.py`). Both separate
+88-command parser histories, incremental first and repository second, remain
+required. Their admission is24GiB, child floor8GiB. Stop the unstarted successor
+on any failed guard. The three terminal-parser-decision controls already pass
+and are closed. The compatibility/protocol/history controllers remain unexecuted.
+Final close_campaign.py and current-main integration still require the parser
+results. Preserve main's newer launcher/compiler changes and qualify their actual
+merged path; do not assume only an optional installer module changed.
+[Integration plan](docs/RUNTIME-COMPOSITION-INTEGRATION-20260918.md).
 
-The fresh token phase completed and closed154 commands and15 valid edited pairs.
-Its wall ratio0.96769033 exceeds the2.728848% A/A envelope narrowly; CPU ratio
-0.96381150 also passes. All12 original tests and restored source pass. Candidate
-wall remains1.598225 times ordinary native. Checkpoint1 is closed and the same
-campaign now runs folded matching under runtime-composition-full-folded-02,
-supervisor84332, started September18 15:04. No token command is repeated.
-[Full token assessment](results/runtime-composition-edit-token-02/ASSESSMENT.md).
+Disk cleanup is complete and closed for three exact public cache groups:
+old scratch/scalar Nushell custom namespaces (33,924 nonexecutable files;
+20,002 protected hashes unchanged), current full-token caches (13,304 files;
+3,389 protected hashes unchanged), and current full-folded caches (13,304 files;
+3,392 protected hashes unchanged). Never repeat those retirements. An old
+repository-parser attempt found zero eligible files and removed nothing; its
+failed/no-removal receipt is retained. All executables, installed tools, bytecode,
+suites and recorded evidence remain. Shared target, private and peer caches
+were excluded. Cleanup's logical bytes differ from observed free-space changes.
+The independent monitor's status is stale; use fresh checks without restarting it.
 
-Folded matching also completed154 commands,18 original tests and15 edited pairs.
-Wall ratio0.97865347 and CPU0.98459988 pass the existing regression margins
-0.98922852/0.99564577. Candidate/native wall is0.98477876. The outer controller
-timed out waiting for the shared lock after the case finished. Audit-only recovery
-runtime-composition-full-folded-audit-02 verified all308 retained commands and
-closed checkpoint2, preserving the original failure and repeating no guest work.
-All three terminal-parser-decision controls passed and are closed. The
-auditor can now preserve a failed parser guard and cancel its unstarted successor;
-this does not change any measurement or threshold. Pgrust now runs under
-runtime-composition-full-pgrust-02, supervisor41528, started September18 15:14.
-Public token compiler-cache retirement is prepared but unexecuted; current free
-space is about40GiB. No peer process was altered or cache removed.
-[Folded assessment](results/runtime-composition-edit-folded-02/ASSESSMENT.md).
+Previous isolated indirect, readonly and successor-flush candidates remain parked
+under their original failed gates; the new composition does not relabel them or
+establish additive gains. Recent disabled censuses also remain deferred: ordinary
+code generation is66–114ms; immutable reads and guarded-value forwarding have
+little sampled coverage; smaller range guards cover14/0/0 samples; confined scalar
+call chains cover no selected Call/Return samples; four external capture slots
+cover15/0/0 samples before their own costs. Do not repeat these unchanged probes.
+After qualified adoption, fresh owned native-PC sampling should choose the next
+runtime target. The sampler needs explicit indirect-option forwarding and the
+current observation validator before it can profile the new configuration.
 
-Pgrust also passes154 commands/four original tests, with no established gain:
-wall1.00313849 and CPU1.00271664 lie inside their A/A envelopes. Candidate/native
-wall is1.04813587 on this host. Its post-case audit also met a45-second shared-lock
-timeout. Audit-only recovery runtime-composition-full-pgrust-audit-02 closed all
-462 commands without repeats. Checkpoint3 is closed. Private rg-aot now runs under
-runtime-composition-full-rg-aot-02, supervisor94442, started September18 15:18.
-Free space remains about39GiB; token cache retirement is still unexecuted.
-[Pgrust assessment](results/runtime-composition-edit-pgrust-02/ASSESSMENT.md),
-[prospective integration](docs/RUNTIME-COMPOSITION-INTEGRATION-20260918.md).
-
-Private rg-aot passed132 commands and its regression guard: wall1.00143096,
-CPU1.00207350, both inside A/A variation. Candidate/native wall is0.56640976.
-The supervisor finished normally; checkpoint4 is closed with594 completed commands.
-The read-only cache preflight found33,924 eligible files, about11.86GiB logical,
-in three exact completed Nushell namespaces. The actual frozen
-Nushell reservation is47.03GiB, not the resumed handoff's26GiB; current free space
-is about36GiB. Nushell is unstarted. Cleanup under supervisor92302 started
-September18 15:24, run closed-scratch-scalar-nushell-custom-retirement-01. It scopes
-only those three closed namespaces and preserves executables, installed tools,
-bytecode, suites, sources and recorded evidence. Read the terminal receipt before
-assuming any cleanup completed. Current campaign/token caches remain intact.
-[Private aggregate assessment](results/runtime-composition-edit-rg-aot-02/ASSESSMENT.md).
-
-Both completed-cache retirements passed and are closed. Old Nushell custom
-namespaces removed33,924 nonexecutable intermediates with20,002 protected hashes
-unchanged. Current full-token caches removed13,304 with3,389 protected hashes
-unchanged. Free space is about45.8GiB, still below Nushell's47.03GiB admission.
-The closed old repository-parser history is the next scoped cache candidate;
-its retirement controller is prepared but not started. Nushell remains unstarted.
-
-The repository-parser retirement found zero eligible intermediates and removed
-nothing; its failed/no-removal receipt is preserved. The two recovered checkpoint
-evidence maps had references to the growing live campaign ledger. Their original
-immutable copies were intact: supplemental repair verifies every old digest and
-resolves those references without changing original receipts or measurements.
-That repair is closed. Full-folded cache retirement is now running under supervisor
-52496, run closed-runtime-composition-full-folded-retirement-01, started
-September18 15:35. It requires that repaired checkpoint and the same strict
-ownership/identity/protected-hash checks. Last free space was about46GiB.
-
-Folded retirement passed and is closed:13,304 nonexecutable intermediates removed,
-all3,392 protected hashes unchanged. Fresh Nushell admission passed at47.58GiB
-against47.03GiB required. The final project phase is now active under supervisor
-82525, runtime-composition-full-nushell-02, started September18 15:36. Its case
-is runtime-composition-edit-nushell-02. Require132 complete commands and the
-unchanged final audit; retain the594 prior commands without repeats. The first
-original-state baseline command is building. Current source files in
-runtime-composition-full and scripts remain frozen. Parser compatibility and
-both88-command parser histories still remain before any runtime adoption.
+[Primary](results/runtime-composition-screen-token-01/ASSESSMENT.md),
+[token](results/runtime-composition-edit-token-02/ASSESSMENT.md),
+[folded](results/runtime-composition-edit-folded-02/ASSESSMENT.md),
+[pgrust](results/runtime-composition-edit-pgrust-02/ASSESSMENT.md),
+[private aggregate](results/runtime-composition-edit-rg-aot-02/ASSESSMENT.md).
 
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
