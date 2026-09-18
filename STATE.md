@@ -128,17 +128,41 @@ closure explicitly records candidate_qualified:false, parser_gates_passed:false,
 unstarted_parser_profiles:[repository], preserving five passing project gates.
 No final-audit recovery, repeated guest command or new deletion was used.
 
-Publish the scoped experimental outcome to main without
-its rejected runtime delta or overwriting peer changes. Then collect two fresh
-owned native-PC windows on the adopted df4006e0 VM, using the current-host
-control profiles from runtime-composition-profile-02 for static identities.
-The old sampling controller requires current root Rust sources equal to its
-older build and old profile bindings, so prepare a new controller with archived
-Git source bindings and the fresh profiles. Existing sampler/attribution options
-are sufficient for the adopted scalar runtime; indirect forwarding stays deferred
-because the indirect composition was not adopted. Use native samples to choose
-a materially different next optimization. No new timings are authorized merely
-to obtain a quieter result for this candidate.
+The scoped experimental outcome is published on main4ed47f58, based on peer
+mainfeeffad5. Only docs/RUNTIME-COMPOSITION-20260918.md was added; no runtime
+or compiler delta was merged. The publication worktree is clean at4ed47f58.
+
+Fresh adopted-runtime sampling01 was prepared ataf2f0661:214 archived Git VM
+inputs,46 frozen inputs, and current-host control profiles from
+runtime-composition-profile-02. The first block guest (supervisor317/child320,
+VM322, September18 at16:27:55) passed its original assertion and zero-decline
+check but yielded no sample. Twelve successful vmmap reports labelled its
+actual emitted arena Untagged; the old parser accepted only VM_ALLOCATE.
+Exhaustive01 remains unstarted. Failure closure supervisor78649/child78652
+verified every original hash and all12 reports' exact arena containment. The
+zero-window result is closed and must not be relabelled or repeated unchanged.
+
+A shared scripts/vmmap_ranges.py now accepts the two observed labels, exact
+owned-VM PID header and rwx/rwx permissions, rejecting invalid/overlapping
+bounds. Both sample_owned_vm.py and summarize_owned_sample.py use it and bind
+its source. Source51c57402 passes449 discovered Python tests (427 passed,
+22 declared skips),9 attribution controls and14 retained report replays
+(12 current,2 historical), with zero new guest commands. Its closure verifies
+495 Git source files and29 evidence files. Production runtime/JIT is unchanged.
+This diagnostic fix is not yet published to main; do that after the new live
+capture and merged-main Python checks, preserving peer changes.
+
+The study controller is parameterized for fresh02 namespaces. Next prepare
+adopted-current-runtime-sampling-02 using prepare.py --run-id under supervisor
+adopted-current-runtime-sampling-prepare-02. Then launch each exact case command
+from its plan under supervisors adopted-current-sample-{block,exhaustive}-02,
+serially. Require successful terminal, mapped:true and actual sample_returncode:0
+before continuing. Analyze retained executions with analyze.py --run-id only
+after both finish; it repeats no guest. Close with close.py RUN PREP_SUP ANALYSIS_SUP.
+The repaired sampler passes expected-jit-declines=0 explicitly. Reuse the newly
+closed9 attribution controls from vmmap-label-compatibility-01, not stale sampler
+source hashes. These are perturbed diagnostic windows with no latency claim.
+Use their actual native-PC coverage to choose a materially different optimization.
 
 Token/rg-aot supervisors ended normally. Folded/pgrust case controllers also
 finished normally, but their outer post-case audits timed out on the shared lock.

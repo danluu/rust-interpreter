@@ -2,15 +2,16 @@
 import hashlib
 import subprocess
 import sys
-from common import ROOT, RUN, KEY, VM, read, verify, terminal, acquire_lock, sha, require_space, write
+from common import ROOT, KEY, VM, read, verify, terminal, run_name, acquire_lock, sha, require_space, write
 
 
 def main():
-    preparation, analysis = sys.argv[1:3]
+    run, preparation, analysis = sys.argv[1:4]
+    run_name(run)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
         require_space(ROOT, 8)
-        raw, out = ROOT / '.work' / RUN, ROOT / 'results' / RUN
+        raw, out = ROOT / '.work' / run, ROOT / 'results' / run
         plan, summary = read(raw / 'plan.json'), read(out / 'summary.json')
         assert summary['status'] == 'passed' and summary['tool_key'] == KEY and summary['vm_sha256'] == VM
         assert summary['guest_commands'] == 2 and summary['new_guests_during_analysis'] == 0

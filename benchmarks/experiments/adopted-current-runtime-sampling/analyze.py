@@ -2,7 +2,7 @@
 import argparse
 import os
 import sys
-from common import ROOT, RUN, KEY, VM, read, verify, terminal, acquire_lock, sha, require_space, write
+from common import ROOT, KEY, VM, read, verify, terminal, run_name, acquire_lock, sha, require_space, write
 from workflow_io import capture
 sys.path.insert(0, str(ROOT / 'benchmarks/experiments/scalar-runtime-sampling'))
 from attribute import attribute
@@ -10,14 +10,15 @@ from attribute import attribute
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--block-supervisor', default='adopted-current-sample-block-01')
-    parser.add_argument('--exhaustive-supervisor', default='adopted-current-sample-exhaustive-01')
+    parser.add_argument('--run-id', required=True, type=run_name)
+    parser.add_argument('--block-supervisor')
+    parser.add_argument('--exhaustive-supervisor')
     args = parser.parse_args()
     supervisors = dict(block=args.block_supervisor, exhaustive=args.exhaustive_supervisor)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
         require_space(ROOT, 12)
-        raw = ROOT / '.work' / RUN
+        raw = ROOT / '.work' / args.run_id
         plan = read(raw / 'plan.json')
         assert plan['tool_key'] == KEY and plan['vm_sha256'] == VM
         assert plan['guest_commands'] == 2 and plan['reused_controls'] == 9
@@ -30,7 +31,8 @@ def main():
         env['PYTHONDONTWRITEBYTECODE'] = '1'
         assert not (raw / 'analysis-records.json').exists()
         for case in plan['cases']:
-            name, supervisor = case['run_id'], supervisors[case['label']]
+            name = case['run_id']
+            supervisor = supervisors[case['label']] or name
             assert supervisor == name or supervisor.startswith(name + '-admission-')
             outer, _ = terminal(supervisor, case['command'])
             for file in ['status.json', 'plan.json', 'command.log']:
@@ -72,7 +74,7 @@ def main():
             verify(plan)
             print(label, report['by_label'], flush=True)
         write(raw / 'sample-evidence.json', evidence)
-        out = ROOT / 'results' / RUN
+        out = ROOT / 'results' / args.run_id
         out.mkdir(exist_ok=False)
         write(out / 'summary.json', dict(status='passed', tool_key=KEY, vm_sha256=VM,
             guest_commands=2, new_guests_during_analysis=0, summary_commands=2,

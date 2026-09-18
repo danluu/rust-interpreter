@@ -20,11 +20,17 @@ Sample shares and static word counts do not establish a speedup.
 Bind the adopted binary and its archived Git build inputs explicitly. Current
 workspace Rust sources belong to the parked composition; the sampler's workspace
 snapshot is provenance, not the source of the installed adopted VM. Reuse the
-nine unchanged attribution controls through exact dependency/record hashes.
-The sampler has since gained an explicit expected-decline option. Its default
-preserves the former zero-decline check; pass zero explicitly and verify zero
-in both its plan and runtime statistics. Bind this current sampler separately
-from the unchanged attribution-test dependencies.
+nine attribution controls through the closed vmmap-label-compatibility check,
+which reruns them against the repaired summary parser and replays 14 retained
+real mapping reports. Pass the sampler's expected-decline option as zero
+explicitly and verify zero in both its plan and runtime statistics.
+
+Run01 is closed as a failed capture: one passing guest, twelve successful vmmap
+inspections, no sample window, and its exhaustive successor unstarted. This
+host reports the arena as Untagged; the old VM_ALLOCATE-only parser missed it.
+After the shared parser repair is qualified, use entirely new02 namespaces.
+Preserve the original zero-window result. This changed diagnostic addresses a
+proven capture failure; it is not another timing trial of the rejected runtime.
 
 Prepare once under the shared lock with 12 GiB admission. Each separate existing
 sampler holds the lock and an 8 GiB floor. Retain a successful sample before

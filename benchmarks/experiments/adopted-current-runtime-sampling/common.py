@@ -1,5 +1,6 @@
 """Shared identities for two fresh adopted-runtime diagnostic windows."""
 import json
+import re
 from pathlib import Path
 import sys
 
@@ -11,6 +12,12 @@ from workflow_io import require_space, write_json as write
 RUN = 'adopted-current-runtime-sampling-01'
 KEY = 'df4006e03daad7dd008eab34c24a03390d892ec14e55154c43e2d5568c0bba62'
 VM = '6ac4dd9e964e0ebb0a050f8412c8ec8877bd197e8ad7876832db378ed03ca7cf'
+
+
+def run_name(value):
+    if not re.fullmatch(r'adopted-current-runtime-sampling-[0-9]{2}', value):
+        raise ValueError('invalid adopted-runtime diagnostic run name')
+    return value
 
 
 def read(path):

@@ -1,13 +1,17 @@
 """Freeze diagnostic commands, archived VM sources and current-host profiles."""
 import hashlib
+import argparse
 import subprocess
 import sys
 from pathlib import Path
-from common import ROOT, RUN, KEY, VM, read, verify, acquire_lock, sha, require_space, write
+from common import ROOT, KEY, VM, read, verify, run_name, acquire_lock, sha, require_space, write
 from interpreter import installed_tools
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--run-id', required=True, type=run_name)
+    args = parser.parse_args()
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
         require_space(ROOT, 12)
@@ -51,12 +55,18 @@ def main():
         assert archived
         paths.append(source)
 
-        old = ROOT / '.work/scalar-runtime-sampling-01'
-        prior = read(old / 'plan.json')
-        control, = [r for r in read(old / 'records.json') if r['label'] == 'controls']
-        assert control['returncode'] == 0 and sha(old / 'controls.stderr') == control['stderr_sha256']
-        assert 'Ran 9 tests' in (old / 'controls.stderr').read_text()
+        compatibility, _ = closed('vmmap-label-compatibility-01')
+        assert compatibility['status'] == 'passed' and compatibility['guest_commands'] == 0
+        assert compatibility['attribution_tests'] == 9 and compatibility['retained_reports'] == 14
+        controls = ROOT / compatibility['raw']
+        prior = read(controls / 'plan.json')
+        assert sha(controls / 'plan.json') == compatibility['plan_sha256']
+        assert sha(controls / 'records.json') == compatibility['records_sha256']
+        control, = [r for r in read(controls / 'records.json') if r['label'] == 'attribution']
+        assert control['returncode'] == 0 and sha(controls / 'attribution.stderr') == control['stderr_sha256']
+        assert 'Ran 9 tests' in (controls / 'attribution.stderr').read_text()
         dependencies = ['scripts/compare_saved_runtime.py', 'scripts/summarize_owned_sample.py',
+            'scripts/sample_owned_vm.py', 'scripts/vmmap_ranges.py',
             'benchmarks/experiments/scalar-runtime-sampling/attribute.py',
             'benchmarks/experiments/scalar-runtime-sampling/test_attribution.py',
             'benchmarks/experiments/scalar-private-transfers/native_observation.py',
@@ -67,7 +77,7 @@ def main():
         for path in dependencies:
             assert sha(ROOT / path) == prior['frozen'][path], path
             paths.append(ROOT / path)
-        paths += [old / n for n in ['plan.json', 'records.json', 'controls.stdout', 'controls.stderr']]
+        paths += [controls / n for n in ['plan.json', 'records.json', 'attribution.stdout', 'attribution.stderr']]
         reference_path = ROOT / 'results/current-runtime-boundaries-02/summary.json'
         reference = read(reference_path)
         assert reference['status'] == 'passed'
@@ -83,7 +93,7 @@ def main():
                 paths.append(ROOT / item[field])
             assert sha(ROOT / profile['profile_path']) == profile['profile_sha256']
             paths.append(ROOT / profile['profile_path'])
-            name = 'adopted-current-sample-' + label + '-01'
+            name = 'adopted-current-sample-' + label + '-' + args.run_id.rsplit('-', 1)[1]
             assert not (ROOT / '.work' / name).exists() and not (ROOT / 'results' / name).exists()
             command = [sys.executable, 'scripts/sample_owned_vm.py', '--tool-key', KEY,
                 '--artifact', str(ROOT / item['artifact']), '--artifact-sha256', item['artifact_sha256'],
@@ -104,13 +114,15 @@ def main():
         for path, digest in frozen.items():
             if not path.startswith(('.work/', 'results/')):
                 assert hashlib.sha256(subprocess.check_output(['git', 'show', revision + ':' + path], cwd=ROOT)).hexdigest() == digest
-        raw = ROOT / '.work' / RUN
+        raw = ROOT / '.work' / args.run_id
         raw.mkdir(exist_ok=False)
         write(raw / 'vm-source-bindings.json', archived)
         plan = dict(owner=str(ROOT), source_revision=revision, tool_key=KEY, vm_sha256=VM,
             frozen=frozen, cases=cases, guest_commands=2, reused_controls=9,
             archived_vm_sources=str((raw / 'vm-source-bindings.json').relative_to(ROOT)),
             archived_vm_sources_sha256=sha(raw / 'vm-source-bindings.json'),
+            attribution_controls_from='vmmap-label-compatibility-01',
+            sampler_compatibility_replay_reports=14,
             sampler_workspace_snapshot_is_not_vm_build_source=True,
             initial_gib=12, minimum_child_gib=8, ordinary_entropy=True,
             profile_used_for_static_identity_only=True, performance_measurement=False)
