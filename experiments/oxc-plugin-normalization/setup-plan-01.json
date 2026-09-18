@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "status": "prepared-not-launched",
+  "owner": "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918",
+  "project": "oxc",
+  "revision": "4d5c812d6b16c23fa71d106cf87f7f20ddee69b1",
+  "source": "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/sources/oxc",
+  "setup_work": "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/oxc-native-setup-01",
+  "case": {
+    "path": "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/experiments/oxc-plugin-normalization/case.json",
+    "sha256": "ab32955f5fa23dfaf69c74a0a1b7d0afdc116e5b05e02693df6fa47ebc9edffd"
+  },
+  "canonical_lock": "/Users/danluu/dev/rust-interp/.work/benchmark.lock",
+  "lock_wait_seconds": 600,
+  "resource_policy": {
+    "acquisition_entry_bytes": 17179869184,
+    "native_entry_bytes": 25769803776,
+    "stop_bytes": 9663676416,
+    "running_floor_bytes": 8589934592,
+    "acquisition_allocation_budget_bytes": 6442450944,
+    "acquisition_evidence_budget_bytes": 67108864,
+    "native_target_budget_bytes": 12884901888,
+    "native_evidence_budget_bytes": 268435456,
+    "cargo_jobs": 2,
+    "libtest_threads": "upstream-default",
+    "reservation": false
+  },
+  "environment": {
+    "HOME": "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/oxc-native-setup-01/home",
+    "CARGO_HOME": "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/oxc-native-setup-01/cargo",
+    "RUSTUP_HOME": "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/oxc-native-setup-01/rustup",
+    "PATH": "/Users/danluu/.cargo/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+    "LANG": "C.UTF-8",
+    "LC_ALL": "C.UTF-8",
+    "TZ": "UTC",
+    "CARGO_TERM_COLOR": "never",
+    "CARGO_BUILD_JOBS": "2",
+    "RUSTUP_DIST_SERVER": "https://static.rust-lang.org",
+    "RUSTUP_UPDATE_ROOT": "https://static.rust-lang.org/rustup",
+    "GIT_CONFIG_NOSYSTEM": "1",
+    "GIT_CONFIG_GLOBAL": "/dev/null",
+    "TMPDIR": "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/oxc-native-setup-01/tmp"
+  },
+  "acquisition_commands": [
+    {
+      "stage": "source",
+      "command": [
+        "/opt/homebrew/bin/python3",
+        "-B",
+        "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/scripts/prepare.py",
+        "oxc"
+      ],
+      "cwd": "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918"
+    },
+    {
+      "stage": "toolchain",
+      "command": [
+        "/Users/danluu/.cargo/bin/rustup",
+        "toolchain",
+        "install",
+        "1.98.1-aarch64-apple-darwin",
+        "--profile",
+        "default",
+        "--no-self-update"
+      ],
+      "cwd": "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/oxc-native-setup-01"
+    },
+    {
+      "stage": "dependencies",
+      "command": [
+        "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/oxc-native-setup-01/rustup/toolchains/1.98.1-aarch64-apple-darwin/bin/cargo",
+        "fetch",
+        "--manifest-path",
+        "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/sources/oxc/Cargo.toml",
+        "--locked",
+        "--target",
+        "aarch64-apple-darwin"
+      ],
+      "cwd": "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/sources/oxc"
+    },
+    {
+      "stage": "resolved-metadata",
+      "command": [
+        "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/oxc-native-setup-01/rustup/toolchains/1.98.1-aarch64-apple-darwin/bin/cargo",
+        "metadata",
+        "--manifest-path",
+        "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/sources/oxc/Cargo.toml",
+        "--locked",
+        "--offline",
+        "--format-version",
+        "1",
+        "--filter-platform",
+        "aarch64-apple-darwin"
+      ],
+      "cwd": "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/sources/oxc"
+    }
+  ],
+  "native_base_command": [
+    "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/oxc-native-setup-01/rustup/toolchains/1.98.1-aarch64-apple-darwin/bin/cargo",
+    "test",
+    "--manifest-path",
+    "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/sources/oxc/Cargo.toml",
+    "--package",
+    "oxc_linter",
+    "--lib",
+    "--locked",
+    "--offline",
+    "--jobs",
+    "2",
+    "--target-dir",
+    "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/oxc-native-compatibility-01/target"
+  ],
+  "native_runtime_environment": {
+    "CARGO_NET_OFFLINE": "true",
+    "RUSTC": "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/oxc-native-setup-01/rustup/toolchains/1.98.1-aarch64-apple-darwin/bin/rustc",
+    "RUSTC_WRAPPER": "",
+    "RUSTC_WORKSPACE_WRAPPER": ""
+  },
+  "required_before_native": [
+    "freeze acquired source and installed toolchain inventories",
+    "retain registry checksum/source closure and resolved graph",
+    "record actual rustc/cargo versions, executable hashes, SDK and loader identity",
+    "confirm unchanged upstream profiles/config/default features/lockfile",
+    "derive and freeze exact compatibility child commands, controller, environment and source-state hashes",
+    "fresh canonical-lock and native-stage capacity admission",
+    "audit inherited and hierarchical Cargo compiler/wrapper routes before applying explicit empty wrappers"
+  ],
+  "native_compatibility_order": [
+    "discover the exact three nonignored tests",
+    "original three-test batch",
+    "wrong-prefix state: all three assertion failures, separate commands if necessary",
+    "three cumulative production edit states, all three tests each",
+    "byte-exact restoration, original three-test batch"
+  ],
+  "prohibited": [
+    "frozen holdout inspection",
+    "application profile/feature/test changes",
+    "unrelated process control",
+    "implicit compiler substitution",
+    "timing an already compiled edited state",
+    "source or tool acquisition inside a timed invocation"
+  ],
+  "execution": {
+    "acquisition": false,
+    "native": false,
+    "interpreter": false,
+    "jit": false,
+    "benchmark": false
+  }
+}

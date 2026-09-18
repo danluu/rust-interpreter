@@ -4,6 +4,7 @@ import argparse
 import json
 import subprocess
 from pathlib import Path
+from workflow_projects import WORKFLOW_ONLY_PROJECTS
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES = {
@@ -19,6 +20,8 @@ CONFIG = json.loads((ROOT / "benchmarks/corpus.json").read_text())
 PINS = {name: value["revision"] for name, value in CONFIG["projects"].items()}
 PINS["cg-clif"] = "db693f7dbcfab9af2a89b703096f692417e2f756"
 PINS["cargo"] = "3c0b534756e166d12eb9fd2e1abfe5b42ac6101e"
+SOURCES.update({name: project['source'] for name, project in WORKFLOW_ONLY_PROJECTS.items()})
+PINS.update({name: project['revision'] for name, project in WORKFLOW_ONLY_PROJECTS.items()})
 
 
 def run(args, cwd=None):
