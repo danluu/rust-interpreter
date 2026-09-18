@@ -51,7 +51,7 @@ libtest, thread/OS/FFI and real unwinding support remain open. The parser and
 token native gaps still guide optimization; no complete database/shell coverage
 or isolated scratch-cache speedup is claimed.
 
-The current manual branch is `experiment/guarded-capture-census-20260918`.
+The current manual branch is `experiment/runtime-composition-20260918`.
 Main still adopts df4006e0. The aggregate and native-indirect compositions remain
 archived after failing their original changed-source wall gates. The indirect
 composition passed all correctness controls, 122 strict/cache commands and three
@@ -93,8 +93,11 @@ cost. Defer this new runtime cache too.
 [Call-chain scope](results/scalar-chain-census-03/ASSESSMENT.md),
 [external captures](results/guarded-capture-census-01/ASSESSMENT.md).
 
-Next qualify a new composition of native indirect transitions, successor-only
+Now qualify a new composition of native indirect transitions, successor-only
 spilling and checked readonly scalar leaves on the adopted scalar/scratch runtime.
+Build qualification passed:666 Rust tests in each profile (25 ignored) and414
+Python passes with22 declared skips. Immutable composed tool45a1529e retains the
+adopted compiler binaries. Strict/cache workflows and exact profiles are next.
 Keep all isolated failures; infer no additive gain. Require new complete memory,
 fault, profile, strict/cache and original-test qualification, then the unchanged
 full-token changed-source primary. No aggregate output expansion, new memory
