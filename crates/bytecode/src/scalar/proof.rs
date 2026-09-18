@@ -280,6 +280,7 @@ pub fn effects(program: &Program) -> Vec<Proof> {
 mod tests;
 
 #[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+#[path = "proof/chain_census.rs"]
 mod chain_census;
 
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
