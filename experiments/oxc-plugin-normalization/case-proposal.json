@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "label": "oxc-plugin-normalization-three-edits",
+  "project": "oxc",
+  "revision": "4d5c812d6b16c23fa71d106cf87f7f20ddee69b1",
+  "edit_class": "production-control-flow-refactor",
+  "case": {
+    "package": "oxc_linter",
+    "file": "crates/oxc_linter/src/config/plugins.rs",
+    "workload": "Compile/check the complete upstream library-test crate, then execute exactly three unchanged plugin normalization tests after cumulative production control-flow edits. Source-only proposal: Oxc is not registered with the current workflow loader; no compatibility or timing result exists.",
+    "tests": [
+      "config::plugins::tests::test_plugin_normalization",
+      "config::plugins::tests::test_normalize_plugin_name",
+      "config::plugins::tests::test_is_normal_plugin_name"
+    ],
+    "negative": [
+      "wrong-eslint-prefix",
+      "    const PLUGIN_PREFIXES: [&str; 2] = [\"eslint-plugin\", \"oxlint-plugin\"];",
+      "    const PLUGIN_PREFIXES: [&str; 2] = [\"eslint-plugim\", \"oxlint-plugin\"];"
+    ],
+    "edits": [
+      [
+        "scoped-suffix-match",
+        "            if let Some(suffix) = rest.strip_prefix(prefix).and_then(|rest| rest.strip_prefix('-'))\n            {",
+        "            let suffix = match rest.strip_prefix(prefix) {\n                Some(rest) => rest.strip_prefix('-'),\n                None => None,\n            };\n            if let Some(suffix) = suffix {"
+      ],
+      [
+        "unscoped-suffix-match",
+        "        if let Some(suffix) =\n            plugin_name.strip_prefix(prefix).and_then(|rest| rest.strip_prefix('-'))\n        {",
+        "        let suffix = match plugin_name.strip_prefix(prefix) {\n            Some(rest) => rest.strip_prefix('-'),\n            None => None,\n        };\n        if let Some(suffix) = suffix {"
+      ],
+      [
+        "borrowed-normality-branch",
+        "    match normalized {\n        Cow::Owned(_) => false,\n        Cow::Borrowed(normalized) => normalized.len() == plugin_name.len(),\n    }",
+        "    if let Cow::Borrowed(normalized) = normalized {\n        normalized.len() == plugin_name.len()\n    } else {\n        false\n    }"
+      ]
+    ],
+    "selections": [[0, 1, 2], [0, 1, 2], [0, 1, 2]]
+  }
+}
