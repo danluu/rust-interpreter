@@ -239,3 +239,6 @@ mod tests;
 
 #[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
 mod range_admission;
+
+#[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+mod guarded_captures;
