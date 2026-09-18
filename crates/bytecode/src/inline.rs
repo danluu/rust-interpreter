@@ -21,14 +21,19 @@ impl Default for Options {
 // Frame and total code-growth budgets remain independent of this limit.
 const MAX_COPY_BYTES: usize = 128;
 
-fn scalar_leaf(f: &Function) -> bool {
-    f.code.len() > 1
-        && f.code.iter().any(|op| matches!(op, Op::Return))
-        && matches!(
+fn scalar_leaf(f: &Function) -> Option<usize> {
+    if f.code.len() <= 1
+        || !matches!(
             f.code.last(),
             Some(Op::Return | Op::Trap { .. } | Op::Jump { .. } | Op::Switch { .. })
         )
-        && f.code.iter().all(|op| match op {
+    {
+        return None;
+    }
+    let mut has_return = false;
+    let mut calls = 0;
+    for op in &f.code {
+        let allowed = match op {
             Op::Imm { .. }
             | Op::Local { .. }
             | Op::Load { .. }
@@ -37,14 +42,29 @@ fn scalar_leaf(f: &Function) -> bool {
             | Op::Select { .. }
             | Op::Assert { .. }
             | Op::Jump { .. }
-            | Op::Return
             | Op::Trap { .. } => true,
-            Op::Call { .. } | Op::CompareBytes { .. } => true,
+            Op::Return => {
+                has_return = true;
+                true
+            }
+            Op::Call { .. } => {
+                if calls == 1 {
+                    return None;
+                }
+                calls = 1;
+                true
+            }
+            Op::CompareBytes { .. } => true,
             Op::Copy { size, .. } => *size <= MAX_COPY_BYTES,
             Op::Binary { bits, .. } | Op::Unary { bits, .. } => *bits <= 64,
             Op::Switch { cases, .. } => cases.len() <= 16,
             _ => false,
-        })
+        };
+        if !allowed {
+            return None;
+        }
+    }
+    has_return.then_some(calls)
 }
 
 // Compiler-only Local analysis. Facts are discarded at every semantic block
@@ -330,18 +350,24 @@ fn prepare(original: &Program, options: Options) -> Result<Prepared, String> {
     {
         return Err("leaf inlining options exceed bounded limits".into());
     }
-    let nonrecursive = crate::inline_graph::nonrecursive(original);
+    let call_facts = crate::inline_graph::call_facts(original);
     let eligible: Vec<_> = original
         .functions
         .iter()
         .enumerate()
         .map(|(id, f)| {
-            let calls = f.code.iter().filter(|op| matches!(op, Op::Call { .. })).count();
-            scalar_leaf(f) && calls <= 1 && (calls == 0 || nonrecursive[id])
-                && f.code.len() <= options.leaf_operations
-                && f.frame_size <= 512
-                && f.registers <= 256
-                && f.result.size <= MAX_COPY_BYTES
+            // Reject size limits before scanning the body.
+            if f.code.len() > options.leaf_operations
+                || f.frame_size > 512
+                || f.registers > 256
+                || f.result.size > MAX_COPY_BYTES
+            {
+                return false;
+            }
+            let Some(calls) = scalar_leaf(f) else {
+                return false;
+            };
+            (calls == 0 || call_facts[id].nonrecursive)
                 && f.args.iter().all(|slot| slot.size <= MAX_COPY_BYTES)
                 && !crate::registers::needs_initial_zeroes(f)
         })
@@ -372,6 +398,9 @@ fn prepare(original: &Program, options: Options) -> Result<Prepared, String> {
     let mut changed = vec![];
     let mut replacements = Vec::new();
     for (id, caller) in original.functions.iter().enumerate() {
+        if !call_facts[id].may_direct_call {
+            continue;
+        }
         let bank_offset = (caller.frame_size + caller.frame_align - 1) & !(caller.frame_align - 1);
         let mut selected = Vec::new();
         let mut bank_frame = 0usize;
