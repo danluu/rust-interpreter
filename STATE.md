@@ -100,16 +100,19 @@ The full726-command final audit passes9,290 unique frozen inputs. A separate
 project closure binds122 source inputs and explicitly leaves parser guards
 pending and runtime adoption false. No final-audit recovery was needed.
 
-Parser compatibility's first supervisor83909/child83912 expired after45seconds
-waiting for the shared lock, before preflight or any guest command. No raw
-parser namespace exists. Its admission failure is retained separately. An early
-closure attempt also failed without writing anything; always check the terminal
-receipt before closing. Retry supervisor runtime-composition-parser-admission-02
-may run the unchanged parser-01 controller; close_parser.py accepts that terminal
-and binds the original admission failure. Both performance histories remain
-unstarted. Preserve all scripts and frozen runtime-composition-full inputs through
-parser histories/final closure. Use840eee0c for their unchanged Git binding.
-Fresh free space was26.55GiB; parser history admission remains24GiB and child8GiB.
+Parser compatibility passes all114 original tests under supervisor9983,
+child10069 (runtime-composition-parser-admission-02), with6,798 frozen inputs.
+The first supervisor83909/child83912 expired after45seconds waiting for the
+shared lock, before preflight or any guest command; retain its separate admission
+failure. An early closure attempt failed without writing anything. The successful
+run uses the unchanged parser-01 controller; its prepared close helper binds both
+terminal histories. Closure then hit another45-second lock timeout before audit,
+without mutation. A peer Ruff diagnostic owns the shared lock; leave it alone.
+Check closure and fresh resources before the protocol/history steps. Both parser
+performance histories remain unstarted. Preserve all scripts and frozen
+runtime-composition-full inputs through parser histories/final closure; use
+840eee0c for their unchanged Git binding. Fresh free space was26.44GiB;
+parser history admission remains24GiB and child floor8GiB.
 
 Token/rg-aot supervisors ended normally. Folded/pgrust case controllers also
 finished normally, but their outer post-case audits timed out on the shared lock.

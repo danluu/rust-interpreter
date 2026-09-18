@@ -1,10 +1,10 @@
 # Five project histories pass; parser qualification remains pending
 
 The native-indirect/readonly/successor composition passes all five predeclared
-project guards across726 complete changed-source commands. Each case supplies
+project guards across 726 complete changed-source commands. Each case supplies
 15 valid edited pairs, wrong-edit assertions and final source restoration.
-Candidate tool45a1529e / VMfd21a46f shares the exact exporter and wrapper with
-adopted controldf4006e0 / VM6ac4dd9e. The40-command primary is separate evidence.
+Candidate tool 45a1529e / VM fd21a46f shares the exact exporter and wrapper with
+adopted control df4006e0 / VM 6ac4dd9e. The 40-command primary is separate evidence.
 
 | Case | Commands | Wall / adopted | CPU / adopted | Wall A/A | Wall / native |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -14,17 +14,17 @@ adopted controldf4006e0 / VM6ac4dd9e. The40-command primary is separate evidence
 | private rg-aot |132|1.00143096|1.00207350|2.353175%|0.56640976|
 | Nushell type-relations |132|0.99990634|0.99738674|1.674626%|0.62010914|
 
-Token improves3.23% wall and3.62% CPU, passing its wall control envelope
-narrowly. Folded improves2.13% wall. The other three cases establish no
+Token improves 3.23% wall and 3.62% CPU, passing its wall control envelope
+narrowly. Folded improves 2.13% wall. The other three cases establish no
 incremental gain. Native comparisons use these matched histories on the
 current host, not earlier hardware or selectively favorable results. Token
 and pgrust hashfn remain slower than ordinary native in this campaign.
 
 All original assertions, selected test inventories, wrong-edit outcomes,
 paired artifacts and source restoration match. The terminal audit verifies
-9,290 unique frozen inputs. Project closure binds122 source inputs and keeps
+9,290 unique frozen inputs. Project closure binds 122 source inputs and keeps
 parser qualification pending: this result does not admit runtime adoption.
-The full114-test parser compatibility and both88-command edited-parser guards
+The full 114-test parser compatibility and both 88-command edited-parser guards
 remain required, followed by qualification against current main's newer Rust
 and launcher changes. These are selected-function/test-body workflows, not
 complete applications or general libtest, unwinding, thread or OS/FFI support.
