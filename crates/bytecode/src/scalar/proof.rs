@@ -279,6 +279,10 @@ pub fn effects(program: &Program) -> Vec<Proof> {
 #[path = "proof_tests.rs"]
 mod tests;
 
+#[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+#[path = "proof/chain_census.rs"]
+mod chain_census;
+
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
 pub struct Access { pub offset: Option<usize>, pub size: usize }
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]

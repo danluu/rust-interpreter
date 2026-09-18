@@ -11,6 +11,14 @@ against compatible private metadata while embedding this installed runtime.
 Private metadata is not an application sysroot. No private metadata, new compiler
 build, exporter relocation, or application qualification is implied here.
 
+For an installed runtime owned by the same checkout, the source-containing std
+preparation CLI accepts `--runtime-compiler-key` in place of `--compiler-key`.
+It retains the ordinary `--namespace`, `--run-id`, and `--workload-lock` inputs,
+exact source-capability requirement and final runtime revalidation. The two
+compiler flags are mutually exclusive; no loader fallback or cross-worktree key
+lookup occurs. [The 23 focused controls passed](../../results/std-runtime-selection-controls-01/README.md).
+Application launcher/exporter integration remains a separate qualification.
+
 ## Admission and API
 
 `identity_for(spec)` validates an entirely supplied specification without reading

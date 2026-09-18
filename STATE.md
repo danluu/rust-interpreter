@@ -1,4 +1,4 @@
-# Current state — September 14, 2026
+# Current state — September 18, 2026
 
 Manual optimization continues indefinitely. The saved goal remains paused.
 The task is a general custom Rust interpreter/direct AArch64 JIT, guided by
@@ -51,60 +51,55 @@ libtest, thread/OS/FFI and real unwinding support remain open. The parser and
 token native gaps still guide optimization; no complete database/shell coverage
 or isolated scratch-cache speedup is claimed.
 
-The current manual branch is `experiment/scalar-indirect-composition-20260914`.
-The aggregate branch and immutable candidate remain archived.
-Main still adopts df4006e0; the aggregate runtime is experimental. Prior
-path/store-log and narrower scalar variants failed their predeclared changed-source
-performance gates and remain parked. No unchanged-build timing is an adoption
-measure.
+The current manual branch is `experiment/guarded-capture-census-20260918`.
+Main still adopts df4006e0. The aggregate and native-indirect compositions remain
+archived after failing their original changed-source wall gates. The indirect
+composition passed all correctness controls, 122 strict/cache commands and three
+exact profiles, then completed the full 40-command token primary with wall ratio
+1.00299236, CPU ratio 0.99040808 and wall A/A envelope 3.379272%. It was parked;
+no larger comparison or unchanged retry was started.
+[Indirect assessment](results/scalar-indirect-screen-token-01/ASSESSMENT.md).
 
-The exact wider-boundary census identifies 132 structural candidates. Typed
-confined proof with ordinary Call zeroes admits 32, retaining 3 block and 66
-exhaustive samples. The combined graph preserves full result bytes and every
-original PC against independent projections and byte oracles. Six native ABI
-controls and 367 bytecode tests pass in debug/release, with 16 existing diagnostics
-ignored. The custom emitter now has a private 64-byte payload and one body
-execution; this qualification did not widen production selection.
-[Combined census](results/scalar-aggregate-census-02/assessment.md),
-[native ABI qualification](results/scalar-aggregate-abi-01/assessment.md).
+Three disabled observers now narrow the next runtime work. Exact re-emission
+attributes ordinary code generation mainly to region emission and liveness,
+but its total warm host cost is only 66–114ms in these captures. Existing known
+immutable Load/Copy operands account for 0/5/3 block/exhaustive/parser samples.
+Guarded external value forwarding has only 2/2/0 available sites and no selected
+samples. None warrants a runtime implementation or new timing screen yet.
+[Emission stages](results/jit-emission-stages-01/ASSESSMENT.md),
+[immutable reads](results/immutable-read-census-01/ASSESSMENT.md),
+[guarded values](results/guarded-value-census-02/ASSESSMENT.md).
 
-The complete aggregate Call bridge passes seven focused controls and374 bytecode
-tests/profile, including complete memory on error exits. The final census retains
-all32 candidates in the combined native ABI in both profile modes (28,904
-unprofiled bytes; maximum368-byte spill frame). Immutable tool3081569232 /
-VM5fd0c1c7 retains the adopted compiler/exporter/wrapper. It passes637 workspace
-tests/profile,407 Python tests with22 declared skips,121 strict/cache commands,
-and three exact original profiles/code reconstructions. All stages are closed.
-No performance improvement or adoption follows from this qualification.
+The resumed September 18 inspection confirms the last census finished and its
+closure is intact. No unfinished command from this run was inferred to be active.
+Suggestions remain unchanged. The independent disk monitor reports stale status;
+this task uses fresh disk admission checks and does not repair or restart it.
+The completed indirect primary's compiler intermediates were already retired:
+3,147 files, about 1.47GiB actual space, all 2,532 protected hashes unchanged.
 
-The exhaustive-only changed-source primary completed all40 commands and failed
-its prospective wall gate. Wall ratio0.99908220 is inside the4.742435% A/A
-envelope; CPU ratio0.99278538 passes its conditions. Original assertions, wrong
-edits, bytecode equality and restoration pass. Candidate3081569232 is parked;
-no full comparison, held-out guard or unchanged-candidate retry was started.
-Its execution stage changed by a descriptive median+5.110ms, despite higher
-scalar Call coverage. Main remains df4006e0. The preceding startup failure ran
-only native/baseline cold commands and is separately closed.
-[Primary assessment](results/scalar-aggregate-screen-exhaustive-02/assessment.md),
-[build](results/scalar-aggregate-build-01/assessment.md),
-[strict checks](results/scalar-aggregate-qualification-01/assessment.md),
-[profiles](results/scalar-aggregate-profile-01/assessment.md).
+The smaller range-admission census is also complete: 43/59/7 new groups but
+only 14/0/0 block/exhaustive/parser samples. It preserves exact original code and
+all previously selected proofs. Defer smaller runtime guards and keep the
+threshold of eight. Frame-initialization review confirms prior proof extensions and clearing rewrites
+already address that area; register-array zeroing is absent in retained profiles.
+[Range admission](results/range-admission-census-01/ASSESSMENT.md).
 
-Closed aggregate costs show all137 old scalar bodies have unchanged instruction
-counts and only+48-byte SP access immediates. Verify has495–578 successful
-profiled words; these bounds do not imply a speedup. Both cost analyses and all
-retirements are closed. Protected compiler-intermediate retirement recovered
-about7.4GiB while preserving executable/evidence hashes.
+A bounded scalar call-chain census passes after two retained diagnostic failures.
+It admits 57 additional initialized/confined direct-call DAGs but selects no
+Call/Return samples in either current token capture. Defer parent scalar graphs.
+Four private external payload slots find 99 reuses in three functions, but only
+15 block source-address/load samples and none in exhaustive/parser, before capture
+cost. Defer this new runtime cache too.
+[Call-chain scope](results/scalar-chain-census-03/ASSESSMENT.md),
+[external captures](results/guarded-capture-census-01/ASSESSMENT.md).
 
-Next compose the qualified native indirect transition with the adopted df4006e0
-runtime, retaining scalar Calls and scratch memory reuse. Earlier indirect
-screens used baseline35df4077, so this composition has not been measured. Keep
-their failures and do not sum estimates. Initial focus checks cover warm
-polymorphic targets with scalar children, budget/profile identity, exact metadata
-and strict artifact/option rejection, followed by all existing qualification.
-Only then use the unchanged full-token changed-source primary and conditional
-project/parser guards. No aggregate policy or successor-flush change is included.
-[Composition plan](benchmarks/experiments/scalar-indirect-composition/PLAN.md).
+Next qualify a new composition of native indirect transitions, successor-only
+spilling and checked readonly scalar leaves on the adopted scalar/scratch runtime.
+Keep all isolated failures; infer no additive gain. Require new complete memory,
+fault, profile, strict/cache and original-test qualification, then the unchanged
+full-token changed-source primary. No aggregate output expansion, new memory
+capture policy or smaller range guard is included. Preserve current main's peer
+compiler-selection fixes when publishing or integrating launcher changes.
 
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
@@ -113,6 +108,6 @@ and the 8 GiB child floor. The disk monitor is read-only for this task; do not
 start a competing repair or cleaner. The saved goal stays paused while manual
 optimization continues.
 
-The September 13 12:45 suggestions were re-read on September 14 and their SHA
+The September 13 12:45 suggestions were re-read on September 18 and their SHA
 remains unchanged: 4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f.
 [Review and dispositions](docs/SUGGESTIONS-REVIEW-20260913-1245.md).
