@@ -9,19 +9,34 @@ This establishes compiler/source installation, not application latency.
 
 The source-containing std CLI and ordinary launcher now have explicit native
 runtime selectors. The launcher requires a separately keyed tool composition
-with matching recorded exporter/wrapper compiler roles. Its 45 focused controls
-passed with mocked children; actual prepared std, an exporter built for the final
-runtime path, and application correctness checks are the next steps. The beta
-auxiliary build sysroot has passed fresh metadata inspection; its missing LLVM
-provider is being added in a separate composition, with a real debug-stripping
-control before the exporter rebuild.
+with matching recorded exporter/wrapper compiler roles. The actual installed
+runtime has now prepared the shared source-containing std sysroot; all seven
+children and all published source/metadata bytes were independently verified.
+See [std preparation evidence](../../../results/runtime-std-preparation-01/README.md).
+The beta auxiliary build sysroot also passed its real debug-stripping control.
+An exporter built for the final runtime path and application correctness remain
+the next gates; these setup results establish no application latency gain.
+
+The ordinary edit workflow can now compare application compiler flags with the
+runtime, exporter, VM and prepared std held fixed. Flags are applied after tool
+and std validation, and the runner supports the canonical shared workload lock
+from a separate installation checkout. Its 67 focused controls passed, including
+a synthetic complete edit history and mutation rejection. See
+[workflow controls](../../../results/runtime-workflow-controls-03/README.md).
+These controls do not replace a real cache-off/cache-on application history.
 
 [Target selection](TARGET-SELECTION.md) retains Ruff as the immediate measured
 development target, adds pinned Oxc as another development target, and keeps
-Nushell for regression/stress coverage. Oxc's workflow and explicit native
-compiler accounting passed 30 controls. Source/toolchain acquisition and real
-native compatibility are still pending; no Oxc timing or holdout success is
-claimed. The sub-0.500-second target remains unmet.
+Nushell for regression/stress coverage. Oxc's pinned source, registry and native
+toolchain acquisition are complete. Its full library-test crate compiled and
+the three unchanged plugin tests passed in the original, three edited and
+restored states; the deliberately wrong edit failed all three assertions.
+However, the installed auxiliary stripping executable could not find its LLVM
+provider. The complete history and roughly 8–12-second edited-build observations
+are retained as [warning-qualified evidence](../../../results/oxc-native-compatibility-01/README.md),
+not a clean performance baseline. A matching official toolchain component is
+being inspected before a fresh clean history. No holdout success is claimed.
+The sub-0.500-second target remains unmet.
 
 The strict target is still unmet. The latest complete screen has a 5.3454s
 candidate median and no candidate edit below 0.500s. No single proposed change
