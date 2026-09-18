@@ -168,15 +168,24 @@ RUN, adopted-current-runtime-sampling-prepare-02 and the successful analysis
 supervisor. Reuse the closed9 attribution controls from vmmap-label-compatibility-01.
 The samples are perturbed diagnostic windows, never latency measurements.
 
-The publication worktree has local commit2d87c58e containing exactly the four
-sampler-format files (two callers, shared parser, six regression controls),
-based on current main and preserving peer code. It is not pushed yet. Prepared
-vmmap-label-compatibility/qualify_main.py must run the merged Python suite there
-under the root benchmark lock (run vmmap-main-contracts-01); archive its terminal
-and hashes, then push main normally after checking for peer updates. The fix
-has427 root Python passes/22 declared skips,9 attribution passes,14 retained-map
-checks and now two successful live captures. The next optimization must follow
-actual attributed native-PC costs, not another unchanged composition timing.
+The sampler-format fix is published on main1dec3a58. Its four-file patch was
+tested at2d87c58e:478 Python tests discovered,456 passed,22 declared skips.
+Peer Oxc evidence changes were merged afterward; all467 tested inputs and their
+inventory remained identical. The qualification is closed. Root replay proof
+also includes9 attribution controls,14 retained reports and two live captures.
+
+Fresh sampling02 is closed:1,933/1,429 generated block/exhaustive samples,
+zero unassigned. Copy466/234,Call390/334,Load237/86,budget184/80,flush122/120,
+Return120/168; scalar bodies65/126. Closure verifies50 frozen inputs,72 evidence
+files and214 archived adopted-VM build inputs. Analysis-only admission retry
+19433/19474 passed; neither guest repeated. Source/binary separation remains
+explicit. These are partial diagnostic windows, not speedup measurements.
+
+Next investigate exact repeated cold exit tails within native functions. A
+bounded saved-code census must establish byte identity, terminal control flow
+and branch reach before implementation. A smaller generated image could improve
+hot instruction locality but needs a fresh changed-source test; do not retime
+the rejected address/budget/spill/composition candidates unchanged.
 
 Token/rg-aot supervisors ended normally. Folded/pgrust case controllers also
 finished normally, but their outer post-case audits timed out on the shared lock.
