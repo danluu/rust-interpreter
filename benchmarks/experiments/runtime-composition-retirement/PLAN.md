@@ -45,3 +45,12 @@ from the closed scratch-memory-values-parser-edits-repository-01 history, verifi
 all88 commands and114 original outcomes, and preserves its263 retained evidence
 files and all executables. It never touches the new composition's parser caches
 (which have not been created), the shared build target or any private/peer path.
+
+The repository-parser attempt found zero eligible files and deleted nothing.
+retire_folded.py instead targets the seven caches from the completed
+runtime-composition-edit-folded-02 case. It requires checkpoint2 and the successful
+supplemental evidence repair, resolving its earlier live-ledger reference through
+the exact immutable snapshot. All154 commands, source restoration, original
+assertions, artifacts and suites are revalidated under the same locking,
+open-file, file-identity and protected-hash rules. No current Nu/parser cache or
+private cache is selected, and no measurement changes.
