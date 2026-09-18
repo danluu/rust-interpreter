@@ -3,8 +3,8 @@
 This is an integration plan, not an adoption decision. The candidate is tool
 45a1529e / VMfd21a46f. It combines native indirect transitions, checked readonly
 scalar leaves and successor-only spilling on the adopted scratch/scalar runtime.
-The token, folded, pgrust and private rg-aot histories pass; Nushell and the
-parser guards are still pending.
+All five project histories pass726 commands; the parser guards are still pending.
+The separate project closure verifies9,290 frozen inputs and122 source bindings.
 
 Before integration require all five complete project histories (726 commands),
 all114 original parser tests and both88-command edited-parser guards. Preserve
@@ -55,7 +55,7 @@ four-case checkpoint, complete fifth-case record and all unchanged inputs. It
 retains a failed performance gate as a rejected campaign. The recovery's successful
 audit status does not turn a failed performance gate into a pass. If used, bind
 its separate plan, original failure, recovery terminal and Git source when closing
-and integrating the final campaign. The recovery is currently unexecuted.
+and integrating the final campaign. The recovery remains unexecuted; the final Nushell supervisor completed normally.
 
 close_projects.py can separately close the726-command project evidence before
 parser qualification. Its explicit `parser_guards_complete: false` and
@@ -70,8 +70,8 @@ the separate project closure, exact132-command evidence and source restoration,
 then locks each namespace and verifies open files before unlinking nonexecutable
 compiler intermediates. It preserves native/parser/shared/private/peer caches,
 executables and every recorded artifact. Its paired close helper rechecks all
-retained hashes and removed paths. Both helpers remain unexecuted; current
-Nushell caches are needed until the history and project audit finish.
+retained hashes and removed paths. Both helpers remain unexecuted. The completed history and project closure now
+satisfy their evidence prerequisite; actual cleanup still requires fresh checks.
 
 Production Python has changed on main since the measured launcher was frozen.
 Review the exact diff and merge the indirect-option path with main's current

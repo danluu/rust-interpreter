@@ -74,7 +74,7 @@ Preserve the original failure; never mask counts or use entropy replay for timin
 
 The40-command primary passes: wall0.96398368, CPU0.95353329, wall A/A2.221367%.
 No primary pair is reused in the full campaign. The fresh full comparison now
-has four closed passing cases and594 commands, with15 valid edited pairs per case:
+has five closed passing project cases and726 commands, with15 valid edited pairs per case:
 
 | Case | Commands | Wall / adopted | CPU / adopted | Wall A/A | Wall / native |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -82,6 +82,7 @@ has four closed passing cases and594 commands, with15 valid edited pairs per cas
 | folded |154|0.97865347|0.98459988|1.057504%|0.98477876|
 | pgrust hashfn |154|1.00313849|1.00271664|1.826877%|1.04813587|
 | private rg-aot |132|1.00143096|1.00207350|2.353175%|0.56640976|
+| Nushell type-relations |132|0.99990634|0.99738674|1.674626%|0.62010914|
 
 Token passes narrowly. Pgrust/private differences are within control variation
 and establish no incremental gain. Current native ratios are from these matched
@@ -91,15 +92,24 @@ frozen inputs and source restoration pass. The first full setup failed after
 two original-state commands due to a copied scalar-option assertion; it had no
 edited pairs and remains archived. All02 case namespaces are independent of it.
 
-Current active campaign: `.work/runtime-composition-full-02`, final Nushell phase.
-Supervisor `runtime-composition-full-nushell-02`, PID82525, started September18
-15:36; case `runtime-composition-edit-nushell-02`. Fresh disk admission passed
-at47.58GiB against the actual frozen47.03GiB reservation (the handoff's26GiB
-estimate was stale). At15:48,17 of132 commands completed and about30GiB remained.
-The wrong-edit and first valid-edit outcomes match. Check terminal receipts and
-current resources; do not infer completion from these progress notes. Preserve
-all `scripts/*.py` and runtime-composition-full sources and its frozen inputs.
-Use840eee0c as the Git binding for those unchanged controller/script sources.
+The five-project campaign is complete. Nushell supervisor82525, child82528,
+started September18 at15:36 and finished normally at16:01 with132 commands.
+Its wall ratio0.99990634 and CPU0.99738674 establish no incremental speedup;
+wall/CPU noise-inclusive margins1.01665260/1.00274318 pass the1.05 limits.
+The full726-command final audit passes9,290 unique frozen inputs. A separate
+project closure binds122 source inputs and explicitly leaves parser guards
+pending and runtime adoption false. No final-audit recovery was needed.
+
+Parser compatibility's first supervisor83909/child83912 expired after45seconds
+waiting for the shared lock, before preflight or any guest command. No raw
+parser namespace exists. Its admission failure is retained separately. An early
+closure attempt also failed without writing anything; always check the terminal
+receipt before closing. Retry supervisor runtime-composition-parser-admission-02
+may run the unchanged parser-01 controller; close_parser.py accepts that terminal
+and binds the original admission failure. Both performance histories remain
+unstarted. Preserve all scripts and frozen runtime-composition-full inputs through
+parser histories/final closure. Use840eee0c for their unchanged Git binding.
+Fresh free space was26.55GiB; parser history admission remains24GiB and child8GiB.
 
 Token/rg-aot supervisors ended normally. Folded/pgrust case controllers also
 finished normally, but their outer post-case audits timed out on the shared lock.
@@ -110,12 +120,12 @@ those references through exact original hashes, preserving all original receipts
 Use each case's checkpoint-evidence-repair.json when auditing those older closures.
 Checkpoint4 is closed and admits only Nushell. No peer process was altered.
 
-After Nushell, require all726 commands and all five gates. If the outer controller
-again ends only on the post-case lock timeout, prepared recover_final_audit.py
-can finish that audit without a guest execution, preserving any failed timing
-gate. It is unexecuted. Prepared close_projects.py can close project evidence
-separately while marking parser qualification pending; this permits safe retirement
-of completed project caches if necessary. Neither receipt admits runtime adoption.
+The completed project closure permits retirement of exactly the three current
+Nushell custom compiler caches if later disk admission needs it. Prepared
+retire_current_nushell_custom.py and its close helper remain unexecuted. They
+preserve all executables, artifacts, native/parser/private/shared/peer caches.
+Neither cleanup nor project closure admits adoption. The final closure now
+also binds any audit recovery and its own helper sources; recovery is unused.
 
 Then run candidate parser compatibility (`runtime-composition-full/parser.py`,
 run runtime-composition-parser-01,114 original tests), and the prepared16-control
@@ -125,8 +135,11 @@ required. Their admission is24GiB, child floor8GiB. Stop the unstarted successor
 on any failed guard. The three terminal-parser-decision controls already pass
 and are closed. The compatibility/protocol/history controllers remain unexecuted.
 Final close_campaign.py and current-main integration still require the parser
-results. Preserve main's newer launcher/compiler changes and qualify their actual
-merged path; do not assume only an optional installer module changed.
+results. Last inspected main237510c3 includes2ba26966 (bounded leaf scans, shared
+call-graph facts and exporter summary CFG), plus091f9ea9 (runtime collision
+ancestor scans). Preserve those Rust/launcher changes and qualify the merged
+binaries, full contracts, strict/cache paths and a newly declared matched
+changed-source comparison; frozen timings do not qualify that new combination.
 [Integration plan](docs/RUNTIME-COMPOSITION-INTEGRATION-20260918.md).
 
 Disk cleanup is complete and closed for three exact public cache groups:
@@ -138,7 +151,8 @@ repository-parser attempt found zero eligible files and removed nothing; its
 failed/no-removal receipt is retained. All executables, installed tools, bytecode,
 suites and recorded evidence remain. Shared target, private and peer caches
 were excluded. Cleanup's logical bytes differ from observed free-space changes.
-The independent monitor's status is stale; use fresh checks without restarting it.
+The independent monitor is reporting fresh five-second samples again; its
+latest status warns below32GiB. Use fresh admission checks without controlling it.
 
 Previous isolated indirect, readonly and successor-flush candidates remain parked
 under their original failed gates; the new composition does not relabel them or

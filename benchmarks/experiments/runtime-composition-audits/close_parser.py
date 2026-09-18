@@ -11,14 +11,27 @@ from suite_reports import read_report,validate_report
 
 def main():
     run='runtime-composition-parser-01';revision=sys.argv[1]
-    out=ROOT/'results'/run;raw=ROOT/'.work'/run;outer=ROOT/'.work/experiments'/run
+    supervisor=sys.argv[2] if len(sys.argv)>2 else run
+    assert supervisor==run or supervisor=='runtime-composition-parser-admission-02'
+    out=ROOT/'results'/run;raw=ROOT/'.work'/run;outer=ROOT/'.work/experiments'/supervisor
     s=json.loads((out/'summary.json').read_text());t=json.loads((outer/'status.json').read_text());p=json.loads((raw/'plan.json').read_text())
     assert s['status']=='passed' and s['commands']==1 and s['custom_tests_passed']==s['native_tests_reused']==114
     assert s['source_unchanged'] and s['original_assertions_match']
     assert t['status']=='finished' and t['returncode']==0 and t['owner']==t['cwd']==str(ROOT)
+    assert t['command'][-2:]==['--run-id',run]
     assert sha(outer/'command.log')==t['log_sha256'] and sha(outer/'plan.json')==t['plan_sha256']
     for key in ['plan','records']:assert sha(raw/(key+'.json'))==s[key+'_sha256']
-    bindings={}
+    bindings={};admission_failure=None
+    if supervisor!=run:
+        failed=ROOT/'.work/experiments'/run
+        failure=json.loads((failed/'status.json').read_text())
+        assert failure['status']=='finished' and failure['returncode']==1
+        assert failure['owner']==failure['cwd']==str(ROOT)
+        assert sha(failed/'command.log')==failure['log_sha256'] and sha(failed/'plan.json')==failure['plan_sha256']
+        assert 'TimeoutError: timed out after 45s waiting for benchmark lock' in (failed/'command.log').read_text()
+        for name in ['status.json','plan.json','command.log']:
+            path=failed/name;bindings[str(path.relative_to(ROOT))]=dict(kind='retained',fingerprint=fingerprint(path))
+        admission_failure=dict(supervisor=run,terminal_sha256=sha(failed/'status.json'),guest_commands=0)
     for path,digest in p['frozen'].items():
         assert fingerprint(ROOT/path)==digest,path
         if path.startswith(('.work/','results/')):bindings[path]=dict(kind='retained',fingerprint=digest)
@@ -32,7 +45,8 @@ def main():
     assert not (out/'closure.json').exists();write(raw/'bindings.json',bindings);(out/'terminal.json').write_bytes((outer/'status.json').read_bytes())
     write(out/'closure.json',dict(status='closed',source_revision=revision,frozen_inputs=len(bindings),all_hashes_verified=True,
         bindings=str((raw/'bindings.json').relative_to(ROOT)),bindings_sha256=sha(raw/'bindings.json'),
-        summary_sha256=sha(out/'summary.json'),terminal_sha256=sha(out/'terminal.json'),performance_measurement=False))
+        summary_sha256=sha(out/'summary.json'),terminal_sha256=sha(out/'terminal.json'),
+        terminal_supervisor=supervisor,prior_admission_failure=admission_failure,performance_measurement=False))
     print('Closed 114 parser tests and',len(bindings),'frozen inputs')
 if __name__=='__main__':
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
