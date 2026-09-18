@@ -1,7 +1,7 @@
-This metadata successor passed four synthetic controls and one actual 39-command
-run on September 18. It prepares a fresh B2 build sysroot plan; it has not assembled
-that sysroot, stripped an object, rebuilt an exporter, or measured application
-performance.
+This successor passed four metadata controls, one actual 39-command metadata run,
+six strip-parser controls, and one 19-command assembly/real-strip run on September
+18. The fresh B2 build sysroot and its auxiliary strip tool are qualified for this
+bounded control. No exporter rebuild or application performance result is claimed.
 
 The September 13 launch remains unrun. Its source and proof bytes still match,
 but it cannot run unchanged: all recorded device identifiers changed from
@@ -40,7 +40,26 @@ The independent verification record is
 The four-control summary is `.work/b2-readmission-controls-01/summary.json`,
 SHA-256 `a5bd4b244fa3bc1bc40079db222a89b70f04749c9590cb841590faa59a5a3e29`.
 
-Assembly and real debug-object strip qualification require their own reviewed
-controller and explicit launch. The plan retains the separate stock-compiler
-controls and fresh exporter rebuild requirements; metadata success does not
-establish either of those results.
+The separately reviewed assembly copied all 335 files into fresh ordinary inodes.
+Both actual auxiliary-tool invocations loaded the intended beta LLVM library.
+The debug object shrank from 14,120 to 4,136 bytes: nine DWARF sections disappeared
+and all five non-debug section payloads, sizes and flags remained identical.
+The source and original object were unchanged. All 334 original B files remain
+unchanged. The object was not executed.
+
+The assembly receipts are under `.work/beta-auxiliary-assembly-01`:
+
+- `receipt.json`: `e7ca6e60ba69c5ec2bfd66e7e24d97aa90979441401ccb77e5548dce8502ef94`
+- `strip-proof.json`: `c40d917eaabb2fb65621ca8a963aac3b2ac74e49e3fce7266252e2b763470b5b`
+
+The independent verification record is
+`.work/beta-auxiliary-assembly-independent-verification-01.json`, SHA-256
+`76a2f43d58c35801d5091fba45aa404025d2eb079fbf3d7f10ab80324fa768d7`.
+It rehashed all 1,009 frozen source/proof inputs, eleven retained source snapshots,
+335 B2 files, 836 proof copies and originals, and 334 original B files, and checked
+all 19 raw command associations. The six-control summary is
+`.work/b2-strip-controls-01/summary.json`, SHA-256
+`ac12405a7ae964642b5af71043e02e61e91d6a0706cd9e71a1e4a0079b0e690a`.
+
+Separate current-platform stock-compiler controls, a fresh exporter build bound
+to the installed runtime, and application qualification remain required.
