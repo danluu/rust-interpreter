@@ -376,7 +376,8 @@ def _main(resources):
     manifest=args.manifest_path.resolve()
     stage=time.perf_counter()
     from custom_compiler import load_compiler, validate_tool_compiler
-    from custom_cargo import load_cargo
+    if args.cargo_key is not None:
+        from custom_cargo import load_cargo
     custom=load_compiler(ROOT,args.compiler_key) if args.compiler_key is not None else None
     if custom:custom.environment(os.environ) # Reject conflicts before any compilation.
     if args.stable_mono_cgu_partitioning is not None:
