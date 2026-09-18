@@ -28,8 +28,8 @@ def main():
     out.mkdir(exist_ok=True);assert not (out/'closure.json').exists()
     if terminal['returncode']==0:
         summary=json.loads((out/'summary.json').read_text())
-        assert summary['status']=='passed' and summary['tests']==23 and summary['guest_commands']==0 and summary['commands']==1
-        assert int(count[1])==23 and stderr.rstrip().endswith('OK')
+        assert summary['status']=='passed' and summary['tests']==25 and summary['guest_commands']==0 and summary['commands']==1
+        assert int(count[1])==25 and stderr.rstrip().endswith('OK')
         assert sha(raw/'inputs.json')==summary['inputs_sha256']
     else:
         assert not (out/'summary.json').exists()

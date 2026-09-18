@@ -1,6 +1,7 @@
 import copy
 import unittest
 import workflows
+from prerequisites import runtime_args,validate_runtime_options
 
 
 def rows(candidate=1.8, duplicate=2.02, anchor=2.2):
@@ -14,6 +15,26 @@ def rows(candidate=1.8, duplicate=2.02, anchor=2.2):
 
 
 class FullComparisonTests(unittest.TestCase):
+    def test_runtime_options_preserve_scalar_baseline_duplicate_and_fixed_anchor(self):
+        expected=dict(baseline=(True,False),duplicate=(True,False),candidate=(True,True),anchor=(False,False))
+        for mode,(scalar,indirect) in expected.items():
+            command=['vm']+runtime_args(mode)
+            self.assertEqual('--jit-scalar-calls' in command,scalar)
+            self.assertEqual('--jit-indirect-calls' in command,indirect)
+            self.assertTrue(validate_runtime_options(dict(jit_scalar_calls=scalar,jit_indirect_calls=indirect),command,mode))
+
+    def test_runtime_options_reject_mismatched_report_or_command_for_every_arm(self):
+        for mode in ['baseline','duplicate','candidate','anchor']:
+            command=['vm']+runtime_args(mode)
+            report=dict(jit_scalar_calls=mode!='anchor',jit_indirect_calls=mode=='candidate')
+            for key,flag in [('jit_scalar_calls','--jit-scalar-calls'),('jit_indirect_calls','--jit-indirect-calls')]:
+                wrong=dict(report);wrong[key]=not wrong[key]
+                with self.assertRaises(AssertionError):validate_runtime_options(wrong,command,mode)
+                wrong_command=command[:]
+                if flag in wrong_command:wrong_command.remove(flag)
+                else:wrong_command.append(flag)
+                with self.assertRaises(AssertionError):validate_runtime_options(report,wrong_command,mode)
+
     def test_primary_requires_incremental_total_and_cpu_gains(self):
         self.assertTrue(workflows.assessment(rows(),'token')['gate_passed'])
         for changed in [rows(candidate=2),rows(anchor=1.9),rows(duplicate=2.22)]:

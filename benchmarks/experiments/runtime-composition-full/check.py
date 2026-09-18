@@ -31,14 +31,14 @@ def main():
             env=dict(os.environ, PYTHONDONTWRITEBYTECODE='1'), receipt_path=work / 'active.json',
             receipt=dict(stage='full protocol controls'))
         (work / 'stdout').write_text(out); (work / 'stderr').write_text(err)
-        assert child.returncode == 0 and 'Ran 23 tests' in err and err.rstrip().endswith('OK')
+        assert child.returncode == 0 and 'Ran 25 tests' in err and err.rstrip().endswith('OK')
         assert all(sha(ROOT / p) == h for p, h in frozen.items())
         from prerequisites import load
         load()  # Bind the actual retained controls as well as the synthetic negatives.
         result = ROOT / 'results' / args.run_id; result.mkdir(exist_ok=False)
-        write(result / 'summary.json', dict(status='passed', tests=23, guest_commands=0, commands=1,
+        write(result / 'summary.json', dict(status='passed', tests=25, guest_commands=0, commands=1,
             raw=str(work.relative_to(ROOT)), inputs_sha256=sha(work / 'inputs.json'), performance_measurement=False))
-        print('PASS: 23 full comparison controls', flush=True)
+        print('PASS: 25 full comparison controls', flush=True)
 
 
 if __name__ == '__main__': main()

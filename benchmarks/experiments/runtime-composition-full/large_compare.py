@@ -22,7 +22,7 @@ from workflow_measurements import source_states, child_usage, child_cpu_since
 from workflow_io import SourceEdit, capture, require_space, write_json as write
 from suite_reports import read_report, validate_report, validate_runtime_limits
 from std_mir import checked_std_mir
-from prerequisites import BASELINE_KEY, CANDIDATE_KEY, load as load_prerequisites
+from prerequisites import BASELINE_KEY, CANDIDATE_KEY, load as load_prerequisites, runtime_args, validate_runtime_options
 from screen import native_executable
 
 BASELINE = BASELINE_KEY
@@ -104,9 +104,9 @@ def main():
     interpreter.ROOT = root
     assert re.fullmatch('runtime-composition-edit-'+args.case+r'-\d{2}', args.run_id)
     wide, memory, proofs = load_prerequisites()
-    harness_path=root/'results/runtime-composition-full-protocol-02/summary.json'
+    harness_path=root/'results/runtime-composition-full-protocol-03/summary.json'
     harness=json.loads(harness_path.read_text())
-    assert harness['status']=='passed' and harness['tests']==23
+    assert harness['status']=='passed' and harness['tests']==25
     harness_inputs=root/harness['raw']/'inputs.json'
     assert sha(harness_inputs)==harness['inputs_sha256']
     assert all(sha(root/p)==h for p,h in json.loads(harness_inputs.read_text()).items())
@@ -209,8 +209,7 @@ def main():
                             command += ['--test-filter', case['tests'][0], '--test-exact']
                         else:
                             for name in case['tests']: command += ['--entry',name]
-                        command += ['--jit-scalar-calls']
-                        if mode == 'candidate': command += ['--jit-indirect-calls']
+                        command += runtime_args(mode)
                         command += ['--toolchain-lookup', 'cached']
                         run_env=custom_env
                     else:
@@ -233,9 +232,7 @@ def main():
                     if mode in CUSTOM:
                         launch,=[json.loads(s.split(': ',1)[1]) for s in stderr.splitlines() if s.startswith('rust-interp-launch: ')]
                         assert launch['tool_key']==keys[mode] and launch['function_cache']=='auto'
-                        assert launch.get('jit_scalar_calls', False) == (mode == 'candidate')
-                        assert '--jit-scalar-calls' in command
-                        assert ('--jit-indirect-calls' in command) == (mode == 'candidate')
+                        assert validate_runtime_options(launch,command,mode)
                         observed = launch['toolchain_lookup']
                         assert observed['mode'] == 'cached'
                         assert observed['outcome'] in (['miss','hit'] if cycle == 0 and state == 0 else ['hit'])

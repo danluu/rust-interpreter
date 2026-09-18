@@ -4,7 +4,7 @@ The closed primary passes: wall0.96398368 versus2.221367% A/A, CPU0.95353329.
 Its40 commands stay separate; none becomes a full-comparison pair. Require666
 Rust tests/profile,443 Python tests (421 passed,22 declared skips),122 strict/cache
 commands, five map/nine forwarding controls, six exact fresh profiles,26 fresh
-selected/prepared compatibility commands and23 full-protocol controls.
+selected/prepared compatibility commands and25 full-protocol controls.
 
 Candidate45a1529e / VMfd21a46f combines native indirect transitions, checked
 readonly scalar leaves and successor-only spilling on adopted scratch/scalar
@@ -64,7 +64,14 @@ case summaries, artifacts and restored sources before proceeding. No completed
 case runs again. Failed gates end the campaign and cannot be resumed. This
 permits safe cache retirement between cases without changing their histories,
 rotations, sample counts, or latency gates. Two additional controls reject
-mismatched checkpoints and attempts to resume failed/finished campaigns (23 total).
+mismatched checkpoints and attempts to resume failed/finished campaigns (25 total).
 
 The separate matched edited-parser comparison is also required before adoption;
 114-test compatibility alone is not parser performance evidence.
+
+The first full-history setup stopped after native and adopted baseline original
+builds because a copied report assertion still expected candidate-only scalar
+flags. No valid edit pair was measured. Retain its two commands and restored
+source. The new campaign uses fresh02 case namespaces, central arm validation
+shared by both controllers and two additional option controls. Do not splice the
+failed setup prefix into the new history or change any performance gate.

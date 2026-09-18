@@ -22,7 +22,7 @@ from workflow_measurements import source_states, child_usage, child_cpu_since
 from workflow_io import SourceEdit, capture, require_space, write_json as write
 from test_discovery import read_listing, read_selection
 from suite_reports import guest_test_failure, read_report, validate_report, validate_runtime_limits
-from prerequisites import BASELINE_KEY, EXPORTER_KEY, CANDIDATE_KEY, load as load_prerequisites
+from prerequisites import BASELINE_KEY, EXPORTER_KEY, CANDIDATE_KEY, load as load_prerequisites, runtime_args, validate_runtime_options
 from screen import native_executable
 
 CASES = {'token': ('fre', 'token-phrase-allocation', 'token_phrase::tests::', 'prepared-suite-token-01'),
@@ -118,9 +118,9 @@ def main():
         acquire_lock(lock, 45)
         admission = 14 if project == 'fre' else 10
         require_space(ROOT, admission)
-        harness_path = ROOT / 'results/runtime-composition-full-protocol-02/summary.json'
+        harness_path = ROOT / 'results/runtime-composition-full-protocol-03/summary.json'
         harness = json.loads(harness_path.read_text())
-        assert harness['status'] == 'passed' and harness['tests'] == 23
+        assert harness['status'] == 'passed' and harness['tests'] == 25
         baseline_proof, candidate_proof, proofs = load_prerequisites()
         harness_inputs = ROOT / harness['raw'] / 'inputs.json'
         assert sha(harness_inputs) == harness['inputs_sha256']
@@ -236,8 +236,7 @@ def main():
                 for field in ['inline_leaves', 'trap_unsupported_calls', 'run_try_callbacks']:
                     if ref.get(field): command += ['--' + field.replace('_', '-')]
                 if mode in CACHED: command += ['--function-cache', 'auto']
-                if mode in CACHED: command += ['--jit-scalar-calls']
-                if mode == 'candidate': command += ['--jit-indirect-calls']
+                command += runtime_args(mode)
                 command += lookup_args(mode)
                 selected_env = guest
             else:
@@ -270,9 +269,7 @@ def main():
                 assert len(launches) == 1
                 launch = launches[0]
                 validate_lookup(launch, mode, cycle, state)
-                assert launch.get('jit_scalar_calls', False) == (mode == 'candidate')
-                assert ('--jit-scalar-calls' in command) == (mode in CACHED)
-                assert ('--jit-indirect-calls' in command) == (mode == 'candidate')
+                assert validate_runtime_options(launch,command,mode)
                 assert launch['function_cache'] == ('auto' if mode in CACHED else 'off')
                 artifact = Path(launch['artifact_path'])
                 row.update(launch=launch, artifact=snapshot(artifact),

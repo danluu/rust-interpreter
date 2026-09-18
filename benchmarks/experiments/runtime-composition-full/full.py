@@ -45,7 +45,7 @@ def verify_manifest(manifest):
         assert actual==digest, 'frozen input changed: '+name
 
 def case_path(case):
-    return ROOT/'results'/('runtime-composition-edit-'+case+'-01')/'summary.json'
+    return ROOT/'results'/('runtime-composition-edit-'+case+'-02')/'summary.json'
 
 def audit_cases(cases):
     merged={};audit=[]
@@ -105,8 +105,8 @@ def main():
     directory=Path(__file__).parent
     paths=[p for p in directory.iterdir() if p.suffix in ['.py','.md']]
     paths+=list((ROOT/'scripts').glob('*.py'))
-    harness=ROOT/'results/runtime-composition-full-protocol-02/summary.json'
-    proof=json.loads(harness.read_text());assert proof['status']=='passed' and proof['tests']==23
+    harness=ROOT/'results/runtime-composition-full-protocol-03/summary.json'
+    proof=json.loads(harness.read_text());assert proof['status']=='passed' and proof['tests']==25
     inputs=ROOT/proof['raw']/'inputs.json';assert sha(inputs)==proof['inputs_sha256']
     assert all(sha(ROOT/p)==h for p,h in json.loads(inputs.read_text()).items())
     paths += [harness,inputs]
@@ -138,7 +138,7 @@ def main():
     while (case:=next_case(completed)) is not None:
         if CASES.index(case) > CASES.index(args.through): break
         assert all(sha(ROOT/p)==h for p,h in frozen.items())
-        run='runtime-composition-edit-'+case+'-01'
+        run='runtime-composition-edit-'+case+'-02'
         script='workflows.py' if case in CASES[:3] else 'large_compare.py'
         command=[sys.executable,str(directory/script),'--case',case,'--run-id',run]
         if case in CASES[:3]:

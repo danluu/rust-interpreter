@@ -7,8 +7,17 @@ sys.path.insert(0,str(ROOT/'benchmarks/experiments/runtime-composition-screen'))
 from compare_saved_runtime import sha
 from interpreter import installed_tools
 from screen import EXPORTER_KEY,validate_baseline,validate_matched_profile
+from screen import scalar_args as runtime_args
 BASELINE_KEY='df4006e03daad7dd008eab34c24a03390d892ec14e55154c43e2d5568c0bba62'
 CANDIDATE_KEY='45a1529e5e3069e23d2222cfe63758208e6259522dd9c5e520c332600121441b'
+
+
+def validate_runtime_options(launch,command,mode):
+    expected=runtime_args(mode)
+    for key,flag in [('jit_scalar_calls','--jit-scalar-calls'),('jit_indirect_calls','--jit-indirect-calls')]:
+        assert launch.get(key,False)==(flag in expected)
+        assert (flag in command)==(flag in expected)
+    return True
 
 
 def validate_candidate(build,strict,real,profile,screen,closure):
