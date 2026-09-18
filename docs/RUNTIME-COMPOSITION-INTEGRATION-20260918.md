@@ -100,3 +100,17 @@ test explicit forwarding before using it. Reuse the current observation validato
 which knows indirect transitions, and fresh profiles for static instruction
 identity. Historical dynamic counts changed with macOS CPU-feature detection;
 never mask that difference or use entropy replay for performance measurements.
+
+The read-only sampler review identifies three coupled changes: forward
+`--jit-indirect-calls` into the owned VM invocation and record it in the plan;
+validate its boolean value, command agreement and resumable-call requirement
+in summarize_owned_sample.runtime_options; and require the same value in both
+native maps during attribution. Preserve historical plans without that option
+as disabled. Add rejection controls for missing/extra flags, nonboolean values,
+incompatible modes and disagreement between the command and maps. The current
+scalar-runtime-sampling attribution imports the older scalar-private-transfers
+validator; use runtime-composition-workflows/native_observation.py explicitly
+instead. Reuse existing attribution controls only when their source and evidence
+still match. Scalar spans identify whole leaf bodies, so their samples must not
+be reported as individual memory or arithmetic instructions without finer proof.
+These implementation changes remain deferred until frozen qualification closes.
