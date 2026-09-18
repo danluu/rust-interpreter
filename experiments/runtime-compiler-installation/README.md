@@ -19,6 +19,22 @@ compiler flags are mutually exclusive; no loader fallback or cross-worktree key
 lookup occurs. [The 23 focused controls passed](../../results/std-runtime-selection-controls-01/README.md).
 Application launcher/exporter integration remains a separate qualification.
 
+The ordinary launcher also accepts the mutually exclusive
+`--runtime-compiler-key` with an explicit installed `--tool-key`. Its separate
+`owned-native-runtime-tools-v1` composition binds the installed runtime key,
+compiler/driver paths and hashes, actual compiler version, and the full
+build/runtime role record. Publication must retain matching exporter capability
+and `--rust-interp-compiler-roles` wrapper probes through
+`runtime_tools.bind_recorded_wrapper`; loading does not invoke another probe.
+The runtime exporter still checks the actual loaded driver itself.
+
+This initial route requires stock Cargo and excludes the other compiler routing
+experiments. Standard-library MIR requires an explicitly prepared source-paths-v2
+key. Neither an installation nor a matching tool manifest establishes application
+qualification. [All 45 association, launcher and existing compiler/std controls
+passed](../../results/runtime-launcher-selection-controls-01/README.md) with mocked
+Cargo/VM children; real exporter publication and application checks remain pending.
+
 ## Admission and API
 
 `identity_for(spec)` validates an entirely supplied specification without reading
