@@ -111,9 +111,13 @@ mod controls {
         let p=program(vec![wrapper(1),wrapper(2),leaf()]);let rows=check(&p);
         assert!(rows.iter().all(|r|r.candidate.is_some()));
         let c=rows[0].candidate.as_ref().unwrap();assert_eq!((c.depth,c.calls,c.expanded_operations),(3,2,12));
-        for value in [0,1,u64::MAX as u128,1u128<<80,u128::MAX] {
+        for value in [0,1,u64::MAX as u128,1u128<<32,1u128<<63] {
             let result=crate::execute_with_engine(&p,&[value],crate::Limits::default(),crate::Engine::Interpreter).unwrap();
             assert_eq!(result.value,value as u64 as u128);assert_eq!(result.instructions,12);
+        }
+        for value in [1u128<<80,u128::MAX] {
+            let error=crate::execute_with_engine(&p,&[value],crate::Limits::default(),crate::Engine::Interpreter).unwrap_err();
+            assert_eq!(error,"entry argument exceeds its integer width");
         }
         let mut p=p;p.functions[0].code.insert(3,Op::Call{function:2,args:vec![1],destination:1});
         let rows=check(&p);let c=rows[0].candidate.as_ref().unwrap();
