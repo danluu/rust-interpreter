@@ -31,6 +31,15 @@ references to the already captured immutable copies, verifies every original
 digest, and retains the original receipts. Require its successful supplemental
 proof when auditing those intermediate closures; it changes no measurement.
 
+If the final Nushell supervisor encounters the same post-case lock timeout,
+recover_final_audit.py can verify all726 existing commands and finish the audit
+without executing a guest. It requires the exact failed terminal/log, preserved
+four-case checkpoint, complete fifth-case record and all unchanged inputs. It
+retains a failed performance gate as a rejected campaign. The recovery's successful
+audit status does not turn a failed performance gate into a pass. If used, bind
+its separate plan, original failure, recovery terminal and Git source when closing
+and integrating the final campaign. The recovery is currently unexecuted.
+
 Production Python has changed on main since the measured launcher was frozen.
 Review the exact diff and merge the indirect-option path with main's current
 compiler/tool routing. Do not reuse the old integration's assumption that only
