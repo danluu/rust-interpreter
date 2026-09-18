@@ -12,8 +12,8 @@ def main():
     assert re.fullmatch(r'runtime-composition-screen-protocol-\d{2}',args.run_id)
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45);require_space(ROOT,12)
-        build_path=ROOT/'results/runtime-composition-build-01/summary.json';build=read(build_path)
-        assert build['status']=='passed' and build['python']==dict(discovered=436,passed=414,skipped=22)
+        build_path=ROOT/'results/runtime-composition-launcher-01/summary.json';build=read(build_path)
+        assert build['status']=='passed' and build['python']==dict(discovered=443,passed=421,skipped=22)
         raw=ROOT/build['raw'];plan=read(raw/'plan.json');records=read(raw/'records.json')
         assert sha(raw/'plan.json')==build['plan_sha256'] and sha(raw/'records.json')==build['records_sha256']
         record,=[r for r in records if r['label']=='python'];assert record['returncode']==0
@@ -46,9 +46,9 @@ def main():
         assert child.returncode==0 and 'Ran 13 tests' in err and err.rstrip().endswith('OK'),err
         assert all(sha(ROOT/p)==h for p,h in hashes.items())
         result=ROOT/'results'/args.run_id;result.mkdir(exist_ok=False)
-        write(result/'summary.json',dict(status='passed',tests=13,observation_controls=5,observation_controls_reused=5,launcher_tests=436,launcher_skipped=22,
+        write(result/'summary.json',dict(status='passed',tests=13,observation_controls=5,observation_controls_reused=5,launcher_tests=443,launcher_skipped=22,
             commands=1,launcher_commands_reused=1,raw=str(work.relative_to(ROOT)),inputs_sha256=sha(work/'inputs.json'),
             stdout_sha256=sha(work/'stdout'),stderr_sha256=sha(work/'stderr'),record_sha256=sha(work/'record.json'),
             reused_launcher_summary=str(build_path.relative_to(ROOT)),guest_commands=0,performance_measurement=False))
-        print('PASS 13 protocol controls; reused 5 observation and exact 436 Python checks (22 skips)',flush=True)
+        print('PASS 13 protocol controls; reused 5 observation and exact 443 Python checks (22 skips)',flush=True)
 if __name__=='__main__':main()

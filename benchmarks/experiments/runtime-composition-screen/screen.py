@@ -198,7 +198,7 @@ def main():
         require_space(ROOT, admission)
         harness_path = args.harness.resolve(strict=True)
         harness = json.loads(harness_path.read_text())
-        assert harness['status'] == 'passed' and harness['tests'] == 13 and harness['launcher_tests']==436 and harness['launcher_skipped']==22
+        assert harness['status'] == 'passed' and harness['tests'] == 13 and harness['launcher_tests']==443 and harness['launcher_skipped']==22
         integration_path = ROOT / 'results/scratch-scalar-main-qualification-01/summary.json'
         integration = json.loads(integration_path.read_text())
         harness_closure=harness_path.with_name('closure.json');hc=json.loads(harness_closure.read_text())
@@ -269,7 +269,7 @@ def main():
         paths = [Path(__file__), Path(__file__).with_name('NATIVE-CALL.md'), Path(__file__).with_name('SCREEN.md'),profile_plan,
                  reference_path, marker, listing_path, coverage_path, coverage_path.with_name('closure.json'), harness_path, harness_inputs, harness_closure, integration_path,
                  *build_paths.values(), *proofs, *control_proofs]
-        paths += [ROOT / 'scripts' / name for name in ['interpreter.py', 'workspace_cache.py', 'std_mir.py',
+        paths += [ROOT / 'scripts' / name for name in ['interpreter.py', 'workspace_cache.py', 'std_mir.py', 'std_mir_readmission.py',
             'toolchain_lookup.py', 'test_discovery.py', 'workflow_cases.py', 'workflow_controls.py', 'workflow_measurements.py',
             'workflow_io.py', 'suite_reports.py', 'native_suite.py', 'compare_saved_runtime.py']]
         paths += [tool / name for tool in tools.values() for name in builds['candidate']['binaries']]

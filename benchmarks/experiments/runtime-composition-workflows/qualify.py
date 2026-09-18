@@ -79,7 +79,7 @@ def main():
         paths = [Path(__file__), Path(__file__).with_name('NATIVE-CALL.md'), build_path, build_closed, ROOT / 'tests/scalar_constant_fixture.rs', ROOT / 'results/scratch-scalar-main-qualification-01/summary.json', source_manifest]
         paths += [ROOT / 'tests' / (name + '_fixture.rs') for name in fixtures]
         paths += [tools / name for name in build['binaries']]
-        paths += [ROOT / 'scripts' / name for name in ['interpreter.py', 'std_mir.py',
+        paths += [ROOT / 'scripts' / name for name in ['interpreter.py', 'std_mir.py', 'std_mir_readmission.py',
             'workflow_io.py', 'workspace_cache.py', 'compare_saved_runtime.py']]
         frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
         work = ROOT / '.work' / args.run_id

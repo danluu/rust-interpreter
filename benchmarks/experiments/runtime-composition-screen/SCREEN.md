@@ -26,7 +26,7 @@ executables, resource observations and supervisor terminal records. Restore
 source on all ordinary controller exits. Do not disrupt other work.
 
 Before timing, run13 protocol controls and bind the five closed operation-map controls.
-Reuse the complete 436-test Python build qualification (414 passed, 22 skipped)
+Reuse the complete 443-test Python launcher qualification (421 passed, 22 skipped)
 only through exact scripts/tests/source/log bindings; do not report reused
 tests as newly executed. Require three new candidate diagnostic profiles to match three closed adopted
 profiles, including logical counts, memory and entropy, before timing.
