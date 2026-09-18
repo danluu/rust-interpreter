@@ -338,7 +338,8 @@ def run_workflow(cleanup):
         raise RuntimeError('snapshot has tracked changes')
     script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_case_file.py',ROOT/'scripts/workflow_projects.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/workflow_controls.py',ROOT/'scripts/workflow_io.py',ROOT/'scripts/std_mir.py',ROOT/'scripts/workflow_jobs.py']
     script_paths+=[ROOT/'scripts/native_suite.py',ROOT/'scripts/suite_reports.py',ROOT/'scripts/compare_saved_runtime.py',
-                  ROOT/'scripts/workspace_cache.py',ROOT/'scripts/test_discovery.py',ROOT/'scripts/workflow_compiler.py']
+                  ROOT/'scripts/workspace_cache.py',ROOT/'scripts/test_discovery.py',ROOT/'scripts/workflow_compiler.py',
+                  ROOT/'scripts/compiler_association.py']
     if runtime is not None:
         script_paths += [ROOT/'scripts'/name for name in ['runtime_compiler.py','runtime_tools.py','custom_compiler.py','std_mir_source_paths.py']]
     if case_proof is not None:

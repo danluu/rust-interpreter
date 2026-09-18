@@ -392,7 +392,9 @@ def _main(resources):
         parser.error('--workspace-cache-root: '+str(error))
     manifest=args.manifest_path.resolve()
     stage=time.perf_counter()
-    from custom_compiler import load_compiler, validate_tool_compiler
+    from compiler_association import validate_tool_compiler
+    if args.compiler_key is not None:
+        from custom_compiler import load_compiler
     if args.cargo_key is not None:
         from custom_cargo import load_cargo
     if args.runtime_compiler_key is not None:
