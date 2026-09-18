@@ -24,6 +24,13 @@ Any different Rust/compiler implementation needs new qualification, not a new
 label on the old evidence. Keep indirect and scalar calls explicit, require the
 fully checked resumable JIT, and preserve the16MiB arena and two-worker settings.
 
+Recovered checkpoints2/3 retain exact copies of their campaign ledgers. Their
+original evidence manifests also referenced the live ledger, which grows when
+later cases finish. The prepared checkpoint-evidence repair resolves those two
+references to the already captured immutable copies, verifies every original
+digest, and retains the original receipts. Require its successful supplemental
+proof when auditing those intermediate closures; it changes no measurement.
+
 Production Python has changed on main since the measured launcher was frozen.
 Review the exact diff and merge the indirect-option path with main's current
 compiler/tool routing. Do not reuse the old integration's assumption that only
