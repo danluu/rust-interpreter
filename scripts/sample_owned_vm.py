@@ -13,6 +13,7 @@ import time
 
 from interpreter import ROOT, installed_tools
 from compare_saved_runtime import acquire_lock, lock_wait_seconds
+from vmmap_ranges import anonymous_executable_ranges
 
 
 def digest(path):
@@ -92,7 +93,7 @@ def main():
     vm = tool / 'rust-interp-vm'
     vm_hash = digest(vm)
     paths = [ROOT / 'Cargo.toml', ROOT / 'Cargo.lock', Path(__file__).resolve(), ROOT / 'scripts/interpreter.py',
-             ROOT / 'scripts/compare_saved_runtime.py']
+             ROOT / 'scripts/compare_saved_runtime.py', ROOT / 'scripts/vmmap_ranges.py']
     for crate in ['bytecode', 'mir-export']:
         paths += sorted((ROOT / 'crates' / crate).rglob('*.rs'))
         paths.append(ROOT / 'crates' / crate / 'Cargo.toml')
@@ -192,7 +193,7 @@ def main():
                     if child.poll() is not None:
                         break
                     code, mapping = diagnostic('vmmap-' + str(attempt), ['/usr/bin/vmmap', str(child.pid)])
-                    if code == 0 and re.search(r'^VM_ALLOCATE\s+[0-9a-f]+-[0-9a-f]+.*?rwx/rwx', mapping, re.M):
+                    if code == 0 and anonymous_executable_ranges(mapping, child.pid):
                         (run / 'vmmap.stdout').write_text(mapping)
                         mapped = True
                         break
