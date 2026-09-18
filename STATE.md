@@ -112,6 +112,15 @@ comparison stopped on18 extra instructions in macOS CPU-feature detection. A
 fresh unchanged adopted VM reproduces the same path and exactly matches the
 candidate. Preserve both results and require six fresh profiles before timing.
 
+The composed primary passes40 commands: wall ratio0.96398368, CPU0.95353329,
+wall A/A2.221367%, CPU A/A2.115417%. Every original assertion and source-restoration
+check passes; ordinary native remains1/1.57265 of candidate wall time. The screen
+is closed and admitted26 fresh selected/prepared compatibility commands. Next
+freeze the longer five-project histories and both parser guards; do not adopt on
+the screen alone. Main4b6ec8bf publishes only the separately qualified std-MIR
+readmission repair. The runtime stays experimental.
+[Primary assessment](results/runtime-composition-screen-token-01/ASSESSMENT.md).
+
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
 lock, two Cargo workers, the shared owned build target, conservative reservations
