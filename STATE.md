@@ -202,6 +202,16 @@ That repair is closed. Full-folded cache retirement is now running under supervi
 September18 15:35. It requires that repaired checkpoint and the same strict
 ownership/identity/protected-hash checks. Last free space was about46GiB.
 
+Folded retirement passed and is closed:13,304 nonexecutable intermediates removed,
+all3,392 protected hashes unchanged. Fresh Nushell admission passed at47.58GiB
+against47.03GiB required. The final project phase is now active under supervisor
+82525, runtime-composition-full-nushell-02, started September18 15:36. Its case
+is runtime-composition-edit-nushell-02. Require132 complete commands and the
+unchanged final audit; retain the594 prior commands without repeats. The first
+original-state baseline command is building. Current source files in
+runtime-composition-full and scripts remain frozen. Parser compatibility and
+both88-command parser histories still remain before any runtime adoption.
+
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
 lock, two Cargo workers, the shared owned build target, conservative reservations
