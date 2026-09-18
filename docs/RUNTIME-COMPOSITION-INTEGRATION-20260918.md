@@ -75,7 +75,8 @@ All114 original parser compatibility tests and16 parser protocol controls pass
 and are closed. The first compatibility supervisor timed out before admission;
 a separate supervisor ran one fresh guest invocation. Batched evidence closure
 also retains the original failure and the earlier no-mutation closure timeouts.
-Both88-command parser performance histories remain required and unstarted.
+Both88-command parser performance histories remain required. The incremental
+history was launched at16:13:49; repository remains unstarted pending its result.
 
 Production Python has changed on main since the measured launcher was frozen.
 Review the exact diff and merge the indirect-option path with main's current

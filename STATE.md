@@ -109,10 +109,14 @@ Batched audit runtime-composition-pending-evidence-01 (supervisor57715/child5771
 source60d6a01e) closed compatibility and current Nushell cache retirement;
 it ran no new guest or deletion. Both checks passed normally.
 
-The16 parser protocol controls now pass and are closed with120 source inputs
-(source7e10588f; supervisor60793). Both88-command parser histories remain
-unstarted, incremental first. Fresh free space is28.87GiB at16:13. Require
-24GiB initially and8GiB before each command; keep two Cargo/prepared workers.
+The16 parser protocol controls pass and are closed with120 source inputs
+(source7e10588f; supervisor60793). The first88-command parser history is launched:
+runtime-composition-parser-edits-incremental-01, supervisor87894/child87897,
+September18 at16:13:49. Its benchmark sources are unchanged and committed in
+93ab825c. Check actual status/records; do not infer completion. Repository-profile
+history remains unstarted and requires the completed passing incremental guard.
+Fresh free space is28.64GiB at16:14. Require24GiB initially and8GiB before every
+command, with two Cargo/prepared workers and normal entropy.
 Preserve all scripts and frozen runtime-composition-full/parser inputs through
 histories and final closure;840eee0c binds the unchanged full controller sources.
 
