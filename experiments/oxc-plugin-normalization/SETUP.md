@@ -2,8 +2,9 @@
 
 This adds an opt-in Oxc workflow at
 `4d5c812d6b16c23fa71d106cf87f7f20ddee69b1`. It is separate from the executable
-corpus and the frozen holdouts. Acquisition is complete; no Oxc compatibility
-or timing result has been qualified yet.
+corpus and the frozen holdouts. Acquisition and the six-state native test
+history passed. Debug-stripping tool warnings remain unresolved, so clean
+native performance is not qualified. No interpreter/JIT timing result exists.
 The original Nushell acceptance target is unchanged.
 
 The workflow loader now accepts `--project oxc --case-file
@@ -34,7 +35,8 @@ review remains [here](../../results/oxc-target-source-review-01/README.md).
 The acquisition controllers and their retained results are described
 [here](../../results/oxc-native-acquisition-01/README.md). The first native
 compatibility stage is frozen in `native-compatibility-plan-01.json` and
-`native_compatibility.py`; it has no qualified result yet. The parent
+`native_compatibility.py`; [its test outcomes and tooling limitation are
+retained](../../results/oxc-native-compatibility-01/README.md). The parent
 coordinates admission with other current-task jobs.
 
 All workload stages use the existing canonical lock at
