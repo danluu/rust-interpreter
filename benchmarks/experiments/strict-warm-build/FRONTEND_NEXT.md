@@ -31,12 +31,28 @@ Nushell for regression/stress coverage. Oxc's pinned source, registry and native
 toolchain acquisition are complete. Its full library-test crate compiled and
 the three unchanged plugin tests passed in the original, three edited and
 restored states; the deliberately wrong edit failed all three assertions.
-However, the installed auxiliary stripping executable could not find its LLVM
-provider. The complete history and roughly 8–12-second edited-build observations
-are retained as [warning-qualified evidence](../../../results/oxc-native-compatibility-01/README.md),
-not a clean performance baseline. A matching official toolchain component is
-being inspected before a fresh clean history. No holdout success is claimed.
+The initial history's missing LLVM provider remains preserved as
+[warning-qualified evidence](../../../results/oxc-native-compatibility-01/README.md).
+A separate toolchain composition with the matching official LLVM component
+subsequently passed its actual native stripping control. The unchanged Oxc
+history then passed all 64 children without warnings or loader diagnostics:
+three production edits took 11.918, 11.757 and 8.326 seconds, and only the
+`oxc_linter` library-test target rebuilt. See the
+[clean native history](../../../results/oxc-native-compatibility-02/README.md).
+The 0.192-second already-built original state is not an edited-build result.
+These are three configuration tests compiling the full test crate, not lint-rule
+coverage or interpreter compatibility. Oxc's interpreter/JIT qualification is
+next; it remains a development target, and no holdout success is claimed.
 The sub-0.500-second target remains unmet.
+
+An independent launcher improvement preserves every runtime file/directory
+collision check while replacing path-object construction with string ancestor
+walking. All 22 controls and all 12 paired installed-runtime/std lookups passed;
+the median component time fell from 144.822 to 118.937 milliseconds. See the
+[lookup evidence](../../../results/runtime-lookup-paths-01/README.md). This is
+a component measurement, not an application build-time gain. The first runtime
+Ruff diagnostic keeps its already frozen launcher source so this separate
+change cannot confound the HIR cache-off/cache-on comparison.
 
 The strict target is still unmet. The latest complete screen has a 5.3454s
 candidate median and no candidate edit below 0.500s. No single proposed change
