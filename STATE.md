@@ -51,7 +51,7 @@ libtest, thread/OS/FFI and real unwinding support remain open. The parser and
 token native gaps still guide optimization; no complete database/shell coverage
 or isolated scratch-cache speedup is claimed.
 
-The current manual branch is `experiment/guarded-value-census-20260914`.
+The current manual branch is `experiment/range-admission-census-20260918`.
 Main still adopts df4006e0. The aggregate and native-indirect compositions remain
 archived after failing their original changed-source wall gates. The indirect
 composition passed all correctness controls, 122 strict/cache commands and three
@@ -77,11 +77,13 @@ this task uses fresh disk admission checks and does not repair or restart it.
 The completed indirect primary's compiler intermediates were already retired:
 3,147 files, about 1.47GiB actual space, all 2,532 protected hashes unchanged.
 
-Next inspect the fixed eight-access threshold in existing range guards, first
-with a disabled observer for 4–7-access groups and exact original sample ownership.
-Only sufficient measured scope warrants an implementation with fault/memory
-controls and the unchanged complete changed-source primary. Do not use unchanged
-build loops, guessed pointer relocations or a relaxed performance gate.
+The smaller range-admission census is also complete: 43/59/7 new groups but
+only 14/0/0 block/exhaustive/parser samples. It preserves exact original code and
+all previously selected proofs. Defer smaller runtime guards and keep the
+threshold of eight. Next review remaining complete native Call frame-memory
+initialization costs and existing safety proofs; register-array zeroing is
+already absent in the retained workload profiles.
+[Range admission](results/range-admission-census-01/ASSESSMENT.md).
 
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
