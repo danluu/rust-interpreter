@@ -20,6 +20,19 @@ def main():
     assert sha(raw/checkpoint['audit_path'])==checkpoint['audit_sha256']
     assert audit_cases(CASES[:count])==json.loads((raw/checkpoint['audit_path']).read_text())
     evidence={};bindings={}
+    if 'audit_recovery' in checkpoint:
+        assert checkpoint['audit_recovery']==supervisor
+        recovery_path=ROOT/'results'/supervisor/'summary.json';recovery=json.loads(recovery_path.read_text())
+        assert recovery['status']=='passed' and recovery['new_guest_commands']==recovery['repeated_commands']==0
+        assert recovery['checkpoint_sha256']==sha(raw/f'checkpoint-{count}.json') and recovery['audit_sha256']==checkpoint['audit_sha256']
+        recovery_plan_path=ROOT/recovery['raw']/'plan.json';assert sha(recovery_plan_path)==recovery['plan_sha256']
+        recovery_plan=json.loads(recovery_plan_path.read_text());assert recovery_plan['owner']==str(ROOT)
+        for path,h in recovery_plan['evidence'].items():assert sha(ROOT/path)==h;evidence[path]=h
+        path=recovery_plan['script'];source=recovery_plan['source_revision'];digest=recovery_plan['script_sha256']
+        assert sha(ROOT/path)==digest and hashlib.sha256(subprocess.check_output(['git','show',source+':'+path])).hexdigest()==digest
+        bindings[path]=dict(revision=source,sha256=digest)
+        evidence[str(recovery_path.relative_to(ROOT))]=sha(recovery_path)
+        evidence[str(recovery_plan_path.relative_to(ROOT))]=sha(recovery_plan_path)
     frozen=json.loads((raw/'plan.json').read_text())['frozen']
     for p,h in frozen.items():
         assert sha(ROOT/p)==h

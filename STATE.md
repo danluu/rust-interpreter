@@ -148,6 +148,14 @@ campaign now runs folded matching under runtime-composition-full-folded-02,
 supervisor84332, started September18 15:04. No token command is repeated.
 [Full token assessment](results/runtime-composition-edit-token-02/ASSESSMENT.md).
 
+Folded matching also completed154 commands,18 original tests and15 edited pairs.
+Wall ratio0.97865347 and CPU0.98459988 pass the existing regression margins
+0.98922852/0.99564577. Candidate/native wall is0.98477876. Close checkpoint2 and
+run the prepared three terminal-parser-decision controls before pgrust. The
+auditor can now preserve a failed parser guard and cancel its unstarted successor;
+this does not change any measurement or threshold. Those controls are not yet run.
+[Folded assessment](results/runtime-composition-edit-folded-02/ASSESSMENT.md).
+
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
 lock, two Cargo workers, the shared owned build target, conservative reservations
