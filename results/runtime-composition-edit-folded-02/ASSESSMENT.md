@@ -20,8 +20,11 @@ remain necessary before adoption. Main retains the adopted scratch/scalar VM.
 
 The case controller finished normally, but the outer campaign timed out on the
 shared lock before its final audit. Retain that failed outer receipt. A separate
-audit-only recovery must verify the two completed histories and create checkpoint2;
-it executes no guest commands and supplies the eventual closure's terminal receipt.
+audit-only recovery verified the two completed histories and created checkpoint2;
+it executed no guest commands and supplies the closure's terminal receipt. Both
+the [original failure](../runtime-composition-full-folded-audit-02/original-terminal.json)
+and [successful recovery](../runtime-composition-full-folded-audit-02/summary.json)
+remain retained. The closure verifies22 evidence files and122 Git source bindings.
 
 [Summary](summary.json), [closed checkpoint](closure.json),
 [terminal receipt](terminal.json).

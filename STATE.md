@@ -150,10 +150,16 @@ supervisor84332, started September18 15:04. No token command is repeated.
 
 Folded matching also completed154 commands,18 original tests and15 edited pairs.
 Wall ratio0.97865347 and CPU0.98459988 pass the existing regression margins
-0.98922852/0.99564577. Candidate/native wall is0.98477876. Close checkpoint2 and
-run the prepared three terminal-parser-decision controls before pgrust. The
+0.98922852/0.99564577. Candidate/native wall is0.98477876. The outer controller
+timed out waiting for the shared lock after the case finished. Audit-only recovery
+runtime-composition-full-folded-audit-02 verified all308 retained commands and
+closed checkpoint2, preserving the original failure and repeating no guest work.
+All three terminal-parser-decision controls passed and are closed. The
 auditor can now preserve a failed parser guard and cancel its unstarted successor;
-this does not change any measurement or threshold. Those controls are not yet run.
+this does not change any measurement or threshold. Pgrust now runs under
+runtime-composition-full-pgrust-02, supervisor41528, started September18 15:14.
+Public token compiler-cache retirement is prepared but unexecuted; current free
+space is about40GiB. No peer process was altered or cache removed.
 [Folded assessment](results/runtime-composition-edit-folded-02/ASSESSMENT.md).
 
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
