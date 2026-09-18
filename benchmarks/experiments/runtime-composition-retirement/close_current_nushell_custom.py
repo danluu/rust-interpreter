@@ -9,8 +9,7 @@ RUN='closed-runtime-composition-nushell-custom-retirement-01'
 def read(p):return json.loads(p.read_text())
 
 
-with (ROOT/'.work/benchmark.lock').open('a') as lock:
-    acquire_lock(lock,45)
+def main(revision):
     raw=ROOT/'.work'/RUN;outer=ROOT/'.work/experiments'/RUN
     summary=read(raw/'summary.json');plan=read(raw/'plan.json');terminal=read(outer/'status.json')
     assert summary['status']=='passed' and summary['all_protected_hashes_unchanged']
@@ -25,7 +24,7 @@ with (ROOT/'.work/benchmark.lock').open('a') as lock:
     assert len(protected)==summary['protected_files']
     assert all(not (ROOT/r['path']).exists() for r in manifest)
     assert all(sha(ROOT/p)==h for p,h in protected.items())
-    revision=sys.argv[1];path=str(Path(__file__).with_name('retire_current_nushell_custom.py').relative_to(ROOT))
+    path=str(Path(__file__).with_name('retire_current_nushell_custom.py').relative_to(ROOT))
     data=subprocess.check_output(['git','show',revision+':'+path],cwd=ROOT)
     assert hashlib.sha256(data).hexdigest()==plan['script_sha256']
     result=ROOT/'results'/RUN;result.mkdir(exist_ok=False)
@@ -35,3 +34,7 @@ with (ROOT/'.work/benchmark.lock').open('a') as lock:
         all_removed_paths_absent=True,all_protected_hashes_unchanged=True,
         summary_sha256=sha(result/'summary.json'),terminal_sha256=sha(result/'terminal.json')))
     print(len(manifest),'removed paths absent;',len(protected),'protected hashes unchanged')
+
+if __name__=='__main__':
+    with (ROOT/'.work/benchmark.lock').open('a') as lock:
+        acquire_lock(lock,45);main(sys.argv[1])

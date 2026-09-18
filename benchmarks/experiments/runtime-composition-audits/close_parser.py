@@ -9,9 +9,8 @@ from workflow_io import write_json as write
 from probe import fingerprint
 from suite_reports import read_report,validate_report
 
-def main():
-    run='runtime-composition-parser-01';revision=sys.argv[1]
-    supervisor=sys.argv[2] if len(sys.argv)>2 else run
+def main(revision,supervisor='runtime-composition-parser-01'):
+    run='runtime-composition-parser-01'
     assert supervisor==run or supervisor=='runtime-composition-parser-admission-02'
     out=ROOT/'results'/run;raw=ROOT/'.work'/run;outer=ROOT/'.work/experiments'/supervisor
     s=json.loads((out/'summary.json').read_text());t=json.loads((outer/'status.json').read_text());p=json.loads((raw/'plan.json').read_text())
@@ -50,4 +49,4 @@ def main():
     print('Closed 114 parser tests and',len(bindings),'frozen inputs')
 if __name__=='__main__':
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
-        acquire_lock(lock,45);main()
+        acquire_lock(lock,45);main(sys.argv[1],sys.argv[2] if len(sys.argv)>2 else 'runtime-composition-parser-01')
