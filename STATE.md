@@ -152,17 +152,31 @@ its source. Source51c57402 passes449 discovered Python tests (427 passed,
 This diagnostic fix is not yet published to main; do that after the new live
 capture and merged-main Python checks, preserving peer changes.
 
-The study controller is parameterized for fresh02 namespaces. Next prepare
-adopted-current-runtime-sampling-02 using prepare.py --run-id under supervisor
-adopted-current-runtime-sampling-prepare-02. Then launch each exact case command
-from its plan under supervisors adopted-current-sample-{block,exhaustive}-02,
-serially. Require successful terminal, mapped:true and actual sample_returncode:0
-before continuing. Analyze retained executions with analyze.py --run-id only
-after both finish; it repeats no guest. Close with close.py RUN PREP_SUP ANALYSIS_SUP.
-The repaired sampler passes expected-jit-declines=0 explicitly. Reuse the newly
-closed9 attribution controls from vmmap-label-compatibility-01, not stale sampler
-source hashes. These are perturbed diagnostic windows with no latency claim.
-Use their actual native-PC coverage to choose a materially different optimization.
+Sampling02 is prepared at25ec963c:214 archived VM inputs and50 frozen inputs.
+Preparation supervisor26681/child26684 completed normally. Both owned fresh
+executions then passed with mapped:true and sample_returncode:0:
+block02 supervisor37156/child37159/VM37161, exhaustive02 supervisor47561/
+child47564/VM47566 (September18 at16:39). Preserve these successful captures;
+do not execute either guest again. Analysis supervisor61003/child61113 timed
+out after45seconds before acquiring the lock or writing analysis records. Its
+failure is separately retained; analyze.py can consume the same captured data
+under a distinct admission supervisor once the shared lock is free.
+
+Next run analyze.py --run-id adopted-current-runtime-sampling-02 under
+adopted-current-runtime-sampling-analysis-02-admission-02. Then close.py with
+RUN, adopted-current-runtime-sampling-prepare-02 and the successful analysis
+supervisor. Reuse the closed9 attribution controls from vmmap-label-compatibility-01.
+The samples are perturbed diagnostic windows, never latency measurements.
+
+The publication worktree has local commit2d87c58e containing exactly the four
+sampler-format files (two callers, shared parser, six regression controls),
+based on current main and preserving peer code. It is not pushed yet. Prepared
+vmmap-label-compatibility/qualify_main.py must run the merged Python suite there
+under the root benchmark lock (run vmmap-main-contracts-01); archive its terminal
+and hashes, then push main normally after checking for peer updates. The fix
+has427 root Python passes/22 declared skips,9 attribution passes,14 retained-map
+checks and now two successful live captures. The next optimization must follow
+actual attributed native-PC costs, not another unchanged composition timing.
 
 Token/rg-aot supervisors ended normally. Folded/pgrust case controllers also
 finished normally, but their outer post-case audits timed out on the shared lock.
