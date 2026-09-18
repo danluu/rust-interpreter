@@ -3,7 +3,8 @@
 This is an integration plan, not an adoption decision. The candidate is tool
 45a1529e / VMfd21a46f. It combines native indirect transitions, checked readonly
 scalar leaves and successor-only spilling on the adopted scratch/scalar runtime.
-The full token and folded histories pass; the remaining guards are still pending.
+The token, folded, pgrust and private rg-aot histories pass; Nushell and the
+parser guards are still pending.
 
 Before integration require all five complete project histories (726 commands),
 all114 original parser tests and both88-command edited-parser guards. Preserve
@@ -15,8 +16,24 @@ guard fails. Keep the current main runtime on any failed gate.
 
 Only after closing those results, freeze a current-main integration revision.
 Preserve the other session's compiler-selection, standard-library setup, Cargo
-and benchmark work. The last inspected main was a92c0942; fetch again when
+and benchmark work. The last inspected main was237510c3; fetch again when
 integration is actually admitted. Never force-push or overwrite peer changes.
+
+Main now includes2ba26966: bounded leaf-eligibility scans, shared call-graph
+facts and a summary-only CFG pass used by the exporter. These are production
+Rust changes, including in the bytecode crate linked into the VM. Preserve them
+when integrating the runtime delta. The frozen VM/exporter qualification cannot
+establish correctness or performance of the new combined binaries. Build and
+qualify the actual merged sources, including the peer's inlining/CFG controls,
+strict/cache workflows and exact real-workload artifacts/profiles. Any claim
+about combined performance needs a new matched changed-source comparison
+against current main, with the protocol declared before timing. Keep the frozen
+campaign's result and attribution separate from that prospective comparison.
+
+Main091f9ea9 also replaces Path-object construction with canonical POSIX ancestor
+scans in runtime collision validation. Its tests cover nested collisions and
+non-collisions. Preserve those tests with the runtime-option forwarding tests;
+this is an additional reason not to copy the frozen scripts over current main.
 
 The measured Rust/Cargo/configuration inputs must remain byte-for-byte equal to
 the candidate build. Installed VM, exporter and wrapper digests must also match.
