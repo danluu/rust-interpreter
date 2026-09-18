@@ -7,6 +7,7 @@ sys.path.insert(0,str(ROOT/'benchmarks/experiments/runtime-composition-full'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import write_json as write
 from full import audit_cases,CASES,next_case
+from parser_decision import parser_decision
 
 with (ROOT/'.work/benchmark.lock').open('a') as lock:
     acquire_lock(lock,45)
@@ -46,12 +47,18 @@ with (ROOT/'.work/benchmark.lock').open('a') as lock:
     parser=[]
     for profile in (['incremental','repository'] if passed else []):
         p=ROOT/'results'/('runtime-composition-parser-edits-'+profile+'-01');s=json.loads((p/'summary.json').read_text());c=json.loads((p/'closure.json').read_text())
-        assert s['status']=='passed' and s['commands']==88 and s['original_tests']==114 and s['measurement']['gate_passed']
+        assert s['status']=='passed' and s['commands']==88 and s['original_tests']==114
         assert c['status']=='closed' and c['all_hashes_verified'] and sha(p/'summary.json')==c['summary_sha256'] and sha(p/'terminal.json')==c['terminal_sha256']
+        assert c['performance_gate_passed']==s['measurement']['gate_passed']
         for field in ['bindings','evidence']:assert sha(ROOT/c[field])==c[field+'_sha256']
         for path,digest in json.loads((ROOT/c['evidence']).read_text()).items():assert sha(ROOT/path)==digest
         for file in ['summary.json','closure.json','terminal.json']:evidence[str((p/file).relative_to(ROOT))]=sha(p/file)
-        parser.append(dict(profile=profile,commands=88,tests=114,gate_passed=True,summary_sha256=sha(p/'summary.json')))
+        parser.append(dict(profile=profile,commands=88,tests=114,gate_passed=s['measurement']['gate_passed'],summary_sha256=sha(p/'summary.json')))
+        if not s['measurement']['gate_passed']:break
+    parser_result=parser_decision(parser) if passed else dict(passed=False,unstarted=['incremental','repository'])
+    for profile in parser_result['unstarted']:
+        assert not (ROOT/'.work'/('runtime-composition-parser-edits-'+profile+'-01')).exists()
+        assert not (ROOT/'results'/('runtime-composition-parser-edits-'+profile+'-01')).exists()
     dest=raw/'closed-final';dest.mkdir(exist_ok=False)
     for file in ['plan.json','records.json',summary['final_audit_path']]:
         (dest/file).write_bytes((raw/file).read_bytes());evidence[str((dest/file).relative_to(ROOT))]=sha(dest/file)
@@ -61,7 +68,9 @@ with (ROOT/'.work/benchmark.lock').open('a') as lock:
         frozen_sources=len(bindings),unique_frozen_inputs=audit['unique_frozen_inputs'],all_retained_artifacts_and_sources_verified=True,
         snapshot=str(dest.relative_to(ROOT)),evidence_sha256=sha(dest/'evidence.json'),sources_sha256=sha(dest/'sources.json'),
         summary_sha256=sha(out/'summary.json'),terminal_sha256=sha(out/'terminal.json'),parser_guards=parser,
-        full_campaign_complete=passed,campaign_terminal=True,runtime_adopted=False)
+        full_campaign_complete=passed,campaign_terminal=True,runtime_adopted=False,
+        parser_gates_passed=parser_result['passed'],unstarted_parser_profiles=parser_result['unstarted'],
+        candidate_qualified=passed and parser_result['passed'])
     assert not (out/'closure.json').exists();write(out/'closure.json',closure)
     nu=ROOT/'results'/('runtime-composition-edit-'+completed[-1]+'-02');assert not (nu/'closure.json').exists()
     (nu/'terminal.json').write_bytes((outer/'status.json').read_bytes())
