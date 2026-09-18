@@ -24,3 +24,16 @@ space; simultaneous unrelated disk activity can affect the latter.
 
 Close the resulting inventory and unchanged protected manifest before starting
 the next benchmark. Keep this preparation unexecuted when sufficient disk remains.
+
+The current Nushell controller's retained estimate actually requires47.03GiB,
+including its reserve; the resumed handoff's smaller estimate was stale. A second
+prepared controller, retire_previous_nushell_custom.py, targets only the three
+baseline/duplicate/candidate namespaces from the already closed
+scratch-memory-values-edit-nushell-01 history. It verifies that complete132-command
+result and full726-command closure, all66 custom commands and suite reports,
+original source restoration and every retained artifact. It binds historical
+source files through their recorded Git revision and requires all retained files
+to remain identical. Native, private, peer, installed-tool and current campaign
+caches are excluded. It acquires all three invocation locks and uses the same
+nonexecutable-only inventory, open-file/identity checks and protected hashes.
+First inspect its read-only space estimate; no deletion has yet been performed.
