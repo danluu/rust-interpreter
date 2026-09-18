@@ -11,6 +11,7 @@ import time
 from workflow_measurements import initial_modes, mode_order
 from workflow_jobs import recorded_build_jobs, verify_command_jobs
 from bench_e2e_workflow import build_metrics, cache_workspace, guest_test_failure
+import workflow_compiler
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -61,11 +62,24 @@ def verify(report, reference=None, *, compiler_flags=None):
     The ordinary CLI and all runtime callers keep the strict default.
     """
     require(report['schema_version'] == 2, 'unsupported workflow schema')
+    flag_encoding=report.get('guest_rustflag_encoding')
+    require(flag_encoding in (None,'cargo-unit-separator','launcher-arguments'), 'unknown guest flag transport')
+    runtime=report.get('runtime_compiler')
+    require((runtime is not None)==(flag_encoding=='launcher-arguments'), 'runtime compiler transport differs')
+    if runtime is not None:
+        require('comparison' in report and report['batch'] and runtime['policy']=='owned-native-runtime-compiler-v1',
+                'invalid runtime compiler comparison')
+        runtime=dict(runtime)
+        prepared_std=runtime.pop('prepared_std')
+        workflow_compiler.arguments(runtime['key'],None if prepared_std is None else prepared_std['key'])
+        require((prepared_std is None)==(report.get('std_mir') is None) and
+                (prepared_std is None or prepared_std['key']==report['std_mir']['key']), 'prepared std report differs')
     if compiler_flags is not None:
         require(isinstance(compiler_flags, dict) and set(compiler_flags) == {'baseline', 'candidate'},
                 'compiler comparison requires explicit flags for both modes')
         require(all(isinstance(flags, list) and flags and
-                    all(isinstance(flag, str) and flag and not any(c.isspace() for c in flag)
+                    all(isinstance(flag, str) and flag and '\x00' not in flag and '\x1f' not in flag
+                        and (flag_encoding is not None or not any(c.isspace() for c in flag))
                         for flag in flags) for flags in compiler_flags.values()) and
                 compiler_flags['baseline'] != compiler_flags['candidate'], 'invalid compiler comparison flags')
         require('comparison' in report and not report['comparison']['identical_bytecode_required'],
@@ -263,6 +277,11 @@ def verify(report, reference=None, *, compiler_flags=None):
                         call['launch']['suite_report_path'] == str(path), 'launched suite differs')
         if mode != 'native':
             settings = report.get('tool_builds', {}).get(mode, {})
+            if flag_encoding is not None:
+                for call in row['calls']:
+                    workflow_compiler.verify_flags(call,settings['guest_rustflags'],
+                        flag_encoding=='cargo-unit-separator',flag_encoding=='launcher-arguments')
+                    if runtime is not None:workflow_compiler.verify_runtime_call(call,runtime,prepared_std)
             if controlled_caches or restoring:
                 for call in row['calls']:
                     launches = [json.loads(line.split('rust-interp-launch: ',1)[1]) for line in call['stderr'].splitlines()
@@ -278,9 +297,10 @@ def verify(report, reference=None, *, compiler_flags=None):
                     for field in measured[0]:
                         require(row[field] == sum(value[field] for value in measured), 'sample build metrics differ from launch receipts')
             if compiler_flags is not None:
-                require(all(call.get('rustflags') == ' '.join(compiler_flags[mode]) and
-                            call['launch']['tool_key'] == settings['tool_key'] for call in row['calls']),
-                        'executed compiler flags or tool differ')
+                for call in row['calls']:
+                    workflow_compiler.verify_flags(call,compiler_flags[mode],
+                        flag_encoding=='cargo-unit-separator',flag_encoding=='launcher-arguments')
+                    require(call['launch']['tool_key']==settings['tool_key'],'executed compiler tool differs')
             for field, flag in [('jit_native_calls', '--jit-native-calls'),
                                 ('jit_native_call_stubs', '--jit-native-call-stubs'),
                                 ('jit_persistent_registers', '--jit-persistent-registers'),
@@ -378,7 +398,10 @@ def verify(report, reference=None, *, compiler_flags=None):
             require('test result:' not in check['stdout'], 'check unexpectedly executed tests')
         for row in rows:
             for call in row['calls']:
-                require(call.get('encoded_rustflags') == (encoded if row['mode'] == 'native' else None), 'native flags missing or leaked to custom engines')
+                expected_encoded=encoded if row['mode']=='native' else (
+                    workflow_compiler.rustflags(report['tool_builds'][row['mode']]['guest_rustflags'])
+                    if flag_encoding=='cargo-unit-separator' else None)
+                require(call.get('encoded_rustflags') == expected_encoded, 'native flags missing or leaked to custom engines')
                 command = call['command']
                 if row['mode'] == 'native':
                     actual = [a for a in command if a.startswith('--test-threads=')]
