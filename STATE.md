@@ -1,3 +1,16 @@
+LATEST: main ece5658a pushed currentprotocol test-onlypatch+closed evidence,
+preservingpeerac9117e9 andexistingjit.rs observerhooks. Rootnewbranch
+experiment/scalar-entry-empty-work-20260919. Newtyped scope/model ready, unrun:
+benchmarks/experiments/scalar-entry-empty-work/{PLAN.md,run.py}; test-only module
+code_spans/scalar_entry_scope.rs. Provesempty padding usingcaller_align>=callee
+and max(size,1)%callee_align==0 includingretainedalignment histories. Second
+modelpositive whole-leafbudget impliesnonzero, ordinaryfallbackstillneedscheck.
+No runtimecandidatechanges; parkedshorttailsabsent. 2newmodels eachprofile+
+4typedartifact/protocol metadatacaptures, no guest/codepublication. Nextcommit/
+pushthen supervise scalar-entry-empty-work-01 absolute run.py; independent--close.
+Countsentrycheckcoverage asUPPERBOUND because privatefallback maystillneedcheck.
+Boundedtargetcap3GiB/max14GiB,8+2allocated admission; protectedtarget untouched.
+
 LATEST: current-call-protocol01 CLOSED success, sourceccdc248e,
 supervisor13518/controller13555; debug/release3tests and4savedreconstructions
 allpassed, independentclose45795passed. 47.416s setup/60.456CPU, no newguest.
