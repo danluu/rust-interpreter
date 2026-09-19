@@ -106,3 +106,11 @@ completed95866/95869:16suites1,824invocations16,299verifiedhits, exactoutcomes/k
 Closurecurrentlyrunning see template-callee-initialization-parser-client-01-close.
 Next corrected-session-input-phases/parser.py; previousuncorrected phase replay
 remainsUNSTARTED. Sourcefreezecrates/scripts/tests/bugfixfolder untilreplayclosure.
+
+Correctedphase replaydafcd639 completed7745/7748 CLOSED9270/9274,16suites1824
+actualinvocations allmatch.17,056observedhits (verifyOFF); precedingfixreplay
+CLOSED5423/5426 verifies16,299hits. Input37.27ms:read/hash12.16,decode10.69,
+catalogvalidation8.60,Programvalidation5.70;output.144ms. Workerconstructor15.7ms
+each(6.8beforemetadata+8.9metadata). Exactcode:catalogre-hashes same29.46MB bytes.
+Next typed ownedactualbytes digest reuse, no client/catalog digest trust.
+Evidence docs/SESSION-INPUT-PHASES-20260918.md. No activeexperiment.
