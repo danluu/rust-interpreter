@@ -37,3 +37,18 @@ driver and a failed or unresolved serial run cannot start the parallel run.
 Results and raw output are retained in `controls-01.json` and
 `controls-01.stderr`. This has not compiled or executed a real driver, changed a
 runtime installation, or measured an application build.
+
+`prerequisites.py` adds pure readback for the enclosing stage. Its command
+reader reconciles declared expected failures with actual child outcomes,
+owner/PID/cwd observations, intervals, receipt hashes and raw streams. Nine
+in-memory adversarial controls passed once; their actual evidence is retained
+in `results/hir-options-hash-prerequisite-controls-01`. A missing contemporaneous
+cwd observation stays an explicit limitation. Failed controllers cannot qualify.
+
+The native predecessor reader additionally repeats diagnostic parity, cold and
+warm HIR observations, four native outputs, retained binary hashes, source
+restoration, and static/actual loader parsing. That integration still awaits
+actual completed native prerequisites and independent review. The enclosing
+controller must also bind B3/compiler transitive inputs, provider inventories,
+the independent audits, and the separate completed run-make stage. These nine
+controls do not establish any of those unrun qualifications.
