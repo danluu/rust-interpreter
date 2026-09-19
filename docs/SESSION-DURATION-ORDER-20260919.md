@@ -26,10 +26,17 @@ had attempted to write immutable Program.data;02 fixes only the fixture to use
 writable tagged statics. [Focused proof](../results/session-duration-order-focused-02/summary.json).
 
 Full qualification01 passed all679Rust tests/profile with17ignored, then stopped
-before diagnostic on disk admission. Its three completed commands are closed and
-retained. Qualification02 will verify and reuse them, bind the retained binaries
-to target bytes before any new build, and run only the four remaining commands.
-Verified actual parser replay and separate diagnostic ordering evidence must
-precede a new changed-source primary06.
+before diagnostic on disk admission. Its three completed commands were closed and
+retained. Qualification02 verified and reused them, bound the retained binaries
+to target bytes before any new build, and passed the four remaining commands:
+39diagnostic controls,10feature-off session controls,31ordinary models and default
+VM build. The combined proof includes442Python passes and22skips through exact
+source/log reuse;24new servers46clients plus24retained servers46clients.
+[Complete qualification](../results/session-duration-order-qualification-02/summary.json).
+
+The actual parser replay passed1824invocations with19,597template hits independently
+regenerated and verified, including expected assertion failures, current limits,
+canonical outcomes and kernel CPU accounting. Diagnostic replay and independent
+priority-order attribution must still precede a new changed-source primary06.
 The shared-key variant is disabled; literal parameterization, key-v1, current
 checks and the adopted compiler tools remain. No default change or speedup claim.
