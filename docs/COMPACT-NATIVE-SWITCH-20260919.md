@@ -63,7 +63,17 @@ admission timed out on the shared lock before any command or stage creation;
 that zero-work attempt is closed and retained. Protocol02 then passed all16
 controls and closed independently. No timing was repeated.
 
-Next qualify the full public controller and run176-command token, folded and
+The full public controller now passes27 controls and is independently closed
+(`compact-native-switch-guard-protocol-02`, source`59c151db`, closure78117).
+These cover12 accounting,6 command,5 controller/admission tests and4 actual
+pinned-rustc type/borrow rejections across std and no_std. The prior26-control
+qualification is also retained: a review before timing found that the benchmark
+still expected22 controls. Protocol02 corrects admission, adds its regression
+control, and validates the actual produced summary through the benchmark
+admission function. Neither qualification executes a project guest or times an
+edited command.
+
+Next complete176-command token, folded and
 pgrust histories in order, with history-off, native line-table and Cargo-check
 controls added to the existing arms. Carry forward the already fixed portable
 core borrow probe and JSON configuration comparison before pgrust. Private rg,
