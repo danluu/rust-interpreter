@@ -78,3 +78,11 @@ prepared: inputdecode/validation/reportoutput phases plus workerconstructorparts
 underjit-preparation-observer; actualchecks unchanged. Qualify32controls/profile
 and10feature-offsession controls (36servers69clients), then16savedparsercommands.
 Replay socketprefixinput-phases-01, NOTprior endpoint. Sourcefreeze once started.
+
+Inputphases qualificationccdabd3c passed32debug+32release+10feature-offcontrols;
+36servers69clients reaped. CLOSED82267/seeexactreceipt. ParserdiagnosticreplayNOTstarted.
+Read-only JITreview found potential missingcalleeinitial-zero requirement in ordinary
+templatekey: resumable_call embeds zeroes[callee], but CallInput lacksit. Prior
+callee-changes tests varied scalarplan/currentdata, not this derivedproperty with
+scalarcallsdisabled. Prioritize concrete failing regression and fix before more
+reuse execution. Adopted mainruntime has no cross-programhistory and unchanged.
