@@ -55,7 +55,7 @@ macro_rules! protocol_mark {
 
 #[cfg(test)]
 impl Assembler<'_> {
-    fn mark_protocol(&mut self, kind: &'static str, argument: Option<usize>) {
+    pub(super) fn mark_protocol(&mut self, kind: &'static str, argument: Option<usize>) {
         let offset = self.protocol_spans.last().map_or(0, |s| s.end);
         let end = self.words.len() * 4;
         assert!(offset <= end);

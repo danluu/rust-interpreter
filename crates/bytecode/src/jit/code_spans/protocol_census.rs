@@ -96,6 +96,70 @@ fn protocol_partition_rejects_gaps_overlaps_missing_tail_and_argument_aliases() 
     assert!(validate_partition(&a).is_err());
 }
 
+// Resolve only the explicitly recorded scalar success edges. The complete
+// function supplies the exact target; all other isolated words remain untouched.
+fn link_transition(a: &mut Assembler<'_>, staged: &CompiledFunction<'_>, base: usize) {
+    for &(at, successor) in &a.links {
+        assert_eq!(a.words[at], 0x14000000);
+        let fallback = base + a.scalar_fallbacks[&at];
+        let target = staged.internal_entries.get(successor).copied().flatten().unwrap_or(fallback);
+        a.words[at] |= branch_displacement(base + at, target, 26, CodegenLimit::Jump).unwrap();
+    }
+}
+
+#[test]
+fn scalar_protocol_partitions_preserve_complete_native_and_fallback_links() {
+    for size in [1,8,16] { for profiled in [false,true] { for persistent in [false,true] {
+        for native_successor in [false,true] {
+            let slot = |offset| crate::Slot { offset, size };
+            let callee = Function { name:"scalar protocol callee".into(),frame_size:48,frame_align:16,
+                registers:2,args:vec![slot(16)],result:slot(0),code:vec![
+                    Op::Local {dst:0,offset:16},Op::Load {dst:1,address:0,size:size as u8},
+                    Op::Local {dst:0,offset:0},Op::Store {address:0,src:1,size:size as u8},Op::Return] };
+            let mut caller = Function { name:"scalar protocol caller".into(),frame_size:64,frame_align:16,
+                registers:4,args:vec![],result:crate::Slot{offset:0,size:0},code:vec![
+                    Op::Local {dst:0,offset:16},Op::Local {dst:1,offset:32},
+                    Op::Call {function:1,args:vec![0],destination:1}] };
+            if !native_successor { caller.code.push(Op::Unary {dst:2,src:0,bits:128,op:Unary::CountOnes}); }
+            caller.code.push(Op::Return);
+            let p = Program {version:crate::VERSION,target:"aarch64-apple-darwin".into(),entry:0,
+                functions:vec![caller,callee],data:vec![],statics:vec![],thread_locals:vec![]};
+            crate::validate(&p).unwrap();
+            let mut work = crate::proof::MAX_GLOBAL_WORK;
+            let memory = crate::proof::memory_plan(&p,1,&mut work);
+            let plan = crate::scalar_ir::lower(&p.functions[1],&memory,250_000).unwrap();
+            let leaf = crate::scalar_ir::native_leaf::emit_call(&plan,profiled).unwrap();
+            let mut jit = Jit::new_resumable(&p,profiled,MAX_CODE_BYTES,persistent).unwrap();
+            jit.enable_scalar_calls();
+            assert_eq!(jit.observe_saved_scalar_entry(1,64,leaf.words.len()*4,0x123456789000),leaf.words);
+            let f = &p.functions[0];let reads = read_registers(f);
+            let allocation = persistent.then(||values::analyze(f)).flatten();
+            let slots = call_slots::collect(f,&p);
+            let staged = jit.emit_function_inner(f,MAX_CODE_BYTES/4,0,None).unwrap().unwrap();
+            let (mut a,resume,_) = jit.emit_resumable_transition(f,2,&reads,allocation.as_ref(),slots.get(&2).map(Vec::as_slice)).unwrap();
+            validate_partition(&a).unwrap();
+            let kinds:BTreeSet<_> = a.protocol_spans.iter().map(|s|s.kind).collect();
+            for kind in ["scalar_entry_budget","scalar_frame_capacity","scalar_memory_capacity",
+                "scalar_register_capacity","scalar_working_budget","scalar_save_host","scalar_result_guard",
+                "argument_scalar_source","argument_scalar_capture","scalar_dispatch","scalar_restore_host",
+                "scalar_padding_clear","scalar_result_copy","scalar_peak_memory","scalar_commit_counters",
+                "scalar_successor","scalar_private_fallback","call_publish_frame"] {
+                assert!(kinds.contains(kind),"{kind}");
+            }
+            assert_eq!(kinds.contains("scalar_commit_profile"),profiled);
+            assert_eq!(a.links.len(),1);
+            assert_eq!(staged.internal_entries[3].is_some(),native_successor);
+            let base = staged.entries[2].unwrap().offset/4;
+            assert_eq!(staged.resumes[2],Some(base+resume));
+            link_transition(&mut a,&staged,base);
+            assert_eq!(a.words,staged.words[base..base+a.words.len()]);
+            let at = a.links[0].0;a.words[at]^=1;
+            assert_ne!(a.words,staged.words[base..base+a.words.len()]);
+            assert!(jit.code.is_none());assert_eq!(jit.bytes,0);
+        }
+    }}}
+}
+
 #[test]
 #[ignore = "Requires exact saved unprofiled machine words and operation map"]
 fn observe_saved_protocol() {
@@ -108,20 +172,32 @@ fn observe_saved_protocol() {
     let mapping: Value = serde_json::from_slice(&mapping).unwrap();
     let bytes = std::fs::read(std::env::var("PROTOCOL_CODE").unwrap()).unwrap();
     assert!(bytes.len() <= MAX_CODE_BYTES);
-    assert_eq!(number(&mapping, "schema_version"), 1);
+    let schema = number(&mapping,"schema_version");assert!([1,2].contains(&schema));
     assert_eq!(mapping["profiled"], false);
     for flag in ["persistent_registers", "resumable_calls", "complete", "reconstructed_bytes_match"] {
         assert_eq!(mapping[flag], true, "{flag}");
     }
     assert_eq!(number(&mapping, "code_bytes"), bytes.len());
     assert_eq!(mapping["code_sha256"], format!("{:x}", Sha256::digest(&bytes)));
-    let jit = Jit::new_resumable(&program, false, MAX_CODE_BYTES, true).unwrap();
+    let mut jit = Jit::new_resumable(&program, false, MAX_CODE_BYTES, true).unwrap();
+    let mut scalar_ids = BTreeSet::new();
+    if schema == 2 {
+        jit.enable_scalar_calls();
+        let base = number(&mapping,"arena_base");assert!(base>0);
+        for saved in mapping["functions"].as_array().unwrap() {
+            if saved["spans"][0]["kind"] != "scalar_leaf" {continue;}
+            let id = number(saved,"function");assert!(scalar_ids.insert(id));
+            let offset = number(saved,"offset");let end = number(saved,"end");
+            assert!(offset<end && end<=bytes.len());
+            let words = jit.observe_saved_scalar_entry(id,offset,end-offset,base);
+            verify_words(&words,&bytes[offset..end]).unwrap();
+        }
+    }
     let (mut cursor, mut assertions, mut count) = (0, 0, 0);
     let mut seen = BTreeSet::new();
     let mut output = vec![];
     for function in mapping["functions"].as_array().unwrap() {
         let id = number(function, "function");
-        assert!(seen.insert(id));
         let f = &program.functions[id];
         assert_eq!(function["name"], f.name);
         let offset = number(function, "offset");
@@ -129,6 +205,13 @@ fn observe_saved_protocol() {
         assert_eq!(offset, cursor);
         assert!(offset < end && end <= bytes.len());
         assert_eq!(number(function, "assertion_base"), assertions);
+        if function["spans"][0]["kind"] == "scalar_leaf" {
+            assert_eq!(schema,2);assert!(scalar_ids.contains(&id));
+            assert_eq!(number(function,"assertion_count"),0);
+            assert_eq!(function["spans"],json!([{"offset":offset,"end":end,"region_pc":0,"pc":null,"kind":"scalar_leaf"}]));
+            cursor=end;continue;
+        }
+        assert!(seen.insert(id));
         let mut collector = Collector { rows: vec![], limit: MAX_SPANS };
         let staged = jit.emit_function_inner(f, (end-offset)/4, assertions, Some(&mut collector))
             .unwrap().expect("saved complete function must reconstruct");
@@ -142,8 +225,9 @@ fn observe_saved_protocol() {
         let slots = call_slots::collect(f, &program);
         for row in collector.rows.iter().filter(|row| row.kind == Kind::Transition) {
             let pc = row.pc.unwrap();
-            let (a, resume, _) = jit.emit_resumable_transition(f, pc, &reads,
+            let (mut a, resume, _) = jit.emit_resumable_transition(f, pc, &reads,
                 allocation.as_ref(), slots.get(&pc).map(Vec::as_slice)).unwrap();
+            link_transition(&mut a,&staged,(row.offset-offset)/4);
             verify_words(&a.words, &bytes[row.offset..row.end]).unwrap();
             assert_eq!(staged.resumes[pc], Some((row.offset-offset)/4 + resume));
             validate_partition(&a).unwrap();
@@ -166,6 +250,6 @@ fn observe_saved_protocol() {
     serde_json::to_writer(file, &json!({"status":"passed","code_bytes":bytes.len(),
         "code_sha256":mapping["code_sha256"],"functions":seen.len(),"transitions":count,
         "exact_full_function_reconstruction":true,"exact_transition_reconstruction":true,
-        "complete_partition":true,"guest_commands":0,"executable_code_publications":0,
+        "complete_partition":true,"schema_version":schema,"scalar_bodies_reconstructed":scalar_ids.len(),"guest_commands":0,"executable_code_publications":0,
         "spans":output})).unwrap();
 }

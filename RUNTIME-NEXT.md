@@ -1,3 +1,14 @@
+LATEST: current-call-protocol/{PLAN.md,run.py} ready, no commandlaunched.
+Test-only scalarprotocol labels +schema2 reconstruction in4cratefiles(jit.rs,
+resumable.rs,scalar_calls.rs,code_spans/protocol_census.rs), adoptedzero_range
+unchanged. Newscalarfixture covers1/8/16-byte args,profiles/persistent modes,
+native/unsupported successors; isolatedsuccessbranchescheckedagainstfullfunction
+internalentry offsets(test-onlyfield). Existing2faultpartitioncontrols retained.
+Nextcommit/pushthen supervise current-call-protocol-01 run.py, freezeuntilterminal
+andrun.py--close. 2buildcommands3tests/profile then4savedcapture reconstructions.
+No newguest/executablepublication. Reuseboundedtargetwithnewpurpose explicit;
+cap3GiB,admissionmax14GiB,8+2allocated; free~17.8GiB. Protectedtargetuntouched.
+
 LATEST: main3972406b pushed closedshort-tail ES8 negative. Newrootbranch
 experiment/adopted-es8-protocol-scope-20260919 restoresEXACTadoptedfca runtime;
 no runtime crate diff remains. Candidate63578118 retained onpreviousbranch.
