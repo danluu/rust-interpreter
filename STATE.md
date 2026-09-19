@@ -111,7 +111,9 @@ The complete first capture is closed and must never be repeated. Corrected
 profile02 is closed atbe693980,90401/90404:7controls and only2newguests.
 All original assertions/counts/memory/entropy match adopted; all layouts/native
 bytes match parked3e53b127 except validated addresses at427/532/21scalar sites.
-The closure verifies98frozen inputs/27artifacts. No timing has started. See `benchmarks/experiments/selective-narrow-repair/focus.py`
+The closure verifies98frozen inputs/27artifacts. Primary protocol01 is closed
+at7b6e1d51,3481/3484 with13+3controls and exact reused449Pythonchecks.
+The forty-command primary is admitted next under a fresh14GiB disk gate. See `benchmarks/experiments/selective-narrow-repair/focus.py`
 and `docs/SELECTIVE-NARROW-REPAIR-20260918.md`. Main ccb3b465 contains only the
 closed conservative-primary outcome; root owns this new experimental branch.
 
