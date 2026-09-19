@@ -229,3 +229,5 @@ domain. Focused29template+3policy perprofile,24featureoff prepared; notrunyet.
 Main8509b167 pushednarrowcoverage; sourceexperimental,noadoption.
 
 Parameterized-literal focused05 sourcec24e1eba completed14584/14687 CLOSED69859:34controls/profile,24ordinary. Earlier01/02fault-fixture mismatches,03lock admission,04range-fixture bound preserved; no runtime correctness defect established. New independent literal manifest and 40 arithmetic/overflow pairs covered. Next full673Rust/profile+17ignored,33diagnostic,10ordinarysession,24ordinarymodel, then1824actualparser invocations with every hit verified. Main8509b167; no adoption. SuggestionsSHA4d74b3dc unchanged. Goal remains paused.
+
+Literal fullqualification01 lock timeout preserved before build. Full02 source75b0c498 ACTIVE11961/controller11964; debugCargo11971. Freeze crates/scripts/tests and parameterized-literals-workspace until closure. Parser and phase/install prepared, not started. Main52920d8f pushed focused proofs preserving peerb2a700ee. Fullparser01 six-root cleanup prepared onlyifdiskneedsroom, notrun.

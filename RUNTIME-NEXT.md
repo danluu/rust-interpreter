@@ -9,9 +9,11 @@ Includes live arithmetic/overflow, addresses/faults, memory forwarding and budge
 
 Full qualification01 (72986/72989) was NOT ADMITTED: peer held benchmark.lock;
 45s timeout before any build/test/raw directory. Preserved results/parameterized-
-literals-qualification-01. Next qualification02 prepared:673Rust/profile+17ignored,
+literals-qualification-01. Qualification02 ACTIVE11961/controller11964 source75b0c498:
+673Rust/profile+17ignored,
 33diagnostic,10ordinarysession,24ordinarymodel/defaultVM; reuse442Python+22skip
-only through unchanged source/log bindings. Wait for lock before launch.
+only through unchanged source/log bindings. Freeze crates/scripts/tests and
+parameterized-literals-workspace folder through closure.
 Then prepared parser-client01:1824actual saved invocations, fresh verification of
 every hit. Then literal-phases-parser01 evaluates key/miss/restore costs separately.
 Install controller prepared but do not launch until diagnostics support mechanism.
@@ -41,4 +43,7 @@ Free~25GiB variable. SuggestionsSHA4d74b3dc... unchanged/re-read September19.
 Do notrepeat completedcache retirement: primary01/02,03+strict01/02/03,
 primary04+strict, recenttoken02, frecustom01. Preserve all proofs/binaries/sources
 and sharedbuildtarget. Closed fullparser01 caches may be audited if needed.
-Main8509b167 pushed narrow census evidence, preserving peer0dda92e2.
+Main52920d8f pushed focused literal proofs, preserving peerb2a700ee.
+Closed fullparser01 cache retirement controller prepared, NOT run; only if disk
+admission needs room. Six exact owned retired namespaces,110commands/22requests;
+retain unmeasurable verdict and all protected artifacts. Never repeat old cleanups.
