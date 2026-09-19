@@ -323,3 +323,12 @@ Free~25.7GiB, recheck before24GiB primary. Noactiveexperiment afterclosure.
 Nextfive-mode40command primary: native,adopted,A/A,sessionoff,sessionon; two extra
 untimedstrict type/borrow rejection controls in independentnamespace. Charge
 startup/teardownwall and allkernelserverCPU; keep prospectiveoriginalnoisegates.
+
+Prospectiveaccounting protocol source204e669a passes92516/92529, CLOSED20384/
+20418. Seven controls test five-modebalance, kernelCPUconservation, fullsetupcharge,
+falsewinsfromomittedcosts, worstA/Anoise, sessionoffcomparison and invaliddata.
+Newprimarycontroller/closer/prereqs prepared under
+benchmarks/experiments/cross-program-template-screen. Fortyactualsourcecommands
+plus2untimedstrict type/borrow controls; requires24GiB and2workers. Fullserver
+startup/tails/teardown charged; noautomaticretry orchangedgate. Sourcepin/oldnative
+inventory/artifact equality and originaloutcomes preserved. Notyetstarted.
