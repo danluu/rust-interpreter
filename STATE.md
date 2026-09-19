@@ -1,3 +1,16 @@
+LATEST: profile01 CLOSED source5372d29b,supervisor44095/controller44139,
+close67442passed. Tenoriginalguests5pairs exactPCcounts/counters/entropy/peak,
+zero declines; nativebytesremoved2968/2936/13788/17148/944. Install01 CLOSED
+source00b1749b supervisor91872/controller91911,close5881passed. Toold4aba7b8
+bc4433ba8201c8a01c0d967dccf15d1e91b557fc77ba6364c4d63f57, VMfc71b1b2;
+frontendbyteidenticaldf4006 and121closedchecksreverified. Defaultunchanged.
+Newbounded-scalar-padding-screen14protocoltests ready;prospective40ES8rows+2strict,
+minimum1%wallandgain>fullAAwall,CPU<=1+AA. Initial16GiB,child8GiB,no unchanged
+retry/noheldoutsonfailedgate. Needcommit/pushthenprotocol01run+independent--close,
+then benchmarkscreen-es8-01+close.py. Freeze screen/source throughclosures.
+Main0edf7671pushed focused/workspace/cleanup evidence, no runtimecandidate.
+SavedgoalPAUSED; nootherprocesscontrols;protectedtargetuntouched.
+
 LATEST: closed-es8-compiler-cache-retirement01 CLOSED success sourcea122f806,
 supervisor1679/controller interminal; independentcloseverified5256removedpaths
 and3538protectedhashes. Nineexactcaches(adoptedES8+shorttailES8), no snapshots/
