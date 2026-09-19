@@ -276,3 +276,18 @@ intermediates1,501,450,936logicalbytesremoved;2662protectedhashesverified.
 Free17,431,228,416->18,737,836,032bytesbeforeprofile;noothercache/process touched.
 Earlierclosed-es8-compiler-cache-retirement01alsoCLOSED9roots5256files.
 Suggestions unchangedSHA4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f.
+
+LATEST12:16: overlap screen-es8-01 CLOSED sourcef156fbce supervisor48438/controller
+48441;40commands+2strictallpassed, originalsourcecompiledrestorationverified.
+PARK/UNMEASURABLE: medianwall.9942152494,CPU.9912586615,AAmaxwall.1043948468,
+CPU.0486800162. Fails1%minimumandfullnoiseenvelope;noheldouts/no unchangedretry.
+All14controllercontrolsCLOSED. Ready topublish closedprofile/install/protocol/
+screenfolders/results tomainexplicitpaths, leavecandidate runtimeexperimental.
+Nextnewbranchrestoreexact24cd8e99resumable.rs+resumable_tests.rs andscope large
+ordinaryclearsfromsavedtypedordinary-scope02 andoriginalselfPCs, no newguest/build.
+Needquantify64bytebatchstoresvsloopcontrol/residualbytes beforecandidate.
+Free15.4GiBscreenend, analysisfloor12 okay; nextfre screenstill16GiBinitial.
+Potentialthroughputimprovementforfuturequalifications: reuse immutable closed
+adopted baselineprofile/code/entropy tapes and runonlynewcandidate5replays, with
+alloriginalbaselinehashes/childreceipts/typedartifactchecks preserved. Do not
+replayalreadyqualifiedbaselines merelyto createanotheridenticalcontrolfile.
