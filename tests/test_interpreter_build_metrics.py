@@ -162,6 +162,21 @@ class InterpreterBuildMetricsTests(unittest.TestCase):
         self.entry_catalog.write_text(json.dumps(dict(schema_version=1, bytecode_version=5,
             artifact_sha256=digest, entries=[dict(name='selected'), dict(name='sibling')])))
 
+    def test_stock_launch_does_not_import_custom_compiler_or_cargo_implementation(self):
+        original_import = __import__
+
+        def stock_import(name, *args, **kwargs):
+            if name in ('custom_compiler', 'custom_cargo'):
+                raise AssertionError('stock launch imported ' + name)
+            return original_import(name, *args, **kwargs)
+
+        # Intercept import statements even if other tests have already loaded
+        # the modules. The fixture still reaches Cargo and VM boundaries, both
+        # stubbed by setUp; no compiler, Cargo or VM process is launched here.
+        with patch('builtins.__import__', side_effect=stock_import):
+            self.assertEqual(self.launch(), 0)
+        self.assertEqual(len(self.invocations), 2)
+
     def test_ready_includes_launcher_checks_and_waited_build_children_but_excludes_vm(self):
         self.assertEqual(self.launch(['--allocation-trace', '--trap-unsupported-calls']), 0)
         [stats] = self.launch_stats()
