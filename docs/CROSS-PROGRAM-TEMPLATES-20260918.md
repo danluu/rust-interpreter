@@ -89,3 +89,30 @@ restoration without weakening validation. Persistent storage or IPC must earn
 its loading, serialization and startup cost in real edited-source comparisons.
 [History controls](../results/cross-program-template-model-04/summary.json),
 [populated replay](../results/cross-program-template-history-01/summary.json).
+
+The bound-request implementation passes16 controls/profile. Its populated replay
+matches all16 worker/state rows from the previous history in outcomes, inserted
+and evicted entries, native word counts and retained charge. One private request
+holds the computed identity and an immutable borrow of the exact current owner;
+the capture path receives emission tied to that request. The replay's separate
+lookup/restore intervals are now roughly1.1–2.9ms for worker0 and0.6–1.6ms for
+worker1 on valid edits. These single diagnostic runs still establish no end-to-end
+speedup. [Bound-request replay](../results/cross-program-template-history-02/summary.json).
+
+Real native publication is also qualified by18 controls/profile. Two additional
+fixtures keep the source code owner alive, rebind to distinct current scalar
+addresses, publish through the existing JIT path and execute the current callee
+and current data initializer. Results match both fresh JIT and interpreter
+values/instruction counts. Other cases compare exact fresh-JIT outcomes over
+instruction budgets0–20, frame limits1–3, memory limits128/4096 and passing/failing
+assertions, including repeated fresh guest states and current assertion text.
+The initial native fixture mistakenly read null address0; the fresh control also
+failed. That debug failure is closed, release remained unstarted, and the corrected
+fixture uses valid address8. [Native qualification](../results/cross-program-template-model-07/summary.json),
+[preserved fixture failure](../results/cross-program-template-model-06/summary.json).
+
+Next connect this primitive to normal lazy function preparation under an explicit
+test-only cache context. Preserve fresh scalar proof/admission, per-owner native
+code/table budgets and ordinary publication/fallback. Then use actual project
+suites across the saved artifacts to exercise real reachability and preparation
+order before selecting a persistent cache design. No production cache is enabled.

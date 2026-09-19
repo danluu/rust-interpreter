@@ -45,18 +45,41 @@ associate with27.4–38.8/18.6–31.1ms original ordinary emission. Single test-
 key intervals about9.2–9.6/5.4–5.6ms; not end-to-end savings. Docs:
 docs/CROSS-PROGRAM-TEMPLATES-20260918.md. All input/output/source hashes closed.
 
-Next: test bounded populated history before choosing production storage.
-History added at153e3057:64MiB charged limit, at most16384 entries, two ordered
-maps with one recency entry/template, replacement/eviction and checked timestamp.
-Two new focused controls should bring count to14/profile. Model03 admission
-33104/33146 FAILED shared lock timeout BEFORE any plan/build/test. Exact terminal
-and source bindings preserved/closed at6a9a82d8 by a small metadata-only audit.
-No successful command was repeated. Controller now targets Model04, not yet
-started at this update; wait for peer lock, then run unchanged14-control test
-qualification, close it, and extend replay to retain new variants after misses.
-No current owned stage is running. Read status before any retry after recovery.
-Further runtime/storage work requires proof, qualification and genuine-edit
-timing; no new candidate is adopted. Saved goal stays paused.
+Populated history added at153e3057:64MiB charge, at most16384 entries, two
+ordered maps with one recency entry/template. Model03 admission33104/33146 timed
+out before any plan/build/test, preserved/closed at6a9a82d8. Model04 at0be791ba
+passes14controls/profile under47496/47500, CLOSED63293/63296. History01 atbd00c8fe
+passes70734/70737, CLOSED85095/85098. Valid edit1–5 hits worker0:
+1512,2389,2389,1221,2000 of2391; worker1:817,1152,1152,601,973 of1154.
+Worker0 evicts447/479/635 atedit4/edit5/restored source; worker1 never evicts,
+ends2230 variants/40978712chargedbytes. No capture/emission/restore declines.
+These remain fixed original numeric function sets and synthetic scalar tables,
+not actual later reachability or production hit rates.
+
+Bound Request/Emission API atfe057ce0 computes one identity and immutably borrows
+the exact owner/function/options through lookup/restore/capture. Model05 passes
+16controls/profile under33836/33839, CLOSED53467/53470. History02 at7102b85d passes
+65170/65173, CLOSED69566/69569. All16 worker/state rows match History01 outcomes,
+insert/eviction, words and charge; timings intentionally excluded. Single diagnostic
+lookup/restore intervals~1.1–2.9ms/0.6–1.6ms perworker on valid edits, not E2E savings.
+
+Native fixtures added at9f573284. Model06 under97392/97395 passed16debug controls,
+failed2newnative fixtures: invalid null address0 read, including fresh-JITcontrol.
+Release unstarted; CLOSED16247/16250, commit952d23de. Corrected address8 and added
+interpreter oracle at504d0d76. Model07 passes18controls/profile under26529/26532,
+CLOSED33109/33112, committed3a813d41. Actual distinct scalar addresses, current
+callee/data outputs, instruction budgets0–20, frame1–3,memory128/4096, assertion
+failure and repeated fresh guest state match freshJIT; successful values/counts
+also match interpreter. These2controls deliberately publish/execute nativecode;
+all earlier staged models/replays publish none. No original projectguest rerun.
+
+NEXT: connect a cfg(test)-only cache context to normal lazy JIT preparation,
+keeping fresh scalar proof/admission, per-owner code/table budgets, assertion
+rebinding, fallbacks and publication unchanged. Qualify its focused/native and
+workspace tests, then replay actual saved project suites to observe real cache
+reachability/order/outcomes before choosing persistence. No CLI/store/IPC/runtime
+adoption yet. No current owned process is running at this state update; inspect
+receipts after recovery before any retry. Saved goal stays paused.
 
 ## Completed cross-edit investigation
 
@@ -113,7 +136,7 @@ previous-state chain. Do not retime unchanged candidates or reinterpret gates.
   two Cargo/test workers. Build target ONLY .work/fixed-frame-clear-combined-build-01/target;
   NEVER clean it. Build floor max(14GiB,8GiB+2*allocated target),analysis12GiB,
   children/closures8GiB unless higher declared. Recheck each stage.
-- Last free about24.1GiB, fluctuating. Parser primary24GiB reservation completed;
+- Last free about22.7GiB, fluctuating. Parser primary24GiB reservation completed;
   future Nushell full comparison needs its recorded~47GiB, not a reduced gate.
 - Cleaner read-only: /usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status
   Do not repair/restart/compete with it or signal/control any peer/session.
