@@ -21,10 +21,13 @@ CLOSED47849: actual removable LDR samples2/2; specific narrow design parked.
 Isolated compact switch failed full primary, archived old branch38c51f5d.
 No unchanged retiming or cancelled guards. All raw failures retained.
 
-Next: admit and independently close region-budget-credit-02 offline model
-and native-PC scope. New bounded forward-edge budget credit, twelve controls.
-Sources frozen through closure; preserve any failure in a distinct continuation.
-No guest/Rust/native-code publication. Potential samples depend on entry path. No Rust build admitted
+Next: assess fixed-path debit reservation across forward single-successor
+native chains, with exact suffix refunds at faults/VM exits. This is distinct
+from check-only region-budget-credit02, now CLOSED with12controls/53bindings
+but only1/2 potential CMP/B.LO samples. Guard-only proposal PARKED, no build.
+Readmission02 succeeded after preserving01 occupied-lock zero-work failure.
+No active command. Need a cursor-aware model and exact whole-budget-PC scope.
+No Rust build admitted
 until disk reserve recomputed: max(14GiB,8GiB+2*allocated shared target), last23GiB.
 Free~19.9GiB. Shared .work/fixed-frame-clear-combined-build-01/target NEVER CLEAN.
 Analysis12GiB/children8GiB, shared benchmark lock45s, two build/test workers.

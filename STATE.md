@@ -284,3 +284,13 @@ Registered readmission02 afterlockavailable; originalmodel/controller unchanged.
 Publicationworktree fast-forwarded topeer598c4554, preservingallpeerfiles.
 No cleanup: read-only exactisolatedprimaryroots total~1.7GiB includingprotected
 files, insufficientalone to meet~23GiBbuildfloor from~19.8GiB.
+
+Budget-credit02 source3776d83e supervisor15883/controller15886 passed12controls
+andbothcases. Independentclosure53bindings, bothrecomputations. Nativebudget
+184/80 samples; actualCMP+B.lo only3/3; potentialfasttargets1/2. PARKguard-only
+proposal,noRust/runtime/timing. Original01admissionfailure preserved; readmission
+receipt .work/region-budget-credit-readmission-02/admission.json bindsit.
+Next distincthypothesis: single-successor forward chain debitreservation, known
+static suffix refund at everyearlyexit. Need machinecursor-aware model and exact
+wholebudgetword scope beforeproduction. Existinggeneralcheck-sharingmodel did
+NOT modelnativefaultcursor publication. No active command; nocleanupperformed.

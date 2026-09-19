@@ -1,6 +1,11 @@
 # Forward-edge budget credit: implementation review
 
-Status: diagnostic registered; no production change, build or guest execution.
+Status: guard-only proposal PARKED after closed diagnostic02: only1/2 potential
+CMP/B.LO self samples out of1933/1429 generated. No runtime build or timing.
+See [the assessment](../results/region-budget-credit-02/assessment.md).
+The conditional implementation review below remains historical, not active work.
+
+Original status: diagnostic registered; no production change, build or guest execution.
 The first admission expired while the other session held the shared lock. Its
 receipt is closed with zero controls and cases. The unchanged diagnostic has a
 separate readmission plan. Coverage must justify any implementation below.
