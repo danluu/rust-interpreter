@@ -1,7 +1,8 @@
 # Continue runtime optimization after historical review
 
 Manual indefinite task; goal remains PAUSED. No subagents or peer process control.
-No active task-owned command. Root branch experiment/private-pointer-promotion-20260919.
+No active task-owned command. Attempt01 is CLOSED admission-only: peer lock
+occupied45s, zero controls/cases. Readmission PLAN recorded; keep model unchanged. Root branch experiment/private-pointer-promotion-20260919.
 Main d73ab139 includes closed loop, copy equality and payload diagnostics; root df4aebf6
 restored the entire bytecode crate to adopted fca687eb. Installed runtime unchanged.
 
@@ -20,7 +21,7 @@ CLOSED47849: actual removable LDR samples2/2; specific narrow design parked.
 Isolated compact switch failed full primary, archived old branch38c51f5d.
 No unchanged retiming or cancelled guards. All raw failures retained.
 
-Next: execute and independently close region-budget-credit-01 offline model
+Next: admit and independently close region-budget-credit-02 offline model
 and native-PC scope. New bounded forward-edge budget credit, twelve controls.
 Sources frozen through closure; preserve any failure in a distinct continuation.
 No guest/Rust/native-code publication. Potential samples depend on entry path. No Rust build admitted

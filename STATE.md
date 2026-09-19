@@ -276,3 +276,11 @@ externalentries, guard/call/backedgebarriers, capcuts and seededwalks. Inputs us
 closed adopted1933/1429 nativecaptures. Count actual CMP/B.LO potentialsites,
 entrydependence explicit; include checked-entry extraimmediates in nominalword
 flowbounds. No runtimeclaim/guest/build/cleanup. Freeze sources throughclosure.
+
+Budget-credit01 supervisor27519/controller27523 hit45s occupied-lock admission.
+ZEROcontrols/cases/rawdirectory; receipt-onlyclosure verified five sourcefiles,
+terminal/log/source0a141eb1. Peer87781 runtimeinstallation heldlock, untouched.
+Registered readmission02 afterlockavailable; originalmodel/controller unchanged.
+Publicationworktree fast-forwarded topeer598c4554, preservingallpeerfiles.
+No cleanup: read-only exactisolatedprimaryroots total~1.7GiB includingprotected
+files, insufficientalone to meet~23GiBbuildfloor from~19.8GiB.
