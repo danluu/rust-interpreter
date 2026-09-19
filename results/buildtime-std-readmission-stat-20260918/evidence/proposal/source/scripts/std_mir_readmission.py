@@ -8,13 +8,6 @@ import hashlib
 import json
 import os
 import stat
-import sys
-
-# This Path.is_file implementation suppresses all OSError and ValueError.
-# Keep the original predicate on other versions, implementations and platforms.
-_SINGLE_STAT_FILES = (sys.implementation.name == 'cpython'
-                      and sys.version_info[:2] == (3, 14)
-                      and os.name == 'posix')
 
 
 def stamp(info):
@@ -33,18 +26,20 @@ def validate(work, ready, result):
     current = {}
     for name in original:
         path = work / name
-        if _SINGLE_STAT_FILES:
-            try:
-                info = path.stat()
-            except (OSError, ValueError):
-                info = None
-            if info is None or not stat.S_ISREG(info.st_mode):
-                raise RuntimeError('standard-library MIR artifact changed: ' + str(path))
-            current[name] = stamp(info)
-        else:
+        try:
+            info = path.stat()
+        except (OSError, ValueError):
+            info = None
+        if info is None:
+            # Keep pathlib's version-specific error policy on the slow path.
+            # Leave the except block before raising our unchanged diagnostic.
             if not path.is_file():
                 raise RuntimeError('standard-library MIR artifact changed: ' + str(path))
             current[name] = stamp(path.stat())
+            continue
+        if not stat.S_ISREG(info.st_mode):
+            raise RuntimeError('standard-library MIR artifact changed: ' + str(path))
+        current[name] = stamp(info)
     if current == original:
         return
     # Do not turn a general artifact mutation into a cache miss or silently repair it.

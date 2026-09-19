@@ -1,0 +1,68 @@
+{
+  "base_commit": "f38004cbd3392b5a6763f920d80801826bbde77c",
+  "base_root": "/Users/danluu/dev/rust-interp-allocation-decoder-publication-20260918",
+  "checks": {
+    "downstream_text_identical": true,
+    "existing_seven_test_helpers_and_methods_unchanged": true,
+    "no_call_count_assertions": true,
+    "normalized_whole_ast_equal": true,
+    "other_runtime_else_original_ast_equal": true,
+    "v1_four_new_semantic_tests_unchanged": true
+  },
+  "files": {
+    "scripts/std_mir_readmission.py": {
+      "baseline": {
+        "bytes": 3315,
+        "sha256": "930fa9788b6f41a8f11d51b9b28f2590b2cd146d6ab9cf91b4e32dd89f5dc426"
+      },
+      "candidate": {
+        "bytes": 4016,
+        "sha256": "6a66c05ddb948a6dfdf3082991aaadc1ad8800340e40ce05568df0a4cfc4e58d"
+      }
+    },
+    "tests/test_std_mir_readmission.py": {
+      "baseline": {
+        "bytes": 4359,
+        "sha256": "559fd8020f3e4713d1d51222f02374b43739c6e773572ac2f0e7346da705bf35"
+      },
+      "candidate": {
+        "bytes": 11238,
+        "sha256": "958f600746706ee04e9a113ef739b2e8aefd95c4864973dfaa2f45ff0af6d95e"
+      }
+    }
+  },
+  "local_version_proof_sha256": "231633676891778ddc31dd8e8264a91aa703d743b3c195a3ef64e7236c0e68eb",
+  "patch": {
+    "bytes": 8670,
+    "sha256": "e3a13a02214c4a1c030f3516aa72772286049ec92e0d4030e02d188b3fc092d8"
+  },
+  "production_ast_diff_sha256": "ed6105143af49e80a503fd7468bdb157e83693986e4f886790db4e1833eacd98",
+  "qualification": {
+    "existing_count": 7,
+    "methods": [
+      "Readmission.test_complete_hash_readmission_preserves_manifest_and_reuses_exact_receipt",
+      "Readmission.test_unchanged_device_needs_no_readmission",
+      "Readmission.test_content_change_with_preserved_stamp_is_rejected",
+      "Readmission.test_other_stamp_changes_and_mixed_devices_are_rejected",
+      "Readmission.test_replaced_or_missing_artifact_after_readmission_is_rejected",
+      "Readmission.test_invalid_receipt_and_mutation_during_hash_are_rejected",
+      "Readmission.test_receipt_does_not_admit_different_manifest",
+      "Readmission.test_nonregular_paths_preserve_exact_artifact_error",
+      "Readmission.test_symlink_to_regular_artifact_retains_all_reuse_paths",
+      "Readmission.test_stat_failures_preserve_native_pathlib_error_policy",
+      "Readmission.test_later_missing_artifact_precedes_earlier_stamp_mismatch",
+      "Readmission.test_transient_stat_failure_is_not_hidden_by_retry"
+    ],
+    "new_count": 5,
+    "paired_total": 24,
+    "per_arm": 12
+  },
+  "readme_sha256": "075dd799ed1d5f00b735bfa701822e3e71a4f8d93f7c9d617d17acd3ff8e63ab",
+  "revision": "v2 conservative runtime guard; no retry after enabled-path failure",
+  "scope": "Source-only proposal; no worktree application, imports, tests, compiler queries or measurement",
+  "supersedes_unexecuted_invalid_v1": {
+    "patch_sha256": "88cc4c5930f4a8ebb65bbdac9e8a465f1cbfe5a4fbc006257fef74a82e23826f",
+    "path": "/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-proposal",
+    "reason": "v1 retry could hide an initial transient lookup error; v1 is not qualified or acceptable"
+  }
+}

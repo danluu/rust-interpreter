@@ -1,0 +1,126 @@
+--- c9-primary/run-unit-tests.py
++++ c9-python39/run-compatibility-tests.py
+@@ -1,5 +1,5 @@
+ #!/usr/bin/env python3
+-"""Paired std readmission correctness: two suites, 24 exact named tests."""
++"""Actual CPython3.9 compatibility: two std readmission suites, 24 exact named tests."""
+ import ast
+ import fcntl
+ import hashlib
+@@ -15,21 +15,18 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-probe')  # Common owned cwd; each arm is imported by exact source path.
+ PACKET = ROOT
+ PROPOSAL = PACKET.parent / "std-readmission-stat-proposal" / "v2"
+-OUT = PACKET / "unit-screen-01"
++OUT = PACKET / "compatibility-screen-01"
+ LOCK = Path("/Users/danluu/dev/rust-interp/.work/benchmark.lock")
+ SOURCE = PACKET / "unit-source-manifest.json"
+ SOURCE_SHA = '8d09306a6b13459ca442059a0aa226ff4c125f7c4eea8b41f54f578121a88378'
+-DRIVER = PACKET / "unit-driver.py"
++DRIVER = PACKET / "compatibility-driver.py"
+ DECISION_SHA = "UNBOUND"
+-PYTHON = Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14')
++RUNTIME = PACKET / "python39-runtime-source-proof.json"
++RUNTIME_SHA = "3edffbd566fd6f0a8701dfd43af68c42f9e9aab0eae1af78251082997842737a"
++PYTHON = Path('/usr/bin/python3')
+ FIXED = {
+-    Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14'): '87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634',
+-    Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Python'): 'b112695af23f5e46d84a7c4ef6057603b70b94aacc32e9d548808c2875759d47',
+-    Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/__init__.py'): '2dd10f1bf4c9ea5478e589216805e7f279d0e4bce134a19efa297404fb87407d',
+-    Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/decoder.py'): 'dc98d3e677612ea7311303f06a144cec6b91ebadc7ec037d1777501647578a07',
+-    Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/scanner.py'): '572958017eae8842eeddd0e3d18d3c56cc0a197348224915e1d87ce937841764',
+     Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-probe/unit-source-manifest.json'): '8d09306a6b13459ca442059a0aa226ff4c125f7c4eea8b41f54f578121a88378',
+-    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-probe/unit-driver.py'): 'b703ae9bfdc7fcc07fabafd449e8bf38c2c1f1e165c3e904e4302f31fa10220f',
++    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-probe/compatibility-driver.py'): 'b57b8ff17e6473a315edbe25f4118a77bff0fded26c4f23f1eb78a74f6d92160',
+     Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-probe/applied-source-manifest.json'): 'abd6852ea94924b36e757553f2f3ca5945ade75e51a1187fbcbbe8adc392cfbc',
+     Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/fresh-toolchain-import-probe/run-unit-tests.py'): '66722ddb54f01210e47adfeb5273426c2314661224d2b86f528e76c14ea34964',
+     Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/fresh-toolchain-import-probe/unit-driver.py'): '3da8d1b00c0b05a9e59412f6e9c5be88ee3c3110540432ca84f992e3d82ee6a9',
+@@ -40,6 +37,24 @@
+     Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-proposal/v2/production-ast-diff.json'): 'ed6105143af49e80a503fd7468bdb157e83693986e4f886790db4e1833eacd98',
+     Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-proposal/v2/local-version-proof.json'): '231633676891778ddc31dd8e8264a91aa703d743b3c195a3ef64e7236c0e68eb',
+     Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-probe/decision-plan.json'): DECISION_SHA,
++    Path('/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Headers/patchlevel.h'): '0514484aa8e9460723bad55dd2b3b8b01feee0dc79e88866840c3851bd79a1d5',
++    Path('/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Python3'): '4ba4db54c3ba8c68950474ba1d10754c01a716ee1d5bf820e817a678abb55134',
++    Path('/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Info.plist'): 'e39897e46d5131a0145d4eaf710457cea19337d7d231facf3bd4169c401d0ba0',
++    Path('/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/Info.plist'): 'e91c782628cc817de55975c280ff2046c6b6a321720135ef953a1f4c70a5253b',
++    Path('/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python'): '539f4821e2730e93cfbc0a9a391fcd997568edb5e0df079f21574dee91e1f7a5',
++    Path('/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9'): 'a14736021f996360f9ec762abc87c23f9cb9928bb6263b38a1f18b62e978153b',
++    Path('/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/genericpath.py'): '9d58ad64056a89f12258a62596c2073cd9e52b459dde152f710edc0cffcd865b',
++    Path('/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/__init__.py'): '332fabb72a4a1ed02c9207a7619ab339dac8f0b6862e16f6499147121b302a27',
++    Path('/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/decoder.py'): '079f7a25863c18fc9a9abc59735d684535b9deaafc08acda416997784b78e9c5',
++    Path('/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/json/scanner.py'): '8604d9d03786d0d509abb49e9f069337278ea988c244069ae8ca2c89acc2cb08',
++    Path('/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/lib-dynload/_json.cpython-39-darwin.so'): '8762057be64454bc521743cea3a7862750d9877b6b9ce325633ad1bf8c8a1aba',
++    Path('/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py'): '6b33d2d55c09aa9c607a528003ed8fe154894afaa977ec554e0a858240412b72',
++    Path('/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/posixpath.py'): 'f1b267bec4f8d29b2aadf21d019bf6e0935ab1c2c6c9ec0981cb7c54191be986',
++    Path('/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/__init__.py'): '07bdf1fff20e4121ba61cfb64ea3c404d54ac56b053475a3a105907f48685210',
++    Path('/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/loader.py'): '4b8d7dbfe68bc38f50e6b3952fda338e1cf9de43f299ab910cfef31c219e0342',
++    Path('/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/mock.py'): '8846048f2ae98d7341bcfc4e81658543ba9291d469dd7ab981bcfce2b4b5a148',
++    Path('/usr/bin/python3'): '34129c71a01a74f7f3b2443521519b2e5447553fa187f5fcafaaf8c42cc192e2',
++    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-probe/python39-runtime-source-proof.json'): RUNTIME_SHA,
+ }
+ 
+ GIB = 1024 ** 3
+@@ -87,12 +102,22 @@
+         p = proof(path)
+         require(digest is None or p["sha256"] == digest, "fixed input changed: " + str(path))
+         files[str(path)] = p
++    runtime = json.loads(RUNTIME.read_bytes())
++    require(runtime["entrypoint"] == str(PYTHON) and runtime["expected_version_info_prefix"] == [3, 9, 6]
++            and runtime["expected_implementation"] == "cpython", "wrong compatibility runtime")
++    for name, row in runtime["files"].items():
++        require(files[name]["identity"] == row["identity"], "compatibility installed file identity changed")
++    for row in runtime["links"]:
++        path = Path(row["path"])
++        require(stat.S_ISLNK(path.lstat().st_mode) and identity(path.lstat()) == row["identity"]
++                and os.readlink(path) == row["link_text"]
++                and str(path.resolve(strict=True)) == row["resolved"], "compatibility dispatch link changed")
+     descriptor = json.loads(SOURCE.read_bytes())
+     require(descriptor["base_commit"] == "f38004cbd3392b5a6763f920d80801826bbde77c" and
+             descriptor["expected_tests"] == EXPECTED_TESTS and set(descriptor["arms"]) == {"baseline", "candidate"},
+             "wrong source descriptor")
+     decision = json.loads((PACKET / "decision-plan.json").read_bytes())
+-    q = decision["qualification"]["unit_tests"]
++    q = decision["qualification"]["compatibility_tests"]
+     require(decision["base_commit"] == descriptor["base_commit"] and
+             decision["proposal_patch_sha256"] == FIXED[PROPOSAL / "candidate.patch"] and
+             decision["candidate_applied_source_manifest_sha256"] ==
+@@ -261,7 +286,7 @@
+ 
+ 
+ def main():
+-    require(sys.argv[1:] == ["--execute-synthetic-unit-tests"], "explicit execution flag required")
++    require(sys.argv[1:] == ["--execute-python39-compatibility-unit-tests"], "explicit execution flag required")
+     require(DECISION_SHA != "UNBOUND", "C9 decision remains UNBOUND; source-only draft cannot execute")
+     require(sys.platform == "darwin" and ROOT.resolve() == ROOT and PACKET.resolve() == PACKET,
+             "wrong platform or owned paths")
+@@ -283,7 +308,8 @@
+         tests = []
+         error = post_binding_error = None
+         environment = dict(HOME="/Users/danluu", PATH="/usr/bin:/bin", LANG="C", LC_ALL="C",
+-                           PYTHONDONTWRITEBYTECODE="1", PYTHONNOUSERSITE="1")
++                           PYTHONDONTWRITEBYTECODE="1", PYTHONNOUSERSITE="1",
++                           DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer")
+         try:
+             before = bindings()
+             inventory = test_inventory()
+@@ -321,9 +347,9 @@
+                         report["test_path"] == declared["path"] and
+                         report["test_content"] == {k: before[declared["path"]][k] for k in ("bytes", "sha256")} and
+                         report["canonical_module_object_preserved"] is True and report["manifest_sha256"] == SOURCE_SHA and
+-                        report["python"]["version_info"][:2] == [3, 14] and
++                        report["python"]["version_info"][:3] == [3, 9, 6] and
+                         report["python"]["implementation"] == "cpython" and
+-                        report["single_stat_guard"] is (True if arm == "candidate" else None),
++                        report["single_stat_guard"] is (False if arm == "candidate" else None),
+                         "driver names/module/result mismatch: " + label)
+                 tests.append(dict(label=label, arm=arm, pattern=filename, passed=expected,
+                                   failures=0, ignored=0, child_pid=receipt["pid"],
+@@ -344,7 +370,7 @@
+                       expected_tests=EXPECTED_TESTS, passed_tests=sum(r["passed"] for r in tests),
+                       tests=tests, test_inventory=inventory, bindings=before,
+                       bindings_after=after, post_binding_error=post_binding_error, children=CHILDREN,
+-                      scope="24 exact named Python correctness tests across two actual std-readmission implementations using the common candidate test module; synthetic filesystem/receipt behavior only; no Rust/compiler/Cargo/VM workload or performance claim")
++                      scope="24 exact named Python compatibility tests under actual bound CPython3.9.6 across two std-readmission implementations using the common candidate test module; candidate legacy guard false; synthetic filesystem/receipt behavior only; no Rust/compiler/Cargo/VM workload or performance claim")
+         write("result.json", result)
+         print(json.dumps(dict(status=result["status"], passed_tests=result["passed_tests"],
+                               error=error, result=str(OUT / "result.json"))), flush=True)

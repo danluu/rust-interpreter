@@ -1,0 +1,59 @@
+{
+  "base_commit": "f38004cbd3392b5a6763f920d80801826bbde77c",
+  "base_root": "/Users/danluu/dev/rust-interp-allocation-decoder-publication-20260918",
+  "checks": {
+    "downstream_text_identical": true,
+    "existing_seven_test_asts_unchanged": true,
+    "existing_test_helpers_asts_unchanged": true,
+    "no_stat_call_count_assertions": true,
+    "only_initial_validate_loop_ast_changes": true
+  },
+  "files": {
+    "scripts/std_mir_readmission.py": {
+      "baseline": {
+        "bytes": 3315,
+        "sha256": "930fa9788b6f41a8f11d51b9b28f2590b2cd146d6ab9cf91b4e32dd89f5dc426"
+      },
+      "candidate": {
+        "bytes": 3799,
+        "sha256": "8200e5f46ec302cc3cd2753db9976a654aec947090f346754e13bf3bb9b1678c"
+      }
+    },
+    "tests/test_std_mir_readmission.py": {
+      "baseline": {
+        "bytes": 4359,
+        "sha256": "559fd8020f3e4713d1d51222f02374b43739c6e773572ac2f0e7346da705bf35"
+      },
+      "candidate": {
+        "bytes": 9118,
+        "sha256": "51379809d39114c426148602a28f771f95b6d4ded87fd96ec1be011576f6b1b1"
+      }
+    }
+  },
+  "patch": {
+    "bytes": 6124,
+    "sha256": "88cc4c5930f4a8ebb65bbdac9e8a465f1cbfe5a4fbc006257fef74a82e23826f"
+  },
+  "production_ast_diff_sha256": "c035085207d6f8fb821e0c959fa0b8c9959cfff09c14f9966cbfd155f8aaadbb",
+  "qualification": {
+    "additional_tests": [
+      "test_nonregular_paths_preserve_exact_artifact_error",
+      "test_symlink_to_regular_artifact_retains_all_reuse_paths",
+      "test_stat_failures_preserve_native_pathlib_error_policy",
+      "test_later_missing_artifact_precedes_earlier_stamp_mismatch"
+    ],
+    "existing_tests": [
+      "test_complete_hash_readmission_preserves_manifest_and_reuses_exact_receipt",
+      "test_unchanged_device_needs_no_readmission",
+      "test_content_change_with_preserved_stamp_is_rejected",
+      "test_other_stamp_changes_and_mixed_devices_are_rejected",
+      "test_replaced_or_missing_artifact_after_readmission_is_rejected",
+      "test_invalid_receipt_and_mutation_during_hash_are_rejected",
+      "test_receipt_does_not_admit_different_manifest"
+    ],
+    "proposed_each_arm_count": 11,
+    "proposed_paired_count": 22
+  },
+  "readme_sha256": "b1ea4d027662ae06bb232363a07e994cf2d81ae4b7c20dfc0371193b364b1952",
+  "scope": "Isolated source-only proposal; no worktree application, imports, tests, compiler queries or measurements"
+}
