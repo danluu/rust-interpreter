@@ -25,7 +25,8 @@ struct Options {
 }
 impl Options {
     fn of(jit:&Jit<'_>)->Option<Self> {
-        if jit.profiled || jit.native_call_stubs || jit.trees.is_some() || jit.resumable.is_none() {return None;}
+        if jit.program.version & crate::PARTIAL_VALIDATION != 0 || jit.profiled
+            || jit.native_call_stubs || jit.trees.is_some() || jit.resumable.is_none() {return None;}
         Some(Self {heap:jit.uses_heap,persistent:jit.persistent_registers,scalar:jit.scalar.is_some(),
             test_flags:[jit.disable_call_slot_hints,jit.observe_guarded_local_retention,jit.observe_static_local_facts,
                 jit.observe_scalar_copy,jit.observe_scratch_locals,jit.scratch_values_enabled,jit.observe_memory_parts]})
@@ -136,7 +137,7 @@ struct Contents<'p> {slots:Vec<Option<Arc<Template<'p>>>>,charged:usize}
 struct Store<'p> {program:&'p Program,limit:usize,contents:Mutex<Contents<'p>>}
 impl<'p> Store<'p> {
     fn new(program:&'p Program,limit:usize)->Option<Self> {
-        if limit>MAX_TEMPLATE_STORAGE {return None;}
+        if program.version & crate::PARTIAL_VALIDATION != 0 || limit>MAX_TEMPLATE_STORAGE {return None;}
         let base=std::mem::size_of::<Self>()+64;
         if program.functions.len().checked_mul(std::mem::size_of::<Option<Arc<Template<'p>>>>())?.checked_add(base)?>limit {return None;}
         let mut slots=Vec::new();slots.try_reserve_exact(program.functions.len()).ok()?;
@@ -333,4 +334,118 @@ fn template_store_poison_is_a_miss_for_readers_and_publishers() {
     });
     assert!(store.snapshot(&p,0).is_none());assert!(!store.retain(Template::capture(&j,0,&stage(&j,0)).unwrap()));
     assert!(!stage(&j,0).words.is_empty());
+}
+
+#[cfg(all(target_arch="aarch64",target_os="macos"))]
+mod execution_controls {
+    use super::*;
+    use crate::{Execution,ExecutionMetadata,Limits,Slot};
+    fn limits()->Limits {Limits {jit_resumable_calls:true,jit_persistent_registers:true,jit_scalar_calls:true,
+        memory:4096,frames:8,instructions:1000,..Limits::default()}}
+    struct Native<'p> {jit:Option<Jit<'p>>,metadata:ExecutionMetadata}
+    impl<'p> Native<'p> {
+        fn new(p:&'p Program,prior_assertions:usize)->Self {
+            crate::validate(p).unwrap();let mut jit=crate::create_jit::<false,true,false,true>(p,&limits()).unwrap();
+            assertions(jit.as_mut().unwrap(),prior_assertions);
+            let metadata=ExecutionMetadata::new(p,jit.as_ref(),true,limits().memory).unwrap();Self{jit,metadata}
+        }
+        // Only these controls call this path. Runtime ensure_function is intact.
+        fn prepare(&mut self,id:usize,store:&Store<'p>)->bool {
+            let j=self.jit.as_mut().unwrap();assert!(!j.prepared[id]);
+            j.prepare_scalar_callees(id).unwrap();
+            let cached=store.snapshot(j.program,id).and_then(|t|t.restore(j,id));let hit=cached.is_some();
+            let staged=if let Some(s)=cached {Ok(Some(s))} else {j.emit_function(&j.program.functions[id],(j.capacity-j.bytes)/4)};
+            let candidate=if hit {None} else {staged.as_ref().ok().and_then(|s|s.as_ref()).and_then(|s|Template::capture(j,id,s))};
+            let before=j.compiled_functions;j.finish_preparation(id,staged).unwrap();
+            if j.compiled_functions>before {if let Some(candidate)=candidate {store.retain(candidate);}}
+            hit
+        }
+        fn run(&mut self,budget:Limits)->Result<Execution,String> {
+            let p=self.jit.as_ref().unwrap().program;
+            crate::execute_prepared_impl::<false,true,false,false,true>(p,0,&[],budget,None,&mut self.jit,&self.metadata)
+        }
+    }
+    fn outcome(actual:Result<Execution,String>,expected:Result<Execution,String>)->bool {
+        match (actual,expected) {
+            (Ok(a),Ok(b))=>{assert_eq!((a.value,a.instructions,a.peak_memory),(b.value,b.instructions,b.peak_memory));
+                assert!(a.jit_compiled_functions>0);true},
+            (Err(a),Err(b))=>{assert_eq!(a,b);false},
+            (a,b)=>panic!("restored {a:?}; ordinary {b:?}"),
+        }
+    }
+    fn warmed<'p>(p:&'p Program,store:&Store<'p>)->(Native<'p>,Native<'p>) {
+        let mut first=Native::new(p,3);assert!(!first.prepare(0,store));first.prepare(1,store);
+        let mut second=Native::new(p,19);
+        // Real separate MAP_JIT mappings exercise the restored scalar address.
+        assert!(second.prepare(0,store));assert!(second.prepare(1,store));
+        assert_ne!(first.jit.as_ref().unwrap().code.as_ref().unwrap().published().0,
+            second.jit.as_ref().unwrap().code.as_ref().unwrap().published().0);
+        (first,second)
+    }
+
+    #[test]
+    fn template_execution_rebound_calls_match_values_all_budget_prefixes_and_limits() {
+        let p=fixture();let store=Store::new(&p,MAX_TEMPLATE_STORAGE).unwrap();let (_first,mut cached)=warmed(&p,&store);
+        let mut ordinary=Native::new(&p,0);let mut passed=0;
+        for instructions in 0..=22 {for memory in [0,31,64,128,4096] {for frames in [0,1,2,8] {
+            let budget=Limits{instructions,memory,frames,..limits()};
+            passed+=outcome(cached.run(budget.clone()),ordinary.run(budget)) as usize;
+        }}}
+        assert!(passed>0);let a=cached.run(limits()).unwrap();assert!(a.jit_resumable_calls>0 && a.jit_instructions>0);
+    }
+
+    #[test]
+    fn template_execution_rebound_faults_preserve_original_assertions_and_error_order() {
+        for fault in 0..3 {
+            let mut p=fixture();
+            match fault {
+                0=>p.functions[0].code[4]=Op::Assert{value:1,expected:false,message:"second original assertion".into()},
+                1=>p.functions[0].code[4]=Op::Trap{message:"original trap after call".into()},
+                _=>{p.functions[0].code.splice(4..5,[Op::Imm{dst:2,value:u64::MAX as u128},Op::Load{dst:3,address:2,size:8}]);},
+            }
+            let store=Store::new(&p,MAX_TEMPLATE_STORAGE).unwrap();let (_first,mut cached)=warmed(&p,&store);
+            let mut ordinary=Native::new(&p,0);
+            for instructions in 0..=22 {let budget=Limits{instructions,..limits()};outcome(cached.run(budget.clone()),ordinary.run(budget));}
+            let actual=cached.run(limits()).unwrap_err();let expected=ordinary.run(limits()).unwrap_err();assert_eq!(actual,expected);
+            if fault==0 {assert!(actual.contains("second original assertion") && actual.contains("caller"));}
+            if fault==1 {assert!(actual.contains("original trap after call"));}
+        }
+    }
+
+    #[test]
+    fn template_execution_static_and_tls_state_is_fresh_after_success_and_failure() {
+        let mut p=fixture();p.data=vec![0;16];p.statics=vec![0;48];p.thread_locals=vec![Slot{offset:16,size:8}];
+        let mut code=vec![];
+        for offset in [16,32] {code.extend([Op::Imm{dst:0,value:(crate::HEAP_POINTER_TAG+offset) as u128},
+            Op::Load{dst:1,address:0,size:8},Op::Assert{value:1,expected:false,message:"template leaked guest state".into()},
+            Op::Imm{dst:1,value:99},Op::Store{address:0,src:1,size:8}]);}
+        code.push(Op::Return);p.functions[0].code=code;
+        let store=Store::new(&p,MAX_TEMPLATE_STORAGE).unwrap();let (_first,mut cached)=warmed(&p,&store);
+        let mut ordinary=Native::new(&p,0);
+        for _ in 0..4 {
+            assert!(outcome(cached.run(limits()),ordinary.run(limits())));
+            let short=Limits{instructions:7,..limits()};assert!(!outcome(cached.run(short.clone()),ordinary.run(short)));
+            assert!(outcome(cached.run(limits()),ordinary.run(limits())));
+        }
+        assert!(p.statics.iter().all(|&b|b==0));
+    }
+
+    #[test]
+    fn template_execution_declined_store_preserves_interpreter_and_emitter_fallback() {
+        let p=fixture();let empty=Store::new(&p,MAX_TEMPLATE_STORAGE).unwrap();let base=empty.contents.lock().unwrap().charged;
+        let full=Store::new(&p,base).unwrap();let mut actual=Native::new(&p,0);assert!(!actual.prepare(0,&full));
+        assert!(full.snapshot(&p,0).is_none());let mut ordinary=Native::new(&p,0);
+        assert!(outcome(actual.run(limits()),ordinary.run(limits())));
+        let mut no_code=Native::new(&p,0);no_code.jit.as_mut().unwrap().capacity=0;
+        assert!(!no_code.prepare(0,&empty));assert!(no_code.jit.as_ref().unwrap().blocks[0].is_empty());
+        let a=no_code.run(Limits{jit_code_bytes:0,..limits()}).unwrap();let b=ordinary.run(limits()).unwrap();
+        assert_eq!((a.value,a.instructions,a.peak_memory),(b.value,b.instructions,b.peak_memory));assert_eq!(a.jit_bytes,0);
+    }
+}
+
+#[test]
+fn template_partial_validation_scope_declines_before_capture_or_storage() {
+    let mut p=fixture();p.version|=crate::PARTIAL_VALIDATION;
+    assert!(Store::new(&p,MAX_TEMPLATE_STORAGE).is_none());
+    let j=Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();assert!(Template::capture(&j,0,&stage(&j,0)).is_none());
 }

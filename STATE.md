@@ -103,6 +103,11 @@ and is CLOSED by94278/94292 (225inputs,221sources,13evidence). All code remains
 cfg(test), with no guest execution, disk cache or production option so far.
 Next add explicit native fixture execution and compare restored templates with
 ordinary JIT errors, limits and fresh guest state; production wiring remains off.
+Stage3 controls are prepared:17total including four native fixture tests with
+real separate arenas, original faults/all instruction prefixes/memory/depth,
+fresh static/TLS state, full-store and zero-arena fallback. The fifth new control
+rejects partial-validation scope. Focused03 will publish/execute small fixtures
+through a test-only helper; no original workload, CLI or production cache yet.
 
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally

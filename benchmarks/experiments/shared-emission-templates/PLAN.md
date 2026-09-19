@@ -54,3 +54,16 @@ and poisoned-lock fallback. Storage is limited to64MiB including vector capaciti
 and conservative object/allocation slack. This is a retained-storage accounting
 limit, not a promise about allocator RSS. Store/Template are Send+Sync; Jit never
 crosses the worker boundary. No guest or production cache wiring is introduced.
+
+Stage2 is closed after12controls/profile. Stage3 adds five controls (17total),
+including four explicit native-execution fixtures on this AArch64 macOS host.
+The test helper prepares scalar callees, restores/emits, uses the ordinary
+finish_preparation publication path, and executes through the unchanged VM.
+Each fixture's second owner must actually hit the shared templates; both live
+owners' native arenas must differ. Compare successful values/instruction/memory
+counts and exact ordinary-JIT errors across all0..22instruction prefixes, memory
+and frame limits, assertion/trap/memory failures, repeated fresh static/TLS state
+after success and failure, a full template store and zero native arena capacity.
+Also reject partial-validation Programs before template capture/storage. This
+stage publishes and runs small native fixtures; it runs no original project
+benchmark and still introduces no production runtime/cache option.
