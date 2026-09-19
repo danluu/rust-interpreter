@@ -45,15 +45,24 @@ digest reuse ON, large-function threshold65536. Strict Rust checks remain intact
 
 ## Current diagnostic follow-up
 
-Use retained qualified diagnostic binaries on the failed fre history's first
-cycle and restoration, both history modes:192 original invocations. Inspect
-ordinary/scalar/publication/key/miss/input phases before choosing another change.
-Controller folder benchmarks/experiments/session-duration-order-token-phases.
-Attempt01 source2cd0a39f, supervisor16643: Python module name inspect.py shadows
-stdlib inspect, after one successful guest suite, during receipt validation. That prefix and
-terminal are closed23176. Renamed replay.py for attempt02; its initial suite
-must seed a new owned session because previous duration hints are process-local.
-No timing retry or guest/runtime defect. Revalidate active status before launching.
+Preparation phases02 source4c80f23e completed24944/controller24947 and closed41114:
+192 original invocations,14878 observed history hits, no compilation declines.
+Cached ordinary emission median sum73.394ms vs249.505ms fresh; key28.867ms,
+miss34.526ms,restore7.805ms,scalar3.645ms,publication9.208ms. These intervals overlap
+and are diagnostic only. Attempt01's module-name collision is separately closed;
+one successful suite preceded receipt validation failure. Attempt02 reseeded a
+new owned session and retained that prefix, without repeating acceptance timing.
+
+Next current native-PC diagnostics: benchmarks/experiments/session-fre-runtime-sampling.
+Preparation01 source4d72802f completed58761/58803;55 frozen inputs and229 archived
+candidate VM sources. Normal VM784aef73f3bac42d3eec002008318932ececc4ef95a677070fcd08c6ebe20f01.
+One fresh block and one exhaustive guest with same original artifact, ordinary
+entropy and original limits/assertions. Existing qualified profiles are STATIC
+identity only; same-process dumps must independently reconstruct every native word.
+First sampler session-fre-sample-block-01 launched; inspect its supervisor status
+before next. Separate sampler/summary/analysis phases preserve completed guests
+across lock admission failures. No builds/performance claim or adoption. Freeze
+qualified runtime/scripts and this controller folder through diagnostic closure.
 
 ## Resources and source safety
 
@@ -77,8 +86,8 @@ Suggestions.txt unchanged, SHA256
 re-read September19. Detailed disposition docs/SUGGESTIONS-REVIEW-20260913-1245.md.
 Budget-per-region and SipHash guards already exist; don't recreate them.
 
-Publication worktree at892e6caf on integration/guarded-local-facts-main-20260913,
-pushed to main preserving peerc1842851. Next publish failed fre and saved-cost
-proofs/docs by exact paths, fetching/fast-forwarding main first. Do not publish
+Publication worktree at484d2483 on integration/guarded-local-facts-main-20260913,
+pushed to main preserving peerc1842851. Failed fre and saved-cost proofs are pushed. Publish later proofs by exact paths,
+fetching/fast-forwarding main first. Do not publish
 experimental runtime changes. Previous chronology is archived at
  docs/history/STATE-20260919-before-fre-session-failure.md.
