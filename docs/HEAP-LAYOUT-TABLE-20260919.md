@@ -32,12 +32,19 @@ reject incorrect targets/registers/opcodes/branches, noncanonical immediates,
 changed maps/callees and invalid entry/span bounds. It verified427/532/21 scalar
 relocations. The first passing guest execution was reused without replay.
 
-The remaining path is explicit tool composition with byte-identical adopted
-compiler tools and revalidation of their121-command strict/cache frontend proof;
-then17 benchmark-controller controls; then the original40-command changed-source
-primary with native/adopted/A-A/candidate/anchor arms and real unreachable type/
-borrow error rejection. Performance thresholds and full held-out project gates
-are unchanged. There is currently no performance result or runtime adoption.
+Explicit tool da177909 composed the retained VM with byte-identical adopted
+compiler tools and revalidated the121-command strict/cache frontend proof. All17
+benchmark-controller controls passed. The original40-command changed-source primary
+and2unreachable type/borrow rejections passed their correctness requirements.
+Its median candidate/adopted wall ratio was0.981239792, with A/A variation0.051989623;
+ratio plus margin1.033229416 failed the original wall gate. CPU ratio0.979778617
+and margin1.020337664 passed their ceilings. The candidate/native wall ratio was
+1.625525. The nominal improvement does not establish a speedup.
+
+PARKED. All unstarted larger guards are canceled; no unchanged rerun or relaxed
+gate. Default/runtime source remains adopted. The candidate and complete evidence
+remain available on experiment/heap-layout-table-20260919. See
+results/heap-layout-screen-token-01/assessment.md for the closed measurement.
 
 Closed receipts: heap-layout-table-focused03, heap-layout-workspace02,
 heap-layout-native-comparison01 and heap-layout-profile03 under results/.

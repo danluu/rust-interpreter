@@ -36,3 +36,7 @@ fails. The earlier branch-budget/compact-switch controllers remain canceled and 
 UNRUN. Candidate key da1779094da6a44c2ff63cae3767e18407050a63f54380465a9fb7fb51d70db1.
 The heap-layout primary must pass and close before any qualification or full
 commands here; a failed primary cancels all of these unstarted guards.
+
+CANCELED BEFORE QUALIFICATION: closedheap-layout-screen-token01 wallratio
+0.981239792+AA0.051989623=1.033229416 fails. No controls/compiler probes/full
+commands in this folder ran. No private/parser/Nushell follow-up is admitted.

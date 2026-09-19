@@ -110,3 +110,11 @@ Screen-protocol01 sourcee172b1b3 supervisor58386/controller58391 finished0;
 17controls(7accounting+5commands+5controller), close85692passed. Nextoriginal40-
 commandprimary heap-layout-screen-token01; freshfree~24.35GiB, floor16. All
 source/diskfailureprefixespreserved, no timingyet. Fullguardsunrunconditional.
+
+PRIMARY FINISHED/CLOSED: source6801f0bd supervisor72152/controller72195,
+independentclose85882passed40commands+2strictcontrols,12originaltests. Wallratio
+.981239792+AA.051989623=1.033229416 FAIL;CPU.979778617+AA.040559047=1.020337664pass.
+PARKheap candidate, no unchangedretry; allunstartedfullguardsCANCELED. Default
+unchanged. Nextpublishclosedexperimentexplicitpaths preservingpeer97076a30,
+thennewbranchrestoreexactadoptedbytecode beforeofflineallocator-exit scope.
+No newruntimebridge admitted without saved dominant-test scope evidence.
