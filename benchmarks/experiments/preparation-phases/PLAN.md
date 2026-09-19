@@ -54,3 +54,14 @@ controller's exact eight-count assertion then failed before any other child.
 Close and preserve the successful debug log; integrated02 reuses it after exact
 Rust/Cargo hash verification, expects nine in release, and runs only the three
 previously unstarted commands. No runtime correction or debug rerun is needed.
+
+Stage3 follows closed original workload observation01. Ordinary emission is
+108/77ms per parser worker and143/104ms per fre worker; scalar preparation is
+small. Add seven nested ordinary phases: reads, liveness, fills, call slots,
+layout, regions, relocations. Constant-time checked Function pointer identity
+avoids a graph-wide lookup; foreign function references yield no diagnostic
+identity. No unsafe dereference/subtraction. Preserve timing guards on early
+capacity declines and distinguish skipped relocations. Existing nine controls
+now verify these properties; rerun both profiles because Rust changed, rebuild
+the standalone observer and check ordinary no-feature compilation. No original
+guest in this stage. The earlier three guest captures remain closed and intact.

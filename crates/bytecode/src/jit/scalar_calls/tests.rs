@@ -264,7 +264,15 @@ fn preparation_observer_attributes_scalar_and_ordinary_scopes_once_per_owner() {
     for capacity in [0,16*1024*1024] {
         let mut jit=Jit::new_resumable(&p,false,capacity,true).unwrap();jit.enable_scalar_calls();
         jit.ensure_function(0).unwrap();
+        assert_eq!(jit.observation_function_id(&p.functions[0]),Some(0));
+        assert_eq!(jit.observation_function_id(&p.functions[1]),Some(1));
+        assert_eq!(jit.observation_function_id(&p.functions[0].clone()),None);
         let snapshot=jit.observation.snapshot();assert!(snapshot.complete);
+        for phase in [Phase::OrdinaryReads,Phase::OrdinaryLiveness,Phase::OrdinaryFills,
+            Phase::OrdinaryCallSlots,Phase::OrdinaryLayout,Phase::OrdinaryRegions] {
+            assert_eq!(snapshot.rows.iter().find(|r|r.0==Some(0) && r.1==phase).unwrap().2.calls,1);
+        }
+        assert_eq!(snapshot.rows.iter().any(|r|r.0==Some(0) && r.1==Phase::OrdinaryRelocations),capacity!=0);
         for (id,phase) in [(0,Phase::CompileFunction),(0,Phase::ScalarCallees),
             (0,Phase::OrdinaryEmission),(0,Phase::OrdinaryPublication),(1,Phase::ScalarFunction)] {
             let row=snapshot.rows.iter().find(|r|r.0==Some(id) && r.1==phase).unwrap();

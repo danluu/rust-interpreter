@@ -20,6 +20,13 @@ pub(crate) enum Phase {
     ScalarEmission,
     ScalarPublication,
     OrdinaryEmission,
+    OrdinaryReads,
+    OrdinaryLiveness,
+    OrdinaryFills,
+    OrdinaryCallSlots,
+    OrdinaryLayout,
+    OrdinaryRegions,
+    OrdinaryRelocations,
     OrdinaryPublication,
 }
 
@@ -171,7 +178,9 @@ mod tests {
         let phases = [Phase::Constructor, Phase::Validation, Phase::JitMetadata, Phase::ExecutionMetadata,
             Phase::CompileFunction, Phase::ScalarCallees, Phase::ScalarFunction, Phase::ScalarProof,
             Phase::ScalarLowering, Phase::ScalarEmission, Phase::ScalarPublication,
-            Phase::OrdinaryEmission, Phase::OrdinaryPublication];
+            Phase::OrdinaryEmission, Phase::OrdinaryReads, Phase::OrdinaryLiveness, Phase::OrdinaryFills,
+            Phase::OrdinaryCallSlots, Phase::OrdinaryLayout, Phase::OrdinaryRegions, Phase::OrdinaryRelocations,
+            Phase::OrdinaryPublication];
         let t = Trace::default();
         for p in phases { t.0.borrow_mut().record(Some(0), p, u128::MAX); }
         let s = t.snapshot(); assert_eq!(s.rows.len(), phases.len());
