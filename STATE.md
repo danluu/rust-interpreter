@@ -306,3 +306,11 @@ closed endpoint/client/launcher docs/results and qualified2line archivefixturefi
 a79ea80f. Runtimecandidate remainsbranchonly. Parser-client01 prepared to replay
 16VMcommands/1,824actualsavedparsertests withhistoryoff/on, allhitsverified and
 same launcherreceiptverifier; serverCPU reconcileswithwait4. No sourcebuildtiming.
+
+Parser-client01 source2a0277eb passes40244/40247, CLOSED43381/43385. All16
+separateVMcommands/1,824parsertests matchsavednativeoutcomes;17,076cachedhits match
+freshstaging. Exactwrong-editfailuretext matchesoff/on; serverCPU reconcileswait4.
+No sourcebuild/speedupclaim. Read-only locked cachecensus saved
+.work/template-session-cache-census-01.json:two exactclosed failedparser primaries
+(emitterworkspace/sharedtemplates) have4.073GiB allocated eligible nonexecutables
+in8owned caches. Planning guarded retirement to restore24GiB primary admission.
