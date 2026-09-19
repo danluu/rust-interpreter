@@ -1,0 +1,17 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-ruff-screen-01/README.md
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-ruff-screen-02/README.md
+@@ -19,7 +19,7 @@
+ Intended command, only after that review and binding, from the experiment ROOT:
+ 
+ ```text
+-/opt/homebrew/bin/python3 -B experiments/proc-macro-arena-ruff-screen-01/screen.py --invocation-sha256 <actual invocation SHA256>
++/opt/homebrew/bin/python3 -B experiments/proc-macro-arena-ruff-screen-02/screen.py --invocation-sha256 <actual invocation SHA256>
+ ```
+ 
+ The installed Cargo HTML page and N Cargo source submodule were absent at their expected paths. The official [Cargo configuration reference](https://doc.rust-lang.org/cargo/reference/config.html#cacheauto-clean-frequency) documents the string value `never`; its [CLI override syntax](https://doc.rust-lang.org/cargo/reference/config.html#command-line-overrides) gives TOML KEY=VALUE arguments. Accordingly both argv lists use `--config` followed by the literal argument `cache.auto-clean-frequency="never"`. The reference also states that offline mode disables automatic cache deletion. No Cargo capability probe was used to establish this syntax.
+@@ -27,3 +27,5 @@
+ The fixed output limits use recorded scale evidence: the old native check cache retained 2,068 files and 129,033,308 logical bytes (117,263,455 unique), including 23 macro dylibs totaling 77,108,024 bytes. The copied source adds 89,102,713 bytes plus its 356-byte historical marker. These older artifacts are not reused or relabeled as N measurements. They make 4 GiB / 70,000 owned members a plausible bounded screen allowance; that bound is unchanged and the actual new profile size remains unmeasured.
+ 
+ Concrete capability probes are kept separate from Cargo crate builds. The source-read autocfg 1.5.0 family compiles captured stdin as a library to LLVM IR, with its own randomized crate name; proc-macro2 1.0.107 compiles exactly its three pinned src/probe files to metadata in its owned probe directory. Their upstream build scripts consume exit 0 or 1 and may remove their own temporary output. Those raw outcomes are retained and must agree across arms by source hash and build-output route. Version/print queries and every actual Cargo crate build still require success. Unknown non-Cargo compilation shapes are rejected before execution. The 11 exact source-reference files establishing these shapes total 70,885 bytes and are guarded through the screen.
++
++Attempt 01 remains unchanged. Its stock Cargo setup closed 101 after three successful compiler version/print queries; the first unicode_ident compile was refused by the wrapper before spawning a compiler because normal Cargo supplied `-Z embed-metadata=no`. The refusal record prevented silent acceptance. Attempt 02 admits exactly that one option only for an actual Cargo crate with metadata and link outputs, preserves its original split or attached spelling verbatim, and rejects every other unstable option. Its own work, caches, evidence and invocation are fresh. No sample, crate output or source copy from attempt 01 is reused. The captured `--out-dir` remains authoritative for dep-info, including Cargo's per-package debug/build/package/hash/out layout.

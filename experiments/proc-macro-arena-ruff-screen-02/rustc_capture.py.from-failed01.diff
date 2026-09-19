@@ -1,0 +1,37 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-ruff-screen-01/rustc_capture.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-ruff-screen-02/rustc_capture.py
+@@ -3,8 +3,8 @@
+ from pathlib import Path
+ import hashlib,json,os,sys,time
+ HERE=Path(__file__).absolute().parent
+-COMMON_SHA='d2cc309d9309b19c937d9ee6516379b485cd4158e510649fccd1964a9a58e1c7'  # Bound when all sources are reviewed; no unbound execution.
+-ATTEMPTS=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-ruff-screen-01/wrapper-attempts')
++COMMON_SHA='67ffc35ad943aab6cc8cf2050a337a6129ef55d9df12466eb43795e747732548'  # Bound when all sources are reviewed; no unbound execution.
++ATTEMPTS=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-ruff-screen-02/wrapper-attempts')
+ ATTEMPT=None
+ ATTEMPT_PATH=None
+ 
+@@ -43,7 +43,6 @@
+     original=list(sys.argv[1:]);c.require(c.option(original,'--sysroot') is None,'Cargo attempted own sysroot')
+     c.require(not any(x.startswith(('proc_macro=','rustc_literal_escaper=')) for x in original),'explicit proc-macro client override')
+     c.require(not any(x.startswith('incremental=') or x.startswith('-Cincremental=') for x in original),'incremental disabled')
+-    c.require(not any(x.startswith('-Z') for x in original),'unexpected Cargo unstable flag')
+     environment={k:v for k,v in received.items() if k not in keys}
+     # Observe advertised pipe descriptors before opening any log could reuse a
+     # stale descriptor number. Do not read or manufacture jobserver tokens.
+@@ -54,6 +53,15 @@
+     compiler=context['compiler'];c.require(c.file(compiler)==context['compiler_row'],'matched N compiler current')
+     forwarded=[compiler,*original,'--sysroot',context['sysroot']]
+     classification=c.classify_rustc(original,environment,os.getcwd(),c.WORK/'target'/arm,context['probe_sources'])
++    unstable=[]
++    for i,arg in enumerate(original):
++        if arg=='-Z':
++            c.require(i+1<len(original),'missing Cargo unstable option value');unstable.append(original[i+1])
++        elif arg.startswith('-Z'):unstable.append(arg[2:])
++    c.require(unstable in [[],['embed-metadata=no']],'unexpected Cargo unstable flag')
++    if unstable:
++        c.require(classification['kind']=='cargo-crate' and {'metadata','link'}<=set((c.option(original,'--emit') or '').split(',')),
++            'split-metadata flag only for actual Cargo metadata/link crate output')
+     is_compile=classification['kind']=='cargo-crate'
+     if is_compile:forwarded.append('-Zbinary-dep-depinfo')
+     c.require(c.option(forwarded,'--sysroot')==context['sysroot'],'all host and target calls select overlay')

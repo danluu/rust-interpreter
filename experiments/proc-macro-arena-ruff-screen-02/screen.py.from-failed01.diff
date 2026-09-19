@@ -1,0 +1,22 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-ruff-screen-01/screen.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-ruff-screen-02/screen.py
+@@ -4,7 +4,7 @@
+ HERE=Path(__file__).absolute().parent
+ # All local executable source bytes are authenticated before importing common.
+ def bootstrap(sha):
+-    route=HERE.parents[1]/'.work/proc-macro-arena-ruff-screen-invocation-01.json'
++    route=HERE.parents[1]/'.work/proc-macro-arena-ruff-screen-invocation-02.json'
+     raw=route.read_bytes();assert len(raw)<=2**20 and hashlib.sha256(raw).hexdigest()==sha
+     invocation=json.loads(raw);source=HERE/'source-manifest.json';payload=source.read_bytes()
+     assert len(payload)<=2**20 and hashlib.sha256(payload).hexdigest()==invocation['source_manifest_sha256']
+@@ -352,6 +352,10 @@
+     c.require(audit['status']=='verified' and audit['command_count']==20 and audit['stable_caller_pairs']==9 and audit['default_discovery_qualified'] is True,'independent actual semantic proof')
+     c.require(audit['result']==invocation['overlay_proofs']['result.json'] and audit['execution']==invocation['overlay_proofs']['execution.json'],'independent same actual closure')
+     c.require(proof==plan['overlay_independent_readback'] and invocation['overlay_proofs']['result.json']['sha256']==plan['overlay_result_sha256'],'exact reviewed actual prerequisite')
++    previous=plan['failed_predecessor'];failure=c.read(previous['independent_readback']['path'],previous['independent_readback']['sha256'])
++    failed=c.read(previous['execution']['path'],previous['execution']['sha256'])
++    c.require(failure['status']=='verified-failed-screen-before-crate-compilation' and failure['crate_compilations']==failure['timed_calls']==failure['source_edits']==0,'actual failed predecessor scope')
++    c.require(failure['execution']['sha256']==previous['execution']['sha256'] and failed['status']=='failed' and failed['samples']==failed['edits']==[],'same preserved failed execution')
+     invocation=dict(invocation,overlay_data=data,overlay_work=plan['overlay_work'],runtime_root=str(Path(plan['compiler']).parent.parent))
+     c.require(c.file(plan['cargo'])==invocation['cargo'],'exact installed Cargo bytes and current identity')
+     c.overlay_guard(invocation,True);return invocation
