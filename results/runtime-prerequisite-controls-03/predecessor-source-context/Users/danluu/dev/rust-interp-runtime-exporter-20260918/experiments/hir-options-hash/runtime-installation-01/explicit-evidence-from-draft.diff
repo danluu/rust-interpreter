@@ -1,0 +1,46 @@
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/runtime-installation-preparer-before-explicit-evidence-01.py
++++ /Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-01/prepare.py
+@@ -29,8 +29,6 @@
+ CONTROLS=O/'experiments/runtime-adapter-controls-01'
+ CONTROL_WORK=O/'.work/runtime-adapter-controls-01'
+ CONTROL_AUDIT=O/'.work/runtime-adapter-controls-independent-verification-01.json'
+-WORKS=dict(beta=A/'.work/hir-options-hash-beta-composition-08',native=A/'.work/hir-options-hash-native-controls-01',
+-    run_make=O/'.work/hir-options-hash-run-make-01',hash=ROOT/'.work/hir-options-hash-driver-01')
+ 
+ 
+ def write(path,value):
+@@ -43,13 +41,15 @@
+     parser=argparse.ArgumentParser();parser.add_argument('--phase',choices=['preflight','installation'],required=True)
+     for role in ['beta','native','run-make','hash']:
+         parser.add_argument('--'+role+'-audit',type=Path,required=True);parser.add_argument('--'+role+'-audit-sha256',required=True)
++        parser.add_argument('--'+role+'-evidence',type=Path,required=True)
+     parser.add_argument('--source-preflight-audit',type=Path);parser.add_argument('--source-preflight-audit-sha256')
+     args=vars(parser.parse_args())
+     f.require(Path.cwd()==R and sys.dont_write_bytecode and not sys.flags.optimize,'fixed R preparer context required')
+     audits={}
++    works={role:args[role+'_evidence'] for role in ['beta','native','run_make','hash']}
+     # No candidate discovery/import can turn a future source proposal into an
+     # actual prerequisite. All four terminals/audits must already exist.
+-    for role,work in WORKS.items():
++    for role,work in works.items():
+         path,digest=args[role+'_audit'],args[role+'_audit_sha256']
+         proof=f.json_file(path);terminal=f.json_file(work/'receipt.json')
+         f.require(len(digest)==64 and f.digest(path)==digest and proof['status']=='verified'
+@@ -67,13 +67,16 @@
+         f.require(str(path) not in checked_sources or checked_sources[str(path)]==row,'imported source changed')
+         checked_sources[str(path)]=row
+     modules=factory.definitions(entry.HASH_SOURCE,precheck)
++    expected_works=dict(beta=modules.stage.BETA_WORK,native=modules.stage.NATIVE_WORK,
++        run_make=modules.stage.RECIPE_WORK,hash=modules.stage.WORK)
++    f.require(works==expected_works,'explicit evidence differs from actual adopted hash prerequisite roles')
+     d=modules.collector.Discovery(modules.hash_modules)
+     with d.owned.workload_lock(d.owned.CANONICAL_LOCK,600):
+         started=time.time();free_before=d.owned.disk(R,16)
+         f.require(all(not p.exists() and not p.is_symlink() for p in [packet,work,supervisor]),'runtime namespace appeared during admission wait')
+         hash_plan=d.inherit(entry.HASH_SOURCE)
+         d.add(entry.HASH_SOURCE/'snapshot-plan.json',snapshot=True)
+-        d.tree(WORKS['hash'])
++        d.tree(works['hash'])
+         # The completed hash independent audit covers its outer/launcher, and
+         # both raw owner histories are frozen explicitly for later readback.
+         d.tree(ROOT/'.work/experiments/hir-options-hash-driver-supervisor-01')

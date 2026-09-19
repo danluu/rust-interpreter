@@ -1,0 +1,126 @@
+--- /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/experiments/runtime-prerequisite-controls-01/run.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-prerequisite-controls-03/run.py
+@@ -10,11 +10,11 @@
+ 
+ HERE = Path(__file__).resolve().parent
+ OWNER = HERE.parents[1]
+-SOURCE = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-02')
++SOURCE = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-03')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ sys.path.insert(0, str(X / 'experiments/stable-cgu'))
+ import owned_stage as owned
+-WORK = OWNER / '.work/runtime-prerequisite-controls-01'
++WORK = OWNER / '.work/runtime-prerequisite-controls-03'
+ 
+ 
+ def read(path):
+@@ -71,10 +71,10 @@
+             stderr = (WORK / 'command/stderr').read_text()
+             names = re.findall(r'^test_[A-Za-z0-9_]+ \(([^)]+)\) \.\.\. ok$', stderr, re.M)
+             assert sorted(names) == freeze['expected_names']
+-            assert re.search(r'^Ran 11 tests in [0-9.]+s\n\nOK\n$', stderr, re.M)
++            assert re.search(r'^Ran 21 tests in [0-9.]+s\n\nOK\n$', stderr, re.M)
+             assert not (WORK / 'command/stdout').read_bytes()
+             result = read(WORK / 'result.json')
+-            assert result['status'] == 'passed' and result['tests_run'] == 11 and result['expected_names'] == freeze['expected_names']
++            assert result['status'] == 'passed' and result['tests_run'] == 21 and result['expected_names'] == freeze['expected_names']
+             assert all(result[name] == 0 for name in ['failures', 'errors', 'skipped', 'expected_failures', 'unexpected_successes', 'child_processes', 'compiler_calls'])
+             assert not list((WORK / 'tmp').iterdir()), 'synthetic fixture cleanup incomplete'
+             total = 0
+@@ -87,7 +87,7 @@
+                     assert path.is_dir()
+             assert total <= 2 * 1024 * 1024, 'retained pure-control output cap exceeded'
+             guard(freeze)
+-            receipt.update(status='passed', controls_passed=11, result_sha256=owned.sha(WORK / 'result.json'),
++            receipt.update(status='passed', controls_passed=21, result_sha256=owned.sha(WORK / 'result.json'),
+                            retained_file_bytes=total, free_bytes_after=owned.disk(OWNER, 9))
+     except BaseException as error:
+         receipt.update(status='failed', error=repr(error)); raise
+--- /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/experiments/runtime-prerequisite-controls-01/prepare.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-prerequisite-controls-03/prepare.py
+@@ -6,15 +6,15 @@
+ 
+ import run as control
+ 
+-TESTED_SOURCES = {'prerequisites.py': '1d52a2cf4587f1844661418a43f8fd4df97986be365538298619f3fddd9730a7', 'imports.py': 'd874102998ea7868ae33bfd669d85a6baf6aa0116bb3d5de3a6dcd1737db0f05', 'test_prerequisite_successor.py': '5468f43ec465f9324d0c06078f328c86c1e16fef29c4ec3053f3d980916d4d5c'}
+-SOURCE_BINDINGS_SHA256 = '23d6ac449cc8e2dec9b207a721f78e2c5403c09b1c43a6ad134d48d168dc3ee3'
++TESTED_SOURCES = {'prerequisites.py': '41fcd489dad26c06c4c92c6518e0a301f2076978f7950c55e7585faabaf0da73', 'imports.py': 'ae5ff984acaf01b473c6190774fc76913639fb0e5c37547fdfb4db7ca0e67e76', 'test_prerequisite_successor.py': 'e011b4ee8f1ae07d606be2a470fb6e62e139cd5f5880a9c35bce9f0584e03f98'}
++SOURCE_BINDINGS_SHA256 = '545962a8ecd0b9d3997d3863261fba3c5d91fce078b4b9c146e321bf21230f71'
+ 
+ 
+ def main():
+     here, source, owner = control.HERE, control.SOURCE, control.OWNER
+     assert Path.cwd() == owner and sys.dont_write_bytecode
+     assert not any((here / name).exists() for name in ['inputs.json', 'launch.json'])
+-    assert not control.WORK.exists() and not (owner / '.work/experiments/runtime-prerequisite-controls-supervisor-01').exists()
++    assert not control.WORK.exists() and not (owner / '.work/experiments/runtime-prerequisite-controls-supervisor-03').exists()
+     names = []
+     modules = ['test_prerequisite_successor']
+     for module in modules:
+@@ -23,7 +23,7 @@
+             if isinstance(node, ast.ClassDef):
+                 names.extend(module + '.' + node.name + '.' + child.name for child in node.body
+                              if isinstance(child, ast.FunctionDef) and child.name.startswith('test_'))
+-    assert len(names) == len(set(names)) == 11
++    assert len(names) == len(set(names)) == 21
+     files, routes = {}, {}
+     def add(path):
+         path = Path(path); resolved = path.resolve(strict=True)
+@@ -60,21 +60,21 @@
+                               maximum_writable_names=256, maximum_directory_names=2048,
+                               maximum_cumulative_child_file_payload_bytes=258 * 256 * 1024,
+                               maximum_retained_stage_file_bytes=2 * 2**20),
+-                  qualification_scope='runtime02-reader-and-factory-only',
++                  qualification_scope='runtime03-compact-reader-and-factory-only',
+                   tested_sources={str(source/name): value for name, value in TESTED_SOURCES.items()},
+                   synthetic_runtime_successor_controls=True, compiler_calls=0, provider_probes=0, B3_compositions=0)
+     control.owned.write(here / 'inputs.json', freeze)
+     launch = dict(status='prepared-unrun-awaiting-review', owner=str(owner), environment=environment,
+                   command=[str(python), '-B', str(owner / 'scripts/supervise_experiment.py'), '--run-id',
+-                           'runtime-prerequisite-controls-supervisor-01', '--', str(python), '-B',
++                           'runtime-prerequisite-controls-supervisor-03', '--', str(python), '-B',
+                            str(here / 'run.py'), '--inputs-sha256', control.owned.sha(here / 'inputs.json')],
+                   inputs_sha256=control.owned.sha(here / 'inputs.json'), helper_sha256=control.owned.sha(here / 'run.py'),
+-                  expected_children=1, controls=11, capacity=freeze['capacity'], bounds=freeze['bounds'])
++                  expected_children=1, controls=21, capacity=freeze['capacity'], bounds=freeze['bounds'])
+     control.owned.write(here / 'launch.json', launch)
+     control.guard(freeze)
+     print(json.dumps(dict(status='prepared-unrun', launch_sha256=control.owned.sha(here / 'launch.json'),
+                          inputs_sha256=launch['inputs_sha256'], files=len(files),
+-                         bytes=sum(row['stamp'][3] for row in files.values()), controls=11), indent=2))
++                         bytes=sum(row['stamp'][3] for row in files.values()), controls=21), indent=2))
+ 
+ 
+ if __name__ == '__main__':
+--- /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/experiments/runtime-prerequisite-controls-01/child.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-prerequisite-controls-03/child.py
+@@ -8,9 +8,9 @@
+ import unittest
+ 
+ HERE = Path(__file__).resolve().parent
+-SOURCE = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-02')
++SOURCE = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-03')
+ OWNER = HERE.parents[1]
+-WORK = OWNER / '.work/runtime-prerequisite-controls-01'
++WORK = OWNER / '.work/runtime-prerequisite-controls-03'
+ MODULES = ['test_prerequisite_successor']
+ MAX_FILE = 256 * 1024
+ 
+@@ -50,7 +50,7 @@
+         if isinstance(item, unittest.TestSuite):
+             return [name for test in item for name in names(test)]
+         return [item.id()]
+-    assert sorted(names(suite)) == expected and len(expected) == 11
++    assert sorted(names(suite)) == expected and len(expected) == 21
+     result = unittest.TextTestRunner(verbosity=2).run(suite)
+     freeze = json.loads((HERE / 'inputs.json').read_bytes())
+     for module in list(sys.modules.values()):
+@@ -64,7 +64,7 @@
+                   maximum_file_bytes=MAX_FILE, maximum_writable_names=256,
+                   maximum_directory_names=2048, child_processes=0, compiler_calls=0)
+     (WORK / 'result.json').write_text(json.dumps(report, sort_keys=True, indent=2) + '\n')
+-    assert result.wasSuccessful() and result.testsRun == 11 and not result.skipped
++    assert result.wasSuccessful() and result.testsRun == 21 and not result.skipped
+     assert not result.expectedFailures and not result.unexpectedSuccesses
+     signal.alarm(0)
+ 

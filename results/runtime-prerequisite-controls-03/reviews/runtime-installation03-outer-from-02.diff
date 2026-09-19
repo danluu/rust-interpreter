@@ -1,0 +1,404 @@
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-02/imports.py
++++ /Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-03/imports.py
+@@ -35,7 +35,7 @@
+ def load(name, path, check_source, dependencies=None):
+     path = Path(path)
+     check_source(path)
+-    full = '_runtime_options_02_'+name
++    full = '_runtime_options_03_'+name
+     if full in sys.modules:
+         value = sys.modules[full]
+         if Path(value.__file__).resolve(strict=True) != path:
+@@ -71,7 +71,8 @@
+         public[name] = load('r_'+name, scripts/(name+'.py'), check_source, public)
+     q = load('source_qualification', R/'experiments/runtime-compiler-installation/source_qualification.py',
+              check_source, public)
+-    own = {'prerequisites':load('prerequisites', HERE/'prerequisites.py', check_source)}
++    own = {'prerequisites':load('prerequisites', HERE/'prerequisites.py', check_source),
++           'preflight_history':load('preflight_history', HERE/'preflight_history.py', check_source)}
+     own.update({name:load(name, QUALIFIED/(name+'.py'), check_source)
+                 for name in ['recipe','discovery','controller']})
+     monitor = load('private_monitor', QUALIFIED/'monitor.py', check_source, {'owned_stage':modules['monitor'].owned})
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-02/entry.py
++++ /Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-03/entry.py
+@@ -5,14 +5,28 @@
+ qualified bounded helper under the controller's canonical admission.
+ """
+ import argparse
++import ast
+ import importlib.util
+ import os
+ from pathlib import Path
++import re
+ import sys
+ 
+ HERE=Path(__file__).resolve().parent
+ R=Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+-HASH_SOURCE=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage')
++ROOT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
++HASH_SOURCE=ROOT/'experiments/hir-options-hash-driver-stage-02'
++FILE_TABLE_SOURCE=ROOT/'experiments/frozen-file-table-delta-01/file_table.py'
++FILE_TABLE_BASE=dict(path='/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-native-controls-03/inputs.json',
++    sha256='8569abb81a61e34b6b5a892116af5218557ceb0436ab8dbf8a31f2aec55b1b1d')
++CATALOG_SOURCE=ROOT/'experiments/completed-proof-snapshot-catalog-01/catalog.py'
++CATALOG_TEST=CATALOG_SOURCE.with_name('test_catalog.py')
++CATALOG_CONTROLS=ROOT/'experiments/completed-proof-snapshot-catalog-controls-01'
++CATALOG_WORK=ROOT/'.work/completed-proof-snapshot-catalog-controls-01'
++CATALOG_AUDIT=ROOT/'.work/completed-proof-snapshot-catalog-controls-independent-verification-01.json'
++RUNTIME_CONTROLS=ROOT/'experiments/runtime-prerequisite-controls-03'
++RUNTIME_CONTROL_WORK=ROOT/'.work/runtime-prerequisite-controls-03'
++RUNTIME_CONTROL_AUDIT=ROOT/'.work/runtime-prerequisite-controls-independent-verification-03.json'
+ LIMITS=dict(maximum_files=1024,maximum_file_bytes=64*2**20,maximum_logical_bytes=512*2**20,
+             maximum_compressed_bytes=128*2**20,maximum_manifest_bytes=4*2**20)
+ REMAINING_RESERVATION=32*2**20
+@@ -23,7 +37,7 @@
+ 
+ 
+ def definition(name,path):
+-    spec=importlib.util.spec_from_file_location('_runtime_entry_02_'+name,path)
++    spec=importlib.util.spec_from_file_location('_runtime_entry_03_'+name,path)
+     value=importlib.util.module_from_spec(spec);sys.modules[spec.name]=value;spec.loader.exec_module(value)
+     return value
+ 
+@@ -37,8 +51,141 @@
+     return rows
+ 
+ 
+-def reservation(projection,rows):
+-    return projection['compressed_bytes']+4096*len(rows)+2*LIMITS['maximum_manifest_bytes']+REMAINING_RESERVATION
++def reservation(projection,rows,catalog):
++    require(set(projection['files'])=={r['path'] for r in rows},'reservation omitted logical input')
++    return catalog.reservation(projection,LIMITS['maximum_manifest_bytes'],REMAINING_RESERVATION)
++
++
++def load_table(wire,f):
++    require(wire.get('file_table_base')==FILE_TABLE_BASE,'exact nonrecursive runtime base required')
++    row=wire['files'][str(FILE_TABLE_SOURCE)]
++    require(f.identity(FILE_TABLE_SOURCE)==row['identity'] and f.digest(FILE_TABLE_SOURCE)==row['sha256']
++        and FILE_TABLE_SOURCE.stat().st_size==row['size'],'file-table helper changed before import')
++    return definition('file_table',FILE_TABLE_SOURCE)
++
++
++def discovery(modules):
++    """Exact runtime preflight inheritance; the frozen hash collector stays unchanged."""
++    class RuntimeDiscovery(modules.collector.Discovery):
++        def inherit(self,source):
++            source=Path(source)
++            if source!=HERE/'preflight-plan-01':return super().inherit(source)
++            wire=modules.collector.read(self.add(source/'inputs.json',snapshot=True))
++            self.add(FILE_TABLE_BASE['path'],FILE_TABLE_BASE,snapshot=True)
++            table=modules.stage.load_file_table(wire,self.comp)
++            full=modules.stage.expand_file_table(wire,table,guard=self.floor)
++            plan=modules.collector.read(self.add(source/'plan.json',snapshot=True))
++            require(plan['hash_source']==str(HASH_SOURCE) and plan['phase']=='preflight'
++                and modules.collector.sha(source/'plan.json')==full['plan_sha256'],'exact prior runtime preflight packet required')
++            for name,row in full['files'].items():self.add(name,row)
++            for name,row in full['links'].items():self.link(name,row)
++            for name in full['absent_paths']:
++                require(not Path(name).exists() and not Path(name).is_symlink(),'runtime predecessor absence changed')
++                self.absent.add(name)
++            return plan
++    return RuntimeDiscovery(modules.hash_modules)
++
++
++def controls_qualification(reader,*,source,test,controls,work,audit_path,count,additional_sources=()):
++    """Require actual bounded controls before importing the new pure catalog."""
++    CATALOG_SOURCE,CATALOG_TEST,CATALOG_CONTROLS,CATALOG_WORK,CATALOG_AUDIT=source,test,controls,work,audit_path
++    s=reader.reader
++    for p in [CATALOG_SOURCE,CATALOG_TEST,CATALOG_CONTROLS/'inputs.json',CATALOG_CONTROLS/'launch.json',
++              CATALOG_WORK/'receipt.json',CATALOG_WORK/'result.json',CATALOG_WORK/'command/receipt.json',
++              CATALOG_WORK/'command/stdout',CATALOG_WORK/'command/stderr',CATALOG_AUDIT]:s.frozen(p)
++    inputs=s.read_json(CATALOG_CONTROLS/'inputs.json');launch=s.read_json(CATALOG_CONTROLS/'launch.json')
++    require(all(str(p) in inputs['files'] for p in [source,test,*additional_sources]),
++        'actual controls omitted selected source/helper')
++    for name,row in inputs['files'].items():
++        s.frozen(name);current=s.freeze['files'][name]
++        require(current['sha256']==row['sha256'] and [current['identity'][k] for k in
++            ['dev','ino','mode','size','mtime_ns','ctime_ns','nlink']]==row['stamp'],'catalog control frozen source changed')
++    for name,target in inputs['routes'].items():require(str(Path(name).resolve(strict=True))==target,'catalog control route changed')
++    tree=ast.parse(s.read_bytes(CATALOG_TEST));names=sorted(test.stem+'.'+c.name+'.'+m.name for c in tree.body
++        if isinstance(c,ast.ClassDef) for m in c.body if isinstance(m,ast.FunctionDef) and m.name.startswith('test_'))
++    terminal=s.read_json(CATALOG_WORK/'receipt.json');result=s.read_json(CATALOG_WORK/'result.json')
++    child=s.read_json(CATALOG_WORK/'command/receipt.json');audit=s.read_json(CATALOG_AUDIT)
++    require(len(names)==count and inputs['expected_names']==result['expected_names']==names
++        and terminal['status']==result['status']=='passed' and terminal['controls_passed']==result['tests_run']==len(names)
++        and audit['status']=='verified' and audit['controls']==len(names) and sorted(audit['exact_names'])==names
++        and audit['receipt_sha256']==s.owned.sha(CATALOG_WORK/'receipt.json')
++        and terminal['result_sha256']==audit['result_sha256']==s.owned.sha(CATALOG_WORK/'result.json')
++        and terminal['inputs_sha256']==launch['inputs_sha256']==s.owned.sha(CATALOG_CONTROLS/'inputs.json'),
++        'actual completed catalog controls required')
++    require(all(result[k]==0 and type(result[k]) is int for k in
++        ['failures','errors','skipped','expected_failures','unexpected_successes','child_processes','compiler_calls'])
++        and all(terminal[k]==0 for k in ['compiler_calls','provider_probes','B3_compositions']), 'catalog controls did unexpected work')
++    require(child['status']=='finished' and child['returncode']==0 and child['command']==inputs['command']
++        and child['cwd']==str(CATALOG_SOURCE.parent) and child['environment']==inputs['environment']
++        and child['supervisor_pid']==terminal['pid'] and child['parent_pid']==terminal['parent_pid']
++        and terminal['started_at']<=terminal['admitted_at']<=child['started_at']<=child['finished_at']<=terminal['finished_at']
++        and terminal['commands']==[dict(path=str(CATALOG_WORK/'command/receipt.json'),pid=child['pid'],
++            sha256=s.owned.sha(CATALOG_WORK/'command/receipt.json'))],'catalog actual child association differs')
++    for stream in ['stdout','stderr']:
++        require(child[stream+'_sha256']==audit['raw_sha256'][stream]==s.owned.sha(CATALOG_WORK/'command'/stream),'catalog raw hash changed')
++    raw=s.read_bytes(CATALOG_WORK/'command/stderr').decode()
++    actual=re.findall(r'^test_[A-Za-z0-9_]+ \(([^)]+)\) \.\.\. ok$',raw,re.M)
++    require(sorted(actual)==names and len(actual)==len(names) and not s.read_bytes(CATALOG_WORK/'command/stdout')
++        and re.search(r'^Ran '+str(len(names))+r' tests in [0-9.]+s\n\nOK\n$',raw,re.M),'catalog exact actual controls differ')
++    return dict(controls=len(names),source=str(CATALOG_CONTROLS),evidence=str(CATALOG_WORK),
++        receipt_sha256=s.owned.sha(CATALOG_WORK/'receipt.json'),result_sha256=s.owned.sha(CATALOG_WORK/'result.json'),
++        audit=dict(path=str(CATALOG_AUDIT),sha256=s.owned.sha(CATALOG_AUDIT)))
++
++
++def catalog_qualification(reader):
++    return controls_qualification(reader,source=CATALOG_SOURCE,test=CATALOG_TEST,controls=CATALOG_CONTROLS,
++        work=CATALOG_WORK,audit_path=CATALOG_AUDIT,count=33)
++
++
++def runtime_qualification(reader):
++    return controls_qualification(reader,source=HERE/'prerequisites.py',test=HERE/'test_prerequisite_successor.py',
++        controls=RUNTIME_CONTROLS,work=RUNTIME_CONTROL_WORK,audit_path=RUNTIME_CONTROL_AUDIT,count=21,
++        additional_sources=(HERE/'imports.py',))
++
++
++def completed_catalog(modules,reader,catalog,snapshots,roots,*,read_json,file_record,directory_record,guard,preflight_owner=None):
++    prior=modules.hash_modules['snapshot_bindings'].catalog(modules.stage.snapshot_predecessors(reader.plan['independent_audits']),
++        roots,LIMITS,read_json=read_json,file_record=file_record,directory_record=directory_record)
++    def expand(wire,row):
++        if 'file_table_base' not in wire:return wire
++        require(wire['file_table_base']==FILE_TABLE_BASE,'unreviewed completed snapshot base')
++        table=modules.stage.load_file_table(wire,modules.hash_modules['comp'])
++        return modules.stage.expand_file_table(wire,table,guard=guard)
++    owner=dict(role='hash',source=str(HASH_SOURCE),evidence=str(modules.stage.WORK),audit=reader.references['hash'],
++        result_path=str(modules.stage.WORK/'result.json'),result_digest_field='result_sha256')
++    result=catalog.extend(prior,owner,roots,LIMITS,read_json=read_json,file_record=file_record,
++        directory_record=directory_record,expand_inputs=expand,validate_owner=reader.snapshot_owner)
++    if preflight_owner is not None:
++        owner,validate=preflight_owner
++        result=catalog.extend(result,owner,roots,LIMITS,read_json=read_json,file_record=file_record,
++            directory_record=directory_record,expand_inputs=expand,validate_owner=validate)
++    # Qualified v2 performs full compressed/logical EOF for EVERY catalog row,
++    # including rows not selected for this stage. This does not create copies.
++    for row in result['records']:snapshots.verify_reference(row,result['evidence_roots'],guard)
++    return result
++
++
++def preflight_catalog_owner(modules,plan,*,read_json,read_bytes,sha):
++    if plan['phase']!='installation':return None
++    previous=HERE/'preflight-plan-01';work=R/'.work/hir-options-hash-runtime-preflight-03'
++    previous_plan=read_json(previous/'plan.json');candidate=read_json(previous_plan['specification']['path'])
++    history=modules.preflight_history.validate(modules.q,modules.recipe,packet=previous,work=work,candidate=candidate,
++        audit_reference=plan['source_preflight_readback']['audit'],read_json=read_json,read_bytes=read_bytes,sha=sha)
++    encoded=modules.hash_modules['snapshot_bindings'].encoded
++    same=lambda left,right:encoded(left)==encoded(right)
++    require(same(history,plan['source_preflight_readback']),'actual completed source-preflight qualification changed')
++    owner=dict(role='source_preflight',source=str(previous),evidence=str(work),audit=history['audit'],
++        result_path=str(work/'source-probe/result.json'),result_digest_field='source_preflight_sha256')
++    def validate(given,terminal,result,audit):
++        # history.validate above performs the full two-probe/recipe proof once;
++        # this callback only binds those authenticated objects, never recurses.
++        require(same(given,owner) and same(terminal,read_json(work/'receipt.json')) and same(result,history['result'])
++            and sha(work/'receipt.json')==history['receipt_sha256']
++            and sha(work/'source-probe/result.json')==history['reference']['sha256']
++            and same(audit,read_json(owner['audit']['path'])) and sha(owner['audit']['path'])==owner['audit']['sha256'],
++            'completed preflight snapshot owner differs')
++        return True
++    return owner,validate
+ 
+ 
+ def execute(packet,inputs_sha256,snapshot_sha256):
+@@ -46,10 +193,12 @@
+     require(packet.parent==HERE and packet.name in ['preflight-plan-01','installation-plan-01'],'exact reviewed packet namespace required')
+     f=definition('frozen',HERE/'frozen.py')
+     require(f.digest(packet/'inputs.json')==inputs_sha256,'exact union freeze required')
+-    raw=f.json_file(packet/'inputs.json');plan=f.json_file(packet/'plan.json')
+-    require(f.digest(packet/'plan.json')==raw['plan_sha256'] and plan['hash_source']==str(HASH_SOURCE),'actual plan/source binding differs')
++    wire=f.json_file(packet/'inputs.json');plan=f.json_file(packet/'plan.json')
++    require(f.digest(packet/'plan.json')==wire['plan_sha256'] and plan['hash_source']==str(HASH_SOURCE),'actual plan/source binding differs')
+     require(plan['phase']==('preflight' if packet.name=='preflight-plan-01' else 'installation'),'phase packet differs')
+-    bound=f.Frozen(packet/'inputs.json',inputs_sha256,output_root=plan['work']);bound.check(True)
++    table=load_table(wire,f)
++    bound=f.Frozen(packet/'inputs.json',inputs_sha256,output_root=plan['work'],table=table,base=FILE_TABLE_BASE);bound.check(True)
++    raw=bound.value
+     require(str(Path(sys.executable).resolve(strict=True))==raw['python'],'actual Python route differs')
+     for path in [Path(__file__).resolve(),HERE/'frozen.py',HERE/'imports.py']:bound.file(path)
+     factory=definition('imports',HERE/'imports.py')
+@@ -61,6 +210,9 @@
+     # Pure helper qualification reads the actual passed control history, with
+     # every inherited proof in the complete combined freeze.
+     reader.reader.snapshot_qualification()
++    require(runtime_qualification(reader)==plan['runtime_adapter_qualification'],'actual runtime adapter qualification differs')
++    require(catalog_qualification(reader)==plan['catalog_qualification'],'actual catalog qualification differs')
++    catalog=factory.load('completed_catalog',CATALOG_SOURCE,bound.file)
+     snap_path=packet/'snapshot-plan.json'
+     require(f.digest(snap_path)==snapshot_sha256,'exact reviewed runtime snapshot projection required')
+     snapshot=f.json_file(snap_path);helper=modules.stage.SNAPSHOT_SOURCE
+@@ -76,17 +228,25 @@
+         require(f.digest(snap_path)==snapshot_sha256,'reviewed snapshot projection changed')
+         controller=state.get('controller')
+         if full and controller is not None and controller.record['status']=='running' and 'source_snapshots_sha256' not in controller.record:
++            require(reader.check(full=True)==plan['qualified_prerequisites'],'full completed owner qualification changed')
++            lineage=completed_catalog(modules,reader,catalog,helper_module,plan['evidence_roots'],
++                read_json=bound.read_json,file_record=bound.record,directory_record=f.ordinary_directory,guard=controller.capacity,
++                preflight_owner=preflight_catalog_owner(modules,plan,read_json=bound.read_json,read_bytes=bound.read_bytes,sha=bound.sha))
++            require(catalog.encoded(lineage)==catalog.encoded(plan['snapshot_reuse']),'complete runtime ancestry changed')
++            selected=catalog.select(rows,lineage)
++            require(catalog.encoded(selected)==catalog.encoded(snapshot['reuse_selection']),'complete runtime reference selection changed')
+             temporary=controller.work/'tmp'
+             require(plan['environment']['TMPDIR']==str(temporary) and not temporary.exists() and not temporary.is_symlink(),'fresh owned temporary directory required')
+             temporary.mkdir()
+-            projection=helper_module.measure(rows,LIMITS,controller.capacity)
++            projection=helper_module.measure(rows,LIMITS,controller.capacity,reuse=selected['records'],evidence_roots=selected['evidence_roots'])
+             require(projection==snapshot['projection'],'actual source snapshot projection differs')
+-            budget=controller.capacity(force=True);amount=reservation(projection,rows)
++            budget=controller.capacity(force=True);amount=reservation(projection,rows,catalog)
+             require(amount==snapshot['projected_reservation_bytes']
+                 and budget['evidence_allocated_bytes']+amount<=256*2**20,'aggregate evidence snapshot reservation unavailable')
+             controller.record['snapshot_admission']=dict(existing_evidence_bytes=budget['evidence_allocated_bytes'],reserved_bytes=amount)
+             controller.save()
+-            manifest=helper_module.write_verified(rows,controller.work/'source-snapshots',projection,LIMITS,controller.capacity)
++            manifest=helper_module.write_verified(rows,controller.work/'source-snapshots',projection,LIMITS,controller.capacity,
++                reuse=selected['records'],evidence_roots=selected['evidence_roots'])
+             data=helper_module.encoded(manifest);require(len(data)<=LIMITS['maximum_manifest_bytes'],'snapshot manifest bound')
+             with (controller.work/'source-snapshots.json').open('xb') as stream:
+                 stream.write(data);stream.flush();os.fsync(stream.fileno())
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-02/prepare.py
++++ /Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-03/prepare.py
+@@ -57,8 +57,8 @@
+             and terminal['status']==('passed-awaiting-independent-audit' if role=='hash' else 'passed'),
+             'actual completed independent prerequisite required: '+role)
+         audits[role]=dict(path=str(path),sha256=digest)
+-    phase=args['phase'];packet=HERE/(phase+'-plan-01');work=R/'.work'/('hir-options-hash-runtime-'+phase+'-02')
+-    supervisor=R/'.work/experiments'/('hir-options-hash-runtime-'+phase+'-supervisor-02')
++    phase=args['phase'];packet=HERE/(phase+'-plan-01');work=R/'.work'/('hir-options-hash-runtime-'+phase+'-03')
++    supervisor=R/'.work/experiments'/('hir-options-hash-runtime-'+phase+'-supervisor-03')
+     f.require(all(not p.exists() and not p.is_symlink() for p in [packet,work,supervisor]),'fresh runtime proposal/output required')
+     checked_sources={}
+     def precheck(path):
+@@ -70,7 +70,7 @@
+     expected_works=dict(beta=modules.stage.BETA_WORK,native=modules.stage.NATIVE_QUALIFICATION_WORK,
+         run_make=modules.stage.RECIPE_WORK,hash=modules.stage.WORK)
+     f.require(works==expected_works,'explicit evidence differs from actual adopted hash prerequisite roles')
+-    d=modules.collector.Discovery(modules.hash_modules)
++    d=entry.discovery(modules)
+     with d.owned.workload_lock(d.owned.CANONICAL_LOCK,600):
+         started=time.time();free_before=d.owned.disk(R,16)
+         f.require(all(not p.exists() and not p.is_symlink() for p in [packet,work,supervisor]),'runtime namespace appeared during admission wait')
+@@ -132,12 +132,25 @@
+         for name,row in tested['files'].items():d.add(name,row,snapshot=True)
+         d.tree(CONTROL_WORK);d.tree(O/'.work/experiments/runtime-adapter-controls-supervisor-01')
+         d.add(CONTROL_AUDIT,snapshot=True);d.add(CONTROLS/'launch.json',snapshot=True)
++        for path in [entry.CATALOG_SOURCE,entry.CATALOG_TEST,entry.CATALOG_CONTROLS/'inputs.json',
++                     entry.CATALOG_CONTROLS/'launch.json',entry.CATALOG_AUDIT]:d.add(path,snapshot=True)
++        catalog_tested=read_json(entry.CATALOG_CONTROLS/'inputs.json')
++        for name,row in catalog_tested['files'].items():d.add(name,row,snapshot=True)
++        d.tree(entry.CATALOG_WORK)
++        for path in [HERE/'prerequisites.py',HERE/'test_prerequisite_successor.py',entry.RUNTIME_CONTROLS/'inputs.json',
++                     entry.RUNTIME_CONTROLS/'launch.json',entry.RUNTIME_CONTROL_AUDIT]:d.add(path,snapshot=True)
++        runtime_tested=read_json(entry.RUNTIME_CONTROLS/'inputs.json')
++        for name,row in runtime_tested['files'].items():d.add(name,row,snapshot=True)
++        d.tree(entry.RUNTIME_CONTROL_WORK)
+         # The Reader's complete union extends its immutable original; no live
+         # environment is changed to mimic a historical launch.
+         d.imports()
+         combined=dict(files=d.files,links=d.links,absent_paths=sorted(d.absent),executor_routes=d.routes)
+         reader=modules.prerequisites.Reader(modules.stage,modules.hash_modules,combined_freeze=combined,references=audits,read_json=read_json,sha=sha)
+         qualification=reader.check(full=True)
++        runtime_qualification=entry.runtime_qualification(reader)
++        catalog_qualification=entry.catalog_qualification(reader)
++        catalog=factory.load('completed_catalog',entry.CATALOG_SOURCE,lambda p:d.add(p,snapshot=True))
+         compiled=read_json(COMPILED);provider=read_json(PROVIDER);remap=read_json(REMAP);old_spec=read_json(OLD_SPEC);old_policy=read_json(OLD_POLICY)
+         source=Path(hash_plan['metadata_plan']['source']);sysroot=Path(hash_plan['roles']['runtime_compiler'])
+         f.require(source==modules.hash_modules['core'].S and sysroot==modules.hash_modules['core'].E2,'actual compiler output roots differ')
+@@ -153,7 +166,7 @@
+         preflight=None
+         if phase=='installation':
+             f.require(args['source_preflight_audit'] is not None and args['source_preflight_audit_sha256'] is not None,'actual independent source-preflight audit required')
+-            previous=HERE/'preflight-plan-01';previous_work=R/'.work/hir-options-hash-runtime-preflight-02'
++            previous=HERE/'preflight-plan-01';previous_work=R/'.work/hir-options-hash-runtime-preflight-03'
+             d.inherit(previous);d.add(previous/'snapshot-plan.json',snapshot=True);d.tree(previous_work)
+             history=factory.load('preflight_history',HERE/'preflight_history.py',lambda p:d.add(p,snapshot=True))
+             preflight=history.validate(modules.q,modules.recipe,packet=previous,work=previous_work,candidate=candidate,
+@@ -182,6 +195,8 @@
+             independent_audits=audits,qualified_prerequisites=qualification,hash_launcher=hash_launcher,specification=dict(path=str(specification),sha256=sha(specification)),
+             source_policy=dict(path=str(policy_path),sha256=sha(policy_path)),provider_comparison=provider_ref,
+             adapter_controls=dict(receipt=str(CONTROL_WORK/'receipt.json'),audit=str(CONTROL_AUDIT)),runtime_key=key,
++            catalog_qualification=catalog_qualification,
++            runtime_adapter_qualification=runtime_qualification,
+             environment=environment,launch_environment=environment,children=children,evidence_roots=sorted(map(str,roots)),
+             capacity=dict(entry_gib=24,stop_gib=9,floor_gib=8,combined_namespace_bytes=14*2**30,evidence_bytes=256*2**20))
+         if phase=='installation':plan.update(sysroot=str(new_sysroot),source_preflight=preflight['reference'],source_preflight_readback=preflight)
+@@ -190,22 +205,33 @@
+         d.add(R/'scripts/supervise_experiment.py',snapshot=True)
+         reader.reader.snapshot_qualification()
+         snapshots=factory.load('qualified_snapshots',modules.stage.SNAPSHOT_SOURCE,lambda p:d.add(p,snapshot=True))
++        def file_record(path):
++            path=d.add(path)
++            return dict(path=str(path),**d.files[str(path)])
++        plan['snapshot_reuse']=entry.completed_catalog(modules,reader,catalog,snapshots,plan['evidence_roots'],
++            read_json=read_json,file_record=file_record,directory_record=f.ordinary_directory,guard=d.floor,
++            preflight_owner=entry.preflight_catalog_owner(modules,plan,read_json=read_json,read_bytes=read_bytes,sha=sha))
+         d.imports()
+         write(packet/'plan.json',plan);d.add(packet/'plan.json',snapshot=True)
+         freeze=dict(files=d.files,links=d.links,absent_paths=sorted(d.absent),executor_routes=d.routes,python=str(Path(sys.executable).resolve(strict=True)),
+             plan_sha256=sha(packet/'plan.json'),launch_environment=environment,snapshot_inputs=sorted(d.snapshots))
+-        write(packet/'inputs.json',freeze);inputs_sha=f.digest(packet/'inputs.json')
+-        rows=entry.records(freeze,packet,inputs_sha,f);projection=snapshots.measure(rows,entry.LIMITS,d.floor)
+-        budget=monitor.sample(evidence_root=work,evidence_roots=sorted(roots));amount=entry.reservation(projection,rows)
++        table=modules.stage.load_file_table(freeze,modules.hash_modules['comp'])
++        wire=table.split(freeze,base_path=entry.FILE_TABLE_BASE['path'],base_sha256=entry.FILE_TABLE_BASE['sha256'],guard=d.floor)
++        f.require(table.encoded(modules.stage.expand_file_table(wire,table,guard=d.floor))==table.encoded(freeze),'complete runtime table roundtrip differs')
++        write(packet/'inputs.json',wire);inputs_sha=f.digest(packet/'inputs.json')
++        rows=entry.records(freeze,packet,inputs_sha,f);selected=catalog.select(rows,plan['snapshot_reuse'])
++        projection=snapshots.measure(rows,entry.LIMITS,d.floor,reuse=selected['records'],evidence_roots=selected['evidence_roots'])
++        budget=monitor.sample(evidence_root=work,evidence_roots=sorted(roots));amount=entry.reservation(projection,rows,catalog)
+         f.require(monitor.rejection(budget) is None and budget['evidence_allocated_bytes']+amount<=256*2**20,'combined runtime proof/evidence reservation unavailable')
+         projection_plan=dict(inputs_sha256=inputs_sha,helper=dict(path=str(modules.stage.SNAPSHOT_SOURCE),sha256=sha(modules.stage.SNAPSHOT_SOURCE)),
+             limits=entry.LIMITS,projection=projection,remaining_evidence_reservation_bytes=entry.REMAINING_RESERVATION,
++            reuse_selection=selected,
+             measured_existing_evidence_bytes=budget['evidence_allocated_bytes'],projected_reservation_bytes=amount,evidence_cap_bytes=256*2**20)
+         projection_bytes=snapshots.encoded(projection_plan);f.require(len(projection_bytes)<=entry.LIMITS['maximum_manifest_bytes'],'projection manifest bound')
+         with (packet/'snapshot-plan.json').open('xb') as stream:stream.write(projection_bytes);stream.flush();os.fsync(stream.fileno())
+         # Full prepared readback remains read-only; no Controller constructor,
+         # execute, source probe, copy, or final validator invocation occurs.
+-        final=f.Frozen(packet/'inputs.json',inputs_sha,output_root=work);final.check(True)
++        final=f.Frozen(packet/'inputs.json',inputs_sha,output_root=work,table=table,base=entry.FILE_TABLE_BASE);final.check(True)
+         modules.prerequisites.Reader(modules.stage,modules.hash_modules,combined_freeze=freeze,references=audits,
+             read_json=final.read_json,sha=final.sha).check(full=True)
+         write(packet/'metadata-preflight.json',dict(status='passed-read-only-discovery',phase=phase,started_at=started,finished_at=time.time(),
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-02/frozen.py
++++ /Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-03/frozen.py
+@@ -47,11 +47,23 @@
+         parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)))
+ 
+ 
++def ordinary_directory(path):
++    path = Path(path)
++    require(path.is_absolute() and '..' not in path.parts, 'absolute ordinary directory required')
++    for part in [*reversed(path.parents),path]:
++        require(stat.S_ISDIR(part.lstat().st_mode) and not part.is_symlink(), 'ordinary directory route required')
++    before = identity(path); children = sorted(os.listdir(path))
++    require(identity(path) == before, 'directory changed during listing')
++    return dict(identity=before,children=children)
++
++
+ class Frozen:
+-    def __init__(self, path, expected, *, output_root):
++    def __init__(self, path, expected, *, output_root, table, base):
+         self.path, self.expected = Path(path), expected
+         require(digest(self.path) == expected, 'exact reviewed union freeze required')
+-        self.value = json_file(self.path)
++        self.wire = json_file(self.path)
++        require(self.wire.get('file_table_base') == base, 'exact ordinary native input base required')
++        self.value = table.expand(self.wire)
+         self.output_root = Path(output_root)
+         self.environment = dict(os.environ)
+ 
+@@ -67,6 +79,10 @@
+         require(path.is_relative_to(self.output_root) and path.resolve(strict=True) == path
+                 and path.is_file(), 'unfrozen read must name actual owned stage output')
+         return path
++
++    def record(self, path):
++        p = self.file(path)
++        return dict(path=str(p),**self.value['files'][str(p)])
+ 
+     def read_bytes(self, path, *, frozen=True):
+         p = self.file(path) if frozen else self.output(path)

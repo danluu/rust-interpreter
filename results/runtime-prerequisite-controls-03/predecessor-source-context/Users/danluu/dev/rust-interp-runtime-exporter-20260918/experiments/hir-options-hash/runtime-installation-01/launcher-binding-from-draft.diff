@@ -1,0 +1,58 @@
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/runtime-installation-preparer-before-launcher-binding-01.py
++++ /Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-01/prepare.py
+@@ -79,12 +79,45 @@
+         d.tree(works['hash'])
+         # The completed hash independent audit covers its outer/launcher, and
+         # both raw owner histories are frozen explicitly for later readback.
+-        d.tree(ROOT/'.work/experiments/hir-options-hash-driver-supervisor-01')
++        hash_outer=ROOT/'.work/experiments/hir-options-hash-driver-supervisor-01'
++        hash_dispatcher=ROOT/'.work/hash-driver-launch-execution-01'
++        d.tree(hash_outer);d.tree(hash_dispatcher)
+         for role,ref in audits.items():d.add(ref['path'],ref,snapshot=True)
+         for path,row in checked_sources.items():d.add(path,row,snapshot=True)
+         def read_json(path):return modules.collector.read(d.add(path))
+         def read_bytes(path):return d.add(path).read_bytes()
+         def sha(path):return d.files[str(d.add(path))]['sha256']
++        terminal=read_json(works['hash']/'receipt.json');outer=read_json(hash_outer/'status.json')
++        dispatch=read_json(hash_dispatcher/'record.json');hash_launch=read_json(entry.HASH_SOURCE/'launch.json')
++        f.require(outer['status']=='finished' and outer['returncode']==0 and outer['child_pid']==terminal['pid']
++            and outer['supervisor_pid']==terminal['parent_pid'] and outer['command']==hash_launch['command'][6:]
++            and outer['cwd']==str(ROOT) and outer['plan_sha256']==sha(hash_outer/'plan.json')
++            and outer['log_sha256']==sha(hash_outer/'command.log')
++            and outer['child_started_at']<=terminal['started_at']<=terminal['admitted_at']<=terminal['finished_at']<=outer['finished_at'],
++            'actual hash supervisor association differs')
++        f.require(dispatch['status']=='terminal-observed' and dispatch['returncode']==dispatch['launcher_returncode']==0
++            and dispatch['started_at']<=dispatch['launcher_finished_at']<=dispatch['finished_at']
++            and outer['finished_at']<=dispatch['terminal_observed_at']<=dispatch['finished_at']
++            and dispatch['outer_sha256']==sha(hash_outer/'status.json') and dispatch['command']==hash_launch['command']
++            and dispatch['cwd']==str(ROOT) and dispatch['environment']==hash_launch['environment']
++            and dispatch['launch_path']==str(entry.HASH_SOURCE/'launch.json')
++            and dispatch['launch_sha256']==sha(entry.HASH_SOURCE/'launch.json')
++            and hash_launch['inputs_sha256']==sha(entry.HASH_SOURCE/'inputs.json')==terminal['inputs_sha256']
++            and hash_launch['plan_sha256']==sha(entry.HASH_SOURCE/'plan.json')
++            and Path(dispatch['launcher_source_path'])==entry.HASH_SOURCE/'launch.py'
++            and sha(dispatch['launcher_source_path'])==dispatch['launcher_source_sha256'],
++            'actual hash dispatcher/launch/source association differs')
++        for stream in ['stdout','stderr']:
++            f.require(sha(hash_dispatcher/stream)==dispatch[stream+'_sha256'],'actual hash dispatcher raw differs')
++        handoff=read_json(hash_dispatcher/'stdout')
++        f.require(dispatch['supervisor_handoff']==handoff and handoff['supervisor_pid']==outer['supervisor_pid']
++            and handoff['directory']==str(hash_outer) and dispatch['outer_status']==outer['status']
++            and dispatch['supervisor_pid']==outer['supervisor_pid'] and dispatch['controller_pid']==terminal['pid'],
++            'actual hash dispatcher handoff differs')
++        hash_launcher=dict(path=str(hash_dispatcher/'record.json'),sha256=sha(hash_dispatcher/'record.json'),
++            source=dict(path=dispatch['launcher_source_path'],sha256=dispatch['launcher_source_sha256']),
++            outer=dict(path=str(hash_outer/'status.json'),sha256=sha(hash_outer/'status.json')))
++        for path in [hash_dispatcher/'record.json',entry.HASH_SOURCE/'launch.json',Path(dispatch['launcher_source_path'])]:d.add(path,snapshot=True)
+         for name,resolved in hash_plan['executor_routes'].items():
+             f.require(str(Path(name).resolve(strict=True))==resolved,'inherited executor route differs');d.routes[name]=resolved
+         for name in [Path(sys.executable),Path('/opt/homebrew/bin/python3'),Path('/usr/bin/otool'),Path('/usr/bin/xcrun')]:
+@@ -144,7 +177,7 @@
+                     f.require(path.is_dir() and not path.is_symlink(),'indirect candidate evidence root');roots.add(path)
+         monitor.evidence_contract(work,sorted(roots))
+         plan=dict(status='prepared-unrun',phase=phase,owner=str(R),work=str(work),supervisor_work=str(supervisor),hash_source=str(entry.HASH_SOURCE),
+-            independent_audits=audits,qualified_prerequisites=qualification,specification=dict(path=str(specification),sha256=sha(specification)),
++            independent_audits=audits,qualified_prerequisites=qualification,hash_launcher=hash_launcher,specification=dict(path=str(specification),sha256=sha(specification)),
+             source_policy=dict(path=str(policy_path),sha256=sha(policy_path)),provider_comparison=provider_ref,
+             adapter_controls=dict(receipt=str(CONTROL_WORK/'receipt.json'),audit=str(CONTROL_AUDIT)),runtime_key=key,
+             environment=environment,launch_environment=environment,children=children,evidence_roots=sorted(map(str,roots)),

@@ -1,0 +1,28 @@
+--- /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/launch_runtime_prerequisite_controls_01_bounded.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/launch_runtime_prerequisite_controls_03_bounded.py
+@@ -8,19 +8,19 @@
+ import sys
+ import time
+ 
+-ROOT = Path('/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918')
+-HERE = ROOT/'experiments/runtime-prerequisite-controls-01'
++ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
++HERE = ROOT/'experiments/runtime-prerequisite-controls-03'
+ LAUNCH = HERE/'launch.json'
+-EXPECTED = 'd3f91c5d6ad05e0ff74f90fd6aa6dbcb385131fb5ee7afe5b32cb5de582f5c91'  # Bound to the authorized exact preparation.
+-WORK = ROOT/'.work/runtime-prerequisite-controls-launch-execution-01'
+-OUTER = ROOT/'.work/experiments/runtime-prerequisite-controls-supervisor-01'
++EXPECTED = '6c5695867584c76fa389e1ed587befd54fa6863b9797849d18d6a4a63d50b09e'  # Bound to the authorized exact preparation.
++WORK = ROOT/'.work/runtime-prerequisite-controls-launch-execution-03'
++OUTER = ROOT/'.work/experiments/runtime-prerequisite-controls-supervisor-03'
+ sha = lambda p: hashlib.sha256(Path(p).read_bytes()).hexdigest()
+ assert Path.cwd() == ROOT and sys.dont_write_bytecode and not sys.flags.optimize
+ assert type(EXPECTED) is str and len(EXPECTED) == 64, 'unbound source-only dispatcher'
+ assert sha(LAUNCH) == EXPECTED
+ plan = json.loads(LAUNCH.read_bytes())
+ assert sha(HERE/'inputs.json') == plan['inputs_sha256'] and sha(HERE/'run.py') == plan['helper_sha256']
+-assert plan['owner'] == str(ROOT) and plan['controls'] == 11 and plan['expected_children'] == 1
++assert plan['owner'] == str(ROOT) and plan['controls'] == 21 and plan['expected_children'] == 1
+ assert shutil.disk_usage(ROOT).free >= 16*2**30
+ assert not WORK.exists() and not WORK.is_symlink() and not OUTER.exists() and not OUTER.is_symlink()
+ WORK.mkdir()

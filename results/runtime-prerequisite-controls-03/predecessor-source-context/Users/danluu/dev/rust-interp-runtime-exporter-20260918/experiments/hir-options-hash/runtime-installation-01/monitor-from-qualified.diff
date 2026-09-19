@@ -1,0 +1,21 @@
+--- /Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-stage-monitor/monitor.py
++++ runtime-installation-01/monitor.py
+@@ -15,7 +15,8 @@
+ import time
+ 
+ OWNER = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-CONTROLLER_OWNER = Path(__file__).resolve().parents[2]
++CONTROLLER_OWNER = Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918')
++ALLOWED_CWDS = frozenset()  # Exact reviewed runtime stage paths; configured before admission.
+ sys.path.insert(0, str(OWNER/'experiments/stable-cgu'))
+ import owned_stage as owned
+ 
+@@ -215,7 +216,7 @@
+ def run(command, *, cwd, environment, output, canonical_fd, evidence_root, evidence_roots, expected=(0,)):
+     """Caller supplies a frozen allowlist row and holds the canonical lock."""
+     assert output.is_relative_to(evidence_root) and output.parent.resolve(strict=True) == output.parent
+-    assert cwd == NAMESPACE/'source'
++    assert cwd in ALLOWED_CWDS and cwd.resolve(strict=True) == cwd
+     assert not any(p in ['.', '..'] for p in output.parts)
+     with owned.workload_lock(owned.CANONICAL_LOCK,600,inherited_fd=canonical_fd):
+         pass  # The caller keeps its owning context and open description alive.
