@@ -1,5 +1,6 @@
 //! Test-only staging prototype. No cache is connected to guest execution.
 use super::*;
+use std::sync::{Arc,Mutex};
 
 #[derive(Clone,Copy,Debug,PartialEq,Eq)]
 pub(super) enum Kind { Assertion(usize), Scalar(usize) }
@@ -43,6 +44,17 @@ struct Template<'p> {
     operations:usize,register_pairs:usize,liveness_declined:bool,
 }
 impl<'p> Template<'p> {
+    fn retained_charge(&self)->Option<usize> {
+        // Buffer capacities plus object/control-block/allocation slack. This
+        // bounds retained storage, not allocator RSS or temporary staging.
+        let buffers=[self.words.capacity().checked_mul(std::mem::size_of::<u32>())?,
+            self.entries.capacity().checked_mul(std::mem::size_of::<Option<Block>>())?,
+            self.resumes.capacity().checked_mul(std::mem::size_of::<Option<usize>>())?,
+            self.relocations.capacity().checked_mul(std::mem::size_of::<Relocation>())?,
+            self.assertion_pcs.capacity().checked_mul(std::mem::size_of::<usize>())?,
+            self.scalar_inputs.capacity().checked_mul(std::mem::size_of::<(usize,Option<ScalarInput>)>())?];
+        buffers.into_iter().try_fold(std::mem::size_of::<Self>()+7*64,usize::checked_add)
+    }
     fn capture(jit:&Jit<'p>,id:usize,staged:&CompiledFunction<'_>)->Option<Self> {
         let options=Options::of(jit)?;let f=jit.program.functions.get(id)?;
         if staged.words.is_empty() || staged.words.len()>MAX_CODE_BYTES/4
@@ -116,6 +128,36 @@ impl<'p> Template<'p> {
             // These diagnostics are irrelevant to this staging-only prototype.
             local_forwarding:vec![],local_fact_events:vec![],scratch_hits:vec![],scratch_copy_hits:vec![],
             flush_spans:vec![],memory_spans:vec![],retained_local_writes:vec![]})
+    }
+}
+
+const MAX_TEMPLATE_STORAGE:usize=64*1024*1024;
+struct Contents<'p> {slots:Vec<Option<Arc<Template<'p>>>>,charged:usize}
+struct Store<'p> {program:&'p Program,limit:usize,contents:Mutex<Contents<'p>>}
+impl<'p> Store<'p> {
+    fn new(program:&'p Program,limit:usize)->Option<Self> {
+        if limit>MAX_TEMPLATE_STORAGE {return None;}
+        let base=std::mem::size_of::<Self>()+64;
+        if program.functions.len().checked_mul(std::mem::size_of::<Option<Arc<Template<'p>>>>())?.checked_add(base)?>limit {return None;}
+        let mut slots=Vec::new();slots.try_reserve_exact(program.functions.len()).ok()?;
+        slots.resize_with(program.functions.len(),||None);
+        let charged=slots.capacity().checked_mul(std::mem::size_of::<Option<Arc<Template<'p>>>>())?.checked_add(base)?;
+        if charged>limit {return None;}
+        Some(Self {program,limit,contents:Mutex::new(Contents{slots,charged})})
+    }
+    fn snapshot(&self,program:&Program,id:usize)->Option<Arc<Template<'p>>> {
+        if !std::ptr::eq(self.program,program) {return None;}
+        self.contents.lock().ok()?.slots.get(id)?.clone()
+    }
+    fn retain(&self,template:Template<'p>)->bool {
+        if !std::ptr::eq(self.program,template.program) {return false;}
+        let Some(charge)=template.retained_charge() else {return false;};
+        let Ok(mut contents)=self.contents.lock() else {return false;};
+        let Some(slot)=contents.slots.get(template.function) else {return false;};
+        if slot.is_some() {return false;}
+        let Some(total)=contents.charged.checked_add(charge).filter(|&n|n<=self.limit) else {return false;};
+        let id=template.function;
+        contents.slots[id]=Some(Arc::new(template));contents.charged=total;true
     }
 }
 
@@ -217,4 +259,78 @@ fn template_relocation_records_reject_overlap_corruption_and_missing_sites() {
     }
     let mut t=Template::capture(&first,0,&stage(&first,0)).unwrap();let w=t.relocations[0].word;t.words[w]^=1;
     assert!(t.restore(&first,0).is_none());
+}
+
+#[test]
+fn template_store_accounts_capacity_and_retains_one_variant_per_function() {
+    let p=fixture();let j=owner(&p);let t=Template::capture(&j,0,&stage(&j,0)).unwrap();
+    let charge=t.retained_charge().unwrap();let base=Store::new(&p,MAX_TEMPLATE_STORAGE).unwrap().contents.lock().unwrap().charged;
+    let store=Store::new(&p,base+charge).unwrap();assert!(store.retain(t));
+    assert_eq!(store.contents.lock().unwrap().charged,base+charge);
+    assert!(!store.retain(Template::capture(&j,0,&stage(&j,0)).unwrap()));
+    assert_eq!(store.contents.lock().unwrap().charged,base+charge);
+    same(&store.snapshot(&p,0).unwrap().restore(&j,0).unwrap(),&stage(&j,0));
+}
+
+#[test]
+fn template_store_full_capacity_keeps_normal_emission_available() {
+    let p=fixture();let j=owner(&p);let t=Template::capture(&j,0,&stage(&j,0)).unwrap();
+    let charge=t.retained_charge().unwrap();let base=Store::new(&p,MAX_TEMPLATE_STORAGE).unwrap().contents.lock().unwrap().charged;
+    let store=Store::new(&p,base+charge-1).unwrap();assert!(!store.retain(t));assert!(store.snapshot(&p,0).is_none());
+    assert_eq!(store.contents.lock().unwrap().charged,base);
+    assert!(!stage(&j,0).words.is_empty());assert!(j.code.is_none() && j.bytes==0);
+}
+
+#[test]
+fn template_store_program_scope_and_initial_bounds_are_checked() {
+    let p=fixture();let other=p.clone();let j=owner(&other);let store=Store::new(&p,MAX_TEMPLATE_STORAGE).unwrap();
+    assert!(!store.retain(Template::capture(&j,0,&stage(&j,0)).unwrap()));
+    assert!(store.snapshot(&other,0).is_none());assert!(store.snapshot(&p,usize::MAX).is_none());
+    assert!(Store::new(&p,0).is_none());assert!(Store::new(&p,usize::MAX).is_none());
+}
+
+#[test]
+fn template_store_concurrent_publishers_keep_owner_specific_relocations() {
+    fn thread_safe<T:Send+Sync>(){}thread_safe::<Template<'_>>();thread_safe::<Store<'_>>();
+    let p=fixture();let store=Store::new(&p,MAX_TEMPLATE_STORAGE).unwrap();let barrier=std::sync::Barrier::new(2);
+    let inserted=std::thread::scope(|scope| {
+        let mut handles=vec![];
+        for index in 0..2 {
+            let (p,store,barrier)=(&p,&store,&barrier);
+            handles.push(scope.spawn(move||{
+                // Neither Jit nor executable memory crosses this boundary.
+                let mut j=owner(p);scalar(&mut j,0x1_2345_1000+index*0x1_0001_0000);assertions(&mut j,index*19);
+                let template=Template::capture(&j,0,&stage(&j,0)).unwrap();barrier.wait();
+                let inserted=store.retain(template);barrier.wait();
+                let snapshot=store.snapshot(p,0).unwrap();same(&snapshot.restore(&j,0).unwrap(),&stage(&j,0));
+                assert!(j.code.is_none() && j.bytes==0);inserted as usize
+            }));
+        }
+        handles.into_iter().map(|h|h.join().unwrap()).sum::<usize>()
+    });
+    assert_eq!(inserted,1);
+    let contents=store.contents.lock().unwrap();assert_eq!(contents.slots.iter().filter(|s|s.is_some()).count(),1);
+    assert!(contents.charged<=store.limit);
+}
+
+#[test]
+fn template_store_snapshot_outlives_store_and_restores_without_holding_lock() {
+    let p=fixture();let j=owner(&p);let snapshot={
+        let store=Store::new(&p,MAX_TEMPLATE_STORAGE).unwrap();assert!(store.retain(Template::capture(&j,0,&stage(&j,0)).unwrap()));
+        let snapshot=store.snapshot(&p,0).unwrap();
+        let _guard=store.contents.try_lock().expect("snapshot released its lock");snapshot
+    };
+    same(&snapshot.restore(&j,0).unwrap(),&stage(&j,0));
+}
+
+#[test]
+fn template_store_poison_is_a_miss_for_readers_and_publishers() {
+    let p=fixture();let j=owner(&p);let store=Store::new(&p,MAX_TEMPLATE_STORAGE).unwrap();
+    assert!(store.retain(Template::capture(&j,0,&stage(&j,0)).unwrap()));
+    std::thread::scope(|scope|{
+        let store=&store;
+        assert!(scope.spawn(move||{let _guard=store.contents.lock().unwrap();panic!("deliberate poison control");}).join().is_err());
+    });
+    assert!(store.snapshot(&p,0).is_none());assert!(!store.retain(Template::capture(&j,0,&stage(&j,0)).unwrap()));
+    assert!(!stage(&j,0).words.is_empty());
 }

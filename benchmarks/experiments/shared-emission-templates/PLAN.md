@@ -45,3 +45,12 @@ Serial root lock with45second wait; two Cargo/test workers; existing root target
 only; build floor max(14GiB,8GiB+2*allocated target),8GiB child floor. Freeze source
 before executing focused debug/release tests. Preserve failed attempts and all
 successful commands; close original terminal evidence without rerunning them.
+
+Stage1 is closed after6controls/profile. Stage2 adds6store controls (12total):
+exact retained-capacity accounting, one-object publication, full-store fallback,
+wrong Program and initial bounds, concurrent publishers with independent scalar
+addresses/assertion IDs, lock-free restoration after snapshot, snapshot lifetime,
+and poisoned-lock fallback. Storage is limited to64MiB including vector capacities
+and conservative object/allocation slack. This is a retained-storage accounting
+limit, not a promise about allocator RSS. Store/Template are Send+Sync; Jit never
+crosses the worker boundary. No guest or production cache wiring is introduced.

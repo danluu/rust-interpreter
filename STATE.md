@@ -91,11 +91,16 @@ assertion/scalar immediate relocation records and6staging controls. Nothing
 is connected to guest execution or CLI options. Source module
 `jit/emission_templates.rs`; controller/plan
 `benchmarks/experiments/shared-emission-templates`. Focused01 passes6controls
-per profile under91727/91773, sourcef89ba1e2, and is CLOSED by20954/20958
-(verify child in terminal if needed):223inputs,221source bindings,11evidence.
+per profile under91727/91773, sourcef89ba1e2, and is CLOSED by20954/20991:
+223inputs,221source bindings,11evidence.
 No guest or executable code publication. The full native words/entry metadata
 match fresh emission after assertion/scalar rebinding. Next add bounded shared
 storage and concurrency/lifetime controls before connecting guest execution.
+Stage2 is now prepared: a64MiB bounded per-Program store, one immutable Arc per
+numeric ID, short locked snapshot/publication, capacity/poison misses and6new
+controls. Focused02 expects12controls/profile. All code remains cfg(test), with
+no guest execution, disk cache or production option. Run then close before any
+correction or integration.
 
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally
