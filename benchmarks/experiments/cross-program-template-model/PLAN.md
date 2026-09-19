@@ -211,3 +211,39 @@ guest results. Counters require actual hits/inserts where appropriate and none
 when storage is unavailable. No production flag, native file cache or IPC exists.
 After focused closure, broader workspace qualification and saved real-suite
 execution are required before extending this into a runtime candidate.
+
+## Model09 and actual saved parser suites
+
+Model08 and workspace01 are closed:20 focused controls/profile and628 workspace
+tests/profile with15 ignored. Add an opt-in verification mode to Context: on
+every cache hit, emit fresh staging under the same current budget and compare
+all words, entries/resumes, relocations, assertions and counters before ordinary
+publication. Count verified hits and require equality with hits. The lazy-context
+control now exercises this mode; the20 focused controls must pass again before
+the new ignored real-suite diagnostic runs. Failure messages report the first
+different word/metadata element instead of printing enormous vectors.
+
+The real-suite diagnostic is separate from timing. Bind all eight artifacts and
+their exact per-state catalogs/outcomes to the closed32-command parser primary,
+including its matched native outcomes and strict borrow-cache-off receipts. Run
+all114 original test bodies in each state with ordinary prepared JIT (no history)
+and with history enabled:16 suites/1824 test invocations inside one diagnostic
+Cargo command. Two owning worker threads use normal dynamic atomic test queues;
+they rendezvous between artifact states, and each retains its own64MiB history.
+No old numeric function-list approximation selects current work.
+
+Every owner performs full structural validation and fresh metadata/scalar proof
+as before. Each invocation gets fresh guest state. Preserve100B instructions,
+150000 allocations,64MiB memory,4096 frames and16MiB code per owner. Recheck8GiB
+disk headroom before each worker/case. Catch setup/verifier panics so both workers
+reach the end-of-case rendezvous and abort subsequent cases together; never strand
+one on a barrier. Reserve outputs before guests, sync bounded case journal rows,
+and retain actual failures. Completed successful commands are never rerun for
+bookkeeping. Verify full test-name/index coverage, expected outcomes and exact
+fresh-versus-cached failure text; instruction counters are diagnostic because
+ordinary entropy can affect real test paths. Require nonzero verified hits.
+
+The verifier intentionally re-emits cached code, and artifact loading/validation
+is part of this diagnostic. This is actual guest correctness/reachability, not a
+source-build end-to-end benchmark or a speedup claim. No native file cache, IPC,
+runtime CLI option or production adoption is introduced.

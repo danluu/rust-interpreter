@@ -10,6 +10,8 @@ const MAX_RETAINED:usize=64*1024*1024;
 
 #[path="cross_program_template_replay.rs"]
 mod replay;
+#[path="cross_program_template_suites.rs"]
+mod suites;
 
 #[derive(Clone,Copy,Debug,PartialEq,Eq)]
 pub(super) enum Kind { Assertion(usize), Scalar{function:usize,pc:usize} }
@@ -113,13 +115,17 @@ struct History {
 }
 
 #[derive(Default,Serialize)]
-struct Counts {lookups:usize,hits:usize,key_declines:usize,restore_declines:usize,inserted:usize,capture_declines:usize}
+struct Counts {lookups:usize,hits:usize,verified_hits:usize,key_declines:usize,restore_declines:usize,inserted:usize,capture_declines:usize}
 pub(super) struct Context<'p> {
     checked:Checked<'p>,history:std::rc::Rc<std::cell::RefCell<History>>,counts:std::cell::RefCell<Counts>,
+    verify_hits:bool,
 }
 impl<'p> Context<'p> {
     fn new(p:&'p Program,history:std::rc::Rc<std::cell::RefCell<History>>)->Option<std::rc::Rc<Self>> {
-        Some(std::rc::Rc::new(Self{checked:Checked::new(p)?,history,counts:Default::default()}))
+        Self::new_verified(p,history,false)
+    }
+    fn new_verified(p:&'p Program,history:std::rc::Rc<std::cell::RefCell<History>>,verify_hits:bool)->Option<std::rc::Rc<Self>> {
+        Some(std::rc::Rc::new(Self{checked:Checked::new(p)?,history,counts:Default::default(),verify_hits}))
     }
     pub(super) fn stage(&self,jit:&Jit<'p>,id:usize,word_budget:usize)->Result<Option<CompiledFunction<'p>>,EmitError> {
         let mut counts=self.counts.borrow_mut();counts.lookups+=1;
@@ -130,6 +136,10 @@ impl<'p> Context<'p> {
             let mut history=self.history.borrow_mut();
             if let Some(template)=history.get(&request.key) {
                 if let Some(restored)=template.restore_request(&request,word_budget) {
+                    if self.verify_hits {
+                        let fresh=request.emit(word_budget)?.expect("restoration succeeded but fresh emission declined");
+                        tests::same(&restored,&fresh.compiled);counts.verified_hits+=1;
+                    }
                     counts.hits+=1;return Ok(Some(restored));
                 }
                 counts.restore_declines+=1;
@@ -302,11 +312,20 @@ fn owner(p:&Program)->Jit<'_> {Checked::new(p).unwrap();Jit::new_resumable(p,fal
 fn stage<'p>(j:&Jit<'p>,id:usize)->CompiledFunction<'p> {j.emit_function(&j.program.functions[id],MAX_CODE_BYTES/4).unwrap().unwrap()}
 fn template(c:&Checked<'_>,j:&Jit<'_>,id:usize)->Template {Template::capture(c,j,id,EMITTER,&stage(j,id),MAX_RETAINED).unwrap()}
 pub(super) fn same(a:&CompiledFunction<'_>,b:&CompiledFunction<'_>) {
-    assert_eq!(a.words,b.words);assert_eq!(a.resumes,b.resumes);assert_eq!(a.assertions,b.assertions);
-    assert_eq!(a.model_relocations,b.model_relocations);
+    // Keep failures bounded even when a real function stages millions of words.
+    assert_eq!(a.words.len(),b.words.len());
+    for (i,(a,b)) in a.words.iter().zip(&b.words).enumerate() {assert_eq!(a,b,"machine word {i}");}
+    assert_eq!(a.resumes.len(),b.resumes.len());
+    for (i,(a,b)) in a.resumes.iter().zip(&b.resumes).enumerate() {assert_eq!(a,b,"resume {i}");}
+    assert_eq!(a.assertions.len(),b.assertions.len());
+    for (i,(a,b)) in a.assertions.iter().zip(&b.assertions).enumerate() {assert!(a==b,"assertion {i}");}
+    assert_eq!(a.model_relocations.len(),b.model_relocations.len());
+    for (i,(a,b)) in a.model_relocations.iter().zip(&b.model_relocations).enumerate() {assert_eq!(a,b,"relocation {i}");}
     assert_eq!((a.operations,a.register_pairs,a.liveness_declined),(b.operations,b.register_pairs,b.liveness_declined));
-    let entries=|e:&[Option<Block>]|e.iter().map(|b|b.map(|b|(b.offset,b.end))).collect::<Vec<_>>();
-    assert_eq!(entries(&a.entries),entries(&b.entries));
+    assert_eq!(a.entries.len(),b.entries.len());
+    for (i,(a,b)) in a.entries.iter().zip(&b.entries).enumerate() {
+        assert_eq!(a.map(|b|(b.offset,b.end)),b.map(|b|(b.offset,b.end)),"entry {i}");
+    }
 }
 #[test]
 fn cross_program_template_new_initializers_and_callee_body_preserve_exact_caller_staging() {
@@ -644,10 +663,10 @@ fn cross_program_template_live_budget_frame_memory_and_assertion_outcomes_match_
 #[cfg(all(target_arch="aarch64",target_os="macos"))]
 fn cross_program_template_lazy_context_reuses_real_preparation_across_checked_programs() {
     let history=std::rc::Rc::new(std::cell::RefCell::new(History::new(MAX_RETAINED).unwrap()));
-    let mut hits=0;let mut inserted=0;
+    let mut hits=0;let mut verified=0;let mut inserted=0;
     for (index,value) in [7,8,7,0,8].into_iter().enumerate() {
         let mut p=live_program(value);p.data[8]=index as u8;
-        let context=Context::new(&p,history.clone()).unwrap();let mut j=owner(&p);j.enable_scalar_calls();
+        let context=Context::new_verified(&p,history.clone(),true).unwrap();let mut j=owner(&p);j.enable_scalar_calls();
         j.template_model_context=Some(context.clone());let mut jit=Some(j);
         let expected=crate::execute_with_engine(&p,&[],live_limits(),crate::Engine::Jit);
         let actual=live_execute(&p,&mut jit,live_limits());
@@ -655,11 +674,11 @@ fn cross_program_template_lazy_context_reuses_real_preparation_across_checked_pr
             (Ok(a),Ok(b))=>{assert_eq!((a.value,a.instructions),(b.value,b.instructions));assert!(b.jit_entries>0);},
             (Err(a),Err(b))=>assert_eq!(a,b),_=>panic!("lazy cached/fresh outcome mismatch"),
         }
-        let counts=context.counts.borrow();assert!(counts.lookups>0);hits+=counts.hits;inserted+=counts.inserted;
+        let counts=context.counts.borrow();assert!(counts.lookups>0);hits+=counts.hits;verified+=counts.verified_hits;inserted+=counts.inserted;
         assert_eq!(counts.key_declines+counts.capture_declines,0);
         assert!(history.borrow().charge<=MAX_RETAINED);
     }
-    assert!(hits>0 && inserted>0);assert!(history.borrow().entries.len()>0);
+    assert!(hits>0 && inserted>0);assert_eq!(verified,hits);assert!(history.borrow().entries.len()>0);
 }
 
 #[test]

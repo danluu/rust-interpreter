@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='cross-program-template-model-08'
+RUN='cross-program-template-model-09'
 def read(p):return json.loads(p.read_text())
 
 def main():
@@ -17,7 +17,7 @@ def main():
         paths=[ROOT/p for p in subprocess.check_output(['git','ls-files','crates','Cargo.toml','Cargo.lock','rust-toolchain.toml'],cwd=ROOT,text=True).splitlines()]
         paths += [p for p in Path(__file__).parent.iterdir() if p.suffix in ['.py','.md']]
         paths += [ROOT/'scripts'/p for p in ['compare_saved_runtime.py','workflow_io.py']]
-        for run in ['cross-edit-emission-weight-01','cross-program-template-model-01','cross-program-template-model-02','cross-program-template-model-03','cross-program-template-model-04','cross-program-template-history-01','cross-program-template-model-05','cross-program-template-history-02','cross-program-template-model-06','cross-program-template-model-07']:
+        for run in ['cross-edit-emission-weight-01','cross-program-template-model-01','cross-program-template-model-02','cross-program-template-model-03','cross-program-template-model-04','cross-program-template-history-01','cross-program-template-model-05','cross-program-template-history-02','cross-program-template-model-06','cross-program-template-model-07','cross-program-template-model-08','cross-program-template-workspace-01']:
             prior=ROOT/'results'/run;closed=read(prior/'closure.json')
             assert closed['status']=='closed' and closed['all_hashes_verified'] and sha(prior/'summary.json')==closed['summary_sha256']
             paths += [prior/'closure.json',prior/'summary.json']
@@ -84,7 +84,9 @@ def close():
             assert not (out/'summary.json').exists()
             write(out/'summary.json',dict(status='focused-failed',source_revision=plan['source_revision'],raw=str(raw.relative_to(ROOT)),
                 commands=len(records),returncodes=[r['returncode'] for r in records],plan_sha256=sha(raw/'plan.json'),
-                records_sha256=sha(raw/'records.json'),original_project_guest_commands=0,performance_measurement=False))
+                records_sha256=sha(raw/'records.json'),
+                original_project_guest_commands=None if plan.get('original_project_guest_commands',0) else 0,
+                original_project_execution_possible=bool(plan.get('original_project_guest_commands',0)),performance_measurement=False))
         if 'input_sha256' in plan:
             assert sha(raw/'input.json')==plan['input_sha256'];evidence[str((raw/'input.json').relative_to(ROOT))]=plan['input_sha256']
         for p in [raw/'plan.json',raw/'records.json',outer/'status.json',outer/'plan.json',outer/'command.log']:evidence[str(p.relative_to(ROOT))]=sha(p)
