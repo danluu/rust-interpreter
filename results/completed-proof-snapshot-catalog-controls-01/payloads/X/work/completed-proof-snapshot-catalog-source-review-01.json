@@ -1,0 +1,130 @@
+{
+  "api": {
+    "extend": "extend(prior, owner, accounted_roots, limits, *, read_json, file_record, directory_record, expand_inputs, validate_owner)",
+    "owner_fields": [
+      "role",
+      "source",
+      "evidence",
+      "audit",
+      "result_path",
+      "result_digest_field"
+    ],
+    "reservation": "reservation(projection, maximum_manifest_bytes, remaining_bytes)",
+    "select": "select(records, catalog)"
+  },
+  "control_count": 33,
+  "created_at": 1789802359.0248199,
+  "exact_ast_names": [
+    "test_catalog.CatalogTests.test_all_reused_roots_stay_accounted",
+    "test_catalog.CatalogTests.test_audit_result_digest_must_match",
+    "test_catalog.CatalogTests.test_changed_ancestor_identity_rejected",
+    "test_catalog.CatalogTests.test_compact_full_integrity_cannot_be_changed",
+    "test_catalog.CatalogTests.test_compact_raw_digest_and_expanded_selection",
+    "test_catalog.CatalogTests.test_complete_aliases_and_physical_roots",
+    "test_catalog.CatalogTests.test_expansion_cannot_change_snapshot_selection",
+    "test_catalog.CatalogTests.test_explicit_result_field_and_path",
+    "test_catalog.CatalogTests.test_extra_stored_file_rejected",
+    "test_catalog.CatalogTests.test_failed_owner_never_gets_reuse_credit",
+    "test_catalog.CatalogTests.test_flat_freeze_cannot_be_rewritten_by_expander",
+    "test_catalog.CatalogTests.test_float_counter_is_not_equivalent",
+    "test_catalog.CatalogTests.test_full_eof_attestation_is_required",
+    "test_catalog.CatalogTests.test_hardlink_does_not_gain_credit",
+    "test_catalog.CatalogTests.test_historical_order_does_not_drop_alias",
+    "test_catalog.CatalogTests.test_manifest_mapping_covers_all_aliases",
+    "test_catalog.CatalogTests.test_missing_ancestor_membership_rejected",
+    "test_catalog.CatalogTests.test_missing_logical_alias_rejected",
+    "test_catalog.CatalogTests.test_negative_or_zero_identity_is_rejected",
+    "test_catalog.CatalogTests.test_new_and_old_inode_collision_rejected",
+    "test_catalog.CatalogTests.test_new_blob_cannot_claim_ancestor_role",
+    "test_catalog.CatalogTests.test_new_rounded_allocation_checked",
+    "test_catalog.CatalogTests.test_original_source_still_required",
+    "test_catalog.CatalogTests.test_reservation_only_counts_new_physical_blobs",
+    "test_catalog.CatalogTests.test_reservation_parameter_types_and_bounds",
+    "test_catalog.CatalogTests.test_reservation_rejects_unbounded_or_extra_storage_keys",
+    "test_catalog.CatalogTests.test_result_cannot_escape_owner",
+    "test_catalog.CatalogTests.test_retained_projection_must_be_exact",
+    "test_catalog.CatalogTests.test_reused_descriptor_cannot_be_relabelled",
+    "test_catalog.CatalogTests.test_reused_storage_path_is_exact",
+    "test_catalog.CatalogTests.test_role_specific_recipe_must_pass",
+    "test_catalog.CatalogTests.test_unqualified_helper_cannot_replace_frozen_source",
+    "test_catalog.CatalogTests.test_zero_new_allocation_rejects_boolean_and_float"
+  ],
+  "fixtures": {
+    "external_files": [],
+    "filesystem_roots": [],
+    "not_invoked": [
+      "filesystem writes or reads from test bodies",
+      "gzip/compression",
+      "compiler/provider calls",
+      "network or subprocess APIs"
+    ],
+    "provider_roots": [],
+    "synthetic_only": [
+      "in-memory prior v1 catalog and ordinary identity records",
+      "one completed v2 projection/manifest with one inherited blob, two stored blobs, and four logical paths including an alias",
+      "compact raw input with ordinary base catalog and disjoint delta plus full typed integrity",
+      "mock file/directory/authenticated JSON callbacks",
+      "mock exact owner qualification callback"
+    ]
+  },
+  "not_performed": [
+    "module imports",
+    "controls/tests",
+    "preparation",
+    "compression",
+    "provider discovery",
+    "workload execution",
+    "existing source mutation"
+  ],
+  "performed": [
+    "bounded source reads",
+    "AST parsing only",
+    "three fresh draft sources and this report"
+  ],
+  "review_findings": [
+    "Original v1 beta/native module and all frozen runtime01/02 files untouched.",
+    "Actual hash receipt has no plan_sha256: source association uses receipt input SHA -> raw input plan_sha256 -> actual plan. No synthetic field required.",
+    "Generic explicit result path/digest-field API binds actual owner-specific validation, passed receipt, audit receipt/result hashes, actual helper source, projection/retained copy and manifest.",
+    "All selected original source rows stay mandatory. Existing source-file hardlinks are allowed as historical logical identities; physical snapshot blobs require nlink1 and unique inode/path credit.",
+    "Catalog expansion checks complete canonical typed metadata and file table, exact retained base row/reference and disjoint union, then rebuilds original full snapshot selection without using new runtime selection.",
+    "All original catalog records/roots/owner associations retained; inherited catalog digest and full owner plan bind exact ancestry. Stored paths/new-only rows and reused paths/descriptors are independently compared.",
+    "All projection/manifest accounting is canonical typed JSON equality; bool/float are rejected even when numerically equal to zero. Identity rejects negative values, inode0 and nlink0.",
+    "Reservation parameters are exact nonnegative bounded ints; full storage key/descriptor set and compressed/new/reused/rounded accounting are checked. Production caller fixed40MiB reserves and all caps unchanged.",
+    "Current future hash/runtime manifests and final allocation still unavailable; this source does not establish capacity fit."
+  ],
+  "source_contract_refs": [
+    {
+      "bytes": 46295,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage-02/stage.py",
+      "sha256": "bb680d4d214b597b3a8189ea931c3a19d201d98660329b228fff1ef2443e21b0"
+    },
+    {
+      "bytes": 18437,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage-02/snapshot_bindings.py",
+      "sha256": "06e0d4c7304f192f851479218b8e9dbfc666e58c6c2cc5d68b9373053c2360cc"
+    },
+    {
+      "bytes": 17904,
+      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/bounded-proof-snapshots-v2/proof_snapshots.py",
+      "sha256": "f695e2c154a11dec9abbe9e6d2186729ab06c6b5b5c2bd1f10f9009b165c5064"
+    }
+  ],
+  "sources": [
+    {
+      "bytes": 20916,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/completed-proof-snapshot-catalog-01/catalog.py",
+      "sha256": "bb62d73dd5550ea365cb5036b1a7c45deffef2b02fae405fc4bf87002673c5c5"
+    },
+    {
+      "bytes": 18115,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/completed-proof-snapshot-catalog-01/test_catalog.py",
+      "sha256": "598427e030b0ad45edc0692ab0db0ee58e5eda80d5c26cc531c05227e295f396"
+    },
+    {
+      "bytes": 4594,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/completed-proof-snapshot-catalog-01/README.md",
+      "sha256": "4be5f7477cd6fd949e4771b195281022a01cd39f0fb99675c2ba9cada8c9ff42"
+    }
+  ],
+  "status": "source-draft-reviewed-awaiting-independent-review-and-controls"
+}

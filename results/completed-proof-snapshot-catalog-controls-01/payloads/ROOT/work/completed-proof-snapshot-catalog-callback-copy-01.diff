@@ -1,0 +1,33 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/completed-proof-snapshot-catalog-before-callback-copy-01.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/completed-proof-snapshot-catalog-01/catalog.py
+@@ -31,6 +31,11 @@
+ 
+ def same(left, right):
+     return encoded(left) == encoded(right)
++
++
++def clone(value):
++    """Callbacks cannot rewrite the authenticated values compared afterwards."""
++    return json.loads(encoded(value))
+ 
+ 
+ def sha(value):
+@@ -187,7 +192,8 @@
+             and receipt['status'] in ['passed', 'passed-awaiting-independent-audit']
+             and receipt[owner['result_digest_field']] == result_file['sha256']
+             and receipt['started_at'] <= receipt['admitted_at'] <= receipt['finished_at'], 'closed passed owner/audit/result required')
+-    require(validate_owner(owner, receipt, result, audit) is True, 'owner-specific completed recipe is not qualified')
++    require(validate_owner(clone(owner), clone(receipt), clone(result), clone(audit)) is True,
++            'owner-specific completed recipe is not qualified')
+     require(receipt['inputs_sha256'] == input_file['sha256'] == snapshot['inputs_sha256']
+             and wire['plan_sha256'] == plan_file['sha256']
+             and association['projection']['sha256'] == association['retained_projection']['sha256']
+@@ -196,7 +202,7 @@
+     require(same(plan['snapshot_reuse'], prior), 'owner omitted or relabelled inherited catalog')
+     require(set(plan['evidence_roots']) <= set(accounted_roots) and str(evidence) in plan['evidence_roots'],
+             'owner evidence accounting changed')
+-    freeze = expand_inputs(wire, input_file)
++    freeze = expand_inputs(clone(wire), clone(input_file))
+     metadata = lambda doc: {k:v for k,v in doc.items() if k not in ['files', 'file_table_base', 'file_table_integrity']}
+     require(same(metadata(wire), metadata(freeze)), 'expanded inputs changed non-file metadata')
+     if 'file_table_base' in wire:

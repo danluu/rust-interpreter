@@ -1,0 +1,48 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/execute_frozen_file_table_delta_controls_audit_01.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/execute_completed_proof_snapshot_catalog_controls_audit_01.py
+@@ -1,4 +1,4 @@
+-"""One authorized read-only actual29 audit after observed passing outer closure."""
++"""One authorized read-only actual33 audit after observed passing outer closure."""
+ import hashlib
+ import json
+ import os
+@@ -9,21 +9,21 @@
+ import time
+ 
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+-SOURCE = ROOT/'.work/verify_frozen_file_table_delta_controls_01.py'
+-EXPECTED = '699f592535adf077f49c12e89dd77c6686de423e15ee4213522444c28c02c1e0'
+-E = ROOT/'.work/frozen-file-table-delta-controls-verification-execution-01'
+-H = ROOT/'experiments/frozen-file-table-delta-controls-01'
++SOURCE = ROOT/'.work/verify_completed_proof_snapshot_catalog_controls_01.py'
++EXPECTED = 'eb61e805a493ca45e6a118c00354c8c403fe63af34de8a32b21e7435a79ab652'
++E = ROOT/'.work/completed-proof-snapshot-catalog-controls-verification-execution-01'
++H = ROOT/'experiments/completed-proof-snapshot-catalog-controls-01'
+ P = Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14')
+ sha = lambda p: hashlib.sha256(Path(p).read_bytes()).hexdigest()
+ read = lambda p: json.loads(Path(p).read_bytes())
+ assert Path.cwd() == ROOT and sys.dont_write_bytecode and not sys.flags.optimize
+ assert Path(sys.executable).resolve(strict=True) == P and sha(SOURCE) == EXPECTED
+ assert not E.exists() and not E.is_symlink()
+-assert not (ROOT/'.work/frozen-file-table-delta-controls-independent-verification-01.json').exists()
+-terminal = read(ROOT/'.work/frozen-file-table-delta-controls-01/receipt.json')
+-outer = read(ROOT/'.work/experiments/frozen-file-table-delta-controls-supervisor-01/status.json')
+-launch = read(ROOT/'.work/frozen-file-table-delta-controls-launch-execution-01/record.json')
+-assert terminal['status'] == 'passed' and terminal['controls_passed'] == 29
++assert not (ROOT/'.work/completed-proof-snapshot-catalog-controls-independent-verification-01.json').exists()
++terminal = read(ROOT/'.work/completed-proof-snapshot-catalog-controls-01/receipt.json')
++outer = read(ROOT/'.work/experiments/completed-proof-snapshot-catalog-controls-supervisor-01/status.json')
++launch = read(ROOT/'.work/completed-proof-snapshot-catalog-controls-launch-execution-01/record.json')
++assert terminal['status'] == 'passed' and terminal['controls_passed'] == 33
+ assert outer['status'] == 'finished' and outer['returncode'] == 0
+ assert launch['status'] == 'terminal-observed' and launch['returncode'] == 0
+ E.mkdir(mode=0o700)
+@@ -34,7 +34,7 @@
+ record = dict(status='starting', started_at=time.time(), parent_pid=os.getpid(),
+     command=command, cwd=str(ROOT), environment=environment, source_sha256=EXPECTED,
+     execution_source_sha256=sha(__file__),
+-    mode='one authorized independent read-only actual29 verification; no test or provider calls',
++    mode='one authorized independent read-only actual33 verification; no test or provider calls',
+     identity_limitation='Popen PID and in-process parent retained; no extra identity probes or signals.')
+ 
+ def save():
