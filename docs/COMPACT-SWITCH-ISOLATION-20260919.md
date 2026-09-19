@@ -41,3 +41,29 @@ Evidence: `results/compact-switch-adopted-focused-01`,
 `results/compact-switch-adopted-workspace-01`,
 `results/compact-switch-adopted-profile-01` (preserved failure), and
 `results/compact-switch-current-host-01` (exact current-host qualification).
+
+The complete primary is now independently closed and **failed**. All40 commands,
+12 original tests per execution, wrong-edit outcomes, exact artifacts/catalogs,
+source restoration and both actual strict controls pass. Candidate/adopted
+median wall is1.0075768713, A/A0.0341175247, sum1.0416943960. CPU is1.0078635049,
+A/A0.0155656032, sum1.0234291081; the separate CPU<=1 requirement fails too.
+Candidate/ordinary-native wall is1.6956241352. The small observed slowdown falls
+within control variation; this is failure to demonstrate improvement, not a
+causal regression claim. No runtime adoption or unchanged timing retry follows.
+
+Installation02 is closed under key
+5c78115d5ce0888367256b35fc9543e21a0964f70fab6cd77420db4b7f86fe19.
+Installation01's historical-schema admission failure is retained; it created no
+tool or raw directory. The corrected installer verifies that older closure's
+explicit logs and Git/retained bindings. The primary protocol passed17 controls
+and is independently closed. Full public controller drafts were prepared during
+the primary, but their qualification and every later guard are cancelled before
+execution. They retain the original seven-arm154-command ordinary-VM schedule.
+
+The diagnostic code reduction is0.77%/0.72%/0.83% across the three original
+profiles; the real edit history gives no latency benefit. Preserve this negative
+result and prioritize a larger execution or lifecycle cost. Reuse the closed
+adopted df4006 native captures and fine cost censuses before collecting more
+samples. Small switch emission, generic address selectors, register cleanup,
+frame clearing, and scalar private effects already have negative or low-coverage
+evidence; a new experiment must address a distinct mechanism.
