@@ -1,0 +1,102 @@
+--- /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/execute_hash_driver_packet_review_05.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hash-driver-failure-evidence-01/execute_verify.py
+@@ -1,24 +1,25 @@
+-"""One bounded read-only packet audit; explicit wait, no signals or workloads."""
++"""One bounded independent archive audit; explicit wait, no signals or workloads."""
+ import hashlib, importlib.util, json, os, shutil, subprocess, sys, time
+ from pathlib import Path
+ O=Path('/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918')
+ R=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ X=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ P=Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14')
+-AUDITOR=O/'.work/verify_hash_driver_packet_05.py'
+-E=O/'.work/hash-driver-packet-review-execution-05'
+-RESULT=O/'.work/hash-driver-packet-verification-05.json'
+-H=R/'experiments/hir-options-hash-driver-stage-02'
+-OWNED=X/'experiments/stable-cgu/owned_stage.py'
+-CORRECTED=R/'experiments/hir-options-hash-driver-audit-02/verify.py'
+-QUALIFICATION=R/'.work/hash-inherited-record-controls-independent-verification-01.json'
+-EXPECTED={CORRECTED:'9e3e3291d168f3ac69d4bba4bf047212d53eb2eb485218df4b5f819f1601daf0',
+- QUALIFICATION:'127b8d0845d34927cdad84429c8be4841f5f7c1d61a954722c8acf3cb3951fbc',
+- AUDITOR:'c436790deb177794e17ab7d8c6ab1298d67d86ad1c626c810a5765987c015830',
+- H/'verify.py':'cbff690675b8697855bb87b0e09d9b77495fc0b8968855301e1a88612ec62a3f',
++AUDITOR=R/'experiments/hash-driver-failure-evidence-01/verify.py'
++E=O/'.work/hash-driver-failure-retention-audit-execution-01'
++RESULT=O/'.work/hash-driver-failure-retention-independent-verification-01.json'
++H=R/'experiments/hash-driver-failure-evidence-01'
++W=R/'.work/hash-driver-failure-evidence-01'
++D=R/'results/hir-options-hash-driver-failure-01'
++CLOSED=R/'.work/hash-driver-failure-retention-execution-01'
++OWNED=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/stable-cgu/owned_stage.py')
++PROPOSAL=O/'.work/hash-driver-failure-retention-proposal-01.json'
++ACTUAL=None  # Bind receipt, execution_record, summary SHA-256 only after archive passed and wrapper closed.
++EXPECTED={AUDITOR:'47d7a0c54ed93a0013067408e0a30d852121a19381aa950bfe443f0109bb79fe',
++ H/'archive.py':'b25988ef89e6254a9ae2871ee97eabc07d0701c4548023fc348df690f74fd8ad',
++ H/'execute.py':'7374e447ed5a5b785b6968ad29abff4c2b89fbb36c30e4abdfbdd17b8ac60568',
+  OWNED:'7021a15d3b806ab908f03276051d9d9ca9c9e208bbf8933a60229c9fb35bb68e',
+- H/'launch.json':'e315c703101fb5d8e9f732a10db9b07883792057c0f833b71979cf54efcbfc43',
+- H/'inputs.json':'5accd23a86a3d7df8d19e8e294fcc96a4bc4f707ecd590b999c88ae092ed6dae'}
++ PROPOSAL:'8a3b56f5dd8d52e12e14389bba3771fea32c3d06cf3b2b4b5348330aeebafe13'}
+ def require(ok,message):
+  if not ok:raise RuntimeError(message)
+ def sha(path):
+@@ -27,32 +28,34 @@
+  after=path.stat();require((before.st_dev,before.st_ino,before.st_size,before.st_mtime_ns,before.st_ctime_ns)==(after.st_dev,after.st_ino,after.st_size,after.st_mtime_ns,after.st_ctime_ns),'wrapper input changed')
+  return digest
+ def sources():
++ require(type(ACTUAL) is dict and set(ACTUAL)=={'receipt','execution_record','summary'} and all(type(v) is str and len(v)==64 and all(c in '0123456789abcdef' for c in v) for v in ACTUAL.values()),'unbound actual closed archive')
+  for path,digest in EXPECTED.items():require(sha(path)==digest,'reviewed exact wrapper input: '+str(path))
++ for key,path in [('receipt',W/'receipt.json'),('execution_record',CLOSED/'record.json'),('summary',D/'summary.json')]:require(sha(path)==ACTUAL[key],'exact actual closure binding')
+ require(Path.cwd()==O and sys.dont_write_bytecode and not sys.flags.optimize and Path(sys.executable).resolve()==P,'fixed Python/owner')
+ require(not E.exists() and not E.is_symlink() and not RESULT.exists() and not RESULT.is_symlink(),'fresh audit evidence/result')
+ sources();entry=shutil.disk_usage(O).free;require(entry>=16*2**30,'fresh16GiB before audit evidence/child')
+-spec=importlib.util.spec_from_file_location('_packet05_owned',OWNED);owned=importlib.util.module_from_spec(spec);spec.loader.exec_module(owned)
++spec=importlib.util.spec_from_file_location('_failure_archive_audit01_owned',OWNED);owned=importlib.util.module_from_spec(spec);spec.loader.exec_module(owned)
+ E.mkdir(mode=0o700);(E/'source').mkdir(mode=0o700)
+-for source,name in [(AUDITOR,'audit.py'),(CORRECTED,'corrected-verify.py'),(QUALIFICATION,'inherited22-audit.json'),(H/'verify.py','qualified-verify.py'),(OWNED,'owned_stage.py'),(Path(__file__).resolve(),'execution.py')]:
++for source,name in [(AUDITOR,'audit.py'),(H/'archive.py','archive.py'),(H/'execute.py','archive-execution.py'),(PROPOSAL,'proposal.json'),(OWNED,'owned_stage.py'),(Path(__file__).resolve(),'execution.py')]:
+  before=sha(source);data=source.read_bytes();require(hashlib.sha256(data).hexdigest()==before,'retained wrapper source differs')
+  with (E/'source'/name).open('xb') as stream:stream.write(data);stream.flush();os.fsync(stream.fileno())
+  require(sha(source)==before==sha(E/'source'/name),'stable exact retained source')
+ env=dict(HOME='/Users/danluu',USER='danluu',LOGNAME='danluu',LANG='C',LC_ALL='C',TZ='UTC',PATH='/usr/bin:/bin:/usr/sbin:/sbin',PYTHONDONTWRITEBYTECODE='1',PYTHONNOUSERSITE='1')
+ r=dict(status='waiting',started_at=time.time(),parent_pid=os.getpid(),parent_parent_pid=os.getppid(),cwd=str(O),environment=env,
+  canonical_lock=str(owned.CANONICAL_LOCK),wait_seconds=600,capacity=dict(entry_gib=16,stop_gib=9,floor_gib=8),
+- maximum_child_cpu_seconds=900,maximum_child_read_seconds=1200,maximum_observation_seconds=1250,maximum_file_bytes=4*2**20,
++ maximum_child_cpu_seconds=180,maximum_child_read_seconds=300,maximum_observation_seconds=350,maximum_file_bytes=2*2**20,
+  source_hashes={str(k):v for k,v in EXPECTED.items()},execution_source_sha256=sha(__file__),entry_free_bytes=entry,disk_samples=[],
+- scope='One read-only prepared packet review; zero compiler/provider/controller/workload calls.',
++ scope='One independent saved archive audit; exact168 sources/member hashes/EOF and closed owner, zero compiler/provider/workload calls.',
+  identity_limitation='In-process parent identity plus Popen PID/argv/environment/cwd/times; no external ps/cwd probes and no signals.')
+ def save():owned.write(E/'record.json',r)
+ save()
+ try:
+  with owned.workload_lock(owned.CANONICAL_LOCK,600) as fd:
+   sources();r.update(admitted_at=time.time(),free_bytes_before=owned.disk(O,16));save()
+-  command=[str(P),'-B',str(AUDITOR),'--canonical-fd',str(fd)];r['command']=command;save()
++  command=[str(P),'-B',str(AUDITOR),'--receipt-sha256',ACTUAL['receipt'],'--execution-record-sha256',ACTUAL['execution_record'],'--summary-sha256',ACTUAL['summary'],'--canonical-fd',str(fd)];r['command']=command;save()
+   with (E/'stdout').open('xb') as stdout,(E/'stderr').open('xb') as stderr:
+    child=subprocess.Popen(command,cwd=O,env=env,stdin=subprocess.DEVNULL,stdout=stdout,stderr=stderr,pass_fds=(fd,))
+-   r.update(status='running',pid=child.pid,child_started_at=time.time());deadline=time.monotonic()+1250
++   r.update(status='running',pid=child.pid,child_started_at=time.time());deadline=time.monotonic()+350
+    try:
+     try:save()
+     except BaseException as error:r['initial_child_publication_error']=repr(error)
+@@ -70,10 +73,16 @@
+     except BaseException as error:
+      print(json.dumps(dict(status='publication-failed',error=repr(error),observed_record=r)),flush=True);raise
+   require(code is not None,'audit may still be live; no signal or retry')
+-  require(code==0,'actual packet audit failed; preserve evidence')
++  require(code==0,'actual archive audit failed; preserve evidence')
+   require(not (E/'stderr').read_bytes(),'audit emitted stderr')
+   require('initial_child_publication_error' not in r,'audit initial record publication failed')
+-  sources();r.update(result_sha256=sha(RESULT),free_bytes_after=owned.disk(O,9));save()
++  sources();report=json.loads(RESULT.read_bytes())
++  require(report['status']=='verified' and report['pid']==r['pid'] and report['parent_pid']==r['parent_pid']
++   and report['receipt_sha256']==ACTUAL['receipt'] and report['execution_record_sha256']==ACTUAL['execution_record']
++   and report['summary_sha256']==ACTUAL['summary'] and report['verifier_sha256']==EXPECTED[AUDITOR]
++   and report['selected_files']==168 and report['logical_bytes']==40467639 and report['workload_children']==0
++   and report['original_status']=='failed' and report['hash_driver_qualified'] is False,'exact independent archive audit association')
++  r.update(result_sha256=sha(RESULT),free_bytes_after=owned.disk(O,9));save()
+   require(all(row['free_bytes']>=9*2**30 for row in r['disk_samples']),'observed live-floor violation')
+  r['canonical_released_at']=time.time();save()
+  print(json.dumps(dict(record=str(E/'record.json'),record_sha256=sha(E/'record.json'),result=str(RESULT),result_sha256=r['result_sha256'],pid=r['pid'],returncode=0)),flush=True)

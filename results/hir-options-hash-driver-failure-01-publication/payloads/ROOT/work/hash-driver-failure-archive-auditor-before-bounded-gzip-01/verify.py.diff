@@ -1,0 +1,75 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/hash-driver-failure-archive-auditor-before-bounded-gzip-01/verify.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hash-driver-failure-evidence-01/verify.py
+@@ -152,30 +152,46 @@
+                 reference_semantics='Exact published manifest, member aliases, SHA-256 and Git object associations; prior full archive audits remain historical observations.')
+ 
+ 
+-def archive_members(selected):
++def archive_members(selected, expected_sha):
+     path = D/'evidence.tar.gz'; before = identity(path)
+     check(path.resolve(strict=True) == path and stat.S_ISREG(before['mode']) and before['size'] <= 32*2**20, 'exact bounded ordinary archive')
+-    count_members = 0; logical = 0
+-    with tarfile.open(path, mode='r:gz') as archive:
+-        for member in archive:
+-            guard()
+-            check(count_members < 168, 'bounded actual archive members')
+-            row = selected[count_members]
+-            check(member.name == row['member'] and member.isfile() and member.size == row['size']
+-                  and member.mode == 0o644 and member.mtime == member.uid == member.gid == 0
+-                  and member.uname == member.gname == member.linkname == '', 'exact deterministic ordered ordinary member')
+-            stream = archive.extractfile(member); h = hashlib.sha256(); size = 0
+-            while block := stream.read(2**20):
+-                count(len(block)); size += len(block); h.update(block)
+-            check(size == row['size'] and h.hexdigest() == row['sha256'], 'independent complete archive member hash')
+-            logical += size; count_members += 1
+-        while block := archive.fileobj.read(2**20):
+-            count(len(block)); check(not any(block), 'nonzero tar trailer')
++    check(digest(path) == expected_sha, 'actual summary authenticates compressed bytes before parsing')
+     expanded = 0
++    # Establish a finite complete gzip stream before decoding tar metadata.
+     with gzip.open(path, 'rb') as stream:
+         while block := stream.read(2**20):
+             count(len(block)); expanded += len(block)
+             check(expanded <= 132*2**20, 'finite full expanded gzip stream')
++    check(identity(path) == before, 'archive changed during bounded preliminary EOF check')
++    class BoundedTarReader:
++        def __init__(self, stream):
++            self.stream = stream
++            self.total = 0
++        def read(self, size):
++            check(type(size) is int and 0 <= size <= 2**20, 'bounded tar decoder input request')
++            block = self.stream.read(size)
++            count(len(block)); self.total += len(block)
++            check(self.total <= 132*2**20, 'finite tar metadata and payload expansion')
++            return block
++    count_members = 0; logical = 0
++    with gzip.open(path, 'rb') as source:
++        bounded = BoundedTarReader(source)
++        with tarfile.open(fileobj=bounded, mode='r|') as archive:
++            for member in archive:
++                guard()
++                check(count_members < 168, 'bounded actual archive members')
++                row = selected[count_members]
++                check(member.name == row['member'] and member.isfile() and member.size == row['size']
++                      and member.mode == 0o644 and member.mtime == member.uid == member.gid == 0
++                      and member.uname == member.gname == member.linkname == '', 'exact deterministic ordered ordinary member')
++                stream = archive.extractfile(member); h = hashlib.sha256(); size = 0
++                while block := stream.read(2**20):
++                    guard(); size += len(block); h.update(block)
++                check(size == row['size'] and h.hexdigest() == row['sha256'], 'independent complete archive member hash')
++                logical += size; count_members += 1
++            while block := archive.fileobj.read(2**20):
++                check(not any(block), 'nonzero tar trailer')
++        check(source.read(1) == b'' and bounded.total == expanded, 'complete independent bounded tar and gzip EOF')
+     check(count_members == 168 and logical == 40467639 and expanded >= logical and identity(path) == before
+           and path.resolve(strict=True) == path, 'complete stable archive and full gzip EOF')
+     return dict(members=count_members, logical_bytes=logical, expanded_bytes=expanded,
+@@ -244,7 +260,7 @@
+     check(encoded(manifest) == encoded(expected_manifest) and terminal['manifest_sha256'] == summary['manifest_sha256'] == digest(D/'manifest.json')
+           and terminal['summary_sha256'] == args.summary_sha256 and terminal['engine_sha256'] == ENGINE_SHA
+           and terminal['proposal_sha256'] == summary['proposal_sha256'] == PROPOSAL_SHA, 'complete manifest/source/summary association')
+-    proof = archive_members(selected)
++    proof = archive_members(selected, summary['archive']['sha256'])
+     check(encoded(proof) == encoded(summary['archive']) and terminal['archive_sha256'] == proof['sha256']
+           and terminal['member_count'] == 168 and terminal['logical_bytes'] == 40467639
+           and terminal['full_member_readback'] is terminal['full_gzip_eof_crc'] is summary['source_bytes_and_identities_unchanged'] is True,

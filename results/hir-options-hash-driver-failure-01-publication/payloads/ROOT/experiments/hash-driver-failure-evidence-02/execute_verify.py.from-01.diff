@@ -1,0 +1,39 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hash-driver-failure-evidence-01/execute_verify.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hash-driver-failure-evidence-02/execute_verify.py
+@@ -5,19 +5,19 @@
+ R=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ X=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ P=Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14')
+-AUDITOR=R/'experiments/hash-driver-failure-evidence-01/verify.py'
+-E=O/'.work/hash-driver-failure-retention-audit-execution-01'
+-RESULT=O/'.work/hash-driver-failure-retention-independent-verification-01.json'
+-H=R/'experiments/hash-driver-failure-evidence-01'
++AUDITOR=R/'experiments/hash-driver-failure-evidence-02/verify.py'
++E=O/'.work/hash-driver-failure-retention-audit-execution-02'
++RESULT=O/'.work/hash-driver-failure-retention-independent-verification-02.json'
++H=R/'experiments/hash-driver-failure-evidence-02'
+ W=R/'.work/hash-driver-failure-evidence-01'
+ D=R/'results/hir-options-hash-driver-failure-01'
+-CLOSED=R/'.work/hash-driver-failure-retention-execution-01'
++CLOSED=R/'.work/hash-driver-failure-retention-execution-02'
+ OWNED=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/stable-cgu/owned_stage.py')
+ PROPOSAL=O/'.work/hash-driver-failure-retention-proposal-01.json'
+ ACTUAL=None  # Bind receipt, execution_record, summary SHA-256 only after archive passed and wrapper closed.
+-EXPECTED={AUDITOR:'4ee4746d1762fa3ba13748ce2a1eb9dec7f4f5cb6749c22fc30c96b7489d078e',
+- H/'archive.py':'b25988ef89e6254a9ae2871ee97eabc07d0701c4548023fc348df690f74fd8ad',
+- H/'execute.py':'7374e447ed5a5b785b6968ad29abff4c2b89fbb36c30e4abdfbdd17b8ac60568',
++EXPECTED={AUDITOR:'dc13621bea4a69ad1d24e390d1872d0cec2d5179e31680bba5499f9e3644f1d8',
++ H/'archive.py':'2e15c24cd3c091f53ebce92ec0891a2da89c7af9c30c59a3bf58b5a460ba643b',
++ H/'execute.py':'c4c0f8b80f7b8604508c7aa91b47f0f6640a0a80504a910432dcb042ecc67525',
+  OWNED:'7021a15d3b806ab908f03276051d9d9ca9c9e208bbf8933a60229c9fb35bb68e',
+  PROPOSAL:'8a3b56f5dd8d52e12e14389bba3771fea32c3d06cf3b2b4b5348330aeebafe13'}
+ def require(ok,message):
+@@ -34,7 +34,7 @@
+ require(Path.cwd()==O and sys.dont_write_bytecode and not sys.flags.optimize and Path(sys.executable).resolve()==P,'fixed Python/owner')
+ require(not E.exists() and not E.is_symlink() and not RESULT.exists() and not RESULT.is_symlink(),'fresh audit evidence/result')
+ sources();entry=shutil.disk_usage(O).free;require(entry>=16*2**30,'fresh16GiB before audit evidence/child')
+-spec=importlib.util.spec_from_file_location('_failure_archive_audit01_owned',OWNED);owned=importlib.util.module_from_spec(spec);spec.loader.exec_module(owned)
++spec=importlib.util.spec_from_file_location('_failure_archive_audit02_owned',OWNED);owned=importlib.util.module_from_spec(spec);spec.loader.exec_module(owned)
+ E.mkdir(mode=0o700);(E/'source').mkdir(mode=0o700)
+ for source,name in [(AUDITOR,'audit.py'),(H/'archive.py','archive.py'),(H/'execute.py','archive-execution.py'),(PROPOSAL,'proposal.json'),(OWNED,'owned_stage.py'),(Path(__file__).resolve(),'execution.py')]:
+  before=sha(source);data=source.read_bytes();require(hashlib.sha256(data).hexdigest()==before,'retained wrapper source differs')
