@@ -163,6 +163,14 @@ partial successful commands if a later stage/observer fails. Review these
 controllers before execution. The current main publication is stillbb0d32f0;
 no shared-template runtime has been merged or performance-tested.
 
+Focused04 admission failure is now CLOSED by43862/43905 after the first
+closer89522/89598 also timed out before admission. No successful work was rerun.
+Focused05 is prepared with20Rust controls/profile,16Python controls and a retained
+non-test VM. The strict121-command controller/closer and prospective32-command
+pgrust parser primary contract are prepared in QUALIFICATION.md; no runtime
+qualification or performance command has started yet. Admission is fresh: free
+space about18.7GiB and the shared lock was briefly available at19:29.
+
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally
 its incremental parser history and the latest selective-repair primary's
