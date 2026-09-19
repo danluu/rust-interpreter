@@ -31,8 +31,14 @@ One focused and one workspace attempt timed out before admission to the shared
 benchmark lock, starting no build or test. None of these establishes a runtime
 correctness failure, and none is reported as a successful performance experiment.
 
-Next gates are full workspace qualification,1824saved parser invocations with
-fresh re-emission of every cache hit, and separate phase attribution. The change
+Full workspace qualification now passes673Rust tests per profile (17ignored),
+33diagnostic integrations,10ordinary session checks,24ordinary template checks
+and the defaultVM build. The unchanged442Python controls (22skips) are reused
+through exact source and log hashes.48owned sessions and92clients have recorded
+terminal outcomes. [Workspace proof](../results/parameterized-literals-qualification-02/summary.json).
+
+Next gates are1824saved parser invocations with fresh re-emission of every cache
+hit and separate phase attribution. The change
 can reduce compilation while making execution slower by losing constant folds;
 key construction, manifests and restoration also cost time and retained memory.
 Only a newly qualified, changed-source end-to-end comparison can justify adoption.
