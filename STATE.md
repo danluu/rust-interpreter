@@ -71,8 +71,21 @@ The next prepared observer is `benchmarks/experiments/native-reuse-scope`:
 It preserves IDs/heap mode/function count while separating whole-global churn.
 The weighted comparisons are original-to-edited, never edited-execution hit
 rates. No new artifact census, guest, build or production cache is needed.
-Its PLAN records the adopted emitter dependency review and unresolved native
-relocations/assertion/admission contract. Run01 is ready for fresh admission.
+Scope01 is now CLOSED under83470/83473:5controls,295inputs,223sources,79evidence.
+Median stable body/direct-callee fractions48.68%token,51.81%folded,91.11%pgrust,
+4.59%private,4.60%types,99.91%fullparser,42.96%recenttoken. Stable bytecode-op
+fractions13.49%token/99.28%parser. Against edited states, original unprofiled
+token block/exhaustive arenas retain median11.60%/11.13%bytes under this scope;
+NOT chronological cache hits. Adjacent edits2/3can still be highly stable.
+Important label correction: internal `nushell-parser-incremental` is actually
+pgrust `gram_core` (the original manifest/package proves it). Retain closed
+labels/hashes, use pgrust in prose/future work. No data reruns are needed.
+Next prototype bounded immutable emission templates shared between suite workers,
+which use the same checked Program. Each owner must retain independent native
+arena, scalar/assertion relocation, admission and guest state. Begin with
+template correctness before production wiring/timing. This is distinct from
+the existing per-worker PreparedJit cache; persistent cross-edit caching remains
+deferred pending a complete validity/I/O contract.
 
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally
@@ -111,7 +124,7 @@ zero unassigned. Preserve every successful capture without reruns.
   Do not repair/restart/compete with it. Never control any peer process/session.
 - Compiler/Cargo/frontend and application-admission work belongs to peers.
   Preserve their worktrees. Root publication worktree `.work/publication-main`
-  is clean atfb5ea729 on `integration/guarded-local-facts-main-20260913`; fetch
+  is clean atbb0d32f0 on `integration/guarded-local-facts-main-20260913`; fetch
   before publishing, preserve peer commits and never force push.
 - No AWS activation/purchase/model/billing fallback and no browser.
 - `suggestions.txt` is user-owned/untracked, SHA256
