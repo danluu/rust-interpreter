@@ -305,3 +305,14 @@ Strict/currentworker/source/artifact/accounting policies unchanged. Fullfolder
 andqualifiedsource frozen throughclosure. Cleanupsetup941files438200579bytes
 closed28087 after20731,2209protectedhashesunchanged; neverrepeat. Main21f57dbe
 pushedprimarypass preservingpeer48a8dda0. Goalpaused/defaultunchanged.
+
+## 2026-09-19 full scheduler parser guard passes
+
+Full03 b2adc45f complete70158/70161 CLOSED51019:110commands+2strictrejections,
+all114outcomes/artifacts/source restoration,22requests/session/kernelCPU. Fifteen
+editedpairs:wall.924398703+.045926122=.970324825,CPU.902712343+.039480337
+=.94219268 PASS. Nativewall1.249979858. Costanalysis7e6ba673 complete53038:
+build1223.803ms/exec267.423ms/longest210.638ms/preceding0/serveroutside29.520ms.
+Overlapping durations/nonadditive medians. No globaladoption beforefre/folded/
+pgrustcontrol/private/Nushell guards. Next192invocation verifiedfre token replay
+from closedruntime-composition-edit-token-02 snapshots. No newsource timing yet.

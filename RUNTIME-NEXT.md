@@ -21,9 +21,13 @@ PASS. Nativewall1.2718753876, noadoption. Main21f57dbe pushedpreservingpeer48a8d
 Full02 sourcec91666c7 NOTADMITTED33669/33713: oldprotocol01 boundprevious
 candidateprerequisites; zero stage/build/guest/timing, terminalproofpreserved.
 Protocol02 source126020d8 COMPLETE63564 CLOSED67895,8unchangedaccountingcontrols.
-Full03 sourceb2adc45f ACTIVE70158/controller70161, admitted24.2GiB. Freeze
-crates/scripts/tests, screenqualifiedsources and full-parserfolder throughclosure.
-110commands15pairs22requestsper session, samequalifiedtool andgates.
+Full03 sourceb2adc45f COMPLETE70158/70161 CLOSED51019:110+2strictcorrect,
+15pairs;wall.924398703+A/A.045926122=.970324825 PASS;CPU.902712343+.039480337
+=.94219268 PASS. Nativewall1.249979858; noadoption until otherprojectguards.
+Savedcosts7e6ba673 COMPLETE53038,closureunderway:build1223.803ms/exec267.423ms,
+longest210.638ms/preceding0/serveroutside29.520ms; overlapping/nonadditive.
+Fre token verified replay controller d5d57790 prepared, requireclosedfullpass;
+8savedartifactsx2modesx12tests=192invocations, everyhit independentlyverified.
 Primary06cachecleanup CLOSED2706 after93584 source2838da6e:15152files/2991235289bytes,
 11413protectedhashesunchanged. Failedsetupcachecleanup bc52545f COMPLETE20731
 CLOSED28087:941files438200579bytes,2209protectedhashesunchanged. NEVER repeat
