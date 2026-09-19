@@ -31,3 +31,10 @@ No subagents/goal tools; two workers, shared lock, dynamic disk admission. Four
 closed old parser caches were safely retired, with all11256 protected hashes
 unchanged; never repeat that retirement or clean the shared target/peer caches.
 Continue indefinitely and publish qualified evidence regularly.
+
+Large protocol02 passed23 checks but first close timed out on the peer-held lock.
+A premature rg-aot launch also timed out before any stage or workload; its empty
+admission is preserved. No peer was controlled. Lock later became available;
+large-protocol close-02 is ACTIVE. Verify/commit its closure before launching the
+unchanged rg-aot run-id under fresh supervisor suffix-admitted-02. Dedicated
+admission-recovery/close_rg.py binds the actual supervisor. See STATE.md.

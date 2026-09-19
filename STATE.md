@@ -100,16 +100,29 @@ fault/replay and private memory; call/branch/resource controls retained.
   Wall/adopted1.0031383653+A/A.0120627776=1.0152011429;
   CPU/adopted1.0005123570+A/A.0131577991=1.0136701561; regression PASS.
   Four original hashfn tests, nativewall1.1193991052. No clear speed claim.
-- Parser protocol02 source14f59b70:14413 passed14 controls and byte-for-byte
-  real-compiler portable-probe binding. Independent close ACTIVE; see status.
-- Large protocol02 remains PREPARED but UNEXECUTED; its auditor now also compares
-  case metadata in JSON form. All old protocol/audit evidence is retained.
+- Parser protocol02 source14f59b70:14413 passed14 controls plus exact portable
+  probe binding; CLOSED23181.
+- Large protocol02 source2b8add9c:31950 passed23 controls. First close44308
+  timed out before taking the shared benchmark lock; peer preflight held it.
+  No peer process was controlled. Audit admission failure retained.
+- A shell sequencing error prematurely launched rg-aot supervisor86482/86485;
+  it also timed out on the lock BEFORE context/stage/cache/source/session/timing.
+  Bounded no-work proof is CLOSED in results/session-runtime-composition-rg-aot-admission-01.
+  Do not overwrite that supervisor or rerun preserve.py. Original raw/result
+  session-runtime-composition-edit-rg-aot-01 and endpoints still do not exist.
+- Lock became available at read-only observation. Large-protocol close-02 is
+  now ACTIVE; see status. Original23 tests will not be rerun. Gate every command
+  on success explicitly (no shell sequence that continues after a failed assert).
 
 ## Next actions
 
-Finish/close parser protocol02, then qualify/close large protocol02 and launch
-private rg-aot with the qualified large controller. Pgrust02 is closed and passes.
-Keep later parser profiles/Nushell gated. The private/Nushell adapters and both parser guards
+Finish large-protocol close-02 and VERIFY success, then commit closure. Launch
+first actual private history under supervisor session-runtime-composition-edit-rg-aot-01-admitted-02
+with unchanged benchmark.py --case rg-aot --run-id session-runtime-composition-edit-rg-aot-01.
+The raw run-id stays01 because no stage or workload existed. Dedicated auditor
+benchmarks/experiments/session-runtime-admission-recovery/close_rg.py binds the
+fresh supervisor and retained empty attempt; use it for final rg closure.
+Keep parser profiles/Nushell gated. The private/Nushell adapters and both parser guards
 remain required before integration. Their controllers are prepared in
 session-runtime-composition-large-guards and session-runtime-composition-parser-guards;
 parser/large protocol01 is closed; corrected protocol02 needs qualification;
