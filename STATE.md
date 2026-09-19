@@ -134,3 +134,21 @@ caches of CLOSEDFAILEDsessionprimaries01/02. Logical5,338,227,852bytes;
 Closureinprogress(checkstatus). Do notrepeatcleanup. Sharedtarget/tools/execs,
 artifacts/catalogs/proofs,strict-controlcachesandpeerworkpreserved.
 Nextqualification02 afterclosure/revalidatedspace. Noactivebuild/primary.
+
+Currentbranch experiment/session-large-function-tier-20260918. Candidate30b70404
+jit-large-function-interpreter isexplicitfeature, diagnosticsoff. Sourcejitpolicy
+unchanged sincefirstadmission. Qualification02 source8047afc8 ran31348/31351:
+Python442+22skip passed;debugfailednewtestbecauseinterpreterreferencewasgiven
+JIT-onlypersistent-registeroption. CLOSED74271/74274; norelease/defaultbuildran.
+Fix8e1df915 changesonlyreferenceoptions; qualification03prepared with preserved
+Pythoncommand, faileddebugrecheck/unstartedrelease/default. NOTYETSTARTED.
+
+Sessioncache retirement CLOSED28462/28468;27,910removed,15,876protected unchanged.
+Recenttokenretirement01 source838e9f51 ran90613/90616 and STOPPED beforestage
+creation/deletion onhistoricalscripts/interpreter.py vs currenthash. Zero-removal
+failurepreserved/closed. Corrected02 source0f5bafca ACTIVE26641/controllersee
+.work/experiments/closed-recent-token-cache-retirement-02/status.json. Threeclosed
+failed40-commandtokenprimaries only; historicaltrackedsourceverifiedbyrecorded
+Gitbinding, retainedactualfilesstillhashchecked. Fifteenownedcaches, nostrictcache,
+sharedtarget,peerworkordeletingproof. Sourcefreeze cleanupscriptthroughclosure.
+Currentfree~17GiB; fullprimary24GiB floorunchanged. Nextclosecleanup thenrun03.
