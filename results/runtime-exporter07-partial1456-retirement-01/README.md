@@ -1,0 +1,3 @@
+The completed task removed 1,456 compiled dependency files from nine closed task-owned caches after exact scope, ownership, open-handle and historical-process checks. It preserved 9,952 files and all 6,059 directories at that point. All ten probes and the controller closed normally; nine deletion ledgers and the retained inventories were independently verified. The selected files occupied 1,474,355,200 allocated bytes; this is not a guaranteed free-space change on a shared host.
+
+The manifest maps every published byte-for-byte evidence copy to its original path and digest. A later, separately preserved transition removed 274 old executables; these records retain the earlier state. This cleanup is outside benchmark timing and establishes no performance result.

@@ -1,0 +1,38 @@
+--- retire.before-protected-admission.py
++++ retire.py
+@@ -136,6 +136,8 @@
+             and receipt['status'] == 'passed' and receipt['inputs_sha256'] == audit['inputs_sha256'] == file(controls['freeze'])['sha256']
+             and audit['receipt_sha256'] == file(controls['receipt'])['sha256'], 'actual six-control qualification differs')
+         require(freeze['files'][controls['qualified_remover_path']]['sha256'] == self.plan['remover']['file']['sha256'], 'qualified remover association differs')
++
++    def protected(self):
+         for row in self.plan['published_copies']:
+             require(file(row['destination']) == row['file'], 'retained installed copy differs')
+ 
+@@ -200,7 +202,7 @@
+                 require(capacity() >= 9*2**30+32*2**20, 'retirement evidence reserve unavailable')
+                 DEADLINE = time.monotonic()+600
+                 self.record.update(status='running', admitted_at=time.time(), free_bytes_before=capacity()); self.save()
+-                self.guard(); admitted = []
++                self.guard(); self.protected(); admitted = []
+                 for scope in self.plan['scopes']:
+                     packed = Path(scope['inventory']['path']).read_bytes(); payload = gzip.decompress(packed)
+                     require(len(payload) == scope['inventory']['expanded_bytes'] and hashlib.sha256(payload).hexdigest() == scope['inventory']['expanded_sha256'], 'saved complete gzip inventory differs')
+@@ -214,7 +216,7 @@
+                     admitted.append(current)
+                 write(WORK/'transition.json', self.plan['transition'])
+                 for spec in self.plan['commands']: self.probe(spec, fd)
+-                self.guard()
++                self.guard(); self.protected()
+                 # Revalidate every root after all point-in-time probes, before the first unlink.
+                 for scope, rows in zip(self.plan['scopes'], admitted, strict=True):
+                     require(inventory(Path(scope['root']), rows)[0] == rows and identity(Path(scope['root']).parent) == scope['outer_parent'], 'target changed after probes')
+@@ -242,7 +244,7 @@
+                 for scope, remaining in zip(self.plan['scopes'], remaining_all, strict=True):
+                     require(inventory(Path(scope['root']), remaining)[0] == remaining
+                         and identity(Path(scope['root']).parent) == scope['outer_parent'], 'final full retained tree differs')
+-                self.guard()
++                self.guard(); self.protected()
+                 self.record.update(status='passed', removed_files=1456, retained_files=9952, all_directories_retained=True,
+                     free_bytes_after=capacity(), finished_at=time.time(), capacity_reservation_claim=False)
+             self.record['canonical_parent_lock_closed_at'] = time.time()

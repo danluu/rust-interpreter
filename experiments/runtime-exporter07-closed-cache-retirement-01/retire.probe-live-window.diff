@@ -1,0 +1,16 @@
+--- retire.before-probe-live-window.py
++++ retire.py
+@@ -161,8 +161,11 @@
+                 record.update(status='finished', returncode=child.returncode, child_may_be_live=False, wait_returned_at=time.time())
+         except BaseException as error:
+             record.update(status='failed', error=repr(error))
+-            if child is not None and child.poll() is not None:
+-                record.update(returncode=child.returncode, child_may_be_live=False, wait_returned_at=time.time())
++            if child is not None:
++                if child.poll() is None:
++                    record['child_may_be_live'] = True
++                else:
++                    record.update(returncode=child.returncode, child_may_be_live=False, wait_returned_at=time.time())
+             raise
+         finally:
+             record['observation_finished_at'] = time.time()
