@@ -1,0 +1,16 @@
+# Actual parser correctness with parameterized native literals
+
+Require the complete closed673Rust/profile+17ignored qualification,34focused/
+profile+24ordinary controls and unchanged442Python/22skipped bindings. Replay the
+originaleight checked parser states with2fresh/cached workers,16suites and1824
+invocations. Every restored hit must equal independent fresh emission including
+current literal sites/values, assertions, scalar targets, entries and resumes.
+Keep original outcomes and wrong-edit failuretext, exact artifacts/catalogs,
+currentresource limits, bounded histories, ownerEOF/wait4 and kernelCPU accounting.
+Explicit parameterized readiness, observerOFF, no buffered hashing. No compilation,
+E2Etiming or defaultadoption. Lock45s,12GiBstart/8GiBchild. Preserve every failure.
+
+This candidate adds bounded percurrentProgram immutable function-digest sharing
+across two workers; shared_literal_keys must be true, keydomain literals-v2.
+All previous literal current-value checks remain. Diagnostic sharing costs include
+OnceLock initialization and logical-preimage hashing; no new Rust checking policy.
