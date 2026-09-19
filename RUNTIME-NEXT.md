@@ -1,3 +1,11 @@
+LATEST: workspace02 CLOSED success (supervisor1653/controller1657, source782b628d).
+All609debug/release plusPython446/22 qualified; two passed prefix commands reused,
+only release/VM newly executed. Independentclose completed0. New five-case paired
+profile controller short-clear-tail-profile/qualify.py ready: ten original guest
+commands, fresh baseline-record/candidate-replay entropy, exact PC counts/counters,
+zero declines, per-span20byte/helper growth. Commit/push then supervise profile01,
+freeze throughterminal/--close. Currentdefault unchanged; no timing evidence.
+
 # Current manual runtime checkpoint — 2026-09-19
 
 Indefinite task; goal remains PAUSED. No subagents, other-session process control,
