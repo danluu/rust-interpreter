@@ -40,3 +40,6 @@ Recovery update: storage publication main8e161832 verified pushed. Compression01
 FAILED45s sharedlock before anyinventory/mutation; closed failure retained. Fresh
 compression02 registered with failure binding, launch next when lock free. Slot
 build01 controller now registered UNRUN. No activeowned command at checkpoint.
+Compression02 now CLOSED:55files saved1.23GiB, allbytes/requiredmetadata identical.
+Firstfailedadmission remainsretained. Free24.10GiB vsfloor23.90GiB, narrowmargin.
+Nextlaunchregistered slotbuild01; per-childfloorchecks mandatory. Neverreplaycleanup.

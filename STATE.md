@@ -481,3 +481,10 @@ UNRUN:18debug/18release,build,offline saved-artifact analysis, independent close
 Legacy constants build has no closure.json; controller explicitly verifies its
 terminal/logs/original Git source and compares all previous typed proofs. No new
 runtime change. Build still depends on actual fresh storage admission.
+
+Compression02 sourcecad71f1c supervisor87219/controller87222 finished0; independent
+closeexec67524 exit0.55publicbytecode/JSONfiles1798995968->478756864allocatedbytes,
+1.23GiBreclaimed, allplaintext/nativebirthtime/requiredmetadata preserved. Closed01
+preinventoryfailure retained. NEVER replay mutationinventory. Free25884495872bytes,
+buildfloor25664249856 (sharedtarget8537157632), narrow~210MiBheadroom: controller
+recomputesfloorbeforeeachcompilercommand. Slotbuild01 now readyto launch.
