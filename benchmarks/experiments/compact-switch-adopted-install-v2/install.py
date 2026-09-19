@@ -54,7 +54,7 @@ def main():
                 assert hashlib.sha256(payload).hexdigest()==record['sha256']
         historical_raw=ROOT/frontend['raw']
         for name in ['plan','records','cache_reports']:
-            bind(historical_raw/(name+'.json'),frontend[name+'_sha256'])
+            bind(historical_raw/(name.replace('_','-')+'.json'),frontend[name+'_sha256'])
         assert frontend['tool_key']==BASELINE and frontend['commands']==121 and frontend['scalar_enabled_strict_cargo']
         assert frontend['automatic_cache_qualified'] and frontend['source_restored']
         base=bind(ROOT/'results/scratch-scalar-main-qualification-01/summary.json');assert base['status']=='passed' and base['tool_key']==BASELINE
