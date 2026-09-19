@@ -44,3 +44,15 @@ artifacts passed the original closed history with matching per-state arms, but
 their hashes differ. The failure is closed and preserved. Census02 requires
 source restoration (the original contract) and compares the differing artifacts
 without assuming cross-state byte identity. All eight states remain included.
+
+Census02 is closed. It finds uneven body overlap and global-context differences
+on three valid edits. The next test-only module separates individual global
+fields and same-ID metadata, operation-count changes, immediate values, direct
+call IDs, assertion messages and other positional differences. Position-by-
+position categories are emitted only when operation counts match. Immediate-only
+does not mean pointer relocation and never authorizes native reuse. Preserve all
+seven comparisons and at most four examples per changed function. Model02 runs
+the seven original controls and four additional typed-difference controls in
+debug/release, excluding both explicitly ignored saved observers. Differences01
+then reads the same eight exact retained artifacts with no new guest/build of the
+project. All existing resource, strict-checking and publication boundaries apply.
