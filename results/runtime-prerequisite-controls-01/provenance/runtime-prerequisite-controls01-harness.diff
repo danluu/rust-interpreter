@@ -1,0 +1,149 @@
+--- passed-controls04/run.py
++++ runtime-prerequisite-controls01/run.py
+@@ -10,11 +10,11 @@
+ 
+ HERE = Path(__file__).resolve().parent
+ OWNER = HERE.parents[1]
+-SOURCE = HERE.with_name('hir-options-hash-driver-stage')
++SOURCE = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-02')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ sys.path.insert(0, str(X / 'experiments/stable-cgu'))
+ import owned_stage as owned
+-WORK = OWNER / '.work/hir-options-hash-prerequisite-controls-04'
++WORK = OWNER / '.work/runtime-prerequisite-controls-01'
+ 
+ 
+ def read(path):
+@@ -71,10 +71,10 @@
+             stderr = (WORK / 'command/stderr').read_text()
+             names = re.findall(r'^test_[A-Za-z0-9_]+ \(([^)]+)\) \.\.\. ok$', stderr, re.M)
+             assert sorted(names) == freeze['expected_names']
+-            assert re.search(r'^Ran 63 tests in [0-9.]+s\n\nOK\n$', stderr, re.M)
++            assert re.search(r'^Ran 11 tests in [0-9.]+s\n\nOK\n$', stderr, re.M)
+             assert not (WORK / 'command/stdout').read_bytes()
+             result = read(WORK / 'result.json')
+-            assert result['status'] == 'passed' and result['tests_run'] == 63 and result['expected_names'] == freeze['expected_names']
++            assert result['status'] == 'passed' and result['tests_run'] == 11 and result['expected_names'] == freeze['expected_names']
+             assert all(result[name] == 0 for name in ['failures', 'errors', 'skipped', 'expected_failures', 'unexpected_successes', 'child_processes', 'compiler_calls'])
+             assert not list((WORK / 'tmp').iterdir()), 'synthetic fixture cleanup incomplete'
+             total = 0
+@@ -87,7 +87,7 @@
+                     assert path.is_dir()
+             assert total <= 2 * 1024 * 1024, 'retained pure-control output cap exceeded'
+             guard(freeze)
+-            receipt.update(status='passed', controls_passed=63, result_sha256=owned.sha(WORK / 'result.json'),
++            receipt.update(status='passed', controls_passed=11, result_sha256=owned.sha(WORK / 'result.json'),
+                            retained_file_bytes=total, free_bytes_after=owned.disk(OWNER, 9))
+     except BaseException as error:
+         receipt.update(status='failed', error=repr(error)); raise
+--- passed-controls04/child.py
++++ runtime-prerequisite-controls01/child.py
+@@ -8,10 +8,10 @@
+ import unittest
+ 
+ HERE = Path(__file__).resolve().parent
+-SOURCE = HERE.with_name('hir-options-hash-driver-stage')
++SOURCE = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-02')
+ OWNER = HERE.parents[1]
+-WORK = OWNER / '.work/hir-options-hash-prerequisite-controls-04'
+-MODULES = ['test_prerequisites', 'test_native_wrapper', 'test_snapshot_bindings']
++WORK = OWNER / '.work/runtime-prerequisite-controls-01'
++MODULES = ['test_prerequisite_successor']
+ MAX_FILE = 256 * 1024
+ 
+ 
+@@ -50,7 +50,7 @@
+         if isinstance(item, unittest.TestSuite):
+             return [name for test in item for name in names(test)]
+         return [item.id()]
+-    assert sorted(names(suite)) == expected and len(expected) == 63
++    assert sorted(names(suite)) == expected and len(expected) == 11
+     result = unittest.TextTestRunner(verbosity=2).run(suite)
+     freeze = json.loads((HERE / 'inputs.json').read_bytes())
+     for module in list(sys.modules.values()):
+@@ -64,7 +64,7 @@
+                   maximum_file_bytes=MAX_FILE, maximum_writable_names=256,
+                   maximum_directory_names=2048, child_processes=0, compiler_calls=0)
+     (WORK / 'result.json').write_text(json.dumps(report, sort_keys=True, indent=2) + '\n')
+-    assert result.wasSuccessful() and result.testsRun == 63 and not result.skipped
++    assert result.wasSuccessful() and result.testsRun == 11 and not result.skipped
+     assert not result.expectedFailures and not result.unexpectedSuccesses
+     signal.alarm(0)
+ 
+--- passed-controls04/prepare.py
++++ runtime-prerequisite-controls01/prepare.py
+@@ -6,21 +6,24 @@
+ 
+ import run as control
+ 
++TESTED_SOURCES = {'prerequisites.py': '1d52a2cf4587f1844661418a43f8fd4df97986be365538298619f3fddd9730a7', 'imports.py': 'd874102998ea7868ae33bfd669d85a6baf6aa0116bb3d5de3a6dcd1737db0f05', 'test_prerequisite_successor.py': '5468f43ec465f9324d0c06078f328c86c1e16fef29c4ec3053f3d980916d4d5c'}
++SOURCE_BINDINGS_SHA256 = '23d6ac449cc8e2dec9b207a721f78e2c5403c09b1c43a6ad134d48d168dc3ee3'
++
+ 
+ def main():
+     here, source, owner = control.HERE, control.SOURCE, control.OWNER
+     assert Path.cwd() == owner and sys.dont_write_bytecode
+     assert not any((here / name).exists() for name in ['inputs.json', 'launch.json'])
+-    assert not control.WORK.exists() and not (owner / '.work/experiments/hir-options-hash-prerequisite-controls-supervisor-04').exists()
++    assert not control.WORK.exists() and not (owner / '.work/experiments/runtime-prerequisite-controls-supervisor-01').exists()
+     names = []
+-    modules = ['test_prerequisites', 'test_native_wrapper', 'test_snapshot_bindings']
++    modules = ['test_prerequisite_successor']
+     for module in modules:
+         tree = ast.parse((source / (module + '.py')).read_text())
+         for node in tree.body:
+             if isinstance(node, ast.ClassDef):
+                 names.extend(module + '.' + node.name + '.' + child.name for child in node.body
+                              if isinstance(child, ast.FunctionDef) and child.name.startswith('test_'))
+-    assert len(names) == len(set(names)) == 63
++    assert len(names) == len(set(names)) == 11
+     files, routes = {}, {}
+     def add(path):
+         path = Path(path); resolved = path.resolve(strict=True)
+@@ -34,15 +37,13 @@
+         if path.suffix == '.py':
+             ast.parse(path.read_text(), filename=str(path))
+     for directory in [here, source]:
+-        for path in (sorted(directory.iterdir()) if directory == here else [source/'prerequisites.py', source/'test_prerequisites.py', source/'test_native_wrapper.py', source/'snapshot_bindings.py', source/'test_snapshot_bindings.py']):
++        for path in (sorted(directory.iterdir()) if directory == here else [source/name for name in [*TESTED_SOURCES, 'source-bindings.json']]):
+             assert path.is_file() and not path.is_symlink()
+             add(path)
+-    for path in [control.X/'.work/hir-options-hash-compiler-01/source/compiler/rustc/src/main.rs',
+-                 Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/native-controls-failure-verification-01.json'),
+-                 Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/hir-options-hash-native-controls-01/receipt.json'),
+-                 Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/native-controls-failure-verification-02.json'),
+-                 Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/hir-options-hash-native-controls-02/receipt.json')]:
+-        add(path)
++    assert control.owned.sha(source/'source-bindings.json') == SOURCE_BINDINGS_SHA256
++    bindings = json.loads((source/'source-bindings.json').read_bytes())
++    for name, expected in TESTED_SOURCES.items():
++        assert files[str(source/name)]['sha256'] == bindings['sources'][str(source/name)]['sha256'] == expected
+     python = Path(sys.executable).resolve(strict=True)
+     for path in [python, '/opt/homebrew/bin/python3', '/bin/ps', '/usr/sbin/lsof',
+                  owner / 'scripts/supervise_experiment.py', control.X / 'experiments/stable-cgu/owned_stage.py']:
+@@ -59,19 +60,21 @@
+                               maximum_writable_names=256, maximum_directory_names=2048,
+                               maximum_cumulative_child_file_payload_bytes=258 * 256 * 1024,
+                               maximum_retained_stage_file_bytes=2 * 2**20),
+-                  synthetic_predecessor_history_controls=True, compiler_calls=0, provider_probes=0, B3_compositions=0)
++                  qualification_scope='runtime02-reader-and-factory-only',
++                  tested_sources={str(source/name): value for name, value in TESTED_SOURCES.items()},
++                  synthetic_runtime_successor_controls=True, compiler_calls=0, provider_probes=0, B3_compositions=0)
+     control.owned.write(here / 'inputs.json', freeze)
+     launch = dict(status='prepared-unrun-awaiting-review', owner=str(owner), environment=environment,
+                   command=[str(python), '-B', str(owner / 'scripts/supervise_experiment.py'), '--run-id',
+-                           'hir-options-hash-prerequisite-controls-supervisor-04', '--', str(python), '-B',
++                           'runtime-prerequisite-controls-supervisor-01', '--', str(python), '-B',
+                            str(here / 'run.py'), '--inputs-sha256', control.owned.sha(here / 'inputs.json')],
+                   inputs_sha256=control.owned.sha(here / 'inputs.json'), helper_sha256=control.owned.sha(here / 'run.py'),
+-                  expected_children=1, controls=63, capacity=freeze['capacity'], bounds=freeze['bounds'])
++                  expected_children=1, controls=11, capacity=freeze['capacity'], bounds=freeze['bounds'])
+     control.owned.write(here / 'launch.json', launch)
+     control.guard(freeze)
+     print(json.dumps(dict(status='prepared-unrun', launch_sha256=control.owned.sha(here / 'launch.json'),
+                          inputs_sha256=launch['inputs_sha256'], files=len(files),
+-                         bytes=sum(row['stamp'][3] for row in files.values()), controls=63), indent=2))
++                         bytes=sum(row['stamp'][3] for row in files.values()), controls=11), indent=2))
+ 
+ 
+ if __name__ == '__main__':
