@@ -1,3 +1,15 @@
+LATEST: current-call-protocol01 CLOSED success, sourceccdc248e,
+supervisor13518/controller13555; debug/release3tests and4savedreconstructions
+allpassed, independentclose45795passed. 47.416s setup/60.456CPU, no newguest.
+Scalar/ordinary transitioncounts258/262/510/502 allresolved, noambiguous. ES8
+scalarpadding14/37 samples;ordinaryframeclear56/38, callentrybudget14/27,
+publish25/20, returndispatch27/24. Newassessment proposes typed scalar empty-
+padding invariant coverage plus redundant entrybudget proof beforecandidate.
+This differsfromparkedshorttail byte-store optimization. Neednewtypedmetadata
+scope/model/qualifiedcontrols; no runtimechange yet. Publishclosed4-source test-
+only patch via3way to main(preserveexistingjit.rs diagnostic additions), plus
+explicit current-call-protocol folder/results. Main3972406b lastverified.
+
 LATEST: current-call-protocol/{PLAN.md,run.py} ready, no commandlaunched.
 Test-only scalarprotocol labels +schema2 reconstruction in4cratefiles(jit.rs,
 resumable.rs,scalar_calls.rs,code_spans/protocol_census.rs), adoptedzero_range
