@@ -1,6 +1,6 @@
 # Hash-stage preparer handoff
 
-`prepare.py` is source only and has not been executed or imported. It requires
+`prepare.py` has no concrete admission packet or workload execution. It requires
 four supplied audit paths and exact SHA-256 values, each with `status=verified`
 and a digest binding its actual passed compiler/B3/native/run-make receipt.
 Missing future outputs fail before provider discovery. No artifact hash is
@@ -20,10 +20,15 @@ controller's read-only guards and prerequisite parsers on the concrete frozen
 proposal before publishing `launch.json`. It never calls `Stage.__init__`,
 `execute`, or the workload core and never creates the driver evidence/artifacts.
 
-The O run-make adapter is being migrated to the final compiler continuation03;
-completed executable wiring still requires separate review. The preparer refuses
-an adapter pointing to02. Native and run-make audit paths are intentionally
-required arguments because no actual successful receipts/audits exist yet.
+The O run-make adapter now selects the final compiler continuation03. Its
+concrete run-make packet passed source and input review but remains unexecuted.
+The preparer refuses an adapter pointing to02. B3 source and work paths now
+select the planned composition07 successor. Composition06 passed 97 parser
+controls, then failed read-only discovery at the bootstrap source-link inventory
+before producing a launch packet or composing B3. Composition07 must qualify
+that inventory handling and complete discovery and execution independently.
+Native and run-make audit paths remain required arguments; no successful actual
+receipts for these stages are inferred from their source reviews.
 The native plan is expected to expose the `environment`, `clang`,
 `runtime_closure.libraries` and relative `ordered_driver_destinations` consumed
 by its reviewed recipe/controller. The discovery preflight checks those actual
@@ -33,4 +38,6 @@ After the initial handoff, the parent added bounded source/proof selection and
 retention to the preparer and enclosing controller. It also derives the direct
 rustc environment explicitly from the actual native predecessor and records
 every omitted bootstrap-only key. `prerequisites.py` and the three-command core
-remain unchanged. Actual preparation and workload execution remain unrun.
+remain unchanged. Nine bounded admission controls have imported the draft and
+tested rejection before provider discovery, environment selection and alias
+restoration. Concrete preparation and workload execution remain unrun.

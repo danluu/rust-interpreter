@@ -62,7 +62,8 @@ status would still require independent audit. `prepare.py` is now a source-only
 discovery draft requiring four supplied actual audit paths and exact hashes.
 It uses canonical admission for bounded read-only discovery, then calls the
 controller's guards and prerequisite readers before publishing a launch proposal.
-It has neither been imported nor executed.
+Only the bounded admission controls described below have exercised this draft;
+concrete discovery and workload execution remain unrun.
 
 The controller retains selected source/proof bytes before any workload command,
 with 64 MiB per-file and 128 MiB total logical limits under the existing aggregate
@@ -86,3 +87,10 @@ restoration. They do not exercise the complete predecessor readback or workload.
 The later result-policy/source/retention checks received source review and AST
 parsing only. There is still no concrete runnable admission packet, and final
 B3/native/run-make schemas must pass discovery against their actual results.
+
+The B3 source and work references select composition07, the planned successor
+to composition06. Its 97 parser controls passed, including the complete saved
+compiler-producer history. Read-only discovery then rejected a normal bootstrap
+source symlink before any composition or launch packet existed. The successor
+must qualify its narrow source-link inventory handling separately; updating
+these references does not qualify that future stage.
