@@ -143,3 +143,19 @@ reuse. Transport, setup, hashing, validation, misses and all session CPU must be
 included in the changed-source comparison; a session without reuse is an
 additional mechanism control, alongside adopted fresh-process and native commands.
 No production cache is enabled yet.
+
+
+The experimental `jit-template-session` library feature now passes633 workspace
+checks in both profiles (16 explicit diagnostics ignored). Public API controls
+exercise real non-test-library emission, changed callees/data, limits and current
+assertion text, invalid/partial Programs, full storage and dropped original owners.
+Ordinary and feature release VMs are retained. No default runtime is adopted.
+[Closed API qualification](../results/cross-program-template-session-api-04/summary.json).
+Earlier startup, ignored-count bookkeeping and feature configuration failures
+remain preserved; completed successful commands were retained through correction.
+
+An inherited-pipe session is now under qualification, with per-request environment
+snapshots and explicit input/report bindings. A negative wire test found serde's
+unit-variant handling accepted extra Shutdown fields; the corrected variant keeps
+that rejection test. Saved-project session replay and command-level transport
+remain required. [Transport design](TEMPLATE-SESSION-TRANSPORT-20260918.md).

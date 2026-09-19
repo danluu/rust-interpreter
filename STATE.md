@@ -119,18 +119,46 @@ build/test/guest ran. Terminal-only audit preserve_startup.py closed it. API02 a
 d9cea370 ran51249/51252; default-debug629passed/16ignored, then harness incorrectly
 expected15ignored (saved-suite test is the extra one). CLOSED56860/56863 beforefix.
 
-ACTIVE: API03 source4e11cc65, supervisor62916. Controller
-benchmarks/experiments/cross-program-template-session/qualify.py. Verifies exact
-Rust/Cargo hashes and reuses API02's successful default-debug log. Runs ONLY the
-four unstarted commands: defaultrelease, featuredebug/release, featurereleaseVM.
-Expected629/633passes fordefault/feature,16ignored each. Inspect exactstatus/records
-before continuing. Freeze Rust/controllers/PLAN untilclosed viaqualify.py --close.
-No original projectguest command atthisstage. Never rerun prior successful checks
-because later bookkeeping/build fails. Plans innewexperimentfolder.
+API03 source4e11cc65 ran62916/62919: defaultrelease629passed/16ignored,
+featuredebug failed compilation because a model-only Context constructor lacked
+cfg(test). CLOSED71325/71329. API04 source85d224d4 corrects exactlytwo cfg
+annotations and the unexecuted feature fixture's interpreter options; verifies
+those exact source deltas, preserves earlierdefaultchecks. Under81086/81089,
+633featuretests/profile pass,16ignored; ordinary/feature releaseVM built/retained.
+CLOSED98176/98179,commit85063118 pushed. DefaultVM95b9f15ec6dbc95d455a1b9ea6a616ad4672a8dc4978b433769d697ec4dea361;
+featureVM98f5f6f567b7cfa97c5959eabbca796439fc9ae6efd59d27528c3fc45dbc9222.
+These are retained experimental binaries, not adopted tools.
 
-Session design stillpending. Environment must be snapshotted perrequest without
-mutating process-global environment on worker threads. Bindcwd/options/artifact/
-catalog, freshgueststate, CPU/startupaccounting and requestreportreservation.
+Pipe transport source9128e86b adds explicit rust-interp-template-session binary,
+feature-only PreparedJit::with_session_inputs and owned per-request environment
+snapshots (no hostenvironmentmutation). Two persistentowningthreads retainbounded
+histories; freshnativeowners/gueststateperrequest. Protocol4MiBcap,4096requests,
+artifact/catalog hashes, cwd,boundedlimits,create-newreports. No nativecodewire,
+socket,autostart orlauncherroute. Darwin getrusage ABI read frominstalledSDK and
+CPUunitpasses; later E2Edriver mustchargeactualkernelwait4totals/startup/tails.
+Source files crates/bytecode/src/template_session.rs andtests/template_session.rs.
+
+Transport01 under35927/35930 passed5featureenvironmentcontrols, thenwire2passed/
+1failed: serde internallytagged unitShutdown acceptedunknownfields despite
+attribute. No sessionprocessfixturestarted. CLOSED38967/38970,3ef74ebb. Correction
+b1ccc5b7 uses emptystructShutdown{} and retainsnegativecontrol. LibraryRust/Cargo
+unchanged; successfuldebugenvironment command reusedafterhashverification.
+
+ACTIVE: transport02 sourceb1ccc5b7,supervisor41434. Controller
+benchmarks/experiments/cross-program-template-session/transport.py. SevennewCargo
+commands plusone reused; expected30focusedtests/profile. Four actualownedfixture
+sessionprocesses/profile (historyoff/on,invalidrequestrecovery,malformedframe).
+Inspect .work/experiments/cross-program-template-session-transport-02/status.json
+andrawrecords beforecontinuing. FreezeRust/controllers/PLANuntilclosed via
+transport.py --close. Capturefilesandbothsessionbinariesretainedonpass; no original
+projectguests atthisstage. No successfulcommandreruns forbookkeeping.
+
+NEXT afterclosedtransport: two release-sessionprocesses replayactualsavedparser
+8states each (historyoff/on,verifyallhits). Useclosed suites01 input/catalog/native
+outcomes. Strictfrontendartifacts remainbound. Recordownprocessidentity,wait4 CPU,
+monotonicserverCPU andexactcurrentoutcomes. No performanceclaim. Thenexplicit
+socket/launcher route and fullchanged-sourceprimary, includingallstartup/CPU.
+Transportdesign docs/TEMPLATE-SESSION-TRANSPORT-20260918.md.
 Application/OS/FFI/compiler/Cargo expansion remainspeerowned; preserveboundaries.
 
 ## Completed cross-edit investigation
@@ -189,7 +217,7 @@ previous-state chain. Do not retime unchanged candidates or reinterpret gates.
   two Cargo/test workers. Build target ONLY .work/fixed-frame-clear-combined-build-01/target;
   NEVER clean it. Build floor max(14GiB,8GiB+2*allocated target),analysis12GiB,
   children/closures8GiB unless higher declared. Recheck each stage.
-- Last free about22.7GiB, fluctuating. Parser primary24GiB reservation completed;
+- Last free about21.9GiB, fluctuating. Parser primary24GiB reservation completed;
   future Nushell full comparison needs its recorded~47GiB, not a reduced gate.
 - Cleaner read-only: /usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status
   Do not repair/restart/compete with it or signal/control any peer/session.
