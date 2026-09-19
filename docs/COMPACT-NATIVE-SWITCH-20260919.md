@@ -2,7 +2,7 @@
 
 The new candidate shortens common AArch64 switch comparisons while preserving
 the complete 128-bit guest value. Its new forty-command changed-source primary
-passed, but full project guards remain pending. Its session/runtime parent remains parked after the
+passed, but the full private wall regression gate failed. No runtime adoption follows. Its session/runtime parent remains parked after the
 unmeasurable full parser gate; the adopted runtime remains `df4006e0`.
 
 The independently closed current-composition census found 116 switch self samples
@@ -108,9 +108,31 @@ margin1.016754. Native wall ratio is1.120580. This is a neutral regression pass.
 The worst individual A/A deviations are36.29% wall and33.32% CPU; all pairs
 remain recorded, and the original median-based gate is unchanged.
 
-All three public histories now pass. Private rg, both parser guards and Nushell
-remain required before current-main integration. The runtime is still
-experimental; no default change follows from these public guards alone.
+The private rg-aot history (`compact-native-switch-edit-rg-aot-01`,
+source`43aa2344`, independent closure35058) completes176 commands and both strict
+controls with its original test, exact outcomes/artifacts and source restoration.
+Its closure verifies678 inputs and794 local evidence files. Private names,
+source and artifacts remain in the owned local evidence.
+
+| Private regression metric | Candidate / adopted | A/A envelope | Ratio + envelope |
+| --- | ---: | ---: | ---: |
+| Wall | 1.010025 | 0.044826 | 1.054851 |
+| CPU, including both session slots | 1.007557 | 0.017173 | 1.024730 |
+
+The wall margin exceeds the predeclared1.05 bound, so the campaign is PARKED.
+The observed1.0% wall difference is smaller than A/A variation; the failed
+engineering gate does not establish a separate runtime regression or its cause.
+Native wall ratio remains0.574904. No pair is discarded, no gate is relaxed,
+and no unchanged timing is repeated. Both parser profiles and Nushell are
+cancelled without starting; their prepared controllers are retained.
+
+Next isolate the compact switch emitter on the adopted scratch/scalar runtime.
+The current tests establish switch semantics, while this campaign measures the
+complete session/indirect/readonly/successor composition. A fresh candidate with
+only the emitter change will directly test that mechanism against adopted, with
+fresh correctness qualification and unchanged end-to-end gates. First recover
+build headroom through exact, closed, owned compiler-cache retirement.
+
 The large/private adapter binds the actual27-control portable proof02 in code;
 its frozen planning note still names the earlier proof01. That stale prose does
 not select the proof or change the actual source/diagnostic checks.
