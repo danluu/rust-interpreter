@@ -1,0 +1,3 @@
+Screen03 metadata preparation passed with normal closure of parent 29904 and child 30618, followed by an independent readback of all 199 frozen inputs (40,133,206 bytes) and 124 source bindings. No screen03 application timing has run.
+
+This prospective successor changes only the outer admission threshold from 23 GiB to 21 GiB and uses fresh cache and run identities. The 16 GiB admission check before each command, 7 GiB owned allocation cap, 512 MiB evidence cap, 9/8 GiB active thresholds, source edits, correctness checks, 24-command histories and fixed `B + V < 1` decision remain unchanged. The full 7 GiB maximum need not fit above later command admission; a capacity failure is retained. Screen02 and its unrun prepared packet remain unchanged.

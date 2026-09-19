@@ -1,0 +1,40 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash/ruff-screen-launch-02/prepare.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash/ruff-screen-launch-03/prepare.py
+@@ -17,8 +17,8 @@
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ A = Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-PROTOCOL = HERE.parent / 'ruff-screen-02'
+-MAP = HERE / 'runner-source-map-02.json'
++PROTOCOL = HERE.parent / 'ruff-screen-03'
++MAP = HERE / 'runner-source-map-03.json'
+ ARMS = R / 'experiments/workflow-runtime-arms-01'
+ OWNED = A / 'experiments/stable-cgu/owned_stage.py'
+ SUPERVISOR = R / 'scripts/supervise_experiment.py'
+@@ -113,7 +113,7 @@
+ 
+ def routes(history):
+     require(history in ['ab', 'aa'], 'unknown history')
+-    run_id = 'hir-options-hash-ruff-screen-' + history + '-02'
++    run_id = 'hir-options-hash-ruff-screen-' + history + '-03'
+     observer = R / '.work' / (run_id + '-observer')
+     return dict(run_id=run_id, work=str(R/'.work/runs'/run_id),
+         results=str(R/'results'/run_id), observer=str(observer),
+@@ -294,7 +294,7 @@
+     for row in source_map['sources']:
+         pinned(dict(path=row['path'], sha256=row['sha256']), checked, raw=True)
+     estimate = pinned(ref(HERE/'allocation-estimate.json'), checked)
+-    require(estimate['per_history_allocated_byte_limit'] == 7*GIB and estimate['entry_free_bytes'] == 23*GIB
++    require(estimate['per_history_allocated_byte_limit'] == 7*GIB and estimate['entry_free_bytes'] == 21*GIB
+             and estimate['command_floor_bytes'] == 16*GIB, 'reviewed per-history capacity differs')
+     for reference in estimate['saved_inputs']:
+         pinned(reference, checked)
+@@ -322,7 +322,7 @@
+                 absent(path)
+             histories[history] = row
+         require(len({p for h in histories.values() for p in h['custom_caches'].values()}) == 4, 'custom caches overlap')
+-        # The preparation is metadata-only; actual history admission requires23GiB.
++        # The preparation is metadata-only; actual history admission requires21GiB.
+         free = owned.disk(R, 9)
+         for name, row in checked.items():
+             require(sha(name) == row['sha256'] and stamp(name) == row['stamp'], 'input changed during preparation')

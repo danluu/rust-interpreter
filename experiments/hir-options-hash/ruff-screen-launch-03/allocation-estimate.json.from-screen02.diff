@@ -1,0 +1,50 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash/ruff-screen-launch-02/allocation-estimate.json
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash/ruff-screen-launch-03/allocation-estimate.json
+@@ -16,7 +16,7 @@
+       "file_count": 7911
+     }
+   },
+-  "entry_free_bytes": 24696061952,
++  "entry_free_bytes": 22548578304,
+   "evidence_reserve_bytes": 536870912,
+   "first_archive_reserve_bytes": 0,
+   "growth_percent": 50,
+@@ -36,7 +36,7 @@
+   "per_history_allocated_byte_limit": 7516192768,
+   "per_history_custom_caches": 2,
+   "per_history_native_caches": 1,
+-  "policy": "ruff-fixed-screen-prospective-allocation-v2",
++  "policy": "ruff-fixed-screen-prospective-allocation-v3",
+   "policy_notes": [
+     "Use the larger observed strict custom cache independently for baseline and candidate; never assume sharing.",
+     "Use allocated bytes consistently. The saved native target uses normal same-target Cargo hardlinks (7,529 names,4,507 unique file inodes); the estimate explicitly assumes this ordinary behavior. It is not a guarantee of future allocations.",
+@@ -46,9 +46,17 @@
+     "AB caches retire only after normal closure, ordinary verification and saved artifacts; retain AB work outside native, results, observer and original sources. AA then starts fresh.",
+     "No archive copy is made during either history. Later retirement/publication archive staging must receive its own separate admission.",
+     "Runner allows individual RBC64MiB and catalogs8MiB. Saved observed artifacts are much smaller;512MiB is a prospective retained-evidence budget, not a claim that every maximum-size permitted artifact would fit. An actual excess fails rather than silently expands the budget.",
+-    "Prospective correction before any screen timing: retain prior8/24 policy;7GiB owned includes the512MiB evidence sub-cap and leaves16GiB command reserve at23GiB entry. No histories, flags, checks, samples or decisions changed."
++    "Prospective21GiB entry before any timing; prior23GiB source and packet remain unchanged.7GiB owned cap,512MiB evidence sub-cap,16GiB per-command admission and9/8 sampled active policy remain unchanged.21GiB gives5GiB headroom above command admission; it does not budget the full7GiB cap above that admission.",
++    "Saved two-custom-plus-native4,313,612,288B plus full512MiB evidence is4,850,483,200B (4.51736GiB), leaving518,225,920B of the5GiB headroom. This is a prospective estimate, not a new measured peak.",
++    "The50% growth projection and7GiB maximum remain unchanged. A later16GiB command check or active guard can fail under pressure; retain that failed history without weaker admission or replacement samples."
+   ],
+   "projected_owned_bytes": 7007289344,
++  "prospective_admission": {
++    "base_plus_evidence_bytes": 4850483200,
++    "full_owned_cap_above_command_floor_guaranteed": false,
++    "headroom_above_command_bytes": 5368709120,
++    "margin_over_observed_base_bytes": 518225920
++  },
+   "running_floor_bytes": 8589934592,
+   "saved_inputs": [
+     {
+@@ -66,6 +74,10 @@
+     {
+       "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/ruff-screen02-prospective-allocated-budget-independent-review-01.json",
+       "sha256": "f7930f3a74078c70e77dc41e7ad6907e155f58339507eeb1b51a409547ff77db"
++    },
++    {
++      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/ruff-screen-prospective21-resource-independent-review-01.json",
++      "sha256": "cbc0448224fe9eef04ff9db96070299c06cd4736203df7d2b0684fdb635383a8"
+     }
+   ],
+   "total_created_custom_caches": 4,
