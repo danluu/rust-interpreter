@@ -1,8 +1,8 @@
 # Compact native switch experiment
 
 The new candidate shortens common AArch64 switch comparisons while preserving
-the complete 128-bit guest value. It is correctness-qualified and has no new
-performance result yet. Its session/runtime parent remains parked after the
+the complete 128-bit guest value. Its new forty-command changed-source primary
+passed, but full project guards remain pending. Its session/runtime parent remains parked after the
 unmeasurable full parser gate; the adopted runtime remains `df4006e0`.
 
 The independently closed current-composition census found 116 switch self samples
@@ -41,11 +41,30 @@ VM SHA256 starts `3d3512bd`, server SHA256 starts `67a85808`. Compiler, exporter
 and wrapper remain byte-identical to the adopted tools. This is a selected
 test-body engine; these results do not establish full application coverage.
 
-Next qualify and run one new forty-command changed-source primary, retaining
-ordinary native, adopted baseline, duplicate baseline, candidate session and
-historical anchor arms, all original assertions, strict type/borrow rejections,
-two workers and complete session CPU accounting. The first controller-qualification
+The independently closed primary (`compact-native-switch-screen-token-01`,
+source `c99a82ac`, closure supervisor 25706) completed all 40 commands and both
+strict controls. Twelve original tests retained identical native/custom outcomes;
+the wrong edit failed, final source was restored, and current custom artifacts
+matched. Unreachable type/borrow errors were rejected before any session request.
+
+| Paired edited-command metric | Candidate / adopted | A/A envelope | Ratio + envelope |
+| --- | ---: | ---: | ---: |
+| Wall | 0.928485 | 0.026519 | 0.955004 |
+| CPU, including full server overhead | 0.914170 | 0.033507 | 0.947677 |
+
+Both predeclared gates pass. The median candidate/native wall ratio is 1.589916
+and candidate/historical-anchor ratio is 0.684761. This establishes a primary
+result for the complete new composition against adopted; it does not isolate
+the switch change against its separately measured parent. No runtime adoption
+follows from the primary alone.
+
+The first controller-qualification
 admission timed out on the shared lock before any command or stage creation;
-that zero-work attempt is closed and retained. No timing has been repeated.
-Only a passing primary admits the full project/parser guards; current-main
-integration and adoption require their own qualification.
+that zero-work attempt is closed and retained. Protocol02 then passed all16
+controls and closed independently. No timing was repeated.
+
+Next qualify the full public controller and run176-command token, folded and
+pgrust histories in order, with history-off, native line-table and Cargo-check
+controls added to the existing arms. Carry forward the already fixed portable
+core borrow probe and JSON configuration comparison before pgrust. Private rg,
+both parser guards and Nushell remain required before current-main integration.
