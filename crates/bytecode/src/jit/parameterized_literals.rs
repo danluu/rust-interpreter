@@ -91,7 +91,8 @@ mod tests {
             data:vec![],statics:vec![],thread_locals:vec![]};
         let f=&p.functions[0];assert!(call_slots::collect(f,&p).contains_key(&3));
         assert!(call_slots::collect_with_literals(f,&p,&selected(f)).is_empty());
-        let mut f=function(vec![Op::Imm{dst:1,value:65536},
+        let mut f=function(vec![Op::Imm{dst:1,value:65536},Op::Imm{dst:2,value:65544},
+            Op::Binary{dst:1,overflow:3,op:Binary::Sub,a:2,b:1,bits:64,signed:false},
             Op::Binary{dst:2,overflow:3,op:Binary::Add,a:0,b:1,bits:64,signed:false}]);
         f.code.extend((0..8).map(|_|Op::Load{dst:4,address:2,size:8}));
         assert!(range_groups::runtime_plan(&f,0,f.code.len(),&mut 4_000_000).is_some());

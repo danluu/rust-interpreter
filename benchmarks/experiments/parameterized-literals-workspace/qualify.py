@@ -18,11 +18,11 @@ def main():
         paths=[ROOT/p for p in subprocess.check_output(['git','ls-files','crates','scripts','tests','Cargo.toml','Cargo.lock','rust-toolchain.toml'],cwd=ROOT,text=True).splitlines()]
         paths += [p for p in Path(__file__).parent.iterdir() if p.suffix in ['.py','.md']]
         paths += [Path(focus.__file__)]
-        for name in ['parameterized-literals-focused-04','template-miss-parser-01','template-miss-causes-01']:
+        for name in ['parameterized-literals-focused-05','template-miss-parser-01','template-miss-causes-01']:
             prior=ROOT/'results'/name;c=read(prior/'closure.json')
             assert c['status']=='closed' and c['all_hashes_verified'] and sha(prior/'summary.json')==c['summary_sha256']
             paths += [prior/'closure.json',prior/'summary.json']
-        focused=ROOT/'results/parameterized-literals-focused-04';proof=read(focused/'summary.json')
+        focused=ROOT/'results/parameterized-literals-focused-05';proof=read(focused/'summary.json')
         assert proof['status']=='passed' and proof['controls_per_profile']==34 and proof['feature_off_controls']==24
         focused_plan=ROOT/proof['raw']/'plan.json';assert sha(focused_plan)==proof['plan_sha256'];paths.append(focused_plan)
         for name,h in read(focused_plan)['frozen'].items():

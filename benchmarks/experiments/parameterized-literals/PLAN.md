@@ -59,3 +59,9 @@ literal-site manifest fromAssembler throughCompiledFunction. A new control
 rejects missing/reassociated relocation records and missing/duplicate manifests
 at capture, in addition to restoration checks.31template+3policy/profile,24off. A direct signed/unsigned arithmetic and overflow
 control adds40fresh/cached/interpreted comparisons, verifying everyhit.
+
+Focused04 passed31template controls, including native arithmetic/fault/budget and
+independent manifests; the range-hint fixture wrongly expected an ordinary65536
+root offset to qualify despite the existing4096span bound.05 uses two large
+literals whose difference is8, exercising constant folding into a valid range
+when ordinary and requiring decline when opaque. Runtime code unchanged.
