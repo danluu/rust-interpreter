@@ -8,6 +8,8 @@ const MAX_OPERANDS: usize = 262_144;
 
 fn prove(f: &Function) -> Option<Vec<bool>> { prove_with_budget(f, MAX_OPERANDS) }
 
+fn narrow(bits: u8) -> bool { matches!(bits, 8 | 16 | 32 | 64) }
+
 fn prove_with_budget(f: &Function, budget: usize) -> Option<Vec<bool>> {
     if usize::BITS != 64 || f.registers > MAX_REGISTERS || f.code.len() > MAX_PCS { return None; }
     let mut seen = vec![false; f.registers];
@@ -54,7 +56,14 @@ fn prove_with_budget(f: &Function, budget: usize) -> Option<Vec<bool>> {
                 read(*callee, true); read(*destination, false);
                 for &r in args { read(r, false); }
             }
-            // Includes assertions, switches, conditions, arithmetic and all
+            // binary() masks both operands and the shift count; unary masks
+            // before dispatch; signed/unsigned casts first use the from width.
+            Op::Binary { a, b, bits, .. } if narrow(*bits) => {
+                read(*a, false); read(*b, false);
+            }
+            Op::Unary { src, bits, .. } if narrow(*bits) => read(*src, false),
+            Op::Cast { src, from, .. } if narrow(*from) => read(*src, false),
+            // Includes assertions, switches, conditions, wide/unknown arithmetic and all
             // runtime builtins. Unknown/new consumers cannot become low-only.
             _ => crate::registers::visit_registers(op, |r| read(r, true), |_| {}),
         }
@@ -116,8 +125,41 @@ fn upper_read_other_consumers_are_conservatively_full_width() {
     let f = fixture(vec![Op::Allocate { dst: 2, size: 0, align: 1, zeroed: true },
         Op::Copy { dst: 0, src: 1, size: 0 }], 3);
     assert_eq!(prove(&f).unwrap(), [false, false, false]);
-    let f = fixture(vec![Op::Cast { dst: 0, src: 1, from: 8, to: 8, signed: false }], 2);
+    let f = fixture(vec![Op::Cast { dst: 0, src: 1, from: 128, to: 8, signed: false }], 2);
     assert_eq!(prove(&f).unwrap(), [false, false]);
+}
+
+#[test]
+fn upper_read_masked_widths_do_not_erase_full_width_uses() {
+    for bits in [8, 16, 32, 64, 128] {
+        let f = fixture(vec![Op::Binary { dst: 2, overflow: 3, op: crate::Binary::Add,
+            a: 0, b: 1, bits, signed: true },
+            Op::Unary { dst: 4, src: 0, op: crate::Unary::Not, bits },
+            Op::Cast { dst: 5, src: 1, from: bits, to: 128, signed: true }], 6);
+        assert_eq!(prove(&f).unwrap(), [bits < 128, bits < 128, false, false, false, false]);
+        let mut f = f;
+        f.code.push(Op::Assert { value: 0, expected: false, message: "full".into() });
+        assert!(!prove(&f).unwrap()[0]);
+    }
+}
+
+#[test]
+fn upper_read_actual_integer_semantics_ignore_poisoned_high_bits() {
+    use crate::Binary::*;
+    let operations = [Add, Sub, Mul, Div, Rem, And, Or, Xor, Shl, Shr, Eq, Ne,
+        Lt, Le, Gt, Ge, Cmp, RotateLeft, RotateRight];
+    for bits in [8, 16, 32, 64] { for signed in [false, true] {
+        for a in [0, 1, 127, 1u128 << 63, u64::MAX as u128] {
+            for b in [0, 1, 63, 64, u64::MAX as u128] {
+                for op in operations {
+                    let expected = crate::binary(op, a, b, bits, signed);
+                    let actual = crate::binary(op, a | (u128::MAX << 64), b | (1u128 << 127), bits, signed);
+                    assert_eq!(actual, expected, "{op:?} bits={bits} signed={signed} a={a} b={b}");
+                }
+                assert_eq!(crate::signed(a, bits), crate::signed(a | (u128::MAX << 64), bits));
+            }
+        }
+    } }
 }
 
 #[test]

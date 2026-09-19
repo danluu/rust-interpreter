@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='upper-word-read-census-01'
+RUN='upper-word-read-census-02'
 def read(p):return json.loads(p.read_text())
 def main():
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
@@ -24,6 +24,10 @@ def main():
         closed=bind(prior/'closure.json');summary=bind(prior/'summary.json',closed['summary_sha256'])
         assert closed['status']=='closed' and closed['all_hashes_verified'] and summary['status']=='passed'
         for p,h in bind(ROOT/closed['evidence'],closed['evidence_sha256']).items():bind(ROOT/p,h)
+        first=ROOT/'results/upper-word-read-census-01'
+        fc=bind(first/'closure.json');fs=bind(first/'summary.json',fc['summary_sha256'])
+        assert fc['status']=='closed' and fc['all_hashes_verified'] and fs['controls']==dict(debug=6,release=6,traffic=6)
+        for p,h in fs['outputs'].items():bind(ROOT/p,h)
         old=ROOT/'results/ordinary-memory-traffic-01'
         oc=bind(old/'closure.json');obs=bind(old/'summary.json',oc['summary_sha256'])
         assert oc['status']=='closed' and oc['all_hashes_verified'] and obs['controls']==8
@@ -62,8 +66,8 @@ def main():
         cargo=['cargo','+nightly-2026-09-08','test','--locked','--offline','--jobs','2',
             '--manifest-path',str(ROOT/'Cargo.toml'),'--target-dir',str(target),'-p','rust-interp-bytecode','--lib']
         test='jit::code_spans::upper_reads::'
-        commands=[('debug',[*cargo,test+'upper_read_'],{},ROOT,6),
-            ('release',[*cargo,'--release',test+'upper_read_'],{},ROOT,6),
+        commands=[('debug',[*cargo,test+'upper_read_'],{},ROOT,8),
+            ('release',[*cargo,'--release',test+'upper_read_'],{},ROOT,8),
             ('typed',[*cargo,'--release',test+'observe_saved_upper_reads','--','--ignored','--exact'],
                 dict(UPPER_READ_ARTIFACT=str(artifact),UPPER_READ_OUTPUT=str(raw/'typed.json')),ROOT,1),
             ('traffic',[sys.executable,'-m','unittest','test_traffic','-v'],dict(ORDINARY_TRAFFIC_OBJECT=str(object_path)),
@@ -89,7 +93,7 @@ def main():
         outputs={str(p.relative_to(ROOT)):sha(p) for p in [raw/n for n in ['typed.json','attribution.json','details.json','block-sites.json','exhaustive-sites.json']]}
         dest=ROOT/'results'/RUN;dest.mkdir(exist_ok=False)
         write(dest/'summary.json',dict(status='passed',source_revision=revision,commands=len(records),
-            controls=dict(debug=6,release=6,traffic=6),cases=attribution['cases'],
+            controls=dict(debug=8,release=8,traffic=6),cases=attribution['cases'],
             typed_functions=attribution['typed_functions'],declined_functions=attribution['declined_functions'],
             eligible_registers=attribution['eligible_registers'],outputs=outputs,raw=str(raw.relative_to(ROOT)),
             plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),

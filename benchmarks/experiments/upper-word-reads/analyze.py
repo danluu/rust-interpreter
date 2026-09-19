@@ -13,7 +13,7 @@ from summarize_owned_sample import parse_tree,self_samples
 from traffic import analyze
 from linear import direct_target
 from regions import groups
-RUN='upper-word-read-census-01'
+RUN='upper-word-read-census-02'
 def read(p):
     assert p.stat().st_size<=256*1024**2
     return json.loads(p.read_text())
@@ -21,6 +21,11 @@ def main():
     raw=ROOT/'.work'/RUN;plan=read(raw/'plan.json');typed=read(raw/'typed.json')
     assert typed['status']=='passed' and typed['artifact_sha256']==plan['artifact_sha256']
     proofs=typed['functions'];assert [r['function'] for r in proofs]==list(range(len(proofs)))
+    old=read(ROOT/'.work/upper-word-read-census-01/typed.json')
+    assert old['artifact_sha256']==typed['artifact_sha256'] and len(old['functions'])==len(proofs)
+    for a,b in zip(old['functions'],proofs):
+        for key in ['function','name','registers']:assert a[key]==b[key]
+        assert set(a['low_only'] or []).issubset(b['low_only'] or [])
     sampled=read(ROOT/'results/adopted-current-runtime-sampling-02/summary.json')
     cases=[];details=[]
     for case in sampled['cases']:

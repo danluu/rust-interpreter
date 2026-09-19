@@ -41,3 +41,17 @@ Hold the root benchmark lock with45-second admission. Reuse only the owned share
 target, two Cargo/test workers, build floor max(14GiB,8GiB+2*target allocation),
 12GiB offline admission and8GiB child floors. Preserve the paused goal, peer work
 and all successful captures. No new guest run or installed VM is needed.
+
+
+## Expanded masked integer consumers, census02
+
+The initial closed address/byte proof covers24/10 sampled stores, insufficient
+alone. Source review of the actual VM shows binary() masks both inputs and the
+shift count for widths<=64; Unary masks before dispatch; Cast uses its source
+width before sign extension. Extend only these reviewed widths.128-bit reads,
+conditions, assertions, indirect handles, floating-point and builtins stay full.
+Retain the initial six controls, add width/alias coverage and3,800 comparisons of
+actual binary() results/errors under poisoned high bits, plus signed-source
+checks. Eight Rust controls run per profile; six traffic controls remain.
+The new typed result must contain every previously eligible register. Use fresh
+02 evidence, preserve01, and still do not omit stores or execute any project.
