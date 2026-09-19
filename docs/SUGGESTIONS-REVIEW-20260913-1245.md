@@ -333,3 +333,26 @@ but the complete primary is unchanged (wall 0.999836 / CPU 0.999544) inside
 Inspect its actual emitted bodies and preparation cost before further changes;
 keep the adopted runtime, strict checking and independent compiler ownership.
 [Primary evidence](../results/scalar-readonly-native-screen-token-01/ASSESSMENT.md).
+
+September 19: the suggestions file is still unchanged (SHA256
+4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f).
+The artifact concern in3.3 led to immutable-byte digest reuse with complete
+current input validation. Its new40-command parser primary narrowly passed,
+but the110-command full guard was unmeasurable: wall ratio0.943784 plus
+A/A0.115656 exceeds1. It is not adopted, and the unchanged run is not repeated.
+Buffered key hashing showed no affirmative diagnostic gain and was parked.
+Compiler graph/host/Cargo work remains in the independently owned session.
+[Digest evidence](SESSION-ARTIFACT-DIGEST-20260919.md),
+[buffering evidence](BUFFERED-TEMPLATE-KEYS-20260919.md).
+
+The next runtime direction follows actual changed-source miss attribution rather
+than capacity speculation:2563missed bodies differ only in immediate values,
+while eviction explains little valid-edit emission. A conservative relocation
+subset proved too small. Explicit opaque literal parameters now pass focused
+correctness checks, including native/interpreter comparisons and independent
+relocation-manifest validation; full workspace and actual parser qualification
+remain pending. This preserves the primary-first rule and the distinction
+between diagnostic intervals and end-to-end latency. No lazy Rust checking,
+foreign guest backend, higher concurrency, or default-runtime change is implied.
+[Miss attribution](TEMPLATE-MISS-HISTORY-20260919.md),
+[literal candidate](PARAMETERIZED-LITERALS-20260919.md).
