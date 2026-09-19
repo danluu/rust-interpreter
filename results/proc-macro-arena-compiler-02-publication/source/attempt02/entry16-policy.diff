@@ -1,0 +1,56 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/history-before-entry16/plan.json
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/plan.json
+@@ -960,7 +960,7 @@
+     "aggregate_fresh_work_bytes": 134217728,
+     "canonical_lock": "/Users/danluu/dev/rust-interp/.work/benchmark.lock",
+     "canonical_wait_seconds": 600,
+-    "entry_gib": 24,
++    "entry_gib": 16,
+     "file_bytes": 67108864,
+     "floor_gib": 8,
+     "live_stop_gib": 9,
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/history-before-entry16/run_once.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/run_once.py
+@@ -19,7 +19,7 @@
+ BRIDGE = ROOT/'.work/proc-macro-arena-bridge-01'
+ OLD = ROOT/'results/proc-macro-arena-bridge-01'
+ LOCK = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+-PLAN_SHA = '3bad7581c919150e11a5b13be9be99508768856886510140378cc62a3f157a2c'
++PLAN_SHA = '9c041b35bba1c23774e9da923556f232a6c7da3911256a0be124b2f638ae3593'
+ OLD_SOURCE_SHA = '16ceacc4a5c86604ed06dc291b5f78a49b34283f607b5e3b56a9590688fe70bc'
+ OLD_RESULT_SHA = '4e0e677aa3b3c65728e2351017f299c2c8f8cf41aff69c7cdbabe93c6b68b30a'
+ MANIFESTS = {
+@@ -42,7 +42,7 @@
+ def guard(entry=False):
+     require(time.monotonic()-START < 2400, 'overall observer deadline expired')
+     free = shutil.disk_usage(ROOT).free
+-    require(free >= (24 if entry else 9)*2**30, 'compiler free-space gate refused')
++    require(free >= (16 if entry else 9)*2**30, 'compiler free-space gate refused')
+     return free
+ 
+ 
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/history-before-entry16/README.md
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/README.md
+@@ -23,7 +23,7 @@
+ runner function/class AST is unchanged; only `SOURCE`, `WORK`, `OUT` and
+ `PLAN_SHA` assignments differ. Exact source and plan diffs are retained here.
+ 
+-The runner still requires 24 GiB at each compiler admission, a 600-second
++For this fixed fixture only, the runner requires 16 GiB at each compiler admission, a 600-second
+ canonical wait, 9 GiB live stop/8 GiB floor, finite child CPU and observer bounds,
+ 64 MiB per file and 128 MiB fresh work. It records closure before output hashes,
+ preserves full raw JSON, rejects unexpected errors and warnings, checks exact
+@@ -32,3 +32,13 @@
+ changes an existing installation. A new root review and once-run decision remain
+ necessary; no actual result, performance claim or distribution qualification is
+ provided by these sources.
++
++The unrun 24 GiB proposal is preserved in `history-before-entry16`. The root
++approved a phase-specific 16 GiB entry reserve after the original 9 KB stock
++macro successfully compiled and linked. These twenty serial commands reuse the
++installed compiler and prebuilt client; the 128 MiB aggregate fresh-work,
++64 MiB per-file and 1 MiB per-command raw limits remain unchanged, as do the
++9 GiB live stop and 8 GiB floor. Those limits bound retained file growth; they
++do not establish a measured RSS or swap maximum. Installation and full-compiler
++work retain their separate 24 GiB entry policy. No peer workload is controlled
++to satisfy this fixture's gate.

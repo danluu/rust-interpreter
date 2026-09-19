@@ -1,0 +1,378 @@
+{
+  "build_roles": {
+    "candidate_normal_rlib": {
+      "current_payload_not_rehashed": true,
+      "current_stat_bytes": 3631336,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-bridge-01/libproc_macro.rlib",
+      "saved_result_sha256": "d305e270a253943004c91f3f24a293fe7116333c469f3b8fc766d29ab3b02b25"
+    },
+    "installed_compiler": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/bin/rustc",
+    "installed_toolchain": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin",
+    "installed_version_from_existing_provenance": "1.100.0-nightly (cea272fa3 2026-09-07)",
+    "n_build_difference": "The saved actual N stage1 cargo command used N stage1 core/std/literal crate hashes, -Zembed-metadata=no, distinct metadata/filename and bootstrap flags. The existing T rlib is not an N replacement. Full N integration requires a separately built matching N client/dependency and its source/distribution qualification.",
+    "real_literal_rlib": {
+      "current_payload_not_rehashed": true,
+      "current_stat_bytes": 90248,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-bridge-01/librustc_literal_escaper.rlib"
+    },
+    "reuse_or_rebuild": "Before any invocation, reauthenticate saved artifacts. Alternatively rebuild the same 18-source normal library with the exact passed library-record argv into a fresh directory, with the real normally built literal escaper. Do not use the installed force-private literal dependency that caused the earlier E0658 failure.",
+    "saved_n_build_line_sha256": "03dcc8f05e36ba7b69baf9375940cd333c3b2ec0a07e6f357b2d6c4bb0a7123e"
+  },
+  "conclusion": "Use explicit matching-nightly client rlib and true proc-macro dylib; a replacement sysroot is unnecessary. No concrete source blocker was found. These command templates are unexecuted.",
+  "isolated_sysroot_assessment": {
+    "component_manifest": {
+      "bytes": 4628,
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/manifest-rust-std-aarch64-apple-darwin",
+      "sha256": "dc34ab873acc111785b0d677e1dbbbf66cb387ee28e6d8325863f423b13c61b9"
+    },
+    "cost_note": "These are sizes of manifest-enumerated installed files, not new allocations. Copying a whole component adds substantially more evidence/dependency surface than explicit externs. Existing client rlib plus literal is 3721584 bytes; actual new dylib size, RSS and swap are unmeasured.",
+    "manifest_named_current_bytes": 153433531,
+    "manifest_named_current_files": 59,
+    "necessary": false,
+    "source_supported_alternative": "An isolated T-compatible sysroot can retain the unchanged installed rust-std component closure and replace only the proc_macro pair with a freshly built metadata-bearing rlib plus its own literal dependency; use the original T rustc executable. Exclude the old proc_macro rlib AND rmeta from that overlay, and keep all transitive std/core/panic/unwind metadata/object pairs. Do not graft T artifacts into N."
+  },
+  "linkage_evidence_required": [
+    "Exact compile argv, pinned matching compiler/sysroot source provenance, current candidate and own literal hashes.",
+    "Macro binary dep-info with -Zbinary-dep-depinfo must name the candidate libproc_macro and own literal; reject an installed proc_macro dependency in the candidate arm. The earlier actual bridge dep-info already demonstrates this selection, but new macro dep-info must be checked independently.",
+    "Caller command and binary dep-info must name the exact new macro dylib; retain its hash and actual compiler diagnostics/results. The caller does not need --extern proc_macro.",
+    "For a stronger linker readback, retain the platform linker map if requested at launch; no instrumentation or changes to candidate library source are necessary."
+  ],
+  "minimum_cases": [
+    "One real proc-macro dylib per arm exposing function-like, attribute and derive macros. Use identical reviewed macro source for stock and candidate arms.",
+    "A successful caller expands multiple macros in one compiler process: small, many distinct identifiers/string literals, oversized string then small again, raw/Unicode identifiers and escaped literals. Const/type checks establish exact emitted semantics while actual TokenStream/span RPCs use the unchanged compiler server.",
+    "Separate expected-failure callers for an explicit span diagnostic or emitted compile_error and a deliberate macro panic. Preserve exact diagnostic messages, source spans and return codes, comparing the same cases under stock and candidate. No claims of recovery ordering without an actual observed subsequent invocation.",
+    "Existing bridge fixtures remain the stronger direct stale-symbol/nested/drop checks. A real nested expand_expr or cross-invocation stale fixture may be added only if its source-level ordering and expected diagnostics are separately reviewed."
+  ],
+  "observed_at": 1789819631.934976,
+  "operations": {
+    "compiler_executed": false,
+    "named_artifact_stat_only": true,
+    "provider_modified": false,
+    "recursive_payload_walk": false,
+    "source_and_saved_metadata_read": true,
+    "target_imports": false
+  },
+  "qualification_scope": {
+    "application_performance": false,
+    "full_candidate_compiler_distribution": false,
+    "holdouts_or_benchmarks": false,
+    "n_server_arena_changed": false,
+    "real_compiler_macro_client_integration_if_passed": true
+  },
+  "remaining_before_execution": [
+    "Review O real macro/caller fixture source and exact expected diagnostics.",
+    "Freeze exact commands/source/artifact inputs and existing bounded resource/canonical policy.",
+    "No execution is authorized by this feasibility report."
+  ],
+  "saved_evidence_refs": [
+    {
+      "bytes": 2562,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-bridge-01/library-record.json",
+      "sha256": "c1566d046d38b32080d414b19b673f400966415933751799434b753723657721"
+    },
+    {
+      "bytes": 1584,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-bridge-01/fixture-record.json",
+      "sha256": "ba9cfa33bc40e223fdb178e97b1ee13ae64ce51ebc28bb9cef12bbe982e6eb08"
+    },
+    {
+      "bytes": 507,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-bridge-01/result.json",
+      "sha256": "4e0e677aa3b3c65728e2351017f299c2c8f8cf41aff69c7cdbabe93c6b68b30a"
+    },
+    {
+      "bytes": 6974,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-bridge-01/source.json",
+      "sha256": "16ceacc4a5c86604ed06dc291b5f78a49b34283f607b5e3b56a9590688fe70bc"
+    },
+    {
+      "bytes": 20954,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-bridge-01/bridge-tests.d",
+      "sha256": "08d0b81dc2280c76ba342f75ee90e030a5be4dd1a23721c7e35651e30d5914ac"
+    },
+    {
+      "bytes": 12216,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source.json",
+      "sha256": "7d6bb0527c0b614c96d143008c6657df1ed66cb0dcc41ba632858cfc80fa8652"
+    }
+  ],
+  "selection_and_abi": [
+    {
+      "finding": "The compiler-generated declaration harness adds ordinary extern crate proc_macro and calls its bridge::client::Client::expand1/expand2. An explicit proc_macro extern therefore selects the same candidate for the macro signature and generated harness.",
+      "source": "compiler/rustc_builtin_macros/src/proc_macro_harness.rs:274"
+    },
+    {
+      "finding": "Direct dependencies use exact --extern paths; maybe_load_library_crate returns command-line selection before directory search. Version/target/hash checks remain enabled. Transitive dependencies ignore direct --extern overrides and require discovery of the matching dependency hash, hence the narrow -L dependency directory containing the own literal escaper.",
+      "source": "compiler/rustc_metadata/src/locator.rs:324"
+    },
+    {
+      "finding": "ProcMacro prefers static linkage of Rust dependencies; the candidate client and its real literal dependency can be embedded in the macro dylib.",
+      "source": "compiler/rustc_metadata/src/dependency_format.rs:121"
+    },
+    {
+      "finding": "Loading a proc-macro crate returns an empty Rust dependency-number map. The caller loads the real macro dylib and its declaration symbol; it does not replace its compiler server with the macro client library.",
+      "source": "compiler/rustc_metadata/src/creader.rs:892"
+    },
+    {
+      "finding": "The native loader opens the exact dylib, resolves the stable-crate-id declaration symbol, and reads the Client slice. The private Arena/Interner layout does not cross this boundary.",
+      "source": "compiler/rustc_metadata/src/host_dylib.rs:126"
+    },
+    {
+      "finding": "The bridge explicitly uses C ABI buffers/handles to support separate same-source client and server copies, including different compiler Rust ABIs during bootstrap. Client and wire/server source remain byte-identical to the matching installed nightly; only private arena/symbol source differs.",
+      "source": "library/proc_macro/src/bridge/mod.rs:1"
+    }
+  ],
+  "source_comparison": [
+    {
+      "candidate_changed": false,
+      "candidate_sha256": "f91d22525f86110eb784ba390dd389033b87e8f7841c071a7803a1c63121a990",
+      "original_matches_installed": true,
+      "original_sha256": "f91d22525f86110eb784ba390dd389033b87e8f7841c071a7803a1c63121a990",
+      "relative_path": "Cargo.toml"
+    },
+    {
+      "candidate_changed": true,
+      "candidate_sha256": "a2b05d25db81e5703fa5872e4b7961774a961a3360c0420daf8d2c740e4e5fa2",
+      "original_matches_installed": true,
+      "original_sha256": "ce4f02d336d885145e8bbe5770781ebf11af7ac2488d59c8d930fdab62e9376e",
+      "relative_path": "src/bridge/arena.rs"
+    },
+    {
+      "candidate_changed": false,
+      "candidate_sha256": "858499925d66e8014bf779ded30d67718ce9fed9541442f4a81b799b7f302560",
+      "original_matches_installed": true,
+      "original_sha256": "858499925d66e8014bf779ded30d67718ce9fed9541442f4a81b799b7f302560",
+      "relative_path": "src/bridge/buffer.rs"
+    },
+    {
+      "candidate_changed": false,
+      "candidate_sha256": "fe5d6760d816a6f1f612d85107eed3a88d8929af93cb4309ababcd3e9b4565b2",
+      "original_matches_installed": true,
+      "original_sha256": "fe5d6760d816a6f1f612d85107eed3a88d8929af93cb4309ababcd3e9b4565b2",
+      "relative_path": "src/bridge/client.rs"
+    },
+    {
+      "candidate_changed": false,
+      "candidate_sha256": "03453e29c27d9a3ffafe2455bee14d65815fa6c8df1e9d6cf131aacc2ef624a8",
+      "original_matches_installed": true,
+      "original_sha256": "03453e29c27d9a3ffafe2455bee14d65815fa6c8df1e9d6cf131aacc2ef624a8",
+      "relative_path": "src/bridge/closure.rs"
+    },
+    {
+      "candidate_changed": false,
+      "candidate_sha256": "43c95da90564aa359a25b5a567cb5da351f40092caa260c29d009b7e25c68647",
+      "original_matches_installed": true,
+      "original_sha256": "43c95da90564aa359a25b5a567cb5da351f40092caa260c29d009b7e25c68647",
+      "relative_path": "src/bridge/fxhash.rs"
+    },
+    {
+      "candidate_changed": false,
+      "candidate_sha256": "cd7e0b6c7940f7ae9baad9c463e4bc3a77dd5db29922a2e988dfeef4230d5bde",
+      "original_matches_installed": true,
+      "original_sha256": "cd7e0b6c7940f7ae9baad9c463e4bc3a77dd5db29922a2e988dfeef4230d5bde",
+      "relative_path": "src/bridge/handle.rs"
+    },
+    {
+      "candidate_changed": false,
+      "candidate_sha256": "cdcdf5e2d24471f06b59f2baa7f254c5160bc0acc25a06c535f8cb3872eeb83b",
+      "original_matches_installed": true,
+      "original_sha256": "cdcdf5e2d24471f06b59f2baa7f254c5160bc0acc25a06c535f8cb3872eeb83b",
+      "relative_path": "src/bridge/mod.rs"
+    },
+    {
+      "candidate_changed": false,
+      "candidate_sha256": "56d2ceea35eaae7cf601a8029e5351b24a3ac56c3e3f4f4b2d4fd6d933aed971",
+      "original_matches_installed": true,
+      "original_sha256": "56d2ceea35eaae7cf601a8029e5351b24a3ac56c3e3f4f4b2d4fd6d933aed971",
+      "relative_path": "src/bridge/panic_message.rs"
+    },
+    {
+      "candidate_changed": false,
+      "candidate_sha256": "611a26a3f2080a821a6921c1f0e74e734bf9cb9dd37891c82765f9755a6cf06c",
+      "original_matches_installed": true,
+      "original_sha256": "611a26a3f2080a821a6921c1f0e74e734bf9cb9dd37891c82765f9755a6cf06c",
+      "relative_path": "src/bridge/rpc.rs"
+    },
+    {
+      "candidate_changed": false,
+      "candidate_sha256": "ee921c120b8a72c6e1e0df5ec3d5b0662b5411c49673a7ceecbc37b421c76edd",
+      "original_matches_installed": true,
+      "original_sha256": "ee921c120b8a72c6e1e0df5ec3d5b0662b5411c49673a7ceecbc37b421c76edd",
+      "relative_path": "src/bridge/selfless_reify.rs"
+    },
+    {
+      "candidate_changed": false,
+      "candidate_sha256": "1a6eb7d13e8af5b16e3fa7930e4ff2925bf861ec4b86e06df75595d01e9e8d3a",
+      "original_matches_installed": true,
+      "original_sha256": "1a6eb7d13e8af5b16e3fa7930e4ff2925bf861ec4b86e06df75595d01e9e8d3a",
+      "relative_path": "src/bridge/server.rs"
+    },
+    {
+      "candidate_changed": true,
+      "candidate_sha256": "086c4712892a0377af36274941cce3585cf306290ebbb06158ccf4789bdbe3ba",
+      "original_matches_installed": true,
+      "original_sha256": "75f80e816a8f4ded235d57b50914bc4f1854e8696a8dd160a75e4e0d46ae1869",
+      "relative_path": "src/bridge/symbol.rs"
+    },
+    {
+      "candidate_changed": false,
+      "candidate_sha256": "8c84548915beeea0de620ac65ab93d89d124e19ac02632b080293b0c1c80cb8a",
+      "original_matches_installed": true,
+      "original_sha256": "8c84548915beeea0de620ac65ab93d89d124e19ac02632b080293b0c1c80cb8a",
+      "relative_path": "src/diagnostic.rs"
+    },
+    {
+      "candidate_changed": false,
+      "candidate_sha256": "66c6b2d053be4c6b8a63c508c475173322ea3a70e495018938ba5f93b8662dfd",
+      "original_matches_installed": true,
+      "original_sha256": "66c6b2d053be4c6b8a63c508c475173322ea3a70e495018938ba5f93b8662dfd",
+      "relative_path": "src/escape.rs"
+    },
+    {
+      "candidate_changed": false,
+      "candidate_sha256": "68237ec6a7a9a2d1dd7cd81e41ccb2996414df1891e4d8dba9e4f19a862c1f50",
+      "original_matches_installed": true,
+      "original_sha256": "68237ec6a7a9a2d1dd7cd81e41ccb2996414df1891e4d8dba9e4f19a862c1f50",
+      "relative_path": "src/lib.rs"
+    },
+    {
+      "candidate_changed": false,
+      "candidate_sha256": "87451d78d39b8de71a06744cb20b38cd415c38f621e41c9112b0cf005128d2b0",
+      "original_matches_installed": true,
+      "original_sha256": "87451d78d39b8de71a06744cb20b38cd415c38f621e41c9112b0cf005128d2b0",
+      "relative_path": "src/quote.rs"
+    },
+    {
+      "candidate_changed": false,
+      "candidate_sha256": "8d6dd0acef632336cf4b10319eb1f4a035a035b6bb4b0d3ba57aed11f917e48a",
+      "original_matches_installed": true,
+      "original_sha256": "8d6dd0acef632336cf4b10319eb1f4a035a035b6bb4b0d3ba57aed11f917e48a",
+      "relative_path": "src/to_tokens.rs"
+    }
+  ],
+  "source_refs": [
+    {
+      "bytes": 12891,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_builtin_macros/src/proc_macro_harness.rs",
+      "sha256": "b63a9543260491bed4111f1f31c9b16bea994c269cfdd3895958f21399eddbaa"
+    },
+    {
+      "bytes": 53499,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_metadata/src/locator.rs",
+      "sha256": "d23f7667a3201f7d29b6a6be43bea397d984bd7a38ab431c4ce15a69e58007b4"
+    },
+    {
+      "bytes": 56249,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_metadata/src/creader.rs",
+      "sha256": "3ba58b929070fbd422f210274db47bf4741bf408b7a92192434b5508a5275be1"
+    },
+    {
+      "bytes": 5501,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_metadata/src/host_dylib.rs",
+      "sha256": "78dbde64d126cbd15abf16706bf48bfcaf896954d5bce46467d7e2674937118a"
+    },
+    {
+      "bytes": 21084,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_metadata/src/dependency_format.rs",
+      "sha256": "441339fdee2e6b730cc04233022debb6eda5f79b72b456567d0aa2ea58834f14"
+    },
+    {
+      "bytes": 125274,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/bootstrap/src/core/build_steps/compile.rs",
+      "sha256": "3ac8cc96ce9ad5c432dc1d55d24cacf282406ff522148febec69abca25599c7e"
+    },
+    {
+      "bytes": 12226,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/mod.rs",
+      "sha256": "cdcdf5e2d24471f06b59f2baa7f254c5160bc0acc25a06c535f8cb3872eeb83b"
+    },
+    {
+      "bytes": 8977,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/client.rs",
+      "sha256": "fe5d6760d816a6f1f612d85107eed3a88d8929af93cb4309ababcd3e9b4565b2"
+    },
+    {
+      "bytes": 10509,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/server.rs",
+      "sha256": "1a6eb7d13e8af5b16e3fa7930e4ff2925bf861ec4b86e06df75595d01e9e8d3a"
+    },
+    {
+      "bytes": 598,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/Cargo.toml",
+      "sha256": "f91d22525f86110eb784ba390dd389033b87e8f7841c071a7803a1c63121a990"
+    }
+  ],
+  "status": "source-supported-real-proc-macro-client-feasibility",
+  "unexecuted_argv": {
+    "caller_metadata_only": [
+      "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/bin/rustc",
+      "--sysroot",
+      "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin",
+      "--target",
+      "aarch64-apple-darwin",
+      "--edition=2024",
+      "--crate-type=lib",
+      "--crate-name",
+      "arena04_caller",
+      "<reviewed-caller.rs>",
+      "--extern",
+      "arena04_macros=<fresh-arm>/libarena04_macros.dylib",
+      "-Zbinary-dep-depinfo",
+      "--emit=dep-info,metadata",
+      "-o",
+      "<fresh-arm>/caller.rmeta"
+    ],
+    "candidate_macro": [
+      "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/bin/rustc",
+      "--sysroot",
+      "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin",
+      "--target",
+      "aarch64-apple-darwin",
+      "--edition=2024",
+      "--crate-type=proc-macro",
+      "--crate-name",
+      "arena04_macros",
+      "<reviewed-macro-fixture.rs>",
+      "--extern",
+      "proc_macro=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-bridge-01/libproc_macro.rlib",
+      "-L",
+      "dependency=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-bridge-01",
+      "-C",
+      "panic=unwind",
+      "-C",
+      "opt-level=0",
+      "-C",
+      "debuginfo=0",
+      "-Zbinary-dep-depinfo",
+      "--emit=dep-info,link",
+      "-o",
+      "<fresh-candidate>/libarena04_macros.dylib"
+    ],
+    "installed_stock_macro": [
+      "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/bin/rustc",
+      "--sysroot",
+      "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin",
+      "--target",
+      "aarch64-apple-darwin",
+      "--edition=2024",
+      "--crate-type=proc-macro",
+      "--crate-name",
+      "arena04_macros",
+      "<reviewed-macro-fixture.rs>",
+      "--extern",
+      "proc_macro=/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/libproc_macro-9dac517e5d77c501.rlib",
+      "--extern",
+      "proc_macro=/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/libproc_macro-9dac517e5d77c501.rmeta",
+      "-C",
+      "panic=unwind",
+      "-C",
+      "opt-level=0",
+      "-C",
+      "debuginfo=0",
+      "-Zbinary-dep-depinfo",
+      "--emit=dep-info,link",
+      "-o",
+      "<fresh-stock>/libarena04_macros.dylib"
+    ]
+  }
+}

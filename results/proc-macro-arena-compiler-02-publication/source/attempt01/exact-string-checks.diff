@@ -1,0 +1,33 @@
+--- history-before-exact-string-checks/pass.rs
++++ pass.rs
+@@ -11,15 +11,27 @@
+ #[derive(arena04_macros::ArenaStamp)]
+ struct Stamp;
+ 
++const fn exact(left: &str, right: &str) -> bool {
++    let left = left.as_bytes();
++    let right = right.as_bytes();
++    if left.len() != right.len() { return false; }
++    let mut index = 0;
++    while index < left.len() {
++        if left[index] != right[index] { return false; }
++        index += 1;
++    }
++    true
++}
++
+ const _: () = {
+     let values = [A, B, C, D, NESTED, AGAIN];
+-    let labels = [5, 4, 5, 6, 6, 12];
++    let labels = ["alpha", "beta", "café", "r#type", "nested", "after_nested"];
+     let mut index = 0;
+     while index < values.len() {
+         assert!(values[index].0 == 1337);
+-        assert!(values[index].1.len() == "arena Ω\n\"\\🙂".len());
++        assert!(exact(values[index].1, "arena Ω\n\"\\🙂"));
+         assert!(values[index].2 == 8193);
+-        assert!(values[index].3.len() == labels[index]);
++        assert!(exact(values[index].3, labels[index]));
+         index += 1;
+     }
+     assert!(Stamp::ARENA_STAMP == 8193);
