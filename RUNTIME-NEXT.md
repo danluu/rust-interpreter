@@ -1,32 +1,37 @@
-# Continue the branch-budget reservation prototype
+# Continue the qualified reservation candidate toward its first source-edit screen
 
 Manual indefinite task; goal PAUSED. No subagents or peer process control.
-Root branch experiment/branch-budget-reservation-20260919. Installed runtime and
-actual emitter unchanged: only default-off typed planner from825fe65b is applied.
+Root experiment/branch-budget-reservation-20260919. Actual emitter now has the
+feature-only reservation implementation; feature defaults OFF. Installed adopted
+runtime df4006e0 unchanged. No candidate installation, timing or adoption yet.
 
-ACTIVE: branch-budget-typed-planner-01, supervisor60951, source0896a428. Check
-.work/experiments/branch-budget-typed-planner-01/status.json and logs. Six Rust
-planner controls in debug and release. Freeze crates and qualification sources
-through finished0 plus qualify_planner.py --close. Preserve any failure.
+No active owned command. Profile01 supervisor80761/controller80764 finished0:
+three original fre tests match exact per-PC counts, peak guest memory and entropy;
+all native maps/refund thunks validate. Independent closure33829 failed45s lock
+admission BEFORE checks. Peer83231 installation holds benchmark lock; untouched.
+NEXT: when lock available run branch-budget-native-profile/qualify.py --close;
+do NOT rerun guests. Then native-install/install.py supervised run
+branch-budget-native-install-01, close; qualify new branch-budget-native-screen
+protocol17controls, close; first actual40-command changed-source token screen.
+No guard/adoption before the complete primary passes. Freeze all current crate,
+profile, observer, and qualification sources until profile closes.
 
-Next after typed success: apply the separately preserved native integration
-patch in benchmarks/experiments/branch-budget-native-draft only after checking
-its base hashes. Eight native controls are authored but UNRUN. Separate observer
-branch-budget-native-observer has nine authored UNRUN controls and qualify.py.
-Do not edit historical observer sources. Native/workspace/strict/original suite
-qualification and real changed-source primary/full guards precede adoption.
+Closed: typed6controls/profile; observer9Python; focusednative8controls/profile.
+Workspace01 passed Python446+22skip and Rust622+13ignore bothprofiles, then stopped
+BEFORE VM build on raised diskfloor. Preserveclosedfailure. Workspace02 reused
+that exact3commandprefix and built onlyVM; independentlyclosed. VM SHA887b8b1385
+(fullhash in results/branch-budget-native-workspace-02). No test was repeated.
 
-Public profile compression CLOSED176files,23publicruns,5.19GiB saved with exact
-bytes and creation times. Keep original lock/equality failures; final readback
-allows only positive nonincreasing block allocation, allotheridentity unchanged.
-Isolated failed switch primary cache retirement CLOSED3191paths,2780protected
-hashes,~1.59GiB free delta. Do NOT replay either inventory. Shared build target
-.work/fixed-frame-clear-combined-build-01/target NEVER CLEAN. Recompute build
-floor max(14GiB,8GiB+2*allocated target), latest23.004GiB. Free~24.2GiB prebuild.
-Analysis12GiB/children8GiB, shared benchmark lock45s, two build/test workers.
-Cleaner status read-only; no process/session controls.
+Storage CLOSED:176publicJSONfiles saved5.19GiB (keepbothfailedreadbacks; only
+allocation maydecrease, bytes/metadataexact); isolatedswitchprimary3191compiler
+intermediates removed,2780protectedhashes;22publicdiagnosticJSON saved1.10GiB.
+Neverreplayinventories. Shared .work/fixed-frame-clear-combined-build-01/target
+NEVER CLEAN. Recompute buildfloor max(14GiB,8GiB+2*allocated target); last23.93GiB,
+free~24.53GiB. Analysis12GiB/children8GiB, fre16GiB, parser24GiB,Nushell66.55GiB.
+Shared benchmark lock45s;two Cargo/test workers. Cleaner status read-only.
 
-Suggestions unchanged/untracked SHA4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f.
-Earlier pointer, compact-switch and broader register/cache attempts are parked:
-search full experiment AND results archives before choosing another mechanism.
-See STATE.md and results/branch-budget-reservation-01/assessment.md for evidence.
+Main05a1c998 pushed firststorageclosures preservingpeer4fd6e73c. Publish subsequent
+closed evidence regularly through .work/publication-main with explicit path lists;
+never merge the unadopted runtime branch wholesale. Suggestions unchanged/untracked
+SHA4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f.
+See STATE.md for failure/ownership details; do not repeat parked runtime candidates.

@@ -408,3 +408,21 @@ or timingyet. Registeredwhole-workspace feature-enabledgate, expected622Rust
 passed13ignored/profile,468Pythondiscovered22skipped, retainedfeature-enabledVM.
 Freezeactualsources throughthatclosure. Latestsharedtarget7934932KiB floor23.135GiB,
 free24.20GiB. Nativeproductiondefaultstilloff, installedruntimeunchanged.
+
+Workspace01 source67a5f032 supervisor6724/controller6727 passedPython446+22skip
+andRust622+13ignore eachdebug/release. FourthVMbuildUNSTARTED:free25557729280
+<floor25697673216 aftersharedtargetgrowth. Preservefailure. Firstclosureexec95410
+failedlock45s; receiptinraw. Readmissionexec69849 closedterminal1 withoutnewtests.
+Diagnosticcompression01 sourceef90aac3 supervisor45166/controller45169 passed22
+files10closedpublicruns,1349488640→168046592bytes(1.10GiB); independentclose67676
+exit0. Neverreplay. Workspace02 sourceef90aac3 supervisor59255/controller59258
+reusedexact3passingcommands, builtONLYmissingVM; finished0, close4023 exit0.
+VM887b8b138519f79abff80c9ea61477c7cb1a6f708e79efb14e8e89a05af53849 retained.
+Profile01 sourceef90aac3 supervisor80761/controller80764 finished0 all3original
+freassertions exactperPC/memory/entropy/maps. Counts15849531264/13363262210/
+4291122869;bytes12087912/14664436/2003820;positive-refundthunks5363/6182/1001.
+Independentclose33829 hitpeerlock45s beforechecks, receiptinraw. Awaitunchanged
+closewhenavailable; NEVERrerunguest. Peer83231installation holdslock, untouched.
+No activeownedcommand. Registerednative-install01 afterprofileclosure; newprimary
+branch-budget-native-screen draft17controls, unchanged40commandprotocol/AA gates.
+Actualcandidate NOTinstalled, nottimed, notadopted. Main05a1c998 lastourpublication.
