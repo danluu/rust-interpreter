@@ -39,11 +39,16 @@ A/A wall3.607767%, CPU3.375373%. No gain established; larger histories cancelled
 The closure verifies1,674 evidence files and56 artifacts. Never repeat this
 candidate unchanged. Main retains the adopted VM.
 
-Next: a bounded saved-code census of host-frame metadata loads/stores in the
-adopted native Call/Return paths. Identify exact pairs and sampled instruction
-coverage before considering any production change. No guest/build/timing is
-admitted by this hypothesis. Avoid duplicating parked cached-continuation or
-counter proposals. [Primary decision](results/shared-cold-tail-screen-token-01/ASSESSMENT.md).
+The private host-frame access census is also closed:6 controls,87 frozen inputs,
+zero guest/build commands. Potential pairs cover only9/1,933 and9/1,429 generated
+self samples. Defer this mechanism without a runtime prototype or timing.
+[Decision](results/native-frame-access-census-01/ASSESSMENT.md).
+
+Next examine a typed high-word-read proof for virtual registers. Explicit
+address/length consumers truncate to the target width; require every read role,
+including aliases and unreachable code, to be low-only. Other reads remain
+full-width. This is separate from the insufficient logical-width/zero-storage
+proof and from parked paired spills. Start with a diagnostic census only.
 
 [Build](results/shared-cold-tail-build-01/ASSESSMENT.md),
 [strict/cache](results/shared-cold-tail-qualification-01/ASSESSMENT.md),

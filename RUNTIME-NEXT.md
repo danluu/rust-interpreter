@@ -7,14 +7,18 @@ cancel all larger histories. The code-size reduction and correctness evidence
 remain valid, but do not justify adoption or an unchanged retry.
 [Decision](results/shared-cold-tail-screen-token-01/ASSESSMENT.md).
 
-Next census exact hot host-frame metadata access sequences in the two closed
-adopted-runtime captures. Calls/Returns use private initialized descriptors;
-there may be adjacent fields that can use paired loads/stores without changing
-layout, bounds, guest memory, counters or fault order. Count exact known machine
-patterns and same-process sampled PCs before designing a production change.
-Keep ambiguous PCs separate and reconcile all original sample totals. This is
-not the parked cached-continuation/counter mechanism. Do not infer time savings
-from instruction or sample counts. If coverage is small, defer it.
+The private host-frame pairing census is closed and deferred: its two potential
+memory instructions together cover only9/1,933 and9/1,429 generated samples.
+No runtime prototype or timing follows. [Census](results/native-frame-access-census-01/ASSESSMENT.md).
+
+Next inspect a bounded typed proof that a virtual register's high64bits are never
+read by any operation in its function. Start with explicit low-only address and
+length consumers; treat all other roles conservatively as full-width. Include
+unreachable operations, aliased operand roles and unknown uses. This must not
+assume reused storage contains zero, and cannot change indirect-function-pointer
+validation, full-width assertions or control values. Census actual saved upper
+stores before designing a runtime change. Preserve initialization, VM boundaries,
+error order and all existing budgets. No production omission is admitted yet.
 
 The previous indirect/readonly/successor composition is rejected after its
 parser CPU margin failed1.05. The narrower address/budget/spill/scalar variants
