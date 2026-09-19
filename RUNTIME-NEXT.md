@@ -1,18 +1,18 @@
 # Next runtime work
 
-The first complete template-session primary failed its warm-edit wall gate.
-History saves work relative to a session without history, but added per-request
-costs offset that gain. Keep the adopted runtime and do not retime unchanged.
-[Closed assessment](docs/TEMPLATE-SESSION-PRIMARY-20260918.md).
+Measure the qualified size-tier candidate on the unchanged40-command parser primary.
+It keeps resumable functions above65,536operations interpreted before expensive JIT
+preparation, while reached smaller callees compile independently. Actual parser
+observation showed repeated failed emission of a140,615-op function at the remaining
+arena budget. The threshold is a development heuristic that can regress compilable
+large functions; it needs all project guards after a primary pass.
 
-Next reduce redundant artifact hashing and structural validation, with an
-immutable validated Program shared by current workers. Match ordinary report
-write/flush semantics without weakening reservation, completed-byte hashes,
-unknown-outcome handling or no-retry rules. Qualify changed paths and actual saved
-parser suites before another fully charged, changed-source primary. The24GiB
-admission and original A/A/CPU gates remain unchanged. No larger comparisons
-unless that primary passes.
+Debug/release652tests/profile passed;16saved actual parser suites matched1,824
+original invocations and17,150independently verified template hits. Current request
+validation, fresh guest state, strict type/borrow checking and lifecycle accounting
+remain. The compiler/exporter/wrapper are identical to the adopted baseline.
 
-Compiler/Cargo/frontend and application-admission work belongs to other sessions.
-Root owns runtime work. Manual optimization continues with the saved goal paused.
-[Previous candidate history](docs/history/RUNTIME-NEXT-20260918-before-session-request-costs.md).
+The two previous template-session primaries failed wall gates. Do not rerun those
+unchanged candidates or treat diagnostic intervals as savings. Keep24GiB initial
+admission and the original A/A and CPU gates. No adoption before complete comparison.
+Compiler/Cargo/application admission belongs to other sessions. Saved goal paused.
