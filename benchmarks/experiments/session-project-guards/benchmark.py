@@ -51,7 +51,7 @@ def main():
         protocol_folder=ROOT/'results'/PROTOCOL;closure=read(protocol_folder/'closure.json')
         assert closure['status']=='closed' and closure['all_hashes_verified']
         protocol=read(protocol_folder/'summary.json');assert sha(protocol_folder/'summary.json')==closure['summary_sha256']
-        assert protocol['status']=='passed' and protocol['tests']==18
+        assert protocol['status']=='passed' and protocol['tests']==22
         protocol_plan=ROOT/protocol['raw']/'plan.json';assert sha(protocol_plan)==protocol['plan_sha256']
         for name,h in read(protocol_plan)['frozen'].items():assert sha(ROOT/name)==h,name;paths.append(ROOT/name)
         paths += [protocol_folder/name for name in ['closure.json','summary.json','terminal.json']]+[protocol_plan]
