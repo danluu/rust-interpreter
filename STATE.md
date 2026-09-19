@@ -53,18 +53,29 @@ Census sourceb2027db7 and results/compact-switch-census-01 are final; no rerun.
 New singlezero emitter uses OR ofboth halves. Other allcase<=4095 tables guard
 high once then cmp immediate; generalcasesretainoldpath, firstmatch/duplicates.
 Seven focused controls debug/release pass, independently CLOSED89258.
-Full workspace RUNNING compact-native-switch-workspace-01, supervisor92487,
-controller92532, sourcef04edef9, exact sharedtarget/twoworkers. Python468found,
-446pass22skips; debugwasrunninglastcheck. Do not modify frozenruntime/scripts/
-tests while it runs. Qualification expected727Rust/profile19ignored; diagnostic
-41,featureoff11,ordinarymodel35,52servers108clients. Rawstoresownedidentities.
-Currentroot4724f460 pushed. Prepared separate folders compact-native-switch-
-replay(parser/fre), -install, -screen; none launched yet. Replaysmustfollowfull
-closure (1824parser/192fre originaltests,verifyallhits), then immutableinstall
-withadoptedcompilerbytes and new40command changed-source screen. Screenprotocol
-needsits16controls/closure before timing. All namesunique; no parenttimingretry.
-Main04fc8995 published closed nativecaptures+samplerhelpers, preservespeer
-cecfbba1; no experimental runtime adopted. Currentfreeabout24.7GiB; memory49%.
+Fullworkspace727Rust/profile19ignored;446Pythonpass22skips;41diagnostic,
+11featureoff,35ordinarymodel,52servers108clients CLOSED60638,sourcef04edef9.
+Parser1824originaltests/19206verifiedhits CLOSED68387; fre192/14575 CLOSED92751.
+Installation CLOSED98475; candidatecc1ebf5ef2e1e652a26ee57a1205a916bd989faa617f94d7fcdceb9b53f064b7,
+VM3d3512bdb198a03c637f670cfb6770ed51ceb3f2399cf44c56c776dd94c1fab0,
+server67a858080654453060c3b7c886a52bb71cd66b7f160201914f6dc2f5ee2a06ec
+retained .work/compact-native-switch-workspace-01/release-rust-interp-template-session.
+Original compiler/exporter/wrapper unchanged. No new timing/adoption yet.
+
+Protocol01 supervisor2288 timed out waitingfor sharedlock, no stage/test/guest/
+compiler/timing started. Bounded auditor compact-switch-admission/preserve.py
+closed and preserved terminal+source. Root98c34570 changes only next protocol
+name to compact-native-switch-screen-protocol-02 (qualify.py+benchmark.py).
+Protocol02 NOT LAUNCHED. Waitfor sharedlock availability, then16controls/close,
+then benchmark.py --case token --run-id compact-native-switch-screen-token-01.
+Current lock last held by peerPID99293 prepare_once.py; DO NOT control it.
+Use readonly lsof/boundedwaiting; no new admission loop while it remainsbusy.
+No own commands active at this checkpoint. All sources/runtime qualified.
+Current rootbranch experiment/composed-native-costs-20260919; latestroot98c34570,
+lastpushed5ba6a5b1. Main04fc8995 includes sampler/captures and peercecfbba1.
+Docs COMPACT-NATIVE-SWITCH-20260919.md prepared; public proof publicationpending.
+Freeabout24.7GiB; recheck floors. No fullguard controller should start before
+new40commandgate passes. Keep parked parent andall failures/captureartifacts.
 
 ## Qualified candidate identities
 

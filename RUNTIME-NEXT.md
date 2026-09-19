@@ -28,11 +28,13 @@ Manual work indefinitely; no goal tools or subagents. Two workers/shared lock,
 dynamic disk admission. Lastfree23.5GiB. Current decisions and exact identities
 are in STATE.md. Publish qualified proofs regularly; experimental runtime stays off main.
 
-Compact-switch candidate9bf97808 now implemented from closed current census.
-Seven focused controls/profile CLOSED89258. Full workspace running supervisor
-92487/controller92532,sourcef04edef9; do not edit frozen crates/scripts/tests.
-Expected727Rust/profile; Python446pass22skip done. Next close, verify original
-parser/fre histories with prepared compact-native-switch-replay controllers,
-install exact qualified binaries, qualify new16-control screen and execute one
-fresh40command changed-source primary. Main04fc8995 carries sampler/evidence,
-experimental runtime only on root branch (pushed4724f460).
+Compact-switch candidate9bf97808 now fullyqualified:727Rust/profile19ignored,
+446Pythonpass22skip;52sessions108clients. Parser1824tests/19206verifiedhits,
+fre192/14575; all independentlyclosed. Installedcc1ebf5e (VM3d3512bd/server67a85808),
+unchangedadoptedcompiler. See STATE.md and COMPACT-NATIVE-SWITCH-20260919.md.
+Protocol01 emptylockadmission timeout is closed; no tests/timings began.
+Next waitfor sharedlock availability then launch compact-native-switch-screen-
+protocol-02 via qualify.py, closewith --close, then one40command primary
+benchmark.py --case token --run-id compact-native-switch-screen-token-01.
+No ownactivecommands. Peer99293 heldlock lastcheck; preserveitswork.
+Currentroot98c34570,pushed5ba6a5b1,main04fc8995; proofpublicationpending.
