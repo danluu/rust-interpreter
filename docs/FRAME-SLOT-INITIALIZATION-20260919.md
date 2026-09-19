@@ -19,8 +19,8 @@ Calls, separately from the two original partial normal-entropy sample windows.
 | Exhaustive |1,231|62|1|1|
 
 Ignoring caller-argument restrictions does not increase either sample ceiling.
-The two newly eligible functions add only2,687 and11 logical Calls respectively
-across the test profiles and no frame-clear samples. These are diagnostic bounds,
+Together the two newly eligible functions add only2,687 logical Calls in the
+block profile and11 in the exhaustive profile and no frame-clear samples. These are diagnostic bounds,
 not latency measurements. The earlier historical16/110 and20/100 counts came
 from an older runtime and must not be presented as current coverage.
 [Exact coverage](../results/frame-initialization-slot-coverage-01/summary.json),
