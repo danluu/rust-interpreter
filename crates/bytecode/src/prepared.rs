@@ -1,6 +1,23 @@
 //! Reuse immutable code and analyses, with fresh guest state per invocation.
 use crate::{Execution, ExecutionMetadata, Limits, Program, jit};
 
+/// Experimental bounded immutable templates for owners of the same Program.
+/// Native arenas, admission budgets and guest state remain per owner.
+pub struct PreparedTemplates<'program> {
+    program: &'program Program,
+    store: std::sync::Arc<jit::emission_templates::Store<'program>>,
+}
+impl<'program> PreparedTemplates<'program> {
+    pub fn new(program:&'program Program,capacity:usize)->Result<Self,String> {
+        if program.version & crate::PARTIAL_VALIDATION != 0 {return Err("shared templates require fully checked bytecode".into());}
+        crate::validate(program)?;
+        let store=jit::emission_templates::Store::new(program,capacity).ok_or("shared template storage budget is unsupported or too small")?;
+        Ok(Self {program,store:std::sync::Arc::new(store)})
+    }
+    /// Retained capacity accounting; allocator RSS and temporary staging differ.
+    pub fn statistics(&self)->Option<jit::emission_templates::TemplateStorageStats> {self.store.statistics()}
+}
+
 /// A validated immutable program and its lazily compiled custom JIT code.
 ///
 /// This owner stays on its creating thread. Every invocation gets fresh data,
@@ -34,6 +51,19 @@ impl<'program> PreparedJit<'program> {
             scalar_calls: limits.jit_scalar_calls,
             preparation_nanos: started.elapsed().as_nanos() })
     }
+
+    /// Opt-in emission sharing. The exact immutable Program object must match.
+    pub fn new_with_templates(program:&'program Program,limits:&Limits,templates:&PreparedTemplates<'program>)->Result<Self,String> {
+        let started=std::time::Instant::now();
+        if !std::ptr::eq(program,templates.program) {return Err("shared template Program identity differs".into());}
+        let mut owner=Self::new(program,limits)?;
+        owner.jit.as_mut().unwrap().templates=Some(templates.store.clone());
+        owner.preparation_nanos=started.elapsed().as_nanos();Ok(owner)
+    }
+
+    /// Cumulative successful restorations, misses and restored native bytes.
+    /// These counters are not estimates of time saved.
+    pub fn template_statistics(&self)->jit::emission_templates::TemplateStats {self.jit.as_ref().unwrap().template_stats}
 
     fn check_mode(limits: &Limits) -> Result<(), String> {
         if !limits.jit_resumable_calls || limits.jit_native_calls || limits.jit_native_call_stubs {

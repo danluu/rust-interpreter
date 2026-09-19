@@ -67,3 +67,16 @@ after success and failure, a full template store and zero native arena capacity.
 Also reject partial-validation Programs before template capture/storage. This
 stage publishes and runs small native fixtures; it runs no original project
 benchmark and still introduces no production runtime/cache option.
+
+Stage3 is closed after17controls/profile. Stage4 connects the same staging path
+to an explicit --jit-shared-templates prepared-suite option, default off, and a
+public PreparedTemplates/PreparedJit::new_with_templates API. One effective suite
+worker takes ordinary preparation. Per-owner deltas and retained-store totals
+are reported without calling hits/bytes saved time. Scalar preparation remains
+before lookup; normal finish_preparation alone publishes. Metadata recording is
+disabled for unshared production owners. Two new controls exercise actual lazy
+runtime/API hits, exact Program identity, repeated entries, and concurrent native
+owners. Run19controls/profile plus a non-test release VM build, freezing and
+retaining the executable separately. No original project guest or timing is
+admitted in this stage. Full workspace, launcher/protocol, strict rejection and
+original workload sharing coverage remain required before benchmark admission.

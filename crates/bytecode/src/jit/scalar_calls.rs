@@ -27,7 +27,6 @@ impl Jit<'_> {
             entries:vec![None;self.program.functions.len()],proof_work:proof::MAX_GLOBAL_WORK,scalar_work:128_000_000});
     }
     pub(super) fn scalar_entry(&self,id:usize)->Option<Entry> {self.scalar.as_ref()?.entries[id]}
-    #[cfg(test)]
     pub(super) fn template_scalar_input(&self,id:usize)->Option<super::emission_templates::ScalarInput> {
         let e=self.scalar_entry(id)?;
         Some(super::emission_templates::ScalarInput {bytes:e.bytes,maximum_steps:e.maximum_steps,
@@ -146,14 +145,12 @@ impl Assembler<'_> {
         // Private leaf inputs and Output live at fixed caller-SP offsets;
         // x21 is the prechecked logical base. x0–x2, x4–x8 and x19–x29 stay
         // live. Only the allocator's x3 and the link register need restoring.
-        #[cfg(test)]
         let template_target_word=self.words.len();
         self.imm(16,entry.target as u64);
-        #[cfg(test)]
-        self.template_relocations.push(super::emission_templates::Relocation {
+        if self.record_templates {self.template_relocations.push(super::emission_templates::Relocation {
             word:template_target_word,words:self.words.len()-template_target_word,
             value:entry.target as u64,kind:super::emission_templates::Kind::Scalar(id),
-        });
+        });}
         self.emit(0xd63f0200); // blr x16: one nonrecursive native leaf
         self.cmp(9,31);self.decline(Cond::Ne,&mut private);
 

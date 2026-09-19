@@ -1,4 +1,4 @@
-//! Test-only staging prototype. No cache is connected to guest execution.
+//! Bounded immutable emission templates scoped to one checked Program.
 use super::*;
 use std::sync::{Arc,Mutex};
 
@@ -21,6 +21,7 @@ impl ScalarInput {
 struct Options {
     heap:bool,persistent:bool,scalar:bool,
     // Test-only emitter switches must never masquerade as default emission.
+    #[cfg(test)]
     test_flags:[bool;7],
 }
 impl Options {
@@ -28,6 +29,7 @@ impl Options {
         if jit.program.version & crate::PARTIAL_VALIDATION != 0 || jit.profiled
             || jit.native_call_stubs || jit.trees.is_some() || jit.resumable.is_none() {return None;}
         Some(Self {heap:jit.uses_heap,persistent:jit.persistent_registers,scalar:jit.scalar.is_some(),
+            #[cfg(test)]
             test_flags:[jit.disable_call_slot_hints,jit.observe_guarded_local_retention,jit.observe_static_local_facts,
                 jit.observe_scalar_copy,jit.observe_scratch_locals,jit.scratch_values_enabled,jit.observe_memory_parts]})
     }
@@ -38,7 +40,7 @@ fn immediate(register:u32,value:u64)->Vec<u32> {
 }
 fn register(kind:Kind)->u32 {match kind {Kind::Assertion(_)=>0,Kind::Scalar(_)=>16}}
 
-struct Template<'p> {
+pub(super) struct Template<'p> {
     program:&'p Program,function:usize,options:Options,
     words:Vec<u32>,entries:Vec<Option<Block>>,resumes:Vec<Option<usize>>,
     relocations:Vec<Relocation>,assertion_pcs:Vec<usize>,scalar_inputs:Vec<(usize,Option<ScalarInput>)>,
@@ -56,7 +58,7 @@ impl<'p> Template<'p> {
             self.scalar_inputs.capacity().checked_mul(std::mem::size_of::<(usize,Option<ScalarInput>)>())?];
         buffers.into_iter().try_fold(std::mem::size_of::<Self>()+7*64,usize::checked_add)
     }
-    fn capture(jit:&Jit<'p>,id:usize,staged:&CompiledFunction<'_>)->Option<Self> {
+    pub(super) fn capture(jit:&Jit<'p>,id:usize,staged:&CompiledFunction<'_>)->Option<Self> {
         let options=Options::of(jit)?;let f=jit.program.functions.get(id)?;
         if staged.words.is_empty() || staged.words.len()>MAX_CODE_BYTES/4
             || staged.entries.len()!=f.code.len() || staged.resumes.len()!=f.code.len()+1
@@ -97,7 +99,7 @@ impl<'p> Template<'p> {
             operations:staged.operations,register_pairs:staged.register_pairs,liveness_declined:staged.liveness_declined})
     }
 
-    fn restore(&self,jit:&Jit<'p>,id:usize)->Option<CompiledFunction<'p>> {
+    pub(super) fn restore(&self,jit:&Jit<'p>,id:usize)->Option<CompiledFunction<'p>> {
         if !std::ptr::eq(self.program,jit.program) || id!=self.function || Options::of(jit)?!=self.options {return None;}
         let f=jit.program.functions.get(id)?;
         if self.words.len()>jit.capacity.checked_sub(jit.bytes)?/4 || !jit.resumable.as_ref()?.fits(f.code.len()) {return None;}
@@ -126,17 +128,26 @@ impl<'p> Template<'p> {
         Some(CompiledFunction {words,entries:self.entries.clone(),resumes:self.resumes.clone(),assertions,
             operations:self.operations,register_pairs:self.register_pairs,liveness_declined:self.liveness_declined,
             template_relocations:relocations,template_assertion_pcs:self.assertion_pcs.clone(),
-            // These diagnostics are irrelevant to this staging-only prototype.
-            local_forwarding:vec![],local_fact_events:vec![],scratch_hits:vec![],scratch_copy_hits:vec![],
-            flush_spans:vec![],memory_spans:vec![],retained_local_writes:vec![]})
+            // Test-only staging diagnostics are not a guest execution input.
+            #[cfg(test)] local_forwarding:vec![],
+            #[cfg(test)] local_fact_events:vec![],
+            #[cfg(test)] scratch_hits:vec![],
+            #[cfg(test)] scratch_copy_hits:vec![],
+            #[cfg(test)] flush_spans:vec![],
+            #[cfg(test)] memory_spans:vec![],
+            #[cfg(test)] retained_local_writes:vec![]})
     }
 }
 
-const MAX_TEMPLATE_STORAGE:usize=64*1024*1024;
+pub(crate) const MAX_TEMPLATE_STORAGE:usize=64*1024*1024;
+#[derive(Clone,Copy,Debug,Default,serde::Serialize)]
+pub struct TemplateStats {pub hits:usize,pub misses:usize,pub restored_code_bytes:usize}
+#[derive(Clone,Copy,Debug,serde::Serialize)]
+pub struct TemplateStorageStats {pub functions:usize,pub charged_bytes:usize,pub limit_bytes:usize}
 struct Contents<'p> {slots:Vec<Option<Arc<Template<'p>>>>,charged:usize}
-struct Store<'p> {program:&'p Program,limit:usize,contents:Mutex<Contents<'p>>}
+pub(crate) struct Store<'p> {pub(super) program:&'p Program,limit:usize,contents:Mutex<Contents<'p>>}
 impl<'p> Store<'p> {
-    fn new(program:&'p Program,limit:usize)->Option<Self> {
+    pub(crate) fn new(program:&'p Program,limit:usize)->Option<Self> {
         if program.version & crate::PARTIAL_VALIDATION != 0 || limit>MAX_TEMPLATE_STORAGE {return None;}
         let base=std::mem::size_of::<Self>()+64;
         if program.functions.len().checked_mul(std::mem::size_of::<Option<Arc<Template<'p>>>>())?.checked_add(base)?>limit {return None;}
@@ -146,11 +157,18 @@ impl<'p> Store<'p> {
         if charged>limit {return None;}
         Some(Self {program,limit,contents:Mutex::new(Contents{slots,charged})})
     }
-    fn snapshot(&self,program:&Program,id:usize)->Option<Arc<Template<'p>>> {
+    pub(super) fn snapshot(&self,program:&Program,id:usize)->Option<Arc<Template<'p>>> {
         if !std::ptr::eq(self.program,program) {return None;}
         self.contents.lock().ok()?.slots.get(id)?.clone()
     }
-    fn retain(&self,template:Template<'p>)->bool {
+    pub(super) fn may_retain(&self,id:usize)->bool {
+        self.contents.lock().ok().is_some_and(|c|c.charged<self.limit && c.slots.get(id).is_some_and(Option::is_none))
+    }
+    pub(crate) fn statistics(&self)->Option<TemplateStorageStats> {
+        let c=self.contents.lock().ok()?;
+        Some(TemplateStorageStats {functions:c.slots.iter().filter(|s|s.is_some()).count(),charged_bytes:c.charged,limit_bytes:self.limit})
+    }
+    pub(super) fn retain(&self,template:Template<'p>)->bool {
         if !std::ptr::eq(self.program,template.program) {return false;}
         let Some(charge)=template.retained_charge() else {return false;};
         let Ok(mut contents)=self.contents.lock() else {return false;};
@@ -161,6 +179,10 @@ impl<'p> Store<'p> {
         contents.slots[id]=Some(Arc::new(template));contents.charged=total;true
     }
 }
+
+#[cfg(test)]
+mod tests {
+use super::*;
 
 fn fixture()->Program {
     use crate::Slot;
@@ -441,6 +463,42 @@ mod execution_controls {
         let a=no_code.run(Limits{jit_code_bytes:0,..limits()}).unwrap();let b=ordinary.run(limits()).unwrap();
         assert_eq!((a.value,a.instructions,a.peak_memory),(b.value,b.instructions,b.peak_memory));assert_eq!(a.jit_bytes,0);
     }
+
+    #[test]
+    fn template_public_prepared_api_uses_the_lazy_runtime_path_and_retains_checked_scope() {
+        let p=fixture();let templates=crate::PreparedTemplates::new(&p,MAX_TEMPLATE_STORAGE).unwrap();
+        let mut first=crate::PreparedJit::new_with_templates(&p,&limits(),&templates).unwrap();
+        let mut second=crate::PreparedJit::new_with_templates(&p,&limits(),&templates).unwrap();
+        let mut ordinary=crate::PreparedJit::new(&p,&limits()).unwrap();
+        assert!(outcome(first.execute(&[],limits()),ordinary.execute(&[],limits())));
+        assert!(first.template_statistics().misses>0);assert_eq!(first.template_statistics().hits,0);
+        assert!(outcome(second.execute(&[],limits()),ordinary.execute(&[],limits())));
+        assert!(second.template_statistics().hits>0 && second.template_statistics().restored_code_bytes>0);
+        assert_eq!(ordinary.template_statistics().hits,0);let before=second.template_statistics();
+        assert!(outcome(second.execute(&[],limits()),ordinary.execute(&[],limits())));
+        assert_eq!(second.template_statistics().hits,before.hits);
+        let storage=templates.statistics().unwrap();assert!(storage.functions>0 && storage.charged_bytes<=storage.limit_bytes);
+        let clone=p.clone();assert!(crate::PreparedJit::new_with_templates(&clone,&limits(),&templates).is_err());
+        let mut partial=p.clone();partial.version|=crate::PARTIAL_VALIDATION;
+        assert!(crate::PreparedTemplates::new(&partial,MAX_TEMPLATE_STORAGE).is_err());
+    }
+
+    #[test]
+    fn template_public_prepared_workers_execute_concurrently_with_independent_state() {
+        let p=fixture();let templates=crate::PreparedTemplates::new(&p,MAX_TEMPLATE_STORAGE).unwrap();
+        let mut warm=crate::PreparedJit::new_with_templates(&p,&limits(),&templates).unwrap();warm.execute(&[],limits()).unwrap();
+        std::thread::scope(|scope| {
+            let mut handles=vec![];
+            for _ in 0..2 {let (p,templates)=(&p,&templates);handles.push(scope.spawn(move||{
+                let mut owner=crate::PreparedJit::new_with_templates(p,&limits(),templates).unwrap();
+                let mut ordinary=crate::PreparedJit::new(p,&limits()).unwrap();
+                for instructions in [0,3,8,12,1000] {let budget=Limits{instructions,..limits()};
+                    outcome(owner.execute(&[],budget.clone()),ordinary.execute(&[],budget));}
+                assert!(owner.template_statistics().hits>0);
+            }));}
+            for handle in handles {handle.join().unwrap();}
+        });
+    }
 }
 
 #[test]
@@ -448,4 +506,5 @@ fn template_partial_validation_scope_declines_before_capture_or_storage() {
     let mut p=fixture();p.version|=crate::PARTIAL_VALIDATION;
     assert!(Store::new(&p,MAX_TEMPLATE_STORAGE).is_none());
     let j=Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();assert!(Template::capture(&j,0,&stage(&j,0)).is_none());
+}
 }

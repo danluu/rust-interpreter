@@ -128,6 +128,14 @@ JSON; do not call code bytes or hits time saved. Include constructor/population/
 locking/copying in real command timing. Production metadata recording should be
 disabled when sharing is off (cfg(test) may always record for controls). Move
 test helpers behind a tests module when enabling the core template module.
+Stage4 implementation is now prepared along those lines: production core module,
+public opaque store/API, lazy prepare_function integration, default-off explicit
+CLI/launcher flag, prepared-suite sharing and per-invocation deltas/storage totals.
+One effective worker uses no store. Added two public API/concurrent native tests;
+focused04 expects19controls/profile and a non-test release VM build retained in
+its raw directory. No original workload/benchmark has run. Check/close this
+stage before correction; then full workspace+Python, strict/CLI and actual
+sharing coverage must precede timing.
 
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally

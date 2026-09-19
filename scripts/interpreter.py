@@ -247,6 +247,7 @@ def _main(resources):
     parser.add_argument('--isolated-batch',choices=['fresh','prepared'],help='experimental separate guest state per selected test; runtime limits apply to each test')
     parser.add_argument('--suite-report',type=Path,help='new JSON result path for --isolated-batch')
     parser.add_argument('--suite-workers',type=int,help='isolated test workers, each owning its JIT (1..64; default: 1)')
+    parser.add_argument('--jit-shared-templates',action='store_true',help='experimental bounded emission sharing across prepared workers; one effective worker keeps ordinary preparation')
     parser.add_argument('--jit-native-call-stubs',action='store_true',help='experimental Calls linked with ordinary regions; requires --jit-native-calls')
     parser.add_argument('--jit-scalar-calls',action='store_true',help='experimental custom scalar leaves; requires resumable JIT and full checking')
     parser.add_argument('--jit-resumable-calls',action='store_true',help='experimental native Calls over guest frames; requires JIT, excludes tree/stub calls')
@@ -340,6 +341,8 @@ def _main(resources):
         parser.error('--isolated-batch and --suite-report must be supplied together')
     if args.suite_workers is not None and (args.isolated_batch is None or not 1<=args.suite_workers<=64):
         parser.error('--suite-workers requires an isolated batch and a count in 1..64')
+    if args.jit_shared_templates and args.isolated_batch!='prepared':
+        parser.error('--jit-shared-templates requires a prepared isolated batch')
     if args.isolated_batch is not None:
         if auditing or not args.test_body or (not filtered and len(args.entry or []) < 2) or args.arguments:
             parser.error('--isolated-batch requires --test-filter or at least two --entry test bodies without audit or entry arguments')
@@ -415,6 +418,7 @@ def _main(resources):
     timings['tools_seconds']=time.perf_counter()-stage
     if stats:timings.update(tool_key=key,engine=args.engine,jit_persistent_registers=args.jit_persistent_registers,jit_resumable_calls=args.jit_resumable_calls,jit_scalar_calls=args.jit_scalar_calls,jit_indirect_calls=args.jit_indirect_calls,jit_native_calls=args.jit_native_calls,jit_native_call_stubs=args.jit_native_call_stubs,inline_leaves=args.inline_leaves,trap_unsupported_calls=args.trap_unsupported_calls,run_try_callbacks=args.run_try_callbacks)
     if stats:timings['function_cache']=args.function_cache
+    if stats and args.jit_shared_templates:timings['jit_shared_templates']=True
     if stats:timings['borrowck_cache']=args.borrowck_cache
     if stats:timings['host_proc_macro_opt']=args.host_proc_macro_opt
     if stats and args.compiler_argv_record_dir is not None:
@@ -640,6 +644,7 @@ def _main(resources):
     values=args.arguments
     if values and values[0]=='--':values=values[1:]
     vm_command=[str(tools/'rust-interp-vm'),'--engine',args.engine]
+    if args.jit_shared_templates:vm_command.append('--jit-shared-templates')
     if args.jit_resumable_calls:vm_command.append('--jit-resumable-calls')
     if args.jit_scalar_calls:vm_command.append('--jit-scalar-calls')
     if args.jit_indirect_calls:vm_command.append('--jit-indirect-calls')

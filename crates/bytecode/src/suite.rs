@@ -1,5 +1,5 @@
 //! Explicit isolated selected-entry execution, not a replacement for libtest.
-use rust_interp_bytecode::{EntryCatalog, Limits, Op, PreparedJit, Program, PARTIAL_VALIDATION};
+use rust_interp_bytecode::{EntryCatalog, Limits, Op, PreparedJit, PreparedTemplates, Program, PARTIAL_VALIDATION};
 use serde_json::{Value, json};
 use std::{collections::HashSet, io::Write, time::Instant, sync::atomic::{AtomicUsize, Ordering}};
 
@@ -39,17 +39,21 @@ fn selected_entries(program: &Program) -> Result<Vec<(&str, usize)>, String> {
     Ok(entries)
 }
 
-fn worker(program: &Program, mode: Mode, limits: &Limits, entries: &[(&str, usize)],
-          next: &AtomicUsize, worker: usize) -> Result<(u128, Vec<(usize, Value)>), String> {
+fn worker<'p>(program: &'p Program, mode: Mode, limits: &Limits, entries: &[(&str, usize)],
+          next: &AtomicUsize, worker: usize, templates: Option<&PreparedTemplates<'p>>) -> Result<(u128, Vec<(usize, Value)>), String> {
     // The JIT is born, used and dropped on this worker. Only immutable Program
-    // data and completed JSON outcomes cross thread boundaries.
-    let mut shared = match mode { Mode::Fresh => None, Mode::Prepared => Some(PreparedJit::new(program, limits)?) };
+    // data, immutable templates and completed outcomes cross thread boundaries.
+    let mut shared = match mode { Mode::Fresh => None, Mode::Prepared => Some(match templates {
+        Some(templates)=>PreparedJit::new_with_templates(program,limits,templates)?,
+        None=>PreparedJit::new(program, limits)?,
+    }) };
     let mut preparation_nanos = shared.as_ref().map_or(0, PreparedJit::preparation_nanos);
     let mut tests = vec![];
     loop {
         let index = next.fetch_add(1, Ordering::Relaxed);
         let Some(&(name, entry)) = entries.get(index) else { break; };
         let test_started = Instant::now();
+        let template_before=templates.and_then(|_|shared.as_ref()).map(PreparedJit::template_statistics);
         let result = if let Some(jit) = &mut shared {
             jit.execute_entry(entry, &[], limits.clone())
         } else {
@@ -69,15 +73,22 @@ fn worker(program: &Program, mode: Mode, limits: &Limits, entries: &[(&str, usiz
             }
         };
         outcome["worker"] = json!(worker);
+        if let Some(before)=template_before {
+            let after=shared.as_ref().unwrap().template_statistics();
+            outcome["shared_templates"]=json!({"hits":after.hits-before.hits,"misses":after.misses-before.misses,
+                "restored_code_bytes":after.restored_code_bytes-before.restored_code_bytes,
+                "scope":"this invocation's preparation, including failed guests; bytes are not time saved"});
+        }
         tests.push((index, outcome));
     }
     Ok((preparation_nanos, tests))
 }
 
 pub fn run(program: &Program, mode: Mode, limits: &Limits, path: &str,
-           catalog: Option<&EntryCatalog>, bytes: &[u8], requested_workers: usize) -> Result<(), Box<dyn std::error::Error>> {
+           catalog: Option<&EntryCatalog>, bytes: &[u8], requested_workers: usize, share_templates:bool) -> Result<(), Box<dyn std::error::Error>> {
     let started = Instant::now();
     if !(1..=64).contains(&requested_workers) { return Err("suite workers must be in 1..64".into()); }
+    if share_templates && !matches!(mode,Mode::Prepared) {return Err("shared templates require prepared suites".into());}
     let entries = match catalog {
         Some(catalog) => catalog.validated_entries(program, bytes)?,
         None => selected_entries(program)?,
@@ -87,17 +98,21 @@ pub fn run(program: &Program, mode: Mode, limits: &Limits, path: &str,
     // result merely because the same command was invoked a second time.
     let file = std::fs::OpenOptions::new().write(true).create_new(true).open(path)?;
     let workers = requested_workers.min(entries.len());
+    let template_started=share_templates.then(Instant::now);
+    let templates=if share_templates && workers>1 {Some(PreparedTemplates::new(program,64*1024*1024)?)} else {None};
+    let template_preparation_ns=template_started.map_or(0,|s|s.elapsed().as_nanos());
     let next = AtomicUsize::new(0);
     let results = if workers == 1 {
-        vec![worker(program, mode, limits, &entries, &next, 0)?]
+        vec![worker(program, mode, limits, &entries, &next, 0, templates.as_ref())?]
     } else {
         std::thread::scope(|scope| -> Result<_, String> {
             let mut handles = vec![];
             for id in 0..workers {
                 let entries = &entries;
                 let next = &next;
+                let templates=templates.as_ref();
                 handles.push(std::thread::Builder::new().name(format!("rust-interp-suite-{id}"))
-                    .spawn_scoped(scope, move || worker(program, mode, limits, entries, next, id))
+                    .spawn_scoped(scope, move || worker(program, mode, limits, entries, next, id, templates))
                     .map_err(|error| format!("cannot start suite worker: {error}"))?);
             }
             // Scope completion also joins all remaining workers if a startup
@@ -112,7 +127,7 @@ pub fn run(program: &Program, mode: Mode, limits: &Limits, path: &str,
     ordered.sort_unstable_by_key(|(index, _)| *index);
     let tests: Vec<Value> = ordered.into_iter().map(|(_, outcome)| outcome).collect();
     let failures = tests.iter().filter(|test| test["status"] == "failed").count();
-    let report = json!({"schema_version":1,"status":if failures == 0 {"passed"} else {"failed"},
+    let mut report = json!({"schema_version":1,"status":if failures == 0 {"passed"} else {"failed"},
         "mode":match mode {Mode::Fresh=>"fresh",Mode::Prepared=>"prepared"},
         "requested_workers":requested_workers,"workers":workers,
         "entry_source":if catalog.is_some() {"artifact-bound catalog"} else {"legacy batch descriptor"},
@@ -125,6 +140,11 @@ pub fn run(program: &Program, mode: Mode, limits: &Limits, path: &str,
         "seconds_before_report_write":started.elapsed().as_secs_f64(),
         "preparation_ns":preparation_nanos,"preparation_scope":"sum of constructor durations, which can overlap across workers; included in per-test seconds for fresh mode; each prepared worker constructs before its tests",
         "passed":tests.len()-failures,"failed":failures,"tests":tests});
+    if share_templates {
+        report["shared_templates"]=json!({"requested":true,"active":templates.is_some(),
+            "preparation_ns":template_preparation_ns,"storage":templates.as_ref().and_then(PreparedTemplates::statistics),
+            "scope":"one immutable Program; separate native arenas; one effective worker uses ordinary preparation; retained accounting is not allocator RSS"});
+    }
     let mut output = std::io::BufWriter::new(file);
     serde_json::to_writer_pretty(&mut output, &report)?;
     output.write_all(b"\n")?;
