@@ -35,6 +35,7 @@ impl Session {
         assert_eq!(session.ready["template_miss_observer"],cfg!(feature="jit-template-miss-observer"));
         assert_eq!(session.ready["parameterized_literals"],cfg!(feature="jit-parameterized-literals"));
         assert_eq!(session.ready["shared_literal_keys"],cfg!(feature="jit-shared-literal-keys"));
+        assert_eq!(session.ready["duration_order"],cfg!(feature="jit-session-duration-order"));
         std::fs::write(session.folder.join("ready.json"),serde_json::to_vec(&session.ready).unwrap()).unwrap();
     }
     fn read(&mut self)->Value {

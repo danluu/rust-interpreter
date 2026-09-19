@@ -9,6 +9,9 @@ use sha2::{Digest,Sha256};
 use std::{io::{Read,Write},path::Path,sync::{Arc,mpsc,atomic::{AtomicUsize,Ordering}},time::Instant};
 
 const MAX_FRAME:usize=4*1024*1024;
+#[cfg(feature="jit-session-duration-order")]
+#[path="session_duration_order.rs"]
+mod duration_order;
 const WORKERS:usize=2;
 type Environment=Vec<(Vec<u8>,Vec<u8>)>;
 #[cfg(all(target_arch="aarch64",target_os="macos"))]
@@ -97,12 +100,15 @@ fn environment_bound(pairs:&Environment)->Result<(),String> {
 }
 
 struct Job {program:Arc<ValidatedProgram>,entries:Arc<Vec<(String,usize)>>,next:Arc<AtomicUsize>,limits:Limits,
+    #[cfg(feature="jit-session-duration-order")] order:Option<Arc<Vec<usize>>>,
     environment:Arc<Environment>,reply:mpsc::SyncSender<Value>}
-struct Pool {senders:Vec<mpsc::SyncSender<Job>>,handles:Vec<std::thread::JoinHandle<()>>,poisoned:bool}
+struct Pool {senders:Vec<mpsc::SyncSender<Job>>,handles:Vec<std::thread::JoinHandle<()>>,poisoned:bool,
+    #[cfg(feature="jit-session-duration-order")] durations:duration_order::Durations}
 impl Pool {
     fn new(bytes:usize,verify:bool)->Result<Self,String> {
         if bytes!=0 && !(512..=64*1024*1024).contains(&bytes) {return Err("invalid history capacity".into());}
-        let mut pool=Self{senders:vec![],handles:vec![],poisoned:false};
+        let mut pool=Self{senders:vec![],handles:vec![],poisoned:false,
+            #[cfg(feature="jit-session-duration-order")] durations:Default::default()};
         for worker in 0..WORKERS {
             let (tx,rx)=mpsc::sync_channel::<Job>(1);
             let handle=std::thread::Builder::new().name(format!("template-session-{worker}"))
@@ -125,10 +131,13 @@ impl Pool {
         Ok(pool)
     }
     fn run(&mut self,program:ValidatedProgram,entries:Vec<(String,usize)>,limits:Limits,environment:Environment)->Result<Vec<Value>,String> {
+        #[cfg(feature="jit-session-duration-order")]
+        let order=self.durations.order(&entries).map(Arc::new);
         let program=Arc::new(program);let entries=Arc::new(entries);let next=Arc::new(AtomicUsize::new(0));
         let environment=Arc::new(environment);let (tx,rx)=mpsc::sync_channel(WORKERS);
         for sender in &self.senders {
             if sender.send(Job{program:program.clone(),entries:entries.clone(),next:next.clone(),limits:limits.clone(),
+                #[cfg(feature="jit-session-duration-order")] order:order.clone(),
                 environment:environment.clone(),reply:tx.clone()}).is_err() {
                 self.poisoned=true;return Err("session worker disconnected; execution may have started".into());
             }
@@ -137,7 +146,10 @@ impl Pool {
         for _ in 0..WORKERS {match rx.recv() {
             Ok(row)=>rows.push(row),Err(_)=>{self.poisoned=true;return Err("session response lost; execution may have completed".into());},
         }}
-        rows.sort_by_key(|r|r["worker"].as_u64());Ok(rows)
+        rows.sort_by_key(|r|r["worker"].as_u64());
+        #[cfg(feature="jit-session-duration-order")]
+        self.durations.observe(&entries,&rows);
+        Ok(rows)
     }
 }
 impl Drop for Pool {
@@ -150,7 +162,13 @@ fn worker_run(job:&Job,history:Option<&TemplateHistory>)->Result<Value,String> {
     let mut owner=PreparedJit::with_validated_session_inputs(&job.program,&job.limits,history,&job.environment)?;
     let preparation=owner.preparation_nanos();let mut outcomes=vec![];
     loop {
-        let index=job.next.fetch_add(1,Ordering::Relaxed);
+        let ticket=job.next.fetch_add(1,Ordering::Relaxed);
+        #[cfg(not(feature="jit-session-duration-order"))]
+        let index=ticket;
+        #[cfg(feature="jit-session-duration-order")]
+        let index=if let Some(order)=&job.order {
+            let Some(&index)=order.get(ticket) else {break;};index
+        } else {ticket};
         let Some((name,id))=job.entries.get(index) else {break;};
         let started=Instant::now();let run=owner.execute_entry(*id,&[],job.limits.clone());
         let mut outcome=match run {
@@ -303,6 +321,7 @@ fn readiness(bytes:usize,verify:bool,startup:Cpu)->Result<Value,String> {
         "template_miss_observer":cfg!(feature="jit-template-miss-observer"),
         "parameterized_literals":cfg!(feature="jit-parameterized-literals"),
         "shared_literal_keys":cfg!(feature="jit-shared-literal-keys"),
+        "duration_order":cfg!(feature="jit-session-duration-order"),
         "cpu_at_entry":startup,"cpu_at_ready":cpu()?}))
 }
 fn serve_stdio(bytes:usize,verify:bool)->Result<(),String> {
@@ -349,6 +368,45 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    #[cfg(all(feature="jit-session-duration-order",target_arch="aarch64",target_os="macos"))]
+    fn duration_order_preserves_fresh_guests_current_budgets_and_original_indices() {
+        use rust_interp_bytecode::{Function,Op,Slot,VERSION};
+        let program=|| {
+            let code=vec![Op::Imm{dst:0,value:8},Op::Load{dst:1,address:0,size:1},
+                Op::Assert{value:1,expected:false,message:"every test needs fresh data".into()},
+                Op::Imm{dst:1,value:1},Op::Store{address:0,src:1,size:1},Op::Return];
+            let functions=(0..4).map(|i|Function{name:format!("entry{i}"),frame_size:8,frame_align:8,
+                registers:2,args:vec![],result:Slot{offset:0,size:0},code:code.clone()}).collect();
+            ValidatedProgram::new(Program{version:VERSION,target:"aarch64-apple-darwin".into(),entry:0,
+                functions,data:vec![0;16],statics:vec![],thread_locals:vec![]}).unwrap()
+        };
+        let entries=(0..4).map(|i|(format!("entry{i}"),i)).collect::<Vec<_>>();
+        let hints=(0..2).map(|worker|json!({"worker":worker,"status":"completed","poisoned":false,
+            "tests":(0..4).filter(|i|i%2==worker).map(|i|json!({"index":i,"name":entries[i].0,
+                "seconds":(i+1) as f64,"status":"passed"})).collect::<Vec<_>>()})).collect::<Vec<_>>();
+        let mut pool=Pool::new(0,false).unwrap();pool.durations.observe(&entries,&hints);
+        assert_eq!(pool.durations.order(&entries).unwrap(),vec![3,2,1,0]);
+        let limits=Limits{instructions:1000,memory:1024*1024,allocations:1000,frames:64,
+            jit_resumable_calls:true,jit_persistent_registers:true,jit_scalar_calls:true,..Limits::default()};
+        for instructions in [1000,1,1000] {
+            pool.durations.observe(&entries,&hints);
+            let result=pool.run(program(),entries.clone(),Limits{instructions,..limits.clone()},vec![]).unwrap();
+            let mut indices=vec![];
+            for worker in result {
+                assert_eq!(worker["status"],"completed");assert_eq!(worker["poisoned"],false);
+                let tests=worker["tests"].as_array().unwrap();let mut previous=4;
+                for test in tests {
+                    let index=test["index"].as_u64().unwrap() as usize;assert!(index<previous);previous=index;
+                    assert_eq!(test["name"],entries[index].0);
+                    assert_eq!(test["status"],if instructions==1 {"failed"} else {"passed"});
+                    if instructions==1 {assert!(test["error"].as_str().unwrap().contains("instruction limit"));}
+                    indices.push(index);
+                }
+            }
+            indices.sort_unstable();assert_eq!(indices,vec![0,1,2,3]);
+        }
+    }
     #[test]
     fn framed_requests_reject_truncation_zero_and_oversized_lengths() {
         assert!(read_frame(&mut &[][..]).unwrap().is_none());
