@@ -8,11 +8,13 @@ not causal regression. No installation/E2Eprimary/adoption. Source7198070c quali
 Phase568a9a9a 43937/43977 closed13431/13434,1824/16503observedhits.
 See docs/BUFFERED-TEMPLATE-KEYS-20260919.md. No active experiment.
 
-Next bounded actual template-miss diagnostic, using unbuffered digest feature.
-Record currentfunction/key, lookup outcome, insertion charge and emission cost;
-independently reconstruct perworker64MiB LRU to distinguish capacity churn from
-new/changed identity before any runtime candidate. Existing phase counters alone
-cannot attribute misses. Preserve exactv3key and every currentcallee/scalar input.
+Miss diagnostic completed:25models/33integrations perprofile,32featureoff;
+7Python LRUcontrols. Actualtrace1824invocations16528hits,allmemberships/charges/
+evictionsreconciled (zero dropped). Changedkey3462/214.939ms;firstworker1770/66.085;
+evicted22/1.421. Bodydifferencejoin immediateonly2563/152.106ms largestcategory.
+Next conservative immediate-relocation eligibility census; no key omission without
+proving all folds/range/localmemory/call-slot dependencies and emitted widths.
+See docs/TEMPLATE-MISS-HISTORY-20260919.md. Noactiveexperiment.
 
 Previous digest candidate NOTadopted: primary04 narrowpass, full110-command guard
 UNMEASURABLE wall.9437843138+A/A.1156560910=1.0594404049. CPU.9129773888+
