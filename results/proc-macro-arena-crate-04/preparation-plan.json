@@ -1,0 +1,992 @@
+{
+  "all_original_sources_byte_identical_to_installed": true,
+  "argv_is_unexecuted_template": true,
+  "candidate": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-03",
+  "compatibility_findings": [
+    "No source-level API mismatch found: original actual proc_macro crate exactly matches installed rust-src, including all nightly feature gates, built-in quote declaration, std/internal attributes and module layout.",
+    "The installed rust-std component manifest explicitly owns the selected literal-escaper rlib+rmeta and libtest pair; installed library Cargo.lock pins0.0.8 and the cached14,104-byte crate archive matches its package checksum. Both existing registry source copies match the archive src/lib.rs member.",
+    "Preserve actual default/rustc-dep-of-std cfg flags. Core/std and literal escaper have separate code and metadata files, so the argv supplies each selected pair explicitly, following the already-saved compiler invocation style.",
+    "Do not add feature shims, rustc_private gates, suppress errors, or rewrite APIs preemptively. Any unexpected compiler rejection is an actual result to retain and diagnose.",
+    "No in-crate original #[test] items exist. Whole-crate --test is expected to discover the nine arena and three Interner tests. Doctests, external compiler/UI/run-make and real proc-macro client/server integration are not included in this count."
+  ],
+  "compiler": {
+    "bytes": 409960,
+    "identity": {
+      "ctime_ns": 1788909762323845983,
+      "dev": 16777229,
+      "ino": 1016072618,
+      "mode": 33216,
+      "mtime_ns": 1788909762116676395,
+      "nlink": 1,
+      "size": 409960
+    },
+    "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/bin/rustc"
+  },
+  "compiler_source": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro",
+  "copy_plan": "Copy exactly the 18 original proc_macro files into a fresh isolated source directory, replacing only src/bridge/{arena.rs,symbol.rs} with the exact Arena03 patched files. Use actual src/lib.rs as --test crate root. Do not use arena_unit_tests.rs or substitute any bridge/context/model.",
+  "dependency_choice": "Use the matching installed rust-std 1efcd45c69b401ef rlib+rmeta pair. The distinct rustc-dev 5dba1f8bd853fe73 rmeta is not the selected dependency. Installed core/std/test/compiler_builtins are from that same toolchain. No cargo invocation, build-std, compiler-tree rebuild or dependency download is needed.",
+  "expected_unit_test_count": 12,
+  "expected_unit_tests": {
+    "src/bridge/arena.rs": [
+      "empty_and_zero_length_reset_stay_unallocated",
+      "ordinary_page_and_cursor_are_reused",
+      "multiple_chunks_are_released_and_vector_shrink_is_best_effort",
+      "oversized_first_chunk_is_not_retained",
+      "growth_after_reuse_preserves_doubling_and_releases_extra",
+      "unicode_and_live_allocations_keep_exact_contents",
+      "retained_disjoint_mutable_strings_survive_shared_growth",
+      "populated_arena_move_preserves_reuse_reset_and_growth",
+      "reset_after_caught_unwind_reuses_storage"
+    ],
+    "src/bridge/symbol.rs": [
+      "duplicate_ids_and_stale_rejection_survive_reset",
+      "double_clear_and_oversized_unicode_symbol_preserve_identity",
+      "overflow_and_clear_keep_existing_nonpanicking_boundary"
+    ]
+  },
+  "fallback_if_a_separate_dependency_build_is_explicitly_chosen": "The real cached0.0.8 dependency has one source file (21694 bytes), edition2021, no_std, and no source cfg branches or build.rs. Its rustc-dep-of-std feature maps core to actual rustc-std-workspace-core. Rebuilding it can use the matching installed rustc_std_workspace_core6b96 rlib+rmeta under --extern core, then pass the new rlib to the whole proc_macro test. No substitute source is required. This extra invocation is unnecessary for the primary installed-dependency route.",
+  "inherited_in_crate_unit_test_count": 0,
+  "installed_library_lock_literal_package": "[[package]]\nname = \"rustc-literal-escaper\"\nversion = \"0.0.8\"\nsource = \"registry+https://github.com/rust-lang/crates.io-index\"\nchecksum = \"bfe6f213fb658c8fb95baabd5420393438cf5a98d707f5dd701d9197c705f71e\"\ndependencies = [\n \"rustc-std-workspace-core\",\n]\n",
+  "installed_toolchain": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin",
+  "installed_version": "1.100.0-nightly (cea272fa3 2026-09-07)",
+  "matching_installed_sources": {
+    "Cargo.toml": {
+      "bytes": 598,
+      "identity": {
+        "ctime_ns": 1788909758853621008,
+        "dev": 16777229,
+        "ino": 1016068264,
+        "mode": 33152,
+        "mtime_ns": 1788909758372029078,
+        "nlink": 1,
+        "size": 598
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/proc_macro/Cargo.toml",
+      "sha256": "f91d22525f86110eb784ba390dd389033b87e8f7841c071a7803a1c63121a990"
+    },
+    "src/bridge/arena.rs": {
+      "bytes": 4384,
+      "identity": {
+        "ctime_ns": 1788909758853830051,
+        "dev": 16777229,
+        "ino": 1016068654,
+        "mode": 33152,
+        "mtime_ns": 1788909758409461752,
+        "nlink": 1,
+        "size": 4384
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/proc_macro/src/bridge/arena.rs",
+      "sha256": "ce4f02d336d885145e8bbe5770781ebf11af7ac2488d59c8d930fdab62e9376e"
+    },
+    "src/bridge/buffer.rs": {
+      "bytes": 3345,
+      "identity": {
+        "ctime_ns": 1788909758853931218,
+        "dev": 16777229,
+        "ino": 1016070417,
+        "mode": 33152,
+        "mtime_ns": 1788909758540368692,
+        "nlink": 1,
+        "size": 3345
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/proc_macro/src/bridge/buffer.rs",
+      "sha256": "858499925d66e8014bf779ded30d67718ce9fed9541442f4a81b799b7f302560"
+    },
+    "src/bridge/client.rs": {
+      "bytes": 8977,
+      "identity": {
+        "ctime_ns": 1788909758854031761,
+        "dev": 16777229,
+        "ino": 1016071111,
+        "mode": 33152,
+        "mtime_ns": 1788909758590934122,
+        "nlink": 1,
+        "size": 8977
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/proc_macro/src/bridge/client.rs",
+      "sha256": "fe5d6760d816a6f1f612d85107eed3a88d8929af93cb4309ababcd3e9b4565b2"
+    },
+    "src/bridge/closure.rs": {
+      "bytes": 915,
+      "identity": {
+        "ctime_ns": 1788909758854114303,
+        "dev": 16777229,
+        "ino": 1016069668,
+        "mode": 33152,
+        "mtime_ns": 1788909758489641469,
+        "nlink": 1,
+        "size": 915
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/proc_macro/src/bridge/closure.rs",
+      "sha256": "03453e29c27d9a3ffafe2455bee14d65815fa6c8df1e9d6cf131aacc2ef624a8"
+    },
+    "src/bridge/fxhash.rs": {
+      "bytes": 3364,
+      "identity": {
+        "ctime_ns": 1788909758854219179,
+        "dev": 16777229,
+        "ino": 1016069872,
+        "mode": 33152,
+        "mtime_ns": 1788909758506184207,
+        "nlink": 1,
+        "size": 3364
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/proc_macro/src/bridge/fxhash.rs",
+      "sha256": "43c95da90564aa359a25b5a567cb5da351f40092caa260c29d009b7e25c68647"
+    },
+    "src/bridge/handle.rs": {
+      "bytes": 2113,
+      "identity": {
+        "ctime_ns": 1788909758854303179,
+        "dev": 16777229,
+        "ino": 1016069595,
+        "mode": 33152,
+        "mtime_ns": 1788909758484103639,
+        "nlink": 1,
+        "size": 2113
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/proc_macro/src/bridge/handle.rs",
+      "sha256": "cd7e0b6c7940f7ae9baad9c463e4bc3a77dd5db29922a2e988dfeef4230d5bde"
+    },
+    "src/bridge/mod.rs": {
+      "bytes": 12226,
+      "identity": {
+        "ctime_ns": 1788909758854396513,
+        "dev": 16777229,
+        "ino": 1016069148,
+        "mode": 33152,
+        "mtime_ns": 1788909758452172628,
+        "nlink": 1,
+        "size": 12226
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/proc_macro/src/bridge/mod.rs",
+      "sha256": "cdcdf5e2d24471f06b59f2baa7f254c5160bc0acc25a06c535f8cb3872eeb83b"
+    },
+    "src/bridge/panic_message.rs": {
+      "bytes": 1910,
+      "identity": {
+        "ctime_ns": 1788909758854472597,
+        "dev": 16777229,
+        "ino": 1016069557,
+        "mode": 33152,
+        "mtime_ns": 1788909758481121452,
+        "nlink": 1,
+        "size": 1910
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/proc_macro/src/bridge/panic_message.rs",
+      "sha256": "56d2ceea35eaae7cf601a8029e5351b24a3ac56c3e3f4f4b2d4fd6d933aed971"
+    },
+    "src/bridge/rpc.rs": {
+      "bytes": 6724,
+      "identity": {
+        "ctime_ns": 1788909758854571848,
+        "dev": 16777229,
+        "ino": 1016068818,
+        "mode": 33152,
+        "mtime_ns": 1788909758424827191,
+        "nlink": 1,
+        "size": 6724
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/proc_macro/src/bridge/rpc.rs",
+      "sha256": "611a26a3f2080a821a6921c1f0e74e734bf9cb9dd37891c82765f9755a6cf06c"
+    },
+    "src/bridge/selfless_reify.rs": {
+      "bytes": 2970,
+      "identity": {
+        "ctime_ns": 1788909758854654140,
+        "dev": 16777229,
+        "ino": 1016071409,
+        "mode": 33152,
+        "mtime_ns": 1788909758613933030,
+        "nlink": 1,
+        "size": 2970
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/proc_macro/src/bridge/selfless_reify.rs",
+      "sha256": "ee921c120b8a72c6e1e0df5ec3d5b0662b5411c49673a7ceecbc37b421c76edd"
+    },
+    "src/bridge/server.rs": {
+      "bytes": 10509,
+      "identity": {
+        "ctime_ns": 1788909758854745307,
+        "dev": 16777229,
+        "ino": 1016070486,
+        "mode": 33152,
+        "mtime_ns": 1788909758544028759,
+        "nlink": 1,
+        "size": 10509
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/proc_macro/src/bridge/server.rs",
+      "sha256": "1a6eb7d13e8af5b16e3fa7930e4ff2925bf861ec4b86e06df75595d01e9e8d3a"
+    },
+    "src/bridge/symbol.rs": {
+      "bytes": 6908,
+      "identity": {
+        "ctime_ns": 1788909758854837516,
+        "dev": 16777229,
+        "ino": 1016070025,
+        "mode": 33152,
+        "mtime_ns": 1788909758516232609,
+        "nlink": 1,
+        "size": 6908
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/proc_macro/src/bridge/symbol.rs",
+      "sha256": "75f80e816a8f4ded235d57b50914bc4f1854e8696a8dd160a75e4e0d46ae1869"
+    },
+    "src/diagnostic.rs": {
+      "bytes": 5858,
+      "identity": {
+        "ctime_ns": 1788909758854947642,
+        "dev": 16777229,
+        "ino": 1016068790,
+        "mode": 33152,
+        "mtime_ns": 1788909758422506550,
+        "nlink": 1,
+        "size": 5858
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/proc_macro/src/diagnostic.rs",
+      "sha256": "8c84548915beeea0de620ac65ab93d89d124e19ac02632b080293b0c1c80cb8a"
+    },
+    "src/escape.rs": {
+      "bytes": 1787,
+      "identity": {
+        "ctime_ns": 1788909758855021309,
+        "dev": 16777229,
+        "ino": 1016069656,
+        "mode": 33152,
+        "mtime_ns": 1788909758488250709,
+        "nlink": 1,
+        "size": 1787
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/proc_macro/src/escape.rs",
+      "sha256": "66c6b2d053be4c6b8a63c508c475173322ea3a70e495018938ba5f93b8662dfd"
+    },
+    "src/lib.rs": {
+      "bytes": 75695,
+      "identity": {
+        "ctime_ns": 1788909758855129435,
+        "dev": 16777229,
+        "ino": 1016068713,
+        "mode": 33152,
+        "mtime_ns": 1788909758417179888,
+        "nlink": 1,
+        "size": 75695
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/proc_macro/src/lib.rs",
+      "sha256": "68237ec6a7a9a2d1dd7cd81e41ccb2996414df1891e4d8dba9e4f19a862c1f50"
+    },
+    "src/quote.rs": {
+      "bytes": 18499,
+      "identity": {
+        "ctime_ns": 1788909758855213186,
+        "dev": 16777229,
+        "ino": 1016069702,
+        "mode": 33152,
+        "mtime_ns": 1788909758491707274,
+        "nlink": 1,
+        "size": 18499
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/proc_macro/src/quote.rs",
+      "sha256": "87451d78d39b8de71a06744cb20b38cd415c38f621e41c9112b0cf005128d2b0"
+    },
+    "src/to_tokens.rs": {
+      "bytes": 9240,
+      "identity": {
+        "ctime_ns": 1788909758855318186,
+        "dev": 16777229,
+        "ino": 1016070726,
+        "mode": 33152,
+        "mtime_ns": 1788909758560834082,
+        "nlink": 1,
+        "size": 9240
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/proc_macro/src/to_tokens.rs",
+      "sha256": "8d6dd0acef632336cf4b10319eb1f4a035a035b6bb4b0d3ba57aed11f917e48a"
+    }
+  },
+  "observed_at": 1789817247.640598,
+  "operations": {
+    "candidate_copy_created": false,
+    "compiler_calls": 0,
+    "downloads": 0,
+    "provider_capability_probes": 0,
+    "source_mutations": 0,
+    "tests_run": 0,
+    "toolchain_mutations": 0
+  },
+  "original_source_bytes": 176022,
+  "original_source_count": 18,
+  "original_sources": {
+    "Cargo.toml": {
+      "bytes": 598,
+      "identity": {
+        "ctime_ns": 1789775930281798017,
+        "dev": 16777229,
+        "ino": 1054611071,
+        "mode": 33152,
+        "mtime_ns": 1789775930281798017,
+        "nlink": 1,
+        "size": 598
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/Cargo.toml",
+      "sha256": "f91d22525f86110eb784ba390dd389033b87e8f7841c071a7803a1c63121a990"
+    },
+    "src/bridge/arena.rs": {
+      "bytes": 4384,
+      "identity": {
+        "ctime_ns": 1789775930281933226,
+        "dev": 16777229,
+        "ino": 1054611074,
+        "mode": 33152,
+        "mtime_ns": 1789775930281933226,
+        "nlink": 1,
+        "size": 4384
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/arena.rs",
+      "sha256": "ce4f02d336d885145e8bbe5770781ebf11af7ac2488d59c8d930fdab62e9376e"
+    },
+    "src/bridge/buffer.rs": {
+      "bytes": 3345,
+      "identity": {
+        "ctime_ns": 1789775930281992393,
+        "dev": 16777229,
+        "ino": 1054611075,
+        "mode": 33152,
+        "mtime_ns": 1789775930281992393,
+        "nlink": 1,
+        "size": 3345
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/buffer.rs",
+      "sha256": "858499925d66e8014bf779ded30d67718ce9fed9541442f4a81b799b7f302560"
+    },
+    "src/bridge/client.rs": {
+      "bytes": 8977,
+      "identity": {
+        "ctime_ns": 1789775930282055684,
+        "dev": 16777229,
+        "ino": 1054611076,
+        "mode": 33152,
+        "mtime_ns": 1789775930282055684,
+        "nlink": 1,
+        "size": 8977
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/client.rs",
+      "sha256": "fe5d6760d816a6f1f612d85107eed3a88d8929af93cb4309ababcd3e9b4565b2"
+    },
+    "src/bridge/closure.rs": {
+      "bytes": 915,
+      "identity": {
+        "ctime_ns": 1789775930282109434,
+        "dev": 16777229,
+        "ino": 1054611077,
+        "mode": 33152,
+        "mtime_ns": 1789775930282109434,
+        "nlink": 1,
+        "size": 915
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/closure.rs",
+      "sha256": "03453e29c27d9a3ffafe2455bee14d65815fa6c8df1e9d6cf131aacc2ef624a8"
+    },
+    "src/bridge/fxhash.rs": {
+      "bytes": 3364,
+      "identity": {
+        "ctime_ns": 1789775930282158143,
+        "dev": 16777229,
+        "ino": 1054611078,
+        "mode": 33152,
+        "mtime_ns": 1789775930282158143,
+        "nlink": 1,
+        "size": 3364
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/fxhash.rs",
+      "sha256": "43c95da90564aa359a25b5a567cb5da351f40092caa260c29d009b7e25c68647"
+    },
+    "src/bridge/handle.rs": {
+      "bytes": 2113,
+      "identity": {
+        "ctime_ns": 1789775930282209852,
+        "dev": 16777229,
+        "ino": 1054611079,
+        "mode": 33152,
+        "mtime_ns": 1789775930282209852,
+        "nlink": 1,
+        "size": 2113
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/handle.rs",
+      "sha256": "cd7e0b6c7940f7ae9baad9c463e4bc3a77dd5db29922a2e988dfeef4230d5bde"
+    },
+    "src/bridge/mod.rs": {
+      "bytes": 12226,
+      "identity": {
+        "ctime_ns": 1789775930282274768,
+        "dev": 16777229,
+        "ino": 1054611080,
+        "mode": 33152,
+        "mtime_ns": 1789775930282274768,
+        "nlink": 1,
+        "size": 12226
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/mod.rs",
+      "sha256": "cdcdf5e2d24471f06b59f2baa7f254c5160bc0acc25a06c535f8cb3872eeb83b"
+    },
+    "src/bridge/panic_message.rs": {
+      "bytes": 1910,
+      "identity": {
+        "ctime_ns": 1789775930282326352,
+        "dev": 16777229,
+        "ino": 1054611081,
+        "mode": 33152,
+        "mtime_ns": 1789775930282326352,
+        "nlink": 1,
+        "size": 1910
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/panic_message.rs",
+      "sha256": "56d2ceea35eaae7cf601a8029e5351b24a3ac56c3e3f4f4b2d4fd6d933aed971"
+    },
+    "src/bridge/rpc.rs": {
+      "bytes": 6724,
+      "identity": {
+        "ctime_ns": 1789775930282384393,
+        "dev": 16777229,
+        "ino": 1054611082,
+        "mode": 33152,
+        "mtime_ns": 1789775930282384393,
+        "nlink": 1,
+        "size": 6724
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/rpc.rs",
+      "sha256": "611a26a3f2080a821a6921c1f0e74e734bf9cb9dd37891c82765f9755a6cf06c"
+    },
+    "src/bridge/selfless_reify.rs": {
+      "bytes": 2970,
+      "identity": {
+        "ctime_ns": 1789775930282440852,
+        "dev": 16777229,
+        "ino": 1054611083,
+        "mode": 33152,
+        "mtime_ns": 1789775930282440852,
+        "nlink": 1,
+        "size": 2970
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/selfless_reify.rs",
+      "sha256": "ee921c120b8a72c6e1e0df5ec3d5b0662b5411c49673a7ceecbc37b421c76edd"
+    },
+    "src/bridge/server.rs": {
+      "bytes": 10509,
+      "identity": {
+        "ctime_ns": 1789775930282521894,
+        "dev": 16777229,
+        "ino": 1054611084,
+        "mode": 33152,
+        "mtime_ns": 1789775930282521894,
+        "nlink": 1,
+        "size": 10509
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/server.rs",
+      "sha256": "1a6eb7d13e8af5b16e3fa7930e4ff2925bf861ec4b86e06df75595d01e9e8d3a"
+    },
+    "src/bridge/symbol.rs": {
+      "bytes": 6908,
+      "identity": {
+        "ctime_ns": 1789775930282587311,
+        "dev": 16777229,
+        "ino": 1054611085,
+        "mode": 33152,
+        "mtime_ns": 1789775930282587311,
+        "nlink": 1,
+        "size": 6908
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/symbol.rs",
+      "sha256": "75f80e816a8f4ded235d57b50914bc4f1854e8696a8dd160a75e4e0d46ae1869"
+    },
+    "src/diagnostic.rs": {
+      "bytes": 5858,
+      "identity": {
+        "ctime_ns": 1789775930282652602,
+        "dev": 16777229,
+        "ino": 1054611086,
+        "mode": 33152,
+        "mtime_ns": 1789775930282652602,
+        "nlink": 1,
+        "size": 5858
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/diagnostic.rs",
+      "sha256": "8c84548915beeea0de620ac65ab93d89d124e19ac02632b080293b0c1c80cb8a"
+    },
+    "src/escape.rs": {
+      "bytes": 1787,
+      "identity": {
+        "ctime_ns": 1789775930282708186,
+        "dev": 16777229,
+        "ino": 1054611087,
+        "mode": 33152,
+        "mtime_ns": 1789775930282708186,
+        "nlink": 1,
+        "size": 1787
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/escape.rs",
+      "sha256": "66c6b2d053be4c6b8a63c508c475173322ea3a70e495018938ba5f93b8662dfd"
+    },
+    "src/lib.rs": {
+      "bytes": 75695,
+      "identity": {
+        "ctime_ns": 1789775930282834020,
+        "dev": 16777229,
+        "ino": 1054611088,
+        "mode": 33152,
+        "mtime_ns": 1789775930282834020,
+        "nlink": 1,
+        "size": 75695
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/lib.rs",
+      "sha256": "68237ec6a7a9a2d1dd7cd81e41ccb2996414df1891e4d8dba9e4f19a862c1f50"
+    },
+    "src/quote.rs": {
+      "bytes": 18499,
+      "identity": {
+        "ctime_ns": 1789775930282915478,
+        "dev": 16777229,
+        "ino": 1054611089,
+        "mode": 33152,
+        "mtime_ns": 1789775930282915478,
+        "nlink": 1,
+        "size": 18499
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/quote.rs",
+      "sha256": "87451d78d39b8de71a06744cb20b38cd415c38f621e41c9112b0cf005128d2b0"
+    },
+    "src/to_tokens.rs": {
+      "bytes": 9240,
+      "identity": {
+        "ctime_ns": 1789775930282990979,
+        "dev": 16777229,
+        "ino": 1054611090,
+        "mode": 33152,
+        "mtime_ns": 1789775930282990979,
+        "nlink": 1,
+        "size": 9240
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/to_tokens.rs",
+      "sha256": "8d6dd0acef632336cf4b10319eb1f4a035a035b6bb4b0d3ba57aed11f917e48a"
+    }
+  },
+  "patched_sources": {
+    "src/bridge/arena.rs": {
+      "bytes": 11072,
+      "identity": {
+        "ctime_ns": 1789817074412410872,
+        "dev": 16777229,
+        "ino": 1056580490,
+        "mode": 33152,
+        "mtime_ns": 1789817074412410872,
+        "nlink": 1,
+        "size": 11072
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-03/patched/arena.rs",
+      "sha256": "8466807f8c6602cdb20d81995ef50f26e8e1eeb48a97847825cd5b61a10c469b"
+    },
+    "src/bridge/symbol.rs": {
+      "bytes": 9042,
+      "identity": {
+        "ctime_ns": 1789817005803799577,
+        "dev": 16777229,
+        "ino": 1056580489,
+        "mode": 33152,
+        "mtime_ns": 1789817005803799577,
+        "nlink": 1,
+        "size": 9042
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-03/patched/symbol.rs",
+      "sha256": "086c4712892a0377af36274941cce3585cf306290ebbb06158ccf4789bdbe3ba"
+    }
+  },
+  "proposed_command_argv": [
+    "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/bin/rustc",
+    "--crate-name",
+    "proc_macro",
+    "--edition=2024",
+    "--test",
+    "<fresh-source>/src/lib.rs",
+    "--target",
+    "aarch64-apple-darwin",
+    "--sysroot",
+    "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin",
+    "--cfg",
+    "feature=\"default\"",
+    "--cfg",
+    "feature=\"rustc-dep-of-std\"",
+    "--check-cfg",
+    "cfg(test)",
+    "--check-cfg",
+    "cfg(feature, values(\"default\", \"rustc-dep-of-std\"))",
+    "--extern",
+    "core=/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/libcore-031509a607a020fd.rlib",
+    "--extern",
+    "core=/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/libcore-031509a607a020fd.rmeta",
+    "--extern",
+    "std=/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/libstd-3f421591d5b73f20.rlib",
+    "--extern",
+    "std=/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/libstd-3f421591d5b73f20.rmeta",
+    "--extern",
+    "rustc_literal_escaper=/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/librustc_literal_escaper-1efcd45c69b401ef.rlib",
+    "--extern",
+    "rustc_literal_escaper=/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/librustc_literal_escaper-1efcd45c69b401ef.rmeta",
+    "-C",
+    "opt-level=0",
+    "-C",
+    "debuginfo=0",
+    "-C",
+    "codegen-units=1",
+    "-C",
+    "panic=unwind",
+    "--emit=dep-info,link",
+    "-o",
+    "<fresh-output>/proc_macro_arena_tests"
+  ],
+  "registry_real_dependency": {
+    "/Users/danluu/.cargo/registry/cache/index.crates.io-1949cf8c6b5b557f/rustc-literal-escaper-0.0.8.crate": {
+      "bytes": 14104,
+      "identity": {
+        "ctime_ns": 1788949365630489015,
+        "dev": 16777229,
+        "ino": 1019107850,
+        "mode": 33152,
+        "mtime_ns": 1788949365630489015,
+        "nlink": 1,
+        "size": 14104
+      },
+      "path": "/Users/danluu/.cargo/registry/cache/index.crates.io-1949cf8c6b5b557f/rustc-literal-escaper-0.0.8.crate",
+      "sha256": "bfe6f213fb658c8fb95baabd5420393438cf5a98d707f5dd701d9197c705f71e"
+    },
+    "/Users/danluu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rustc-literal-escaper-0.0.8/Cargo.toml": {
+      "bytes": 1137,
+      "identity": {
+        "ctime_ns": 1788949365632698274,
+        "dev": 16777229,
+        "ino": 1019107860,
+        "mode": 33152,
+        "mtime_ns": 1153704088000000000,
+        "nlink": 1,
+        "size": 1137
+      },
+      "path": "/Users/danluu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rustc-literal-escaper-0.0.8/Cargo.toml",
+      "sha256": "42864d0d78afe687857242cd08b274a381d2b0d24f7d0ddb5fd44ec116365335"
+    },
+    "/Users/danluu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rustc-literal-escaper-0.0.8/src/lib.rs": {
+      "bytes": 21694,
+      "identity": {
+        "ctime_ns": 1788949365632432981,
+        "dev": 16777229,
+        "ino": 1019107868,
+        "mode": 33152,
+        "mtime_ns": 1153704088000000000,
+        "nlink": 1,
+        "size": 21694
+      },
+      "path": "/Users/danluu/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rustc-literal-escaper-0.0.8/src/lib.rs",
+      "sha256": "d79e2b634a4d25f44258c2a8afd854e1f87c967716fb564603feb89246c0f722"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/cargo-home/registry/cache/index.crates.io-1949cf8c6b5b557f/rustc-literal-escaper-0.0.8.crate": {
+      "bytes": 14104,
+      "identity": {
+        "ctime_ns": 1789776252779851454,
+        "dev": 16777229,
+        "ino": 1054688320,
+        "mode": 33152,
+        "mtime_ns": 1789776252779851454,
+        "nlink": 1,
+        "size": 14104
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/cargo-home/registry/cache/index.crates.io-1949cf8c6b5b557f/rustc-literal-escaper-0.0.8.crate",
+      "sha256": "bfe6f213fb658c8fb95baabd5420393438cf5a98d707f5dd701d9197c705f71e"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/rustc-literal-escaper-0.0.8/Cargo.toml": {
+      "bytes": 1137,
+      "identity": {
+        "ctime_ns": 1789781814782452987,
+        "dev": 16777229,
+        "ino": 1054954548,
+        "mode": 33152,
+        "mtime_ns": 1153704088000000000,
+        "nlink": 1,
+        "size": 1137
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/rustc-literal-escaper-0.0.8/Cargo.toml",
+      "sha256": "42864d0d78afe687857242cd08b274a381d2b0d24f7d0ddb5fd44ec116365335"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/rustc-literal-escaper-0.0.8/src/lib.rs": {
+      "bytes": 21694,
+      "identity": {
+        "ctime_ns": 1789781814782105903,
+        "dev": 16777229,
+        "ino": 1054954556,
+        "mode": 33152,
+        "mtime_ns": 1153704088000000000,
+        "nlink": 1,
+        "size": 21694
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/rustc-literal-escaper-0.0.8/src/lib.rs",
+      "sha256": "d79e2b634a4d25f44258c2a8afd854e1f87c967716fb564603feb89246c0f722"
+    }
+  },
+  "resource_assessment": {
+    "cargo_target_tree_created": false,
+    "debug_info": 0,
+    "dependency_copy_bytes": 0,
+    "incremental_enabled": false,
+    "output_size_measured": false,
+    "recommendation": "A bounded tens-of-MiB output allowance is plausible from this small actual source crate and reused installed libraries, but compile/link output size must be enforced and observed. This is unit qualification only; unchanged full compiler/application capacity gates still apply.",
+    "source_copy_bytes": 184844
+  },
+  "saved_real_proc_macro_build_line_sha256": "03dcc8f05e36ba7b69baf9375940cd333c3b2ec0a07e6f357b2d6c4bb0a7123e",
+  "status": "feasible-for-bounded-whole-crate-test-attempt-not-yet-compiled",
+  "stdlib_component_dependencies": {
+    "libcompiler_builtins-4a3b9c25f023afea.rlib": {
+      "bytes": 3701696,
+      "identity": {
+        "ctime_ns": 1788909760459113064,
+        "dev": 16777229,
+        "ino": 1016072559,
+        "mode": 33152,
+        "mtime_ns": 1788909760266097116,
+        "nlink": 1,
+        "size": 3701696
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/libcompiler_builtins-4a3b9c25f023afea.rlib"
+    },
+    "libcompiler_builtins-4a3b9c25f023afea.rmeta": {
+      "bytes": 2067805,
+      "identity": {
+        "ctime_ns": 1788909760459165314,
+        "dev": 16777229,
+        "ino": 1016072512,
+        "mode": 33152,
+        "mtime_ns": 1788909759572771192,
+        "nlink": 1,
+        "size": 2067805
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/libcompiler_builtins-4a3b9c25f023afea.rmeta"
+    },
+    "libcore-031509a607a020fd.rlib": {
+      "bytes": 2594960,
+      "identity": {
+        "ctime_ns": 1788909760459216190,
+        "dev": 16777229,
+        "ino": 1016072562,
+        "mode": 33152,
+        "mtime_ns": 1788909760296676492,
+        "nlink": 1,
+        "size": 2594960
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/libcore-031509a607a020fd.rlib"
+    },
+    "libcore-031509a607a020fd.rmeta": {
+      "bytes": 67951302,
+      "identity": {
+        "ctime_ns": 1788909760459264940,
+        "dev": 16777229,
+        "ino": 1016072516,
+        "mode": 33152,
+        "mtime_ns": 1788909760067590378,
+        "nlink": 1,
+        "size": 67951302
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/libcore-031509a607a020fd.rmeta"
+    },
+    "librustc_literal_escaper-1efcd45c69b401ef.rlib": {
+      "bytes": 5344,
+      "identity": {
+        "ctime_ns": 1788909760462676213,
+        "dev": 16777229,
+        "ino": 1016072567,
+        "mode": 33152,
+        "mtime_ns": 1788909760296870243,
+        "nlink": 1,
+        "size": 5344
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/librustc_literal_escaper-1efcd45c69b401ef.rlib",
+      "sha256": "a990e3c040bc1741209912aee87260fba127e1935dcf2c4516fa682a3f220872"
+    },
+    "librustc_literal_escaper-1efcd45c69b401ef.rmeta": {
+      "bytes": 124484,
+      "identity": {
+        "ctime_ns": 1788909760462869673,
+        "dev": 16777229,
+        "ino": 1016072540,
+        "mode": 33152,
+        "mtime_ns": 1788909760067322460,
+        "nlink": 1,
+        "size": 124484
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/librustc_literal_escaper-1efcd45c69b401ef.rmeta",
+      "sha256": "c172b8f5917bab4c643c05e9eb81f1c5b63c2896f123240737e49a7631bb7501"
+    },
+    "librustc_std_workspace_core-6b96cda0b963f7bf.rlib": {
+      "bytes": 5376,
+      "identity": {
+        "ctime_ns": 1788909760463443010,
+        "dev": 16777229,
+        "ino": 1016072566,
+        "mode": 33152,
+        "mtime_ns": 1788909760296742367,
+        "nlink": 1,
+        "size": 5376
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/librustc_std_workspace_core-6b96cda0b963f7bf.rlib",
+      "sha256": "2ca65d1a3998c24c0af3dfb522c19ed3c38a56ec18599bfaf05985477e29fa1c"
+    },
+    "librustc_std_workspace_core-6b96cda0b963f7bf.rmeta": {
+      "bytes": 6152,
+      "identity": {
+        "ctime_ns": 1788909760463591803,
+        "dev": 16777229,
+        "ino": 1016072539,
+        "mode": 33152,
+        "mtime_ns": 1788909760065151403,
+        "nlink": 1,
+        "size": 6152
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/librustc_std_workspace_core-6b96cda0b963f7bf.rmeta",
+      "sha256": "3671cce175d6b2a503d4e12a00a51c9a468c8af45d393f139b3448aaa8a0d736"
+    },
+    "libstd-3f421591d5b73f20.rlib": {
+      "bytes": 9799728,
+      "identity": {
+        "ctime_ns": 1788909760464135223,
+        "dev": 16777229,
+        "ino": 1016072542,
+        "mode": 33152,
+        "mtime_ns": 1788909760153330967,
+        "nlink": 1,
+        "size": 9799728
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/libstd-3f421591d5b73f20.rlib"
+    },
+    "libstd-3f421591d5b73f20.rmeta": {
+      "bytes": 7586502,
+      "identity": {
+        "ctime_ns": 1788909760464247266,
+        "dev": 16777229,
+        "ino": 1016072495,
+        "mode": 33152,
+        "mtime_ns": 1788909759330142319,
+        "nlink": 1,
+        "size": 7586502
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/libstd-3f421591d5b73f20.rmeta"
+    },
+    "libtest-930e5d927d8219da.rlib": {
+      "bytes": 6209904,
+      "identity": {
+        "ctime_ns": 1788909760464836353,
+        "dev": 16777229,
+        "ino": 1016072558,
+        "mode": 33152,
+        "mtime_ns": 1788909760250464008,
+        "nlink": 1,
+        "size": 6209904
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/libtest-930e5d927d8219da.rlib"
+    },
+    "libtest-930e5d927d8219da.rmeta": {
+      "bytes": 1035601,
+      "identity": {
+        "ctime_ns": 1788909760464929312,
+        "dev": 16777229,
+        "ino": 1016072511,
+        "mode": 33152,
+        "mtime_ns": 1788909759553894562,
+        "nlink": 1,
+        "size": 1035601
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/lib/libtest-930e5d927d8219da.rmeta"
+    }
+  },
+  "toolchain_component_metadata": {
+    "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/components": {
+      "bytes": 201,
+      "identity": {
+        "ctime_ns": 1788909766665630104,
+        "dev": 16777229,
+        "ino": 1016066791,
+        "mode": 33152,
+        "mtime_ns": 1788909766665630104,
+        "nlink": 1,
+        "size": 201
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/components",
+      "sha256": "656c1307bf2e8079ef2762e056014c2aff476033cb01da6884022ab25a9b9921"
+    },
+    "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/manifest-rust-std-aarch64-apple-darwin": {
+      "bytes": 4628,
+      "identity": {
+        "ctime_ns": 1788909760477515148,
+        "dev": 16777229,
+        "ino": 1016072582,
+        "mode": 33152,
+        "mtime_ns": 1788909760477515148,
+        "nlink": 1,
+        "size": 4628
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/manifest-rust-std-aarch64-apple-darwin",
+      "sha256": "dc34ab873acc111785b0d677e1dbbbf66cb387ee28e6d8325863f423b13c61b9"
+    },
+    "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/manifest-rustc-dev-aarch64-apple-darwin": {
+      "bytes": 262836,
+      "identity": {
+        "ctime_ns": 1788909766479764495,
+        "dev": 16777229,
+        "ino": 1016076840,
+        "mode": 33152,
+        "mtime_ns": 1788909766479764495,
+        "nlink": 1,
+        "size": 262836
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/manifest-rustc-dev-aarch64-apple-darwin",
+      "sha256": "37c549c33d0ad08cedc677c8d1934fba806ec43ab334392cc75b47bdb59d97b6"
+    },
+    "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/multirust-channel-manifest.toml": {
+      "bytes": 1098144,
+      "identity": {
+        "ctime_ns": 1788909766696769317,
+        "dev": 16777229,
+        "ino": 1016076900,
+        "mode": 33152,
+        "mtime_ns": 1788909766696769317,
+        "nlink": 1,
+        "size": 1098144
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/multirust-channel-manifest.toml",
+      "sha256": "7be93fc0b227508d33828131499b575461d067c1437a7226e09c31afb2136452"
+    },
+    "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/Cargo.lock": {
+      "bytes": 10042,
+      "identity": {
+        "ctime_ns": 1788909758726826013,
+        "dev": 16777229,
+        "ino": 1016068177,
+        "mode": 33152,
+        "mtime_ns": 1788909758362431804,
+        "nlink": 1,
+        "size": 10042
+      },
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/Cargo.lock",
+      "sha256": "8ab03296aee01aed456b167433f2d65bbeb3bd38ae9141e4d933a7f88966dc5d"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-build-continuation-01/commands/000/stderr": {
+      "bytes": 3073053,
+      "identity": {
+        "ctime_ns": 1789784311761584904,
+        "dev": 16777229,
+        "ino": 1055120195,
+        "mode": 33152,
+        "mtime_ns": 1789784311761584904,
+        "nlink": 1,
+        "size": 3073053
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-build-continuation-01/commands/000/stderr",
+      "sha256": "44482da64211a8dd6f7ab75a858bdca4f27e03173ac593e8851830fc1b2ae852"
+    }
+  },
+  "whole_candidate_source_bytes": 184844,
+  "whole_candidate_source_count": 18
+}
