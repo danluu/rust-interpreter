@@ -40,10 +40,15 @@ Build sourcef90e816e, runtime sourceef50023f; setup105.17s plus focused28.02s.
 Strict qualification121 commands passed under56495/56498 and is CLOSED by
 61762/61805: native/reference/cache agreement, unreachable type/borrow errors,
 actual partial artifact rejection and source restoration all pass.
-No original project guest or performance command has run for this candidate.
+Suite01 passes13 commands under67799/67802 and is CLOSED75018/75021.
+All114 original parser outcomes and wrong-edit failures match. Actual two-worker
+sharing records797hits/3,799,956restored bytes (37,929,344charged store bytes)
+on original,53hits/151,512bytes on wrong source. One-worker and private one-entry
+fallback stay inactive; all six invalid/partial modes reject before execution.
+No performance command has run for this candidate.
 No template runtime has been merged to main.
 
-Next run suite.py/close_suite.py: six full pgrust parser
+Completed suite.py/close_suite.py: six full pgrust parser
 runs (original/wrong edit × ordinary-two/shared-one/shared-two), one private
 rg-aot one-entry run and six mode/partial rejection commands. Actual shared hits
 must occur on both parser states before timing; zero hits cancel timing, not
