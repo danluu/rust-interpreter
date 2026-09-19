@@ -29,7 +29,7 @@ fn caller_templates_survive_changed_callees_data_and_dropped_original_owners() {
         let history=TemplateHistory::new(64*1024*1024,verify).unwrap();
         let original=program(7,11);
         let mut kept=PreparedJit::with_template_history(&original,&limits(),&history).unwrap();
-        equal(kept.execute(&[],limits()),execute_with_engine(&original,&[],limits(),Engine::Interpreter));
+        equal(kept.execute(&[],limits()),execute_with_engine(&original,&[],Limits::default(),Engine::Interpreter));
         let mut hits=0;
         for value in [8,9,0,10] {
             let current=program(value,17);let mut owner=PreparedJit::with_template_history(&current,&limits(),&history).unwrap();
@@ -42,7 +42,7 @@ fn caller_templates_survive_changed_callees_data_and_dropped_original_owners() {
         }
         assert!(hits>0);drop(kept);drop(original);
         let restored=program(7,21);let mut owner=PreparedJit::with_template_history(&restored,&limits(),&history).unwrap();
-        equal(owner.execute(&[],limits()),execute_with_engine(&restored,&[],limits(),Engine::Interpreter));
+        equal(owner.execute(&[],limits()),execute_with_engine(&restored,&[],Limits::default(),Engine::Interpreter));
         assert!(owner.template_statistics().unwrap().hits>0);
     }
 }
@@ -90,12 +90,12 @@ fn full_or_dropped_storage_preserves_fresh_execution() {
         let history=TemplateHistory::new(capacity,true).unwrap();
         for value in 1..10 {
             let current=program(value,19);let mut owner=PreparedJit::with_template_history(&current,&limits(),&history).unwrap();
-            equal(owner.execute(&[],limits()),execute_with_engine(&current,&[],limits(),Engine::Interpreter));
+            equal(owner.execute(&[],limits()),execute_with_engine(&current,&[],Limits::default(),Engine::Interpreter));
             assert!(history.storage().charged_bytes<=capacity);
             if capacity==512 {let stats=owner.template_statistics().unwrap();assert_eq!(stats.hits,0);assert!(stats.capture_declines>0);}
         }
         let current=program(9,27);let mut owner=PreparedJit::with_template_history(&current,&limits(),&history).unwrap();
         drop(history);
-        equal(owner.execute(&[],limits()),execute_with_engine(&current,&[],limits(),Engine::Interpreter));
+        equal(owner.execute(&[],limits()),execute_with_engine(&current,&[],Limits::default(),Engine::Interpreter));
     }
 }

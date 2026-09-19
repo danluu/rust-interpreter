@@ -30,7 +30,6 @@ fn immediate(kind:Kind,value:u64)->Vec<u32> {
 struct Checked<'p>(&'p Program);
 impl<'p> Checked<'p> {
     #[cfg(test)]
-    #[cfg(test)]
     fn new(p:&'p Program)->Option<Self> {
         if p.version & crate::PARTIAL_VALIDATION!=0 {return None;}
         crate::validate(p).ok()?;Some(Self(p))
@@ -179,6 +178,7 @@ pub(crate) struct Context<'p> {
     verify_hits:bool,
 }
 impl<'p> Context<'p> {
+    #[cfg(test)]
     fn new(p:&'p Program,history:std::rc::Rc<std::cell::RefCell<History>>)->Option<std::rc::Rc<Self>> {
         Self::new_verified(p,history,false)
     }

@@ -62,3 +62,18 @@ incorrectly expected15: the new explicit saved-suite diagnostic adds one ignored
 test after workspace01. Preserve/close that successful command and its harness
 failure. API03 verifies all Rust/Cargo hashes and reuses the completed default
 debug command; only the four unstarted commands run. No Rust correction or rerun.
+
+
+API03 preserves the default debug pass and also passes629 default release tests,
+16ignored. Feature debug compilation fails before tests: a model-only constructor
+was missing cfg(test), calling another test-only helper. Close this attempt.
+API04 changes exactly two cfg annotations (moving a redundant attribute to the
+intended helper), verifies that exact source delta and every other Rust/Cargo
+hash, then runs the full feature workspace in both profiles and builds both
+ordinary/feature release VMs. The default test bodies remain unchanged under
+configuration, and their prior completed checks remain cited, not re-executed.
+
+API04 also corrects the as-yet-unexecuted feature-only integration oracle to pass
+ordinary interpreter options, rather than JIT flags that its public API rejects.
+The controller checks these exact fixture substitutions againstAPI03 source;
+no default test is affected. This correction precedes the first fixture run.
