@@ -9,8 +9,6 @@
 use crate::{Binary, Function, Op, Program, Reg, Unary};
 use std::collections::{BTreeMap, BTreeSet};
 
-mod shared_fault_tails;
-
 // Labels exist only in offline test builds. The expression and emitted words
 // are identical when observation is disabled or compiled out.
 macro_rules! memory_part {
@@ -381,8 +379,6 @@ pub(crate) struct Jit<'a> {
     #[cfg(test)]
     scratch_values_enabled: bool,
     #[cfg(test)]
-    share_fault_tails: bool,
-    #[cfg(test)]
     observe_flush: bool,
     #[cfg(test)]
     observe_memory_parts: bool,
@@ -425,8 +421,6 @@ impl<'a> Jit<'a> {
             observe_scratch_locals: false,
             #[cfg(test)]
             scratch_values_enabled: true,
-            #[cfg(test)]
-            share_fault_tails: true,
             #[cfg(test)]
             observe_flush: false,
             #[cfg(test)]
@@ -540,11 +534,6 @@ impl<'a> Jit<'a> {
         let mut assertions = vec![];
         let mut operations = 0;
         let mut range_work = 4_000_000;
-        let mut fault_tails = shared_fault_tails::Tails::default();
-        #[cfg(test)]
-        let share_fault_tails = resumable && self.share_fault_tails;
-        #[cfg(not(test))]
-        let share_fault_tails = resumable;
         let reads = read_registers(f);
         let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
         let fills = local_fills(f);
@@ -698,9 +687,6 @@ impl<'a> Jit<'a> {
                     let target = a.words.len();
                     a.imm(0, kind as u64);
                     a.return_to_vm();
-                    if share_fault_tails {
-                        fault_tails.share(&mut a.words, target, words.len())?;
-                    }
                     span!(FaultTail, None);
                     for &(at, failure) in &failures {
                         if failure == kind { a.patch_conditional(at, target)?; }

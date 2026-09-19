@@ -18,8 +18,6 @@ mod flush_census;
 #[cfg(test)]
 mod memory_parts;
 #[cfg(test)]
-mod cold_tails;
-#[cfg(test)]
 mod continuation_census;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]

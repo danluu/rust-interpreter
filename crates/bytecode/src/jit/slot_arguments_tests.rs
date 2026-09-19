@@ -47,40 +47,6 @@ struct Snapshot {
     memory:Vec<u8>, heap:Vec<u8>, registers:Vec<u128>, frames:Vec<Frame>, hits:Vec<Vec<u64>>, scalar_hits:Vec<Vec<u64>>,
 }
 
-#[test]
-fn shared_fault_native_complete_state_and_host_abi_match_unshared_emission() {
-    for final_denominator in [0,u64::MAX as u128] {
-        let mut root=function(vec![
-            Op::Jump{target:3},Op::Local{dst:5,offset:0},Op::Local{dst:6,offset:8},
-            Op::Load{dst:1,address:5,size:8},Op::Store{address:7,src:1,size:8},Op::Jump{target:6},
-            Op::Load{dst:2,address:6,size:8},
-            Op::Binary{dst:3,overflow:4,op:Binary::Div,a:1,b:2,bits:64,signed:true},
-            Op::Store{address:7,src:3,size:8},Op::Jump{target:10},
-            Op::Imm{dst:1,value:1<<63},Op::Imm{dst:2,value:final_denominator},
-            Op::Binary{dst:3,overflow:4,op:Binary::Div,a:1,b:2,bits:64,signed:true},Op::Return]);
-        root.registers=8;
-        let mut p=program(vec![root]);p.statics=vec![0;16];crate::validate(&p).unwrap();
-        for persistent in [false,true] {for profiled in [false,true] {
-            let mut old=Jit::new_resumable(&p,profiled,MAX_CODE_BYTES,persistent).unwrap();
-            old.share_fault_tails=false;
-            let mut new=Jit::new_resumable(&p,profiled,MAX_CODE_BYTES,persistent).unwrap();
-            old.ensure_function(0).unwrap();new.ensure_function(0).unwrap();
-            assert!(new.bytes<old.bytes);
-            for (source,other) in [(16,24),(16,0),(0,24),(crate::heap::TAG+16,24),
-                (16,crate::heap::TAG+24),(usize::MAX,24)] {
-                for destination in [32,0,crate::heap::TAG+40] {for budget in 0..=16 {
-                    let values=[source as u128,other as u128,destination as u128];
-                    // Includes exact native fault status, every backing byte,
-                    // frame/register canaries, profile counts, limits and all
-                    // host callee-saved sentinels from tree_abi_probe.
-                    assert_eq!(direct_entry(&p,&new,values,budget,3),direct_entry(&p,&old,values,budget,3),
-                        "source={source:x},other={other:x},destination={destination:x},budget={budget}");
-                }}
-            }
-        }}
-    }
-}
-
 fn direct_entry(p:&Program,jit:&Jit<'_>,values:[u128;3],budget:u64,frame_end:usize) -> Snapshot {
     let n=p.functions[0].registers;
     let mut memory:Vec<_>=(0..288).map(|i|(i%239) as u8).collect();
