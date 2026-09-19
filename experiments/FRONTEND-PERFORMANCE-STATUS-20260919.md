@@ -80,6 +80,7 @@ Evidence entry points:
 - [Installation auditor source and passed ordinary regressions](../results/runtime12-installation-audit-source-01/STATUS.md)
 - [Passed installation07 and retained audit12 failure](../results/runtime-installation07-success-01/STATUS.md)
 - [Corrected directory reader and nine new regressions](../results/runtime13-provider-directory-source-01/STATUS.md)
+- [Passed audit13 of the unchanged installation](../results/runtime13-installation-saved-audit-01/STATUS.md)
 - [Standard-library adapter source and 12 focused tests](../results/runtime-std07-source-development-01/STATUS.md)
 
 Historical plans and source manifests retain their original status text. The
