@@ -1,23 +1,26 @@
-# Continue after isolated switch rejection
+# Continue with saved-evidence loop census
 
-Manual indefinite work; goalPAUSED, no goaltools/subagents/peerprocesscontrol.
-Isolatedcompact-switch primary is CLOSED45718 andFAILED; all40commandcorrectness
-and2strictcontrols pass. Wall1.0075768713+AA.0341175247=1.0416943960;CPU1.0078635049
-violates<=1. Main runtime staysadopteddf4006. Do notretimeunchangedcandidate.
-Allfullpublic/private/parser/Nushell guards CANCELLED; preparedfullcontroller
-compact-switch-adopted-guards neverqualified/launched. Preserve draft + receipt.
+Manual indefinite optimization; goal PAUSED. No subagents, goal tools or peer
+process control. Isolated compact-switch primary CLOSED45718, failed; all later
+guards cancelled/unstarted. Do not retime it. Main runtime remains adopted.
 
-CurrentrootRuststillisolated3cf176ed; oldercomposition andinstalledtoolsretained.
-SwitchbacktoadoptedRust only onnewbranchwhennewworkrequires; preserveallcurrent
-Python/compilerwork and peerproductionchangesonmain. No activecommands.
-Nextsaved-evidence review: inspectactualstartup/request costs of completecc1ebf
-composition histories vsadopted beforechoosinggeneralruntimeadmissionpolicy.
-No policychosen. Adoptednativecaptures alreadyCLOSED:
-adopted-current-runtime-sampling-02, scratch-scalar-runtime-sampling-01,
-scalar-protocol-census-03. Do notrerunforredundantcategorycounts.
+New preregistered controller: benchmarks/experiments/adopted-hot-loop-census.
+Run adopted-hot-loop-census-01 under supervisor, then its independent --close.
+Freeze experiment sources through closure. Offline only: 16 controls, existing
+closed adopted normal-entropy native captures and separate fixed-entropy counts.
+Do not infer loop optimization safety or speedup from coverage. Next direction
+requires measured scope, typed correctness proof and complete-edit benchmarks.
 
-FullstateSTATE.md; docs/COMPACT-SWITCH-ISOLATION-20260919.md.
-Main5e733dda retainspeer86522166; root2fa7e187pushed beforelatestresultcommit.
-Free~20GiB, noRustbuild admitted underdynamic~23GiBfloor. SharedtargetNEVERCLEAN.
-AlloldstorageoperationsCLOSED; neverrepeatmutations. Profile12GiB/children8GiB,
-fre16GiB,2workers,sharedlock45s. Suggestions unchanged4d74b3dc...80c2f.
+Saved composed lifecycle review found <1.3 ms startup/shutdown per edit on each
+completed guard; private row about0.6ms and candidate execution already lower.
+This does not support another startup policy as the fix for its guard failure.
+
+Root Rust still isolated3cf176ed; restore adopted only on a new runtime branch
+when implementation requires. Preserve current compiler work and peer main.
+Main114f6f02 now publishes all closed isolated failures/proofs/cancellations,
+retaining peer e639f93a. Root aaa356ff pushed. suggestions.txt unchanged4d74b3dc.
+
+Free~20GiB; no Rust build admitted under last dynamic~23GiB reserve. Recompute.
+Shared target NEVER CLEAN. All previous cleanup/compression operations CLOSED,
+never replay them. Shared lock45s, analysis12GiB/child8GiB, two build workers.
+Current paused goal remains untouched. Full state STATE.md.

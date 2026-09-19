@@ -175,3 +175,23 @@ PID29541; no competingcleanup/guard/processcontrol. Recheckdisk/memory/lock.
 suggestions.txtunmodified/untrackedSHA
 4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f;
 fullyrereadthisturn;docs/SUGGESTIONS-REVIEW-20260913-1245.md. No newskills/web.
+
+
+## Resume at 2026-09-19 06:39: offline loop census
+
+Revalidated clean tracked root aaa356ff, no active experiment process, ~20.2GiB
+free; no build admission. Root aaa356ff pushed. Owned publication fast-forwarded
+to peer e639f93a; exact38 controller/result/doc files published as114f6f02 and
+pushed main. No Rust candidate or peer production changes overwritten.
+
+Read-only composed lifecycle review: wall per edit token1.265ms, folded0.911ms,
+pgrust0.634ms, private0.607ms. Private candidate execution median5.611ms versus
+adopted6.639ms; build233.616ms versus231.279ms. Separate medians not additive or
+causal. Startup policy is not supported as the fix for the failed private guard.
+
+Next: registered adopted-hot-loop-census-01 (offline,16controls,no guest/build).
+Reuses adopted-current-runtime-sampling-02 and current-host adopted profiles.
+Measures cyclic SCC direct-PC coverage, separately associated overhead and whole
+scalar spans, calls/effects/size/entry structure. Static normal-return CFG is an
+overapproximation and not a safety proof. Sources frozen through independent
+closure; preserve failure, no retrospective relaxation. RUNTIME-NEXT.md updated.
