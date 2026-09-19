@@ -23,8 +23,19 @@ The first two screen attempts stopped during Cargo setup. Attempt 01 rejected
 Cargo's ordinary `-Z embed-metadata=no`; attempt 02 rejected a build-script
 command with no `-C extra-filename`. Attempt 02 completed three compiler queries
 and one dependency compilation. Neither attempt reached an edit, warmup or timed
-sample. Their original arguments and failure records remain retained; successor
-harness changes must preserve those arguments and the fixed comparison rule.
+sample. Attempt 03 completed both Cargo setups, with 325 compiler invocations
+per arm, and compiled the edited source successfully in its first warmup. Its
+reader then rejected a normal `unused_extern` JSON record; no timed samples ran.
+Original arguments and failure records remain retained. Successor harness
+changes must preserve those arguments, all diagnostic records and the fixed
+comparison rule.
+
+Runtime installation06 also stopped before completion. Its ten loader probes
+returned successfully, but the reader concatenated three architecture sections
+from four universal macOS libraries while the specification described ARM64.
+The failed prefix remains intact. A prospective correction will explicitly
+select the admitted host architecture and bind that policy into the runtime
+identity; it will not remove libraries or discard mismatched load commands.
 
 Evidence entry points:
 
@@ -34,7 +45,8 @@ Evidence entry points:
 - [Passed installation resource and admission controls](../results/runtime-installation-controls-07/STATUS.md)
 - [Actual macro-client default discovery checks](../results/proc-macro-arena-n-overlay-01-publication/STATUS.md)
 - [First Ruff setup failure](../results/proc-macro-arena-ruff-screen-01-publication/README.md)
-- [Second screen's frozen source and protocol](proc-macro-arena-ruff-screen-02/README.md)
+- [Second Ruff setup failure](../results/proc-macro-arena-ruff-screen-02-publication/README.md)
+- [Third screen's frozen source and protocol](proc-macro-arena-ruff-screen-03/README.md)
 
 Historical plans and source manifests retain their original status text. The
 linked actual-result records establish which work has since run; an old plan's
