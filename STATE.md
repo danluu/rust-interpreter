@@ -154,6 +154,14 @@ receipt helpers/tests, run20controls/profile,16Python controls, then preserve a
 non-test VM executable. Do not change focus.py until focused04 admission failure
 has been preserved. scripts/interpreter.py now validates shared receipts and
 adds configuration/store metadata to timing receipts only when requested.
+Full build.py and success close_stage.py are prepared but unexecuted. They
+require closed focused05 with matching Rust/script/test bindings, expect all
+20template controls in both workspace profiles (minimum635pass/14ignored),
+and full Python minimum456discovered/22skipped. Install the exact retained
+focused VM with adopted exporter/wrapper; no redundant VM rebuild. Preserve
+partial successful commands if a later stage/observer fails. Review these
+controllers before execution. The current main publication is stillbb0d32f0;
+no shared-template runtime has been merged or performance-tested.
 
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally

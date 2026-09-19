@@ -80,3 +80,21 @@ owners. Run19controls/profile plus a non-test release VM build, freezing and
 retaining the executable separately. No original project guest or timing is
 admitted in this stage. Full workspace, launcher/protocol, strict rejection and
 original workload sharing coverage remain required before benchmark admission.
+
+Focused04 never acquired the lock and started no build/test. Preserve that
+admission receipt before changing its controller run ID. The next focused run
+must include the bounded-capture control (20Rust/profile),16focused Python tests
+from test_isolated_launcher/test_shared_templates, and a retained non-test VM.
+Freeze launcher/receipt helper/test sources as well as Rust. Full build01 is
+prepared to require a closed focused05, run the workspace in both profiles
+(at least635passing tests,14declared ignored, all20template controls named),
+and the full Python suite (at least456discovered,22declared skips). Reuse the
+exact already-built focused VM if every Rust/script/test binding still matches;
+do not rebuild it just to install. Compose only that VM with the adopted
+exporter/wrapper, preserving their exact hashes. This full stage remains
+unstarted and needs a result closer before execution.
+The success closer is now prepared as close_stage.py; it accepts only named
+shared-emission-templates focused/build stages, verifies archived source,
+captured logs, installed artifacts and the original supervisor terminal. A
+partial failure must still be preserved before correction; never rerun a
+successful workspace stage solely because later Python/bookkeeping failed.
