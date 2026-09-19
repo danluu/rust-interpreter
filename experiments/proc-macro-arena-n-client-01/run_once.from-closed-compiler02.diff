@@ -1,0 +1,395 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/run_once.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/run_once.py
+@@ -1,4 +1,4 @@
+-"""Unrun one-shot stock/Arena04 real-compiler fixture; no retries or signals."""
++"""One-shot matched N client builds and real compiler tests. No retries or signals."""
+ from pathlib import Path
+ import fcntl
+ import hashlib
+@@ -12,22 +12,15 @@
+ import time
+ 
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+-SOURCE = ROOT/'experiments/proc-macro-arena-compiler-02'
+-WORK = ROOT/'.work/proc-macro-arena-compiler-02'
+-OUT = ROOT/'results/proc-macro-arena-compiler-02'
+-TC = Path('/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin')
+-BRIDGE = ROOT/'.work/proc-macro-arena-bridge-01'
+-OLD = ROOT/'results/proc-macro-arena-bridge-01'
++SOURCE = ROOT/'experiments/proc-macro-arena-n-client-01'
++WORK = ROOT/'.work/proc-macro-arena-n-client-01'
++OUT = ROOT/'results/proc-macro-arena-n-client-01'
++TC = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1')
+ LOCK = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+-PLAN_SHA = '9c041b35bba1c23774e9da923556f232a6c7da3911256a0be124b2f638ae3593'
+-OLD_SOURCE_SHA = '16ceacc4a5c86604ed06dc291b5f78a49b34283f607b5e3b56a9590688fe70bc'
+-OLD_RESULT_SHA = '4e0e677aa3b3c65728e2351017f299c2c8f8cf41aff69c7cdbabe93c6b68b30a'
+-MANIFESTS = {
+-    'manifest-rustc-aarch64-apple-darwin': '63877f7423dab866120519887a56dc4a6780e6ac9928fd6ea3ce8c02281a9658',
+-    'manifest-rust-std-aarch64-apple-darwin': 'dc34ab873acc111785b0d677e1dbbbf66cb387ee28e6d8325863f423b13c61b9',
+-}
++PLAN_SHA = 'f48f751f792475a266ef132e24b888781379f0954e7df174cd5b9e792a1ef723'
+ FIELDS = ('dev', 'ino', 'mode', 'nlink', 'size', 'mtime_ns', 'ctime_ns')
+ START = time.monotonic()
++
+ 
+ 
+ def require(value, message):
+@@ -42,7 +35,7 @@
+ def guard(entry=False):
+     require(time.monotonic()-START < 2400, 'overall observer deadline expired')
+     free = shutil.disk_usage(ROOT).free
+-    require(free >= (16 if entry else 9)*2**30, 'compiler free-space gate refused')
++    require(free >= (14 if entry else 9)*2**30, 'compiler free-space gate refused')
+     return free
+ 
+ 
+@@ -66,7 +59,7 @@
+ 
+ def read(path, expected=None):
+     row = file_record(path)
+-    require(row['bytes'] <= 2**20 and (expected is None or row['sha256'] == expected), 'bounded exact JSON input')
++    require(row['bytes'] <= 4*2**20 and (expected is None or row['sha256'] == expected), 'bounded exact JSON input')
+     value = json.loads(Path(path).read_bytes())
+     require(file_record(path) == row, 'JSON changed during decoding')
+     return value
+@@ -85,15 +78,15 @@
+ 
+ def work_size():
+     total = 0; count = 0
+-    for root, directories, files in os.walk(WORK, followlinks=False):
++    for root, directories, files in owned_walk():
+         for name in directories + files:
+             p = Path(root)/name; info = p.lstat(); count += 1
+-            require(count <= 512 and not stat.S_ISLNK(info.st_mode), 'unexpected owned output membership')
++            require(count <= 1024 and not stat.S_ISLNK(info.st_mode), 'unexpected owned output membership')
+             if stat.S_ISREG(info.st_mode):
+                 total += info.st_size
+             else:
+                 require(stat.S_ISDIR(info.st_mode), 'unexpected owned output kind')
+-    require(total <= 128*2**20, 'fresh work exceeds 128MiB')
++    require(total <= 256*2**20, 'fresh work/results exceed 256MiB')
+     return total
+ 
+ 
+@@ -160,7 +153,7 @@
+     require(child.returncode is not None, 'child may remain live; no retry, signal or further compiler call')
+     require(not record['observation_errors'], 'observation/publication failed after bounded wait')
+     require(child.returncode == spec['expected_returncode'], 'unexpected compiler exit')
+-    require(record['stdout']['bytes'] == 0, 'unexpected compiler stdout')
++    require(spec['role'] == 'run-whole-crate-tests' or record['stdout']['bytes'] == 0, 'unexpected compiler stdout')
+     guard(); work_size()
+     return label, record
+ 
+@@ -183,7 +176,7 @@
+             errors.append(value)
+         else:
+             require(level == 'failure-note', 'unexpected standalone compiler diagnostic level')
+-    expected = [] if spec['role'] == 'build-macro-dylib' else cases[spec['case']]['errors']
++    expected = cases[spec['case']]['errors'] if spec['role'] == 'caller' else []
+     require(len(errors) == len(expected), 'unexpected number of primary errors')
+     require(aborts == ([] if spec['expected_returncode'] == 0 else [len(errors)]),
+             'exact abort summary must agree with retained primary errors')
+@@ -205,130 +198,198 @@
+     return sorted(normalized, key=lambda item: json.dumps(item, sort_keys=True))
+ 
+ 
+-def dependency_proof(spec):
+-    output = Path(spec['output'])
++def owned_walk():
++    for base in [WORK, OUT]:
++        yield from os.walk(base, followlinks=False)
++
++
++def expected_identity(values):
++    require(type(values) is list and len(values) == 7 and all(type(v) is int for v in values), 'exact saved identity')
++    dev, ino, mode, size, mtime, ctime, links = values
++    return dict(dev=dev, ino=ino, mode=mode, size=size, mtime_ns=mtime, ctime_ns=ctime, nlink=links)
++
++
++def runtime_readback(inventory, payloads):
++    require(inventory['root'] == str(TC) and inventory['file_count'] == 63 and inventory['link_count'] == 2,
++            'complete unchanged N runtime required')
++    expected = inventory['entries']; observed = {}; directories = {}
++    for root, dirs, files in os.walk(TC, followlinks=False):
++        directory = Path(root)
++        require(directory.resolve(strict=True) == directory and stat.S_ISDIR(directory.lstat().st_mode), 'ordinary runtime directory')
++        directories[str(directory.relative_to(TC))] = stamp(directory.lstat())
++        require(len(directories) <= 32, 'bounded runtime directories')
++        for name in dirs + files:
++            path = directory/name; relative = str(path.relative_to(TC)); info = path.lstat()
++            if stat.S_ISDIR(info.st_mode):
++                continue
++            require(relative in expected, 'extra runtime member')
++            row = expected[relative]; identity = stamp(info)
++            require(identity == expected_identity(row['stamp']), 'saved N runtime identity changed')
++            if row['kind'] == 'link':
++                require(stat.S_ISLNK(info.st_mode) and os.readlink(path) == row['target']
++                        and str(path.resolve(strict=True)) == row['resolved'], 'exact declared source link changed')
++                observed[relative] = dict(kind='link', identity=identity, target=row['target'], resolved=row['resolved'])
++            else:
++                require(row['kind'] == 'file' and stat.S_ISREG(info.st_mode), 'ordinary runtime file')
++                actual = file_record(path) if payloads else dict(identity=identity, sha256=row['sha256'], bytes=identity['size'])
++                require(actual['sha256'] == row['sha256'] and actual['identity'] == identity, 'N runtime payload changed')
++                observed[relative] = dict(kind='file', **actual)
++            require(stamp(path.lstat()) == identity, 'runtime entry changed during readback')
++            require(len(observed) <= 65, 'bounded runtime membership')
++    require(set(observed) == set(expected) and len(observed) == 65, 'complete runtime membership differs')
++    require(directories == inventory['directories'], 'complete runtime directory identity/membership differs')
++    require(sum(r['bytes'] for r in observed.values() if r['kind'] == 'file') == inventory['logical_file_bytes'], 'runtime byte accounting differs')
++    return dict(entries=observed, directories=directories, full_payload_readback=payloads)
++
++
++def input_paths(plan):
++    require(len(plan['inputs']) <= 128, 'bounded source and provenance inputs')
++    rows = {}
++    for name, expected in plan['inputs'].items():
++        require(name == expected['path'], 'input route differs')
++        actual = file_record(name)
++        require(actual == {k:expected[k] for k in ['sha256','bytes','identity']}, 'exact source or provenance input changed')
++        rows[name] = actual
++    for path in [SOURCE/'plan.json', SOURCE/'run_once.py', SOURCE/'README.md', SOURCE/'source-review.json']:
++        rows[str(path)] = file_record(path)
++    require(rows[str(SOURCE/'plan.json')]['sha256'] == PLAN_SHA, 'plan changed')
++    bindings = read(SOURCE/'source-bindings.json',plan['source_bindings']['sha256'])
++    for pair in bindings['copies'].values():
++        require(rows[pair['origin']['path']]['sha256'] == rows[pair['copy']['path']]['sha256'], 'copied source provenance differs')
++    differences = []
++    for name in sorted(bindings['copies']):
++        path = Path(name)
++        if path.is_relative_to(SOURCE/'source/stock/proc_macro'):
++            rel = path.relative_to(SOURCE/'source/stock/proc_macro')
++            other = str(SOURCE/'source/candidate/proc_macro'/rel)
++            if rows[name]['sha256'] != rows[other]['sha256']:
++                differences.append(str(rel))
++    require(differences == bindings['source_difference_paths'], 'only Arena and Symbol may differ between client sources')
++    return rows
++
++
++def test_result(label, spec):
++    require((OUT/(label+'.stderr')).read_bytes() == b'', 'test harness stderr must be empty')
++    raw = (OUT/(label+'.stdout')).read_text(); lines = [line for line in raw.splitlines() if line]
++    names = spec['tests']; count = len(names)
++    require(len(lines) == count+2 and lines[0] == f'running {count} tests', 'exact native test count/header')
++    require(lines[1:-1] == [f'test {name} ... ok' for name in names], 'all exact native tests must pass without skips')
++    require(re.fullmatch(r'test result: ok\. '+str(count)+r' passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9]+\.[0-9]+s', lines[-1]) is not None,
++            'exact native test result summary')
++    return dict(tests=names, passed=count, stock_empty_harness_is_smoke_only=spec['arm']=='stock')
++
++
++def dependency_proof(spec, built):
++    outputs = [spec['output']] + ([spec['metadata']] if 'metadata' in spec else [])
+     if spec['expected_returncode'] != 0:
+-        require(not os.path.lexists(output), 'failed compiler emitted success metadata')
+-        return dict(success_output_absent=True)
+-    row = file_record(output); dep = Path(spec['depinfo']); dep_row = file_record(dep)
++        require(all(not os.path.lexists(p) for p in outputs), 'failed compiler emitted success metadata')
++        return dict(success_outputs_absent=outputs)
++    rows = {name:file_record(name) for name in outputs}
++    dep = Path(spec['depinfo']); dep_row = file_record(dep)
+     require(dep_row['bytes'] <= 2**20, 'bounded dependency proof')
+-    text = dep.read_text()
++    text = dep.read_text(); require(file_record(dep) == dep_row, 'dep-info changed during reading')
++    # Binary dep-info must name actual source and matching split metadata/code pairs.
++    require('/.rustup/toolchains/' not in text, 'installed T artifact entered matched N dependency closure')
++    for arg in spec['argv']:
++        if arg.endswith('.rs'):
++            require(arg in text, 'actual Rust source missing from dep-info')
++    if spec['role'] != 'caller':
++        require('/libproc_macro-452900db9815e688.' not in text, 'old N client silently selected')
++    if spec['role'] in ['build-stock-client','build-candidate-client','build-whole-crate-tests','build-macro-dylib']:
++        for suffix in ['rlib','rmeta']:
++            name = str(WORK/'dependency'/('librustc_literal_escaper-arena04_n_dep01.'+suffix))
++            require(name in text and file_record(name) == built[name], 'matched normal literal pair not linked')
++        require('/librustc_literal_escaper-f4f532eb55f87a02.' not in text, 'old private literal selected')
++    if spec['role'] == 'build-macro-dylib':
++        for suffix in ['rlib','rmeta']:
++            name = str(WORK/spec['arm']/(f'libproc_macro-arena04_n_{spec["arm"]}01.'+suffix))
++            require(name in text and file_record(name) == built[name], 'matched N client pair not linked')
++        other = 'stock' if spec['arm']=='candidate' else 'candidate'
++        require(str(WORK/other) not in text, 'other arm entered macro build')
+     if spec['role'] == 'caller':
+-        required = str(WORK/spec['arm']/'libarena04_macros.dylib')
+-        forbidden = str(WORK/('stock' if spec['arm'] == 'candidate' else 'candidate')/'libarena04_macros.dylib')
+-        require(required in text and forbidden not in text, 'caller selected the wrong macro dylib')
+-    elif spec['arm'] == 'candidate':
+-        require(str(BRIDGE/'libproc_macro.rlib') in text and str(BRIDGE/'librustc_literal_escaper.rlib') in text
+-            and '/libproc_macro-9dac517e5d77c501.' not in text, 'candidate client linkage differs')
+-    else:
+-        require('/libproc_macro-9dac517e5d77c501.' in text and str(BRIDGE/'libproc_macro.rlib') not in text,
+-                'stock client linkage differs')
+-    return dict(output=row, depinfo=dict(path=str(dep), **dep_row))
+-
+-
+-def input_paths(plan):
+-    old = read(OLD/'source.json', OLD_SOURCE_SHA); result = read(OLD/'result.json', OLD_RESULT_SHA)
+-    require(result['status'] == 'passed' and result['tests_passed'] == 8
+-            and result['library_sha256'] == plan['candidate_library']['saved_sha256'], 'actual prior library qualification differs')
+-    expected = dict(old['source_pins']); expected[str(BRIDGE/'libproc_macro.rlib')] = result['library_sha256']
+-    expected[str(BRIDGE/'librustc_literal_escaper.rlib')] = 'c7604580e6e8c28123dd4fe1a14a7ef222495f8efa42f09539f7cac6b0ccbf81'
+-    expected.update({name: row['sha256'] for name, row in plan['source_files'].items()})
+-    expected.update({str(SOURCE/'plan.json'): PLAN_SHA, str(OLD/'source.json'): OLD_SOURCE_SHA,
+-                     str(OLD/'result.json'): OLD_RESULT_SHA})
+-    paths = set(map(Path, expected)) | {Path(__file__), SOURCE/'README.md', SOURCE/'source-review.json'}
+-    for name, digest in MANIFESTS.items():
+-        path = TC/'lib/rustlib'/name; expected[str(path)] = digest; paths.add(path)
+-        require(file_record(path)['sha256'] == digest, 'installed component manifest changed')
+-        declared = path.read_text().splitlines()
+-        require(len(declared) <= 128 and all(line.startswith('file:') for line in declared), 'bounded component manifest required')
+-        selected = declared if name.startswith('manifest-rust-std-') else [line for line in declared if line in {
+-            'file:bin/rustc', 'file:lib/libLLVM.dylib', 'file:lib/librustc_driver-74f15b932c10ca27.dylib'}]
+-        for line in selected:
+-            relative = Path(line[5:]); require(not relative.is_absolute() and '..' not in relative.parts, 'component route escape')
+-            paths.add(TC/relative)
+-    require(len(paths) <= 128, 'bounded exact compiler/library/source selection')
+-    rows = {str(path): file_record(path) for path in sorted(paths)}
+-    for name, digest in expected.items():
+-        require(rows[name]['sha256'] == digest, 'qualified source or selected library changed')
+-    return rows
++        name = str(WORK/'macro-tests'/spec['arm']/'libarena04_macros.dylib')
++        other = str(WORK/'macro-tests'/('stock' if spec['arm']=='candidate' else 'candidate')/'libarena04_macros.dylib')
++        require(name in text and other not in text and file_record(name) == built[name], 'caller selected wrong macro dylib')
++    return dict(outputs=rows,depinfo=dict(path=str(dep),**dep_row))
+ 
+ 
+ def main():
+     require(Path(__file__) == SOURCE/'run_once.py' and Path.cwd() == ROOT, 'exact runner path and cwd')
+     require(not os.path.lexists(WORK) and not os.path.lexists(OUT), 'fresh work/results required')
+-    plan = read(SOURCE/'plan.json', PLAN_SHA)
+-    require(len(plan['commands']) == 20 and len(plan['cases']) == 9 and plan['actual_result'] is None, 'exact unrun fixed fixture plan')
+-    require(plan['compiler'] == str(TC/'bin/rustc') and plan['sysroot'] == str(TC), 'matching installed compiler only')
++    plan = read(SOURCE/'plan.json',PLAN_SHA)
++    require(len(plan['commands']) == 27 and len(plan['cases']) == 9 and plan['actual_result'] is None, 'fixed unrun plan')
++    require(plan['compiler'] == str(TC/'bin/rustc') and plan['sysroot'] == str(TC), 'matched N compiler only')
+     guard(entry=True); OUT.mkdir(); WORK.mkdir()
+-    for arm in ['stock', 'candidate']:
+-        (WORK/arm).mkdir(); (WORK/arm/'tmp').mkdir()
+-    shutil.copyfile(SOURCE/'run_once.py', OUT/'run_once.py')
+-    shutil.copyfile(SOURCE/'plan.json', OUT/'plan.json')
+-    records = []; summary = dict(status='waiting', started_at=time.time(), parent_pid=os.getpid(),
+-        plan_sha256=PLAN_SHA, command_records=records, compiler_children=0, signals=[], retries=0,
+-        real_proc_macro_client_integration=False, compiler_distribution_qualified=False, benchmark=False)
+-    write('execution.json', summary)
+-    lock = None
++    for relative in ['dependency','stock','candidate','macro-tests/stock','macro-tests/candidate']:
++        (WORK/relative/'tmp').mkdir(parents=True)
++    shutil.copyfile(SOURCE/'run_once.py',OUT/'run_once.py'); shutil.copyfile(SOURCE/'plan.json',OUT/'plan.json')
++    records=[]; summary=dict(status='waiting',started_at=time.time(),parent_pid=os.getpid(),plan_sha256=PLAN_SHA,
++        command_records=records,children=0,signals=[],retries=0,real_N_external_client_integration=False,
++        compiler_distribution_qualified=False,runtime_composition_qualified=False,benchmark=False)
++    write('execution.json',summary);lock=None
+     try:
+-        require(LOCK.resolve(strict=True) == LOCK and stat.S_ISREG(LOCK.lstat().st_mode), 'ordinary canonical lock')
+-        lock = LOCK.open('r+'); named = LOCK.stat(); held = os.fstat(lock.fileno())
+-        require((named.st_dev,named.st_ino,named.st_nlink) == (held.st_dev,held.st_ino,1), 'canonical identity differs')
+-        deadline = time.monotonic()+600
++        require(LOCK.resolve(strict=True)==LOCK and stat.S_ISREG(LOCK.lstat().st_mode),'ordinary canonical lock')
++        lock=LOCK.open('r+'); named=LOCK.stat();held=os.fstat(lock.fileno())
++        require((named.st_dev,named.st_ino,named.st_nlink)==(held.st_dev,held.st_ino,1),'canonical identity differs')
++        deadline=time.monotonic()+600
+         while True:
+             try:
+-                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB); break
++                fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB);break
+             except BlockingIOError:
+-                require(time.monotonic() < deadline, 'canonical wait expired')
+-                time.sleep(.25)
+-        summary.update(status='admitted', admitted_at=time.time(), free_bytes_before=guard(entry=True))
+-        before = input_paths(plan); write('inputs-before.json', before)
+-        cases = {case['name']: case for case in plan['cases']}; compared = {}; proofs = []; built = {}
+-        for index, spec in enumerate(plan['commands']):
+-            dylib = str(WORK/spec['arm']/'libarena04_macros.dylib')
+-            if spec['role'] == 'caller':
+-                require(file_record(dylib) == built[dylib], 'macro dylib changed before caller')
+-            label, record = run(index, spec, lock, records)
+-            summary['compiler_children'] += 1
+-            observed = diagnostics(label, spec, cases); dep = dependency_proof(spec)
+-            if spec['role'] == 'caller':
+-                require(file_record(dylib) == built[dylib], 'macro dylib changed during caller')
+-                key = spec['case']
+-                if spec['arm'] == 'stock':
+-                    compared[key] = observed
+-                else:
+-                    require(observed == compared[key], 'stock/candidate stable diagnostic fields differ')
++                require(time.monotonic()<deadline,'canonical wait expired');time.sleep(.25)
++        summary.update(status='admitted',admitted_at=time.time(),free_bytes_before=guard(entry=True))
++        before=input_paths(plan);write('inputs-before.json',before)
++        inventory=read(SOURCE/'runtime-inventory.json',plan['runtime_inventory']['sha256'])
++        compiled=read(inventory['compiled']['path'],inventory['compiled']['sha256'])
++        require(compiled['stage1']==inventory['entries'] and compiled['source_identity']==inventory['source_identity'], 'old N compiler proof differs')
++        runtime_before=runtime_readback(inventory,True);write('runtime-before.json',runtime_before)
++        cases={case['name']:case for case in plan['cases']};compared={};proofs=[];built={}
++        for index,spec in enumerate(plan['commands']):
++            current=runtime_readback(inventory,False)
++            require(current['entries']==runtime_before['entries'] and current['directories']==runtime_before['directories'], 'N runtime identity/membership changed')
++            require(all(file_record(name)==row for name,row in built.items()),'previously built artifact changed')
++            label,record=run(index,spec,lock,records)
++            summary['children']+=1
++            if spec['role']=='run-whole-crate-tests':
++                proof=dict(label=label,native_tests=test_result(label,spec))
+             else:
+-                built[dylib] = dep['output']
+-            proofs.append(dict(label=label, diagnostics=observed, dependency=dep))
+-            write(label+'-verification.json', proofs[-1]); write('execution.json', summary, replace=True)
+-        after = {name: file_record(name) for name in before}; write('inputs-after.json', after)
+-        require(after == before, 'selected compiler/library/source inputs changed')
+-        require(all(file_record(name) == row for name, row in built.items()), 'final macro dylib changed')
+-        write('macro-dylibs.json', built)
+-        require(len(records) == 20 and all(row['status'] == 'closed' and not row['may_be_live'] for row in records), 'all actual children must close')
+-        summary.update(status='passed', real_proc_macro_client_integration=True, finished_at=time.time(),
+-            free_bytes_after=guard(), work_bytes=work_size(), compared_cases=9, input_files=len(before))
++                observed=diagnostics(label,spec,cases);dep=dependency_proof(spec,built)
++                if spec['role']=='caller':
++                    key=spec['case']
++                    if spec['arm']=='stock':compared[key]=observed
++                    else:require(observed==compared[key],'stock/candidate stable diagnostics differ')
++                if spec['expected_returncode']==0:built.update(dep['outputs'])
++                proof=dict(label=label,diagnostics=observed,dependency=dep)
++            require(all(file_record(name)==row for name,row in built.items()),'built artifact changed during child')
++            proofs.append(proof);write(label+'-verification.json',proof);write('execution.json',summary,replace=True)
++        after={name:file_record(name) for name in before};write('inputs-after.json',after)
++        require(after==before,'source/provenance input changed')
++        runtime_after=runtime_readback(inventory,True);write('runtime-after.json',runtime_after)
++        require(runtime_after==runtime_before,'full N runtime changed')
++        write('built-artifacts.json',built)
++        require(len(records)==27 and all(row['status']=='closed' and not row['may_be_live'] for row in records),'all children must close')
++        summary.update(status='passed',real_N_external_client_integration=True,finished_at=time.time(),
++            free_bytes_after=guard(),work_and_results_bytes=work_size(),compared_cases=9,input_files=len(before),
++            runtime_files=63,runtime_links=2,native_tests=plan['whole_crate_test_names'])
+     except BaseException as error:
+-        summary.update(status='failed', error=repr(error), observed_at=time.time())
+-        raise
++        summary.update(status='failed',error=repr(error),observed_at=time.time());raise
+     finally:
+         if lock is not None:
+-            lock.close()
+-            summary['parent_lock_closed_at'] = time.time()
++            lock.close();summary['parent_lock_closed_at']=time.time()
+             if all(not row['may_be_live'] for row in records) and 'admitted_at' in summary:
+-                summary['canonical_released_at'] = time.time()
+-        summary['compiler_children'] = sum('pid' in row for row in records)
+-        try:
+-            write('execution.json', summary, replace=True)
++                summary['canonical_released_at']=time.time()
++        summary['children']=sum('pid' in row for row in records)
++        try:write('execution.json',summary,replace=True)
+         except BaseException as error:
+-            print(json.dumps(dict(status='final-publication-failed', error=repr(error), observed=summary)), flush=True)
+-            raise
+-    write('result.json', dict(status='passed', compiler_children=20, caller_cases_per_arm=9,
+-        execution_sha256=file_record(OUT/'execution.json')['sha256'], inputs_unchanged=True,
+-        real_proc_macro_client_integration=True, installed_compiler_server_unchanged=True,
+-        compiler_distribution_qualified=False, benchmark=False))
+-    print(json.dumps(dict(status='passed', result_sha256=file_record(OUT/'result.json')['sha256'])))
++            print(json.dumps(dict(status='final-publication-failed',error=repr(error),observed=summary)),flush=True);raise
++    write('result.json',dict(status='passed',children=27,library_builds=3,whole_crate_test_builds=2,
++        native_tests_passed={'stock':0,'candidate':13},stock_empty_harness_is_smoke_only=True,caller_cases_per_arm=9,
++        execution_sha256=file_record(OUT/'execution.json')['sha256'],inputs_unchanged=True,complete_N_runtime_unchanged=True,
++        real_N_external_client_integration=True,compiler_server_unchanged=True,builtin_quote_optimized=False,
++        compiler_distribution_qualified=False,runtime_composition_qualified=False,holdout_qualified=False,benchmark=False))
++    print(json.dumps(dict(status='passed',result_sha256=file_record(OUT/'result.json')['sha256'])))
+ 
+ 
+ if __name__ == '__main__':
+     main()
++

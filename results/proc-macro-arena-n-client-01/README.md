@@ -1,0 +1,3 @@
+The matched N client run failed at its first compiler command. The compiler rejected `-Cforce-frame-pointers=non-leaf` without `-Zunstable-options`. The one child closed with exit 1; no client library or later test was built. The canonical lock was released. This is retained failure evidence, with no correctness qualification or timing claim.
+
+The exact planned source and flags remain in the adjacent records and `experiments/proc-macro-arena-n-client-01`. Source-history and resource-policy reviews are preserved in `results/proc-macro-arena-n-client01-source-history`. A correction will use a fresh namespace.

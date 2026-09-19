@@ -1,0 +1,655 @@
+{
+  "conclusion": "A fresh general bounded correctness-client phase may defensibly use14GiB admission as an explicit planning allowance. Source and saved records do not establish16GiB as necessary, and do not prove14GiB sufficient in every system state. No current source or threshold was changed.",
+  "created_at": 1789822504.148761,
+  "current_resources": {
+    "canonical_wait_seconds": 600,
+    "capacity_floor_bytes": 8589934592,
+    "child_file_limit_bytes": 67108864,
+    "entry_free_bytes": 17179869184,
+    "overall_observer_seconds": 2400,
+    "owned_output_limit_bytes": 268435456,
+    "retries": 0,
+    "signals": [],
+    "stop_free_bytes": 9663676416
+  },
+  "execution_findings": [
+    {
+      "finding": "Each top-level command is waited and required closed before the next. Canonical lock spans full phase and is inherited by direct children. Test harness runs with --test-threads=1.",
+      "lines": "run_once.py:99-158,347-364"
+    },
+    {
+      "finding": "Five new matchedN builds use opt-level3, codegen-units16, debuginfo1, split-debuginfo=unpacked and embedded bitcode. Compiler internal worker/linker concurrency and memory are not a single-thread or small-RSS proof.",
+      "lines": "plan.json commands0-6"
+    },
+    {
+      "finding": "Each child inherits64MiB per-file limit and CPU bounds; WORK+OUT logical sum is checked before/after each command and on one-second timeout observations. The256MiB total is sampled/postcondition, not a hard filesystem quota.",
+      "lines": "run_once.py:79-96,118-158"
+    },
+    {
+      "finding": "A low-space or aggregate-output observation is recorded without signaling the active child. No next command starts after an error, but the current child may consume more space until its own closure/deadline. CPU limits do not bound RSS or total swap.",
+      "lines": "run_once.py:126-155"
+    },
+    {
+      "finding": "Live checks use9GiB;8GiB is the retained planning floor/cushion. Reading the existing63-file N runtime hashes streams without copying the runtime or rebuilding it.",
+      "lines": "run_once.py:35-39,212-240"
+    },
+    {
+      "finding": "No HOME/Cargo/incremental cache or build-script action is declared. Explicit outputs, cwd and TMPDIR are under WORK; ordinary linker intermediates belong there. The macro fixture does no filesystem/process/network work. OS swap and any tool/system cache side effects are outside the owned output census and are not proven absent by this source review.",
+      "lines": "plan.json command environments and fixtures/macros.rs"
+    }
+  ],
+  "historical_evidence": {
+    "proc-macro-arena-bridge-01": {
+      "actual_records": [
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-bridge-01/fixture-record.json",
+          "returncode": 0,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.2036442756652832
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-bridge-01/library-record.json",
+          "returncode": 0,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.41858911514282227
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-bridge-01/tests-record.json",
+          "returncode": 0,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.25518798828125
+        }
+      ],
+      "stat_only_current_owned_bytes": 5942050,
+      "stat_only_current_owned_files": [
+        {
+          "bytes": 2193440,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-bridge-01/bridge-tests"
+        },
+        {
+          "bytes": 90248,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-bridge-01/librustc_literal_escaper.rlib"
+        },
+        {
+          "bytes": 6072,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-bridge-01/libproc_macro.d"
+        },
+        {
+          "bytes": 3631336,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-bridge-01/libproc_macro.rlib"
+        },
+        {
+          "bytes": 20954,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-bridge-01/bridge-tests.d"
+        }
+      ],
+      "used_for_memory_upper_bound": false
+    },
+    "proc-macro-arena-compiler-02": {
+      "actual_records": [
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/00-stock-dylib-record.json",
+          "returncode": 0,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.20698022842407227
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/01-stock-pass-default-record.json",
+          "returncode": 0,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.3600010871887207
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/02-stock-pass-same-thread-record.json",
+          "returncode": 0,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.0511322021484375
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/03-stock-diagnostic-record.json",
+          "returncode": 1,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.042344093322753906
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/04-stock-panic-record.json",
+          "returncode": 1,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.04479217529296875
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/05-stock-type-error-record.json",
+          "returncode": 1,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.04955601692199707
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/06-stock-borrow-error-record.json",
+          "returncode": 1,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.04220390319824219
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/07-stock-stale-ident-record.json",
+          "returncode": 1,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.04227304458618164
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/08-stock-stale-literal-record.json",
+          "returncode": 1,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.04899001121520996
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/09-stock-panic-recovery-record.json",
+          "returncode": 1,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.04326796531677246
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/10-candidate-dylib-record.json",
+          "returncode": 0,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.1349179744720459
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/11-candidate-pass-default-record.json",
+          "returncode": 0,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.19154620170593262
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/12-candidate-pass-same-thread-record.json",
+          "returncode": 0,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.04972481727600098
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/13-candidate-diagnostic-record.json",
+          "returncode": 1,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.048193931579589844
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/14-candidate-panic-record.json",
+          "returncode": 1,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.04427480697631836
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/15-candidate-type-error-record.json",
+          "returncode": 1,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.04189634323120117
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/16-candidate-borrow-error-record.json",
+          "returncode": 1,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.04912900924682617
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/17-candidate-stale-ident-record.json",
+          "returncode": 1,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.04274296760559082
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/18-candidate-stale-literal-record.json",
+          "returncode": 1,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.04583883285522461
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/19-candidate-panic-recovery-record.json",
+          "returncode": 1,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.041744232177734375
+        }
+      ],
+      "saved_free_before_after": [
+        23568744448,
+        23565217792
+      ],
+      "saved_work_bytes": 1819459,
+      "stat_only_current_owned_bytes": 1819459,
+      "stat_only_current_owned_files": [
+        {
+          "bytes": 9324,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/candidate/panic-recovery.d"
+        },
+        {
+          "bytes": 9304,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/candidate/diagnostic.d"
+        },
+        {
+          "bytes": 9304,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/candidate/type-error.d"
+        },
+        {
+          "bytes": 11140,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/candidate/pass-default.rmeta"
+        },
+        {
+          "bytes": 11144,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/candidate/pass-same-thread.rmeta"
+        },
+        {
+          "bytes": 18246,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/candidate/libarena04_macros.d"
+        },
+        {
+          "bytes": 9279,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/candidate/panic.d"
+        },
+        {
+          "bytes": 9319,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/candidate/stale-literal.d"
+        },
+        {
+          "bytes": 885928,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/candidate/libarena04_macros.dylib"
+        },
+        {
+          "bytes": 9298,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/candidate/pass-same-thread.d"
+        },
+        {
+          "bytes": 9314,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/candidate/borrow-error.d"
+        },
+        {
+          "bytes": 9290,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/candidate/pass-default.d"
+        },
+        {
+          "bytes": 9309,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/candidate/stale-ident.d"
+        },
+        {
+          "bytes": 9304,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/stock/panic-recovery.d"
+        },
+        {
+          "bytes": 9284,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/stock/diagnostic.d"
+        },
+        {
+          "bytes": 9284,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/stock/type-error.d"
+        },
+        {
+          "bytes": 11136,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/stock/pass-default.rmeta"
+        },
+        {
+          "bytes": 11140,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/stock/pass-same-thread.rmeta"
+        },
+        {
+          "bytes": 19399,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/stock/libarena04_macros.d"
+        },
+        {
+          "bytes": 9259,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/stock/panic.d"
+        },
+        {
+          "bytes": 9299,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/stock/stale-literal.d"
+        },
+        {
+          "bytes": 684024,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/stock/libarena04_macros.dylib"
+        },
+        {
+          "bytes": 9278,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/stock/pass-same-thread.d"
+        },
+        {
+          "bytes": 9294,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/stock/borrow-error.d"
+        },
+        {
+          "bytes": 9270,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/stock/pass-default.d"
+        },
+        {
+          "bytes": 9289,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-compiler-02/stock/stale-ident.d"
+        }
+      ],
+      "used_for_memory_upper_bound": false
+    },
+    "proc-macro-arena-crate-05": {
+      "actual_records": [
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/compile-record.json",
+          "returncode": 0,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.34920382499694824
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/dependency-record.json",
+          "returncode": 0,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.08395099639892578
+        },
+        {
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/tests-record.json",
+          "returncode": 0,
+          "rss_or_memory_fields": [],
+          "saved_samples": 0,
+          "status": "closed",
+          "wall_seconds": 0.17586517333984375
+        }
+      ],
+      "stat_only_current_owned_bytes": 1281304,
+      "stat_only_current_owned_files": [
+        {
+          "bytes": 6088,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-crate-05/proc_macro_arena_tests.d"
+        },
+        {
+          "bytes": 90248,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-crate-05/librustc_literal_escaper.rlib"
+        },
+        {
+          "bytes": 1184968,
+          "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-crate-05/proc_macro_arena_tests"
+        }
+      ],
+      "used_for_memory_upper_bound": false
+    }
+  },
+  "historical_limits": [
+    "Earlier actual wholecrate and bridge builds used installedT at opt0/codegen1, not the new matchedN opt3/codegen16 profile. Their megabyte-scale outputs support small-artifact scope but are not exact new-build peak estimates.",
+    "Earlier compiler02 had20children and saved1,819,459B work. Its before/after system-free delta is not attributable task consumption under concurrent unrelated activity.",
+    "No examined record has RSS/swap fields; quick compiler02 commands produced zero periodic resource samples. No measured memory upper bound is claimed."
+  ],
+  "historical_source_refs": [
+    {
+      "bytes": 2500,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/compile-record.json",
+      "sha256": "9795a2f4af68ad1c17e10f15b760ab7b94b39803ebc294173c84f7fe9c78236a"
+    },
+    {
+      "bytes": 1421,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/dependency-record.json",
+      "sha256": "a76ba94f83fe46bf43cee65fe6aca7bb76f8b75dc1104c34a0cc1906ec9f62cf"
+    },
+    {
+      "bytes": 910,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/tests-record.json",
+      "sha256": "7f14c377596f53ff0a3040b341fb39d877172d779f404300609a1cf830927bb7"
+    },
+    {
+      "bytes": 770,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/result.json",
+      "sha256": "3650b6c5bd07ecf3ea75125131f967921fdc148d1af6aceef5a58c4e1624d60c"
+    },
+    {
+      "bytes": 1584,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-bridge-01/fixture-record.json",
+      "sha256": "ba9cfa33bc40e223fdb178e97b1ee13ae64ce51ebc28bb9cef12bbe982e6eb08"
+    },
+    {
+      "bytes": 2562,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-bridge-01/library-record.json",
+      "sha256": "c1566d046d38b32080d414b19b673f400966415933751799434b753723657721"
+    },
+    {
+      "bytes": 897,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-bridge-01/tests-record.json",
+      "sha256": "5a069421350ff3a9bcad528cbba7013eace604967f053240c8226dc9b28ebb7b"
+    },
+    {
+      "bytes": 507,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-bridge-01/result.json",
+      "sha256": "4e0e677aa3b3c65728e2351017f299c2c8f8cf41aff69c7cdbabe93c6b68b30a"
+    },
+    {
+      "bytes": 2618,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/00-stock-dylib-record.json",
+      "sha256": "2612b232994ff5855d39e8379bbc61ecccfad005b75c20a9c51696300a22905f"
+    },
+    {
+      "bytes": 2403,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/01-stock-pass-default-record.json",
+      "sha256": "4503b2a0bbec5c5b8f6e1fd84a5c34a257b5cef698968ead015c49132c05216b"
+    },
+    {
+      "bytes": 2466,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/02-stock-pass-same-thread-record.json",
+      "sha256": "13202ab767a94c94101d952de5ef9f868e355044426f5e92f31aec377c4acb4e"
+    },
+    {
+      "bytes": 2407,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/03-stock-diagnostic-record.json",
+      "sha256": "74a05e5b62c75f388dc51b807058691555952e8aba193bb75fb7e7125366436f"
+    },
+    {
+      "bytes": 2389,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/04-stock-panic-record.json",
+      "sha256": "61e801b0403ef714ecd266309971a859139841045941c18131aab50bf62d3e2b"
+    },
+    {
+      "bytes": 2408,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/05-stock-type-error-record.json",
+      "sha256": "cd2b5a1a8ba6af31a35958b29566ea7034aec23d39e6a758d3dceee612e8a5e1"
+    },
+    {
+      "bytes": 2418,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/06-stock-borrow-error-record.json",
+      "sha256": "01bd9590d73d3a26fbc1e4d289750df1c9f107e88168011cdc17fa8a2e11f9ec"
+    },
+    {
+      "bytes": 2465,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/07-stock-stale-ident-record.json",
+      "sha256": "1f9313c4c3655087c8a8429af343d0cb753ed0bd2f82e14df756bbaa83661c29"
+    },
+    {
+      "bytes": 2470,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/08-stock-stale-literal-record.json",
+      "sha256": "cab18439d7f42c6126ae6617542c7187adffa0cd2bc1b3a424f41cb2736c6ab2"
+    },
+    {
+      "bytes": 2475,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/09-stock-panic-recovery-record.json",
+      "sha256": "a3e7ec1ed6ca3dfd96cae946160da04ac1f4439b4fddc9cc294b82ea7ae78d43"
+    },
+    {
+      "bytes": 2527,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/10-candidate-dylib-record.json",
+      "sha256": "225bf65614a3f7e160c794d02c64fa3e21c1f1d1ab01fda17481e28129b612f6"
+    },
+    {
+      "bytes": 2424,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/11-candidate-pass-default-record.json",
+      "sha256": "ae0539db055f0e28b104ad4b3300ac0c294e86818df7af75fcaab73db86dab67"
+    },
+    {
+      "bytes": 2486,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/12-candidate-pass-same-thread-record.json",
+      "sha256": "af3f5026a0d9a0d03012df347685ae5a0c38aae5ba626eac8f44f1c2f0d73d3b"
+    },
+    {
+      "bytes": 2430,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/13-candidate-diagnostic-record.json",
+      "sha256": "5665a3e4a0e83636becbaf061c7899b814fc09d9a6a7a4be8ea0e486e50e0670"
+    },
+    {
+      "bytes": 2407,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/14-candidate-panic-record.json",
+      "sha256": "f6fb51866a617b043c229de5670f9bf9f2d37c098ba33c1574b211cbb581bcc9"
+    },
+    {
+      "bytes": 2430,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/15-candidate-type-error-record.json",
+      "sha256": "cded348bb89c9777b4d67d417ec1b1bd1dd4101f83e025d021e08b2df7dfea7b"
+    },
+    {
+      "bytes": 2438,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/16-candidate-borrow-error-record.json",
+      "sha256": "8a4218eb0fbc12a0f69ba34fc63b82de978da74f458fb67bc68bfa108d46a640"
+    },
+    {
+      "bytes": 2484,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/17-candidate-stale-ident-record.json",
+      "sha256": "986855078436e97af6fa03dda4b067f978686eb6c44a598ceefc474a02ba7541"
+    },
+    {
+      "bytes": 2492,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/18-candidate-stale-literal-record.json",
+      "sha256": "b5a4aef8ed995bbc9cdb3770daac51a0f627969bdf8af6575ce80f3e6278086a"
+    },
+    {
+      "bytes": 2496,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/19-candidate-panic-recovery-record.json",
+      "sha256": "4fa386155c01c5d739960229191dff89687296124f61afc6207ed05d90a09d2b"
+    },
+    {
+      "bytes": 55794,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/execution.json",
+      "sha256": "4e67f9eb66ed8247cf70c0c085ab7576b54dbf4c45d4e56f9d19b27e1e39eac3"
+    },
+    {
+      "bytes": 358,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/result.json",
+      "sha256": "db87d2a204bd11f2c024a3e8132a04882706f0acd1a2fd46cdde540752e5f39f"
+    }
+  ],
+  "imports_builds_tests_or_process_control": false,
+  "proposed_phase_budget_gib": {
+    "additional_rounding_headroom": 0.75,
+    "complete_owned_output_budget": 0.25,
+    "entry_rounded": 14,
+    "floor": 8,
+    "live_stop_cushion": 1,
+    "sum": 13.25,
+    "unmeasured_RSS_swap_allowance": 4
+  },
+  "pure25_control_comparison": {
+    "child_alarm_seconds": 120,
+    "child_cpu_seconds": 60,
+    "compiler_provider_children": 0,
+    "controls": 25,
+    "finding": "No compiler-sized scratch or codegen/linker reserve is required by these pure metadata fixtures. A separately reviewed lower bounded-unit policy is defensible; using14GiB would still retain the same conservative unmeasured4GiB allowance. This does not change its current16GiB source or qualify a new attempt.",
+    "frozen_bytes": 971269,
+    "frozen_files": 18,
+    "maximum_cumulative_child_file_payload_bytes": 67633152,
+    "per_file_bytes": 262144,
+    "retained_stage_bytes": 2097152,
+    "source_inputs": {
+      "bytes": 13979,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-controls-05/inputs.json",
+      "sha256": "6743b2633384ee9f8d7b00df4b3e73639fcfb9ddc4d55b74b3da683b56d7ea71"
+    }
+  },
+  "scope_limits": [
+    "This is an admission-policy judgment, not a guarantee of physical memory availability or isolation from unrelated disk growth.",
+    "Keep canonical serialization, repeated admission before each command,9GiB live checks,8GiB floor,64MiB per-file and256MiB output limits, no retry/signals, and honest failed/uncLOSED evidence.",
+    "Any policy successor must bind the revised entry consistently in its plan and runner, preserve predecessor source/proofs, and receive independent review before execution.",
+    "Application, installation and full compiler build policies are separate and are not lowered by this assessment."
+  ],
+  "source_changes": false,
+  "source_scope": {
+    "all_declared_output_cwd_tmpdir_routes_below_owned_work": true,
+    "candidate_native_tests": 13,
+    "cargo_buildscripts_compiler_std_rebuild_or_download_commands": false,
+    "commands": 27,
+    "fixture_bytes": 10751,
+    "roles": {
+      "build-candidate-client": 1,
+      "build-macro-dylib": 2,
+      "build-shared-real-normal-literal": 1,
+      "build-stock-client": 1,
+      "build-whole-crate-tests": 2,
+      "caller": 18,
+      "run-whole-crate-tests": 2
+    },
+    "runtime_read_buffer_bytes": 1048576,
+    "runtime_readback_copies_provider_payloads": false,
+    "source_bytes": {
+      "candidate": 186408,
+      "literal": 22831,
+      "stock": 176022
+    },
+    "stock_empty_harness_is_compilation_smoke": true,
+    "stock_native_tests": 0
+  },
+  "sources": [
+    {
+      "bytes": 137821,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/plan.json",
+      "sha256": "62b07d7658a6e8409d2470489cc93f073f332bfac51bfe28b986b1c3739a63b3"
+    },
+    {
+      "bytes": 23658,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/run_once.py",
+      "sha256": "ccb0fc71d7357fd49059ae265e1cd2fe9308c8056801e7324447993a4e4cec97"
+    },
+    {
+      "bytes": 26867,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/runtime-inventory.json",
+      "sha256": "84341c23952ff1b4920a015cfcc3ae3484fe8a0681acf6da030b8ae7946f1049"
+    },
+    {
+      "bytes": 9006,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/macros.rs",
+      "sha256": "4236fde95bdf38b03eed30d8012a9851ffa65799f923b046260dd87e0389d96e"
+    }
+  ],
+  "status": "read-only-phase-resource-assessment"
+}

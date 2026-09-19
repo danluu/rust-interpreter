@@ -1,0 +1,26 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-before-entry14-01/run_once.from-closed-compiler02.diff
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/run_once.from-closed-compiler02.diff
+@@ -28,13 +28,22 @@
+ -    'manifest-rustc-aarch64-apple-darwin': '63877f7423dab866120519887a56dc4a6780e6ac9928fd6ea3ce8c02281a9658',
+ -    'manifest-rust-std-aarch64-apple-darwin': 'dc34ab873acc111785b0d677e1dbbbf66cb387ee28e6d8325863f423b13c61b9',
+ -}
+-+PLAN_SHA = '62b07d7658a6e8409d2470489cc93f073f332bfac51bfe28b986b1c3739a63b3'
+++PLAN_SHA = 'f48f751f792475a266ef132e24b888781379f0954e7df174cd5b9e792a1ef723'
+  FIELDS = ('dev', 'ino', 'mode', 'nlink', 'size', 'mtime_ns', 'ctime_ns')
+  START = time.monotonic()
+ +
+  
+  
+  def require(value, message):
++@@ -42,7 +35,7 @@
++ def guard(entry=False):
++     require(time.monotonic()-START < 2400, 'overall observer deadline expired')
++     free = shutil.disk_usage(ROOT).free
++-    require(free >= (16 if entry else 9)*2**30, 'compiler free-space gate refused')
+++    require(free >= (14 if entry else 9)*2**30, 'compiler free-space gate refused')
++     return free
++ 
++ 
+ @@ -66,7 +59,7 @@
+  
+  def read(path, expected=None):

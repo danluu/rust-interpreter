@@ -1,0 +1,29 @@
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/runtime-frozen-link-before-directory-route-01/test_links.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-frozen-link-reader-01/test_links.py
+@@ -75,12 +75,23 @@
+     def test_directory_endpoint_is_metadata_only(self):
+         link=self.root/'directory';link.symlink_to('real',target_is_directory=True)
+         v=self.verifier(str(link),self.freeze(str(link)),read=lambda _:self.fail('directory is not a byte file'))
+-        self.assertIsNone(v.verify(str(link))['resolved_file'])
++        first=v.verify(str(link));self.assertIsNone(first['resolved_file'])
++        self.assertEqual(set(first['resolved_identity']),{'dev','ino','mode'})
++        (self.real/'unrelated-child').mkdir()
++        self.assertEqual(v.verify(str(link)),first)
++        self.real.rename(self.root/'old-real');self.real.mkdir()
++        with self.assertRaisesRegex(RuntimeError,'first audit observation'):
++            v.verify(str(link))
+ 
+     def test_dot_directory_endpoint(self):
+         self.leaf.unlink();self.leaf.symlink_to('.',target_is_directory=True)
+-        name=str(self.leaf);v=self.verifier(name,self.freeze(name),read=lambda _:self.fail('directory is not a file'))
+-        self.assertEqual(v.verify(name)['frozen_row']['resolved'],str(self.real))
++        name=str(self.leaf);calls=[]
++        def mutate_unrelated_child():
++            calls.append(None);(self.real/('guard-child-'+str(len(calls)))).mkdir()
++        v=FrozenLinks({name:self.freeze(name)},read_file=lambda _:self.fail('directory is not a file'),guard=mutate_unrelated_child)
++        first=v.verify(name)
++        self.assertEqual(first['frozen_row']['resolved'],str(self.real))
++        self.assertEqual(v.verify(name),first)
+ 
+     def test_rejects_undeclared_name(self):
+         with self.assertRaisesRegex(RuntimeError,'undeclared'):

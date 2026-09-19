@@ -1,0 +1,28 @@
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/runtime-frozen-link-before-directory-route-01/links.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-frozen-link-reader-01/links.py
+@@ -142,7 +142,15 @@
+                     and re.fullmatch('[0-9a-f]{64}', file_proof['sha256']) is not None,
+                     'strict frozen target-file proof differs')
+             self.guard()
+-            require(stamp(os.fstat(descriptor)) == terminal, 'resolved endpoint changed during verification')
++            endpoint = terminal if file_proof is not None else route(os.fstat(descriptor))
++            if file_proof is None:
++                # A resolved directory has no frozen target stamp. Preserve its
++                # current route identity, as for ordinary held ancestors; an
++                # unrelated child must not fabricate a provider mutation.
++                require(endpoint == {key:terminal[key] for key in ('dev','ino','mode')},
++                        'resolved directory route changed during verification')
++            else:
++                require(stamp(os.fstat(descriptor)) == terminal, 'resolved endpoint changed during verification')
+             for kind, parent, part, held, expected in edges:
+                 named = os.stat(part, dir_fd=parent, follow_symlinks=False)
+                 if kind == 'link':
+@@ -156,7 +164,7 @@
+                             'resolved file changed during verification')
+             observation = dict(policy='explicit-frozen-link-current-route-v1',path=name,frozen_row=row,
+                 current_ancestor_observations=dict(directories=directories,links=links),
+-                resolved_identity=terminal,resolved_file=file_proof,
++                resolved_identity=endpoint,resolved_file=file_proof,
+                 ancestors_were_in_original_freeze=False)
+             require(name not in self.checked or self.checked[name] == observation,
+                     'frozen link route changed after its first audit observation')

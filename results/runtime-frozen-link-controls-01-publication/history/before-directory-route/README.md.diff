@@ -1,0 +1,17 @@
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/runtime-frozen-link-before-directory-route-01/README.md
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-frozen-link-reader-01/README.md
+@@ -35,8 +35,12 @@
+     links.verify(name)
+ ```
+ 
+-Resolved directories receive metadata-only route checks, matching the old
+-frozen-link contract. No missing historical directory identity is invented.
++Resolved directories receive metadata-only `dev/ino/mode` route checks, matching
++the ordinary held-ancestor policy. Unrelated child additions may change a
++directory's size, link count and timestamps and are accepted; replacing the
++directory or changing its mode is rejected. No missing historical directory
++identity is invented. Regular endpoints retain the complete seven-field stamp
++and strict frozen byte proof.
+ Ordinary file reads, historical-copy exclusions, executor-route equations and
+ all other audit predicates stay with their existing strict implementations.
+ One final `links.recheck()` may substitute for the second complete link loop;

@@ -1,0 +1,20 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-before-entry14-01/run_once.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/run_once.py
+@@ -17,7 +17,7 @@
+ OUT = ROOT/'results/proc-macro-arena-n-client-01'
+ TC = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1')
+ LOCK = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+-PLAN_SHA = '62b07d7658a6e8409d2470489cc93f073f332bfac51bfe28b986b1c3739a63b3'
++PLAN_SHA = 'f48f751f792475a266ef132e24b888781379f0954e7df174cd5b9e792a1ef723'
+ FIELDS = ('dev', 'ino', 'mode', 'nlink', 'size', 'mtime_ns', 'ctime_ns')
+ START = time.monotonic()
+ 
+@@ -35,7 +35,7 @@
+ def guard(entry=False):
+     require(time.monotonic()-START < 2400, 'overall observer deadline expired')
+     free = shutil.disk_usage(ROOT).free
+-    require(free >= (16 if entry else 9)*2**30, 'compiler free-space gate refused')
++    require(free >= (14 if entry else 9)*2**30, 'compiler free-space gate refused')
+     return free
+ 
+ 

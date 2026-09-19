@@ -1,0 +1,36 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-before-entry14-01/README.md
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/README.md
+@@ -50,10 +50,31 @@
+ wait, and records every child's actual return/closure and raw output. It sends no
+ signals and makes no retries. A child still live at its finite observer deadline
+ prevents success and every later command; the inherited lock remains with that
+-child. Admission requires 16 GiB free, observation stops new work below 9 GiB,
++child. Admission requires 14 GiB free, observation stops new work below 9 GiB,
+ and the policy retains an 8 GiB floor. WORK plus results are limited to 256 MiB;
+ each child has a 64 MiB file limit, fixed CPU/observer bounds, and core dumps off.
+-Peak resident memory and swap are not measured by this source proposal.
++This phase-specific entry policy budgets 8 GiB for the retained floor, 0.25 GiB
++for the complete owned-output allowance, 4 GiB as an explicitly unmeasured
++RSS/swap allowance, and 1 GiB for the live-stop cushion: 13.25 GiB, rounded to
++14 GiB with 0.75 GiB additional margin. It does not lower full compiler,
++application, or runtime-installation policies. The old 16 GiB runner, plan,
++README and source review remain preserved under
++`.work/proc-macro-arena-n-client-before-entry14-01`; `proposal.json` remains
++unchanged historical source, including its original 16 GiB recommendation.
++
++This is a reviewed planning allowance, not a measured peak-memory bound.
++The five matched N builds use opt-level 3 and 16 codegen units; internal codegen
++and linker concurrency can consume memory even though top-level commands are
++sequential. Earlier installed-nightly opt-level 0/codegen-unit 1 tests provide
++small-artifact provenance, not a peak estimate for this build. No RSS/swap or
++address-space bound is claimed. WORK plus results are checked before/after each
++command and on one-second observations; their 256 MiB total is a sampled
++postcondition, not a hard filesystem quota. On a resource observation failure,
++the runner records failure and refuses subsequent commands while allowing the
++current child to close within its existing finite observation contract, without
++sending signals. The 64 MiB per-file limit remains enforced. OS swap or tool
++cache side effects and unrelated concurrent disk growth are not reserved by
++this admission check. No measurement or workload was run to choose this policy.
+ 
+ The sole proposed invocation, after source review and root authorization, is:
+ 
