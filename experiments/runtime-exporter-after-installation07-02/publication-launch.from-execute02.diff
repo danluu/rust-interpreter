@@ -1,0 +1,100 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-02/execute.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-02/publication-launch.py
+@@ -1,9 +1,11 @@
+ #!/usr/bin/env python3
+-"""Normally wait the existing supervisor and retain its exact phase invocation."""
++"""Normally wait the existing supervisor for the separately bound publication phase."""
+ import argparse
+ import hashlib
+ import json
+ import os
++import re
++import sys
+ from pathlib import Path
+ import subprocess
+ import time
+@@ -14,6 +16,10 @@
+ SUPERVISOR_SHA = '019608c2d37fcecb55ed436fafe3753498bfe11e1a1805a46ae49a59c7d6a1b2'
+ SOURCES_SHA = '1517b945e4ef190aa9960db4b62564a5da5dc922260501f8306ce38fb591c044'
+ BUILD_SOURCES_SHA = 'bce87300954ed5eefddfb80cb7a43e6f467be37e0e440838dc023c87fb7db589'
++FRONTEND_SOURCES_SHA = '4ece397a765fb4f41dd4f4277bff940a5a4dcb18ca39b8573292b71ee048c0f3'
++PUBLICATION_SOURCES_SHA = '213729fe32c89414d7872881cc7af9c0e59e4107b3bb87ae66e97bfc783fed40'
++LAUNCH_SHA = '5fc9f8acda80fc34f799be9f8fa8502f902af8b40eb0b9b87004b6df1fda4185'
++METADATA_RECEIPT_SHA = 'cfc8b15814a00eee9c97761ba8ab98b2285cb1273cf558fbbfacad833055fbd8'
+ 
+ 
+ def sha(path):
+@@ -34,37 +40,38 @@
+ 
+ 
+ def main():
++    if not sys.dont_write_bytecode or sys.flags.optimize or Path.cwd() != X:
++        raise RuntimeError('Publication launcher requires Python -B and original X cwd')
+     parser = argparse.ArgumentParser(__doc__)
+-    parser.add_argument('phase', choices=['metadata', 'build', 'frontend'])
+-    parser.add_argument('--launch-sha256', required=True)
+-    parser.add_argument('--metadata-receipt-sha256')
+-    parser.add_argument('--frontend-sources-sha256')
+-    parser.add_argument('--build-receipt-sha256')
+-    parser.add_argument('--built-tools-sha256')
++    for name in ('launch-sha256', 'metadata-receipt-sha256', 'build-receipt-sha256',
++                 'built-tools-sha256', 'frontend-receipt-sha256'):
++        parser.add_argument('--'+name, required=True)
+     args = parser.parse_args()
++    if not all(re.fullmatch('[0-9a-f]{64}', value) for value in vars(args).values()):
++        raise RuntimeError('Exact actual receipt digests required')
++    if args.launch_sha256 != LAUNCH_SHA or args.metadata_receipt_sha256 != METADATA_RECEIPT_SHA:
++        raise RuntimeError('Reviewed metadata packet/receipt binding differs')
++    args.phase = 'publication'
++    args.frontend_sources_sha256 = FRONTEND_SOURCES_SHA
+     launch = read(HERE/'packet-01/launch.json', args.launch_sha256)
+     inputs = read(launch['inputs']['path'], launch['inputs']['sha256'])
+     plan = read(launch['plan']['path'], launch['plan']['sha256'])
+     assert inputs['plan'] == launch['plan'] and launch['environment'] == plan['launch_environment']
+-    assert launch['cwd'] == str(X) and Path.cwd() == X
+-    command = list(launch['command'])
+-    if args.phase in ('build', 'frontend'):
+-        assert args.metadata_receipt_sha256
+-        prior = read(X/'.work/hir-options-hash-exporter-metadata-02/receipt.json', args.metadata_receipt_sha256)
+-        assert prior['status'] == 'passed' and prior['phase'] == 'metadata'
+-        command = ['/opt/homebrew/bin/python3', '-B', str(HERE/(args.phase+'.py')),
+-            '--inputs-sha256', launch['inputs']['sha256'], '--sources-sha256', SOURCES_SHA,
+-            '--build-sources-sha256', BUILD_SOURCES_SHA,
+-            '--metadata-receipt-sha256', args.metadata_receipt_sha256]
+-        if args.phase == 'frontend':
+-            assert args.frontend_sources_sha256 and args.build_receipt_sha256 and args.built_tools_sha256
+-            command += ['--frontend-sources-sha256', args.frontend_sources_sha256,
+-                        '--build-receipt-sha256', args.build_receipt_sha256,
+-                        '--built-tools-sha256', args.built_tools_sha256]
+-    else:
+-        assert args.metadata_receipt_sha256 is None
+-    if args.phase != 'frontend':
+-        assert args.frontend_sources_sha256 is args.build_receipt_sha256 is args.built_tools_sha256 is None
++    assert launch['cwd'] == str(X)
++    read(HERE/'publication-sources.json', PUBLICATION_SOURCES_SHA)
++    for phase in ('metadata', 'build', 'frontend'):
++        prior = read(X/'.work'/('hir-options-hash-exporter-'+phase+'-02')/'receipt.json',
++                     getattr(args, phase+'_receipt_sha256'))
++        assert prior['status'] == 'passed' and prior['phase'] == phase and 'error' not in prior
++    read(X/'.work/hir-options-hash-exporter-build-02/built-tools.json', args.built_tools_sha256)
++    command = ['/opt/homebrew/bin/python3', '-B', str(HERE/'publish.py'),
++        '--inputs-sha256', launch['inputs']['sha256'], '--sources-sha256', SOURCES_SHA,
++        '--build-sources-sha256', BUILD_SOURCES_SHA, '--frontend-sources-sha256', FRONTEND_SOURCES_SHA,
++        '--publication-sources-sha256', PUBLICATION_SOURCES_SHA,
++        '--metadata-receipt-sha256', args.metadata_receipt_sha256,
++        '--build-receipt-sha256', args.build_receipt_sha256,
++        '--built-tools-sha256', args.built_tools_sha256,
++        '--frontend-receipt-sha256', args.frontend_receipt_sha256]
+     supervisor = X/'scripts/supervise_experiment.py'
+     assert sha(supervisor) == SUPERVISOR_SHA
+     outer = X/'.work/experiments'/('hir-options-hash-exporter-'+args.phase+'-supervisor-02')
+@@ -80,7 +87,8 @@
+         metadata_receipt_sha256=args.metadata_receipt_sha256, signals=0, retries=0,
+         frontend_sources_sha256=args.frontend_sources_sha256,
+         build_receipt_sha256=args.build_receipt_sha256, built_tools_sha256=args.built_tools_sha256,
+-        resource_policy='Ordinary jobs=2 and sampled disk guards; no CPU, wall-time or memory cap.')
++        frontend_receipt_sha256=args.frontend_receipt_sha256, publication_sources_sha256=PUBLICATION_SOURCES_SHA,
++        resource_policy='Three publication children and sampled disk guards; no CPU, wall-time or memory cap.')
+     write(execution/'record.json', record)
+     with (execution/'stdout').open('xb') as stdout, (execution/'stderr').open('xb') as stderr:
+         child = subprocess.Popen(argv, cwd=X, env=launch['environment'], stdin=subprocess.DEVNULL,

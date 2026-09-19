@@ -1,0 +1,30 @@
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/verify_runtime_exporter07_publication02_01.py
++++ /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/verify_runtime_exporter07_publication02_02.py
+@@ -13,7 +13,7 @@
+ ROOT,X,H=q.ROOT,q.X,q.H
+ R=Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ W=X/'.work/hir-options-hash-exporter-publication-02'
+-OUT=X/'.work/runtime-exporter07-publication02-independent-readback-01.json'
++OUT=X/'.work/runtime-exporter07-publication02-independent-readback-02.json'
+ KEY='89cb2751d9e6cfd4a9572dd8ab5405fae7480350bc9198bc5f1bc79fc35bceac'
+ SOURCES='213729fe32c89414d7872881cc7af9c0e59e4107b3bb87ae66e97bfc783fed40'
+ OPTIONS=['stable-cgu-partitioning','compiler-argv-record-v1','function-cache-auto','inline-leaves','trap-unsupported-calls','run-try-callbacks','host-proc-macro-opt-v1','entry-catalog','list-tests']
+@@ -40,7 +40,8 @@
+     command=[str(H/'publish.py')]
+     for flag in flags:command.extend(['--'+flag+'-sha256',t[flag.replace('-','_')+'_sha256']])
+     assert t['command']==command and t['inputs_sha256']==launch['inputs']['sha256'] and t['plan_sha256']==launch['plan']['sha256'] and t['publication_sources_sha256']==SOURCES
+-    for field in ['sources','build_sources','frontend_sources','publication_sources']:assert e[field+'_sha256']==t[field+'_sha256']
++    for field in ['frontend_sources','publication_sources','metadata_receipt','build_receipt','built_tools','frontend_receipt']:assert e[field+'_sha256']==t[field+'_sha256']
++    for name,field,count in [('sources.json','sources',11),('build-sources.json','build_sources',15)]:assert len(read(H/name,t[field+'_sha256'])['files'])==count
+     assert t['tool_key']==result['tool_key']==publication['tool_key']==KEY and t['published_directory']==result['directory']==publication['directory']==str(directory) and t['published_tools_sha256']==t['result']['sha256']
+     manifest=read(H/'publication-sources.json',SOURCES);front=read(H/'frontend-sources.json',t['frontend_sources_sha256']);assert len(manifest['files'])==25 and len(front['files'])==20
+     assert manifest['policy']=='runtime-exporter07-publication-sources-v1' and manifest['frontend_sources']==dict(path=str(H/'frontend-sources.json'),sha256=t['frontend_sources_sha256'])
+@@ -82,7 +83,7 @@
+         for name in dirs:assert not (Path(parent)/name).is_symlink()
+         for name in files:raw(Path(parent)/name)
+     for path,row in q.FILES.items():assert q.stamp(Path(path))==row['identity']
+-    report=dict(status='verified-closed-publication',reviewer='/root/workspace_capacity',observed_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),pid=os.getpid(),parent_pid=os.getppid(),execution=q.FILES[str(ep/'record.json')],receipt=q.FILES[str(W/'receipt.json')],result=t['result'],tool_key=KEY,directory=str(directory),commands=3,ordinary_installed_reader_passed=True,frontend_qualified=True,application_qualified=False,performance_qualified=False,compiler_calls=0,provider_probes=0,provider_payloads_rehashed=0,adopted_VM_source_check='current exact seven-field stamp and frozen digest; published destination full EOF/SHA',published_members=6,separate_binary_copies=3,loaded_images=loaded,checked_files=q.FILES)
++    report=dict(status='verified-closed-publication', readback_attempt=2, prior_readback_failure='reader01 expected nonexistent outer sources_sha256/build_sources_sha256 keys; KeyError before report creation; actual source manifests and controller pins remain required',reviewer='/root/workspace_capacity',observed_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),pid=os.getpid(),parent_pid=os.getppid(),execution=q.FILES[str(ep/'record.json')],receipt=q.FILES[str(W/'receipt.json')],result=t['result'],tool_key=KEY,directory=str(directory),commands=3,ordinary_installed_reader_passed=True,frontend_qualified=True,application_qualified=False,performance_qualified=False,compiler_calls=0,provider_probes=0,provider_payloads_rehashed=0,adopted_VM_source_check='current exact seven-field stamp and frozen digest; published destination full EOF/SHA',published_members=6,separate_binary_copies=3,loaded_images=loaded,checked_files=q.FILES)
+     with OUT.open('x') as f:json.dump(report,f,indent=2,sort_keys=True);f.write('\n')
+     raw(OUT);print(json.dumps(q.FILES[str(OUT)],sort_keys=True))
+ 

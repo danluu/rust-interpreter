@@ -6,7 +6,7 @@ installation work are separate from application build timings.
 
 | Candidate | Completed checks | Remaining performance evidence |
 | --- | --- | --- |
-| Cache the immutable incremental option hash once per compiler context | Compiler build; serial and parallel hash controls; compiler behavior controls; audited runtime installation07 and standard-library preparation07 | Prepare and qualify the exporter, then real edited Ruff builds with HIR caching off/on and independent holdouts |
+| Cache the immutable incremental option hash once per compiler context | Compiler build; serial and parallel hash controls; compiler behavior controls; audited runtime installation07, standard-library preparation07, exporter frontend/publication and strict Ruff off/on history | Fixed HIR-on A/B plus A/A timing screen, then fastest-configuration comparison and independent holdouts |
 | Retain the first ordinary procedural-macro arena page across reset | Corrected native and Miri checks; real macro callers against both N client libraries; default sysroot discovery; all 36 native frontend timings and restoration checks independently verified | Parked: median improvement 0.5894% did not exceed 3.4410% stock/stock variation |
 
 The hash candidate retains the complete original hash and its wire encoding.
@@ -65,7 +65,7 @@ native and prepared E0080 source-location checks. Independent readback verified
 all 3,644 copied library source files and 3,670 prepared sysroot files, along with
 the exact commands, environment, retained inputs and terminal receipts. The
 ordinary CLI retained ownership of its workload and standard-library locks.
-Exporter qualification and strict application histories remain pending.
+Exporter qualification and the strict Ruff history subsequently passed, as recorded below.
 
 Exporter preparation passed after restoring five exact saved VM proof files
 missing from the sparse working tree. The initial failed attempt remains saved.
@@ -79,7 +79,8 @@ The successor preparation retains five exact sparse-checkout proof paths across
 main merges. Metadata02 passed all 36 commands, and build02 passed its ordinary
 locked/offline exporter build and six tool checks. All 34 frontend correctness controls passed, including bytecode parity and
 nine diagnostic comparisons. Tool publication passed all three fresh checks; the 16-call strict Ruff
-application history is running. These preparation checks provide no application timing result.
+application history also passed. Both modes rejected the wrong edit, all eight
+source states produced matching bytecode, and the original source was restored. These preparation checks provide no application timing result.
 
 Evidence entry points:
 
@@ -125,3 +126,5 @@ holdouts or any claim of a faster application configuration.
 
 - [Strict Ruff preparation and source binding](../results/ruff-options-hash-strict-preparation-01/STATUS.md)
 - [Corrected prospective mechanism screen](hir-options-hash/ruff-screen-02/PROTOCOL.md)
+
+- [Frontend correctness and installed exporter evidence](../results/runtime-exporter07-frontend-publication02-01/STATUS.md)
