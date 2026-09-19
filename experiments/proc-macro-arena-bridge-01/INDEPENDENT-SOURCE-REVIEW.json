@@ -1,0 +1,84 @@
+{
+  "checks": {
+    "existing_function_bytes_identical": [
+      "roundtrip",
+      "retain",
+      "stale",
+      "dropping",
+      "nested_client",
+      "outer_client",
+      "client_panic",
+      "server_panic",
+      "span_transport_grows_and_reuses_handles_in_both_strategies",
+      "stale_same_thread_span_reaches_real_dispatcher_and_is_rejected",
+      "token_stream_drop_order_survives_span_store_change",
+      "nested_dispatch_and_both_panic_boundaries_restore_bridge_state"
+    ],
+    "original_exact": true,
+    "test_count": 8,
+    "unsupported_block_identical": true
+  },
+  "compiler_or_provider_execution": false,
+  "created_at": 1789818053.834217,
+  "files": {
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/client.rs": {
+      "bytes": 8977,
+      "sha256": "fe5d6760d816a6f1f612d85107eed3a88d8929af93cb4309ababcd3e9b4565b2"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/handle.rs": {
+      "bytes": 2113,
+      "sha256": "cd7e0b6c7940f7ae9baad9c463e4bc3a77dd5db29922a2e988dfeef4230d5bde"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/mod.rs": {
+      "bytes": 12226,
+      "sha256": "cdcdf5e2d24471f06b59f2baa7f254c5160bc0acc25a06c535f8cb3872eeb83b"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/server.rs": {
+      "bytes": 10509,
+      "sha256": "1a6eb7d13e8af5b16e3fa7930e4ff2925bf861ec4b86e06df75595d01e9e8d3a"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/symbol.rs": {
+      "bytes": 6908,
+      "sha256": "75f80e816a8f4ded235d57b50914bc4f1854e8696a8dd160a75e4e0d46ae1869"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/lib.rs": {
+      "bytes": 75695,
+      "sha256": "68237ec6a7a9a2d1dd7cd81e41ccb2996414df1891e4d8dba9e4f19a862c1f50"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-bridge-01/README.md": {
+      "bytes": 3732,
+      "sha256": "f5d573a8fed82a046421103a530dc6a22bbf1ab347aa6fd78e480703d6f4c9ed"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-bridge-01/bridge.rs": {
+      "bytes": 17838,
+      "sha256": "715e31651259d8fc1b89f82f941e5f665f9e8964cfe96d38d3c0da4914efb195"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-bridge-01/from-stock-bridge.diff": {
+      "bytes": 10409,
+      "sha256": "52862e52e476aea0ec750fa6ca035053bd963e1fe3125e8f96b6bcfe12976e48"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-bridge-01/original/bridge.rs": {
+      "bytes": 9394,
+      "sha256": "63e8057cef295688c725a19a0a45e8edd161c621e5041c003241c6f8d61820d9"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-bridge-01/source-review.json": {
+      "bytes": 4556,
+      "sha256": "ab1c7860bbee8f7c848bf5d370403cc29953bbe7f7ce36cc388f77344b378543"
+    }
+  },
+  "limitations": [
+    "Source review does not establish compilation or actual eight-test success.",
+    "This qualifies only an explicitly linked standalone library fixture, not rustc server, macro dylib/caller, installed compiler distribution, retention measurements, or performance."
+  ],
+  "review": [
+    "Ident::new/new_raw use Symbol::new_ident ASCII fast path; chosen raw type is allowed; every constructor runs inside Client.",
+    "Literal::string escapes non-ASCII without Unicode escaping and Display reconstructs quotes/escapes locally; no unsupported literal parser/normalization RPC is required.",
+    "Saved Ident/Literal are thread-local; Display calls Symbol::with and Interner::get checked_sub with the exact asserted stale message. Clearing saved wrappers after run1 needs no bridge access because their Span/Symbol fields have no Drop RPC.",
+    "Client invalidates symbols before decoding and after serializing both successful and panic responses. RefCell borrows in failing Display unwind before invalidation.",
+    "Nested SAME_THREAD falls back to a new worker if outer is same-thread; with cross-thread outer, nested executes on the distinct server thread. Event/thread/RPC order and [2,1] stream drops agree.",
+    "Successful calls return original Stream; stale/panic calls drop their input during client unwinding; expected [1..5] and [1..4] drop sequences agree.",
+    "No new unsupported server methods are enabled and no no-op successes are introduced. Original four tests and eight client functions remain byte-identical."
+  ],
+  "source_edits": false,
+  "status": "clear-source-only-no-compile-or-execution"
+}

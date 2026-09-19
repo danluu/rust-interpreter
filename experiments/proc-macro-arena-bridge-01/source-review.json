@@ -1,0 +1,94 @@
+{
+  "benchmarks": 0,
+  "candidate_source_proposal": {
+    "bytes": 6027,
+    "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/source-review.json",
+    "sha256": "49e5007ad5adddcf1f05eeb09e4348c169d4a7020e2638943f8d8700ccf6c6cf"
+  },
+  "checks": {
+    "all_eight_existing_client_function_bytes_unchanged": true,
+    "all_four_stock_test_function_bytes_unchanged": true,
+    "no_Arena_Interner_or_transport_model": true,
+    "no_unsafe_added": true,
+    "original_copy_exact": true,
+    "original_fixture_unmodified": true,
+    "unsupported_server_method_block_unchanged": true
+  },
+  "commands_run": 0,
+  "coverage": {
+    "allocator_retention_observable_here": false,
+    "cross_thread": "fresh client threads; no cross-call arena-retention claim",
+    "large_symbol_bound": 8193,
+    "nested": "outer+inner actual symbol values, exact four-event/RPC/thread sequence",
+    "nonempty_symbols": "small/duplicate/raw ASCII identifiers, Unicode/escaped literals, 8193-byte identifier",
+    "panics": "client and server sentinel panic followed by successful nonempty roundtrip",
+    "same_thread": "three consecutive calls and recovery calls share client thread/TLS",
+    "stale_symbols": "exact stale Ident and Literal rejection after completed same-thread invocation",
+    "unicode_identifier_normalization_tested": false
+  },
+  "created_at": 1789817945.8126452,
+  "files": {
+    "README.md": {
+      "bytes": 3732,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-bridge-01/README.md",
+      "sha256": "f5d573a8fed82a046421103a530dc6a22bbf1ab347aa6fd78e480703d6f4c9ed"
+    },
+    "bridge.rs": {
+      "bytes": 17838,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-bridge-01/bridge.rs",
+      "sha256": "715e31651259d8fc1b89f82f941e5f665f9e8964cfe96d38d3c0da4914efb195"
+    },
+    "from-stock-bridge.diff": {
+      "bytes": 10409,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-bridge-01/from-stock-bridge.diff",
+      "sha256": "52862e52e476aea0ec750fa6ca035053bd963e1fe3125e8f96b6bcfe12976e48"
+    },
+    "original/bridge.rs": {
+      "bytes": 9394,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-bridge-01/original/bridge.rs",
+      "sha256": "63e8057cef295688c725a19a0a45e8edd161c621e5041c003241c6f8d61820d9"
+    }
+  },
+  "limits_proposal": {
+    "admission": "explicit parent policy; no lowered gate",
+    "canonical_lock": "/Users/danluu/dev/rust-interp/.work/benchmark.lock",
+    "compile_cpu_seconds": 120,
+    "compile_wall_seconds": 180,
+    "lock_wait_seconds": 600,
+    "max_output_file_bytes": 67108864,
+    "max_total_output_bytes": 134217728,
+    "test_cpu_seconds": 30,
+    "test_wall_seconds": 60
+  },
+  "original_expectations": {
+    "bytes": 4270,
+    "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-span-handles/integration/expectations.py",
+    "sha256": "6836d6176961341330eed6451d0923fac618cd93103b3eee542327ed1e23ffc3"
+  },
+  "original_fixture": {
+    "bytes": 9394,
+    "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-span-handles/integration/bridge.rs",
+    "sha256": "63e8057cef295688c725a19a0a45e8edd161c621e5041c003241c6f8d61820d9"
+  },
+  "scope": "Real standalone proc_macro library Client/Dispatcher/HandleStore/symbol lifecycle; concrete fixture Server; not rustc server or macro dylib/caller/compiler-distribution qualification.",
+  "status": "source-only-uncompiled-standalone-library-bridge-fixture",
+  "stock_tests": [
+    "span_transport_grows_and_reuses_handles_in_both_strategies",
+    "stale_same_thread_span_reaches_real_dispatcher_and_is_rejected",
+    "token_stream_drop_order_survives_span_store_change",
+    "nested_dispatch_and_both_panic_boundaries_restore_bridge_state"
+  ],
+  "test_count": 8,
+  "tests": [
+    "span_transport_grows_and_reuses_handles_in_both_strategies",
+    "stale_same_thread_span_reaches_real_dispatcher_and_is_rejected",
+    "token_stream_drop_order_survives_span_store_change",
+    "nested_dispatch_and_both_panic_boundaries_restore_bridge_state",
+    "symbol_roundtrips_reuse_same_thread_and_isolate_cross_thread",
+    "completed_invocations_reject_stale_ident_and_literal_symbols",
+    "nested_dispatch_preserves_outer_and_inner_symbol_values",
+    "symbol_arenas_recover_after_client_and_server_panics"
+  ],
+  "tests_run": 0,
+  "toolchain_mutations": 0
+}

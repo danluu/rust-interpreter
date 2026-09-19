@@ -1,0 +1,242 @@
+--- proc-macro-span-handles/integration/bridge.rs
++++ proc-macro-arena-bridge-01/bridge.rs
+@@ -1,18 +1,23 @@
+-//! Real bridge transport controls; link against the qualified native proc_macro.
+-//! This does not substitute for the rustc-server proc-macro fixtures beside it.
++//! Standalone real proc_macro library Client/Dispatcher and symbol lifecycle tests.
++//! Link explicitly against the selected library; this does not exercise rustc's server.
+ #![feature(proc_macro_internals, proc_macro_span, proc_macro_expand)]
+ 
+ extern crate proc_macro;
+ 
+ use proc_macro::bridge::{self, client::Client, server::{self, Server}};
+-use proc_macro::{Span, TokenStream};
+-use std::cell::Cell;
++use proc_macro::{Ident, Literal, Span, TokenStream};
++use std::cell::{Cell, RefCell};
+ use std::ops::{Bound, Range};
+ use std::sync::{Arc, Mutex};
+ 
+ static SERIAL: Mutex<()> = Mutex::new(());
+ static CLIENT_THREADS: Mutex<Vec<(&str, std::thread::ThreadId)>> = Mutex::new(Vec::new());
+ thread_local! { static SAVED: Cell<Option<Span>> = const { Cell::new(None) }; }
++thread_local! {
++    static SAVED_IDENT: RefCell<Option<Ident>> = const { RefCell::new(None) };
++    static SAVED_LITERAL: RefCell<Option<Literal>> = const { RefCell::new(None) };
++}
++static SYMBOL_EVENTS: Mutex<Vec<(&str, std::thread::ThreadId)>> = Mutex::new(Vec::new());
+ 
+ #[derive(Default)]
+ struct Log { next: u32, drops: Vec<u32>, calls: Vec<(&'static str, u32)> }
+@@ -64,7 +69,7 @@
+     fn ts_expand_expr(&mut self, _stream: &Stream) -> Result<Stream, ()> {
+         self.call("nested-enter", self.origin);
+         let nested = FixtureServer { log: self.log.clone(), origin: 90_000, fail_line: false };
+-        let result = Client::expand1(nested_client).run1(
++        let result = Client::expand1(symbol_nested_client).run1(
+             &server::SAME_THREAD, nested, Stream::new(&self.log), false);
+         self.call("nested-exit", self.origin);
+         result.map_err(|_| ())
+@@ -192,3 +197,202 @@
+         drop(run_client!(roundtrip, cross, false, log).unwrap_or_else(|e| panic!("{:?}", e.as_str())));
+     }
+ }
++
++fn symbol_event(name: &'static str) {
++    SYMBOL_EVENTS.lock().unwrap().push((name, std::thread::current().id()));
++}
++
++// Only ASCII identifiers use the local validation fast path. Unicode is tested
++// through real literal escaping/interning, without inventing a Unicode server.
++fn assert_symbol_payloads() {
++    let span = Span::call_site();
++    let first = Ident::new("arena_name", span);
++    let duplicate = Ident::new("arena_name", span);
++    let raw = Ident::new_raw("type", span);
++    let unicode = Literal::string("雪_β_☃");
++    let escaped = Literal::string("line\n\"quote\"");
++    let large_name = "x".repeat(8193);
++    let large = Ident::new(&large_name, span);
++    assert_eq!(first.to_string(), "arena_name");
++    assert_eq!(duplicate.to_string(), "arena_name");
++    assert_eq!(raw.to_string(), "r#type");
++    assert_eq!(unicode.to_string(), "\"雪_β_☃\"");
++    assert_eq!(escaped.to_string(), "\"line\\n\\\"quote\\\"\"");
++    assert_eq!(large.to_string(), large_name);
++    assert_eq!(first.to_string(), "arena_name");
++    assert_eq!(unicode.to_string(), "\"雪_β_☃\"");
++}
++
++fn symbol_roundtrip(input: TokenStream) -> TokenStream {
++    symbol_event("roundtrip-enter");
++    assert_symbol_payloads();
++    assert_eq!(Span::call_site().line(), 1);
++    symbol_event("roundtrip-exit");
++    input
++}
++
++fn symbol_nested_client(input: TokenStream) -> TokenStream {
++    symbol_event("inner-enter");
++    let name = Ident::new("inner_symbols", Span::call_site());
++    let text = Literal::string("inner_雪");
++    let large_name = "n".repeat(8193);
++    let large = Ident::new(&large_name, Span::call_site());
++    let output = nested_client(input);
++    assert_eq!(name.to_string(), "inner_symbols");
++    assert_eq!(text.to_string(), "\"inner_雪\"");
++    assert_eq!(large.to_string(), large_name);
++    symbol_event("inner-exit");
++    output
++}
++
++fn symbol_outer_client(input: TokenStream) -> TokenStream {
++    symbol_event("outer-enter");
++    let name = Ident::new("outer_symbols", Span::call_site());
++    let text = Literal::string("outer_β");
++    let large_name = "o".repeat(8193);
++    let large = Ident::new(&large_name, Span::call_site());
++    let output = outer_client(input);
++    assert_eq!(name.to_string(), "outer_symbols");
++    assert_eq!(text.to_string(), "\"outer_β\"");
++    assert_eq!(large.to_string(), large_name);
++    symbol_event("outer-exit");
++    output
++}
++
++fn retain_ident(input: TokenStream) -> TokenStream {
++    SAVED_IDENT.with_borrow_mut(|slot| {
++        *slot = Some(Ident::new("saved_arena_name", Span::call_site()));
++    });
++    input
++}
++
++fn stale_ident(input: TokenStream) -> TokenStream {
++    SAVED_IDENT.with_borrow(|slot| {
++        let _ = slot.as_ref().expect("missing saved identifier").to_string();
++    });
++    input
++}
++
++fn retain_literal(input: TokenStream) -> TokenStream {
++    SAVED_LITERAL.with_borrow_mut(|slot| *slot = Some(Literal::string("saved_雪")));
++    input
++}
++
++fn stale_literal(input: TokenStream) -> TokenStream {
++    SAVED_LITERAL.with_borrow(|slot| {
++        let _ = slot.as_ref().expect("missing saved literal").to_string();
++    });
++    input
++}
++
++fn symbol_client_panic(input: TokenStream) -> TokenStream {
++    symbol_event("client-panic-enter");
++    assert_symbol_payloads();
++    client_panic(input)
++}
++
++fn symbol_server_panic(input: TokenStream) -> TokenStream {
++    symbol_event("server-panic-enter");
++    assert_symbol_payloads();
++    server_panic(input)
++}
++
++#[test]
++fn symbol_roundtrips_reuse_same_thread_and_isolate_cross_thread() {
++    let _guard = SERIAL.lock().unwrap();
++    for cross in [false, true] {
++        let log = Shared::default();
++        SYMBOL_EVENTS.lock().unwrap().clear();
++        for _ in 0..3 {
++            drop(run_client!(symbol_roundtrip, cross, false, log)
++                .unwrap_or_else(|e| panic!("{:?}", e.as_str())));
++        }
++        assert_eq!(log.lock().unwrap().calls, [("line", 1); 3]);
++        assert_eq!(log.lock().unwrap().drops, [1, 2, 3]);
++        let events = SYMBOL_EVENTS.lock().unwrap();
++        assert_eq!(events.len(), 6);
++        for pair in events.chunks_exact(2) {
++            assert_eq!(pair[0].0, "roundtrip-enter");
++            assert_eq!(pair[1].0, "roundtrip-exit");
++            assert_eq!(pair[0].1, pair[1].1);
++            assert_eq!(pair[0].1 == std::thread::current().id(), !cross);
++        }
++        if cross {
++            assert_ne!(events[0].1, events[2].1);
++            assert_ne!(events[0].1, events[4].1);
++            assert_ne!(events[2].1, events[4].1);
++        }
++    }
++}
++
++#[test]
++fn completed_invocations_reject_stale_ident_and_literal_symbols() {
++    let _guard = SERIAL.lock().unwrap();
++    let log = Shared::default();
++    drop(run_client!(retain_ident, false, false, log)
++        .unwrap_or_else(|e| panic!("{:?}", e.as_str())));
++    let error = run_client!(stale_ident, false, false, log).err()
++        .expect("stale identifier symbol accepted");
++    assert_eq!(error.as_str(), Some("use-after-free of `proc_macro` symbol"));
++    SAVED_IDENT.with_borrow_mut(|slot| *slot = None);
++    drop(run_client!(retain_literal, false, false, log)
++        .unwrap_or_else(|e| panic!("{:?}", e.as_str())));
++    let error = run_client!(stale_literal, false, false, log).err()
++        .expect("stale literal symbol accepted");
++    assert_eq!(error.as_str(), Some("use-after-free of `proc_macro` symbol"));
++    SAVED_LITERAL.with_borrow_mut(|slot| *slot = None);
++    assert!(log.lock().unwrap().calls.is_empty(), "stale symbol reached Server");
++    drop(run_client!(symbol_roundtrip, false, false, log)
++        .unwrap_or_else(|e| panic!("{:?}", e.as_str())));
++    assert_eq!(log.lock().unwrap().calls, [("line", 1)]);
++    assert_eq!(log.lock().unwrap().drops, [1, 2, 3, 4, 5]);
++}
++
++#[test]
++fn nested_dispatch_preserves_outer_and_inner_symbol_values() {
++    let _guard = SERIAL.lock().unwrap();
++    for cross in [false, true] {
++        let log = Shared::default();
++        SYMBOL_EVENTS.lock().unwrap().clear();
++        CLIENT_THREADS.lock().unwrap().clear();
++        drop(run_client!(symbol_outer_client, cross, false, log)
++            .unwrap_or_else(|e| panic!("{:?}", e.as_str())));
++        let events = SYMBOL_EVENTS.lock().unwrap();
++        assert_eq!(events.iter().map(|event| event.0).collect::<Vec<_>>(),
++                   ["outer-enter", "inner-enter", "inner-exit", "outer-exit"]);
++        assert_eq!(events[0].1, events[3].1);
++        assert_eq!(events[1].1, events[2].1);
++        assert_ne!(events[0].1, events[1].1);
++        assert_eq!(events[0].1 == std::thread::current().id(), !cross);
++        let threads = CLIENT_THREADS.lock().unwrap();
++        assert_eq!(*threads, [("outer", events[0].1), ("inner", events[1].1)]);
++        assert_eq!(log.lock().unwrap().calls,
++                   [("nested-enter", 1), ("line", 90_000), ("nested-exit", 1), ("line", 1)]);
++        assert_eq!(log.lock().unwrap().drops, [2, 1]);
++    }
++}
++
++#[test]
++fn symbol_arenas_recover_after_client_and_server_panics() {
++    let _guard = SERIAL.lock().unwrap();
++    for cross in [false, true] {
++        let log = Shared::default();
++        SYMBOL_EVENTS.lock().unwrap().clear();
++        let error = run_client!(symbol_client_panic, cross, false, log).err()
++            .expect("client symbol panic missing");
++        assert_eq!(error.as_str(), Some("client-sentinel"));
++        drop(run_client!(symbol_roundtrip, cross, false, log)
++            .unwrap_or_else(|e| panic!("{:?}", e.as_str())));
++        let error = run_client!(symbol_server_panic, cross, true, log).err()
++            .expect("server symbol panic missing");
++        assert_eq!(error.as_str(), Some("server-sentinel"));
++        drop(run_client!(symbol_roundtrip, cross, false, log)
++            .unwrap_or_else(|e| panic!("{:?}", e.as_str())));
++        let events = SYMBOL_EVENTS.lock().unwrap();
++        assert_eq!(events.iter().map(|event| event.0).collect::<Vec<_>>(),
++                   ["client-panic-enter", "roundtrip-enter", "roundtrip-exit",
++                    "server-panic-enter", "roundtrip-enter", "roundtrip-exit"]);
++        assert_eq!(log.lock().unwrap().calls, [("line", 1); 4]);
++        assert_eq!(log.lock().unwrap().drops, [1, 2, 3, 4]);
++    }
++}
