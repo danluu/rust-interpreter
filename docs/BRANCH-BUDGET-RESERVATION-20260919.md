@@ -1,9 +1,9 @@
 # Branch budget reservations: qualified experimental implementation
 
-The default-off `branch-budget-reservation` feature implements the next custom
-AArch64 JIT candidate. It has passed the focused and workspace correctness
-checks below. No changed-source timing has run, and the adopted runtime remains
-unchanged. This is a reservation mechanism; the earlier guard-only credit draft
+The default-off `branch-budget-reservation` feature is parked after its
+[complete source-edit primary](../results/branch-budget-native-screen-token-01/assessment.md)
+failed the original wall gate. All correctness checks passed, but the observed
+0.83% wall gain was inside4.27% A/A variation. The adopted runtime remains unchanged. This is a reservation mechanism; the earlier guard-only credit draft
 in `REGION-BUDGET-CREDIT-DESIGN-20260919.md` remains parked.
 
 The current runtime already charges ordinary native regions once each. This
@@ -50,11 +50,12 @@ then composed that exact VM with the unchanged adopted compiler and wrapper.
 Its tool key is `2ce1d2e2fd210103b2eceb47754774f4f19094d544b452e62b9d5c5be255f3d1`;
 installation and readback both completed successfully without a default change.
 
-Next, qualify the primary controller and run the fixed 40-command source-edit
-history. Only its five valid edits enter
-the timing gate; original, wrong and restored-source controls stay visible.
-The wall ratio plus A/A allowance must be below one, with the existing CPU
-ceilings also satisfied. A pass admits the full public, private rg-aot, parser
-and Nushell guards. A failed gate parks this candidate without an unchanged
-retry or threshold adjustment. Strict Rust type and borrow checking precede
-guest execution throughout.
+The17-control primary protocol passed and independently closed. The fixed
+40-command history then completed and independently closed with all original
+outcomes and both strict-error controls preserved. Only five valid edits enter
+its performance gate; original, wrong and restored-source controls remain visible.
+The wall ratio0.991718334 plus A/A0.042723150 exceeds one; CPU ceilings pass.
+Full guards are canceled before qualification. No unchanged retry, threshold
+adjustment or runtime adoption follows. Strict Rust type and borrow checking
+continue to precede guest execution. Review other saved costs before selecting
+a distinct mechanism; sampled budget coverage alone did not predict a useful gain.
