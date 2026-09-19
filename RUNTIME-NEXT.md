@@ -1,3 +1,15 @@
+LATEST: ES8 primary CLOSED, sourcef3c9e34c, supervisor3654/controller3730,
+40commands+2strictpassed, independentclose61860passed. GateNOTpassed:
+pairedwall.983240312 +AA.114544192=1.097784504, CPU.976997780+envelope.071178866.
+Verdictunmeasurable; PARKshort-tailcandidate63578118, no unchangedretry/heldouts.
+Allcorrectness retained; assessment in results/short-clear-tail-screen-es8-01.
+Nextcommit/pushandpublishexplicitclosed screenfolder/protocol/screenresults to
+main, preservepeerwork. Then newbranchrestoreEXACTtwo runtimefiles fromfca687eb
+(native_calls.rs,resumable_tests.rs), commit/push. Adopteddf4006defaultunchanged.
+Investigate larger remaining currentES8 protocol cost fromclosedmaps, no guest
+rerunjustforanalysis. Free~18.9GiB, protectedsharedtargetneverclean. Newbounded
+runtime target608235520bytes containscandidate; don'tassumeadoptedbuildcache.
+
 LATEST: short-clear-tail-screen-protocol01 CLOSED14controls passed, sourcee3407d33,
 supervisor87214/controller87218, independentclose50065passed. Nextcommit/pushthen
 supervise short-clear-tail-screen-es8-01 absolute screen/benchmark.py. All40rows,
