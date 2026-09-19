@@ -434,3 +434,10 @@ No owned command active, no guest repeated. Documented alreadyclosed typed/nativ
 observer/workspacequalification; source review found no new boundarydefect. Main
 c2bd2734 already pushed diagnosticstorage closure. Latestfree23.92GiB; nobuild
 admitted. Nextunchangedprofileclose onlyaftersharedlockrelease.
+
+Profileclosureexec96188 completed0, all3original profiles independentlyclosed,
+no guestrepeated. Install01 source3b602b0a supervisor47754/controller47757 finished0
+andcloseexec94465 passed. Exacttool2ce1d2e2fd210103b2eceb47754774f4f19094d544b452e62b9d5c5be255f3d1
+usesqualifiedVM887b8b13 andunchangedcompiler/wrapper. Defaultunchanged. Newfullpublic
+guards prospectivelyprepared forexactkey; mustnotrununlessprimarypasses. Next
+primaryprotocol17controls then40commands. No timingyet oractiveownedcommand.
