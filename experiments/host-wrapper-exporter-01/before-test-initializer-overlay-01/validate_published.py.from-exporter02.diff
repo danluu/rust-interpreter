@@ -1,0 +1,43 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-02/validate_published.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01/validate_published.py
+@@ -9,11 +9,11 @@
+ import stat
+ import sys
+ 
+-HERE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-02')
++HERE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ OPTIONS = ('stable-cgu-partitioning', 'compiler-argv-record-v1', 'function-cache-auto',
+            'inline-leaves', 'trap-unsupported-calls', 'run-try-callbacks',
+-           'host-proc-macro-opt-v1', 'entry-catalog', 'list-tests')
++           'host-proc-macro-opt-v1', 'entry-catalog', 'list-tests', 'host-codegen-opt-v1')
+ 
+ 
+ def require(ok, message):
+@@ -61,12 +61,13 @@
+             'fixed frontend source declaration required')
+     selected = json.loads(source(front, ref['sha256']))
+     require(type(selected) is dict and set(selected) == {'files'}
+-            and type(selected['files']) is dict and len(selected['files']) == 20,
++            and type(selected['files']) is dict and len(selected['files']) == 25,
+             'complete frontend source selection required')
+     files = inventory['files']
+     extra = {str(HERE / name) for name in ('publish.py', 'validate_published.py')}
+     extra |= {str(R / 'scripts' / name) for name in ('interpreter.py', 'workspace_cache.py')}
+-    require(type(files) is dict and len(files) == 25
++    extra.add(str(HERE.parent / 'host-wrapper-opt-01/host_codegen_opt.py'))
++    require(type(files) is dict and len(files) == 31
+             and set(files) == set(selected['files']) | extra | {str(front)}
+             and files[str(front)] == ref['sha256']
+             and all(files.get(name) == digest for name, digest in selected['files'].items()),
+@@ -101,6 +102,10 @@
+         for option in OPTIONS:
+             interpreter.require_export_option(directory, key, option)
+         mods.tools.validate_tool_runtime(directory, key, compiler)
++        helper=load('_host_wrapper_installed_capability',c.HOST_HELPER)
++        capabilities=json.loads((directory/'capabilities.json').read_bytes())
++        binaries=json.loads((directory/'ready.json').read_bytes())
++        helper.require_capability(directory,key,compiler,capabilities,binaries)
+     source(HERE / 'publication-sources.json', args.publication_sources_sha256)
+     for name, digest in files.items():
+         source(name, digest)

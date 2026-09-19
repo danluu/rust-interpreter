@@ -1,0 +1,22 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-02/frontend.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01/frontend.py
+@@ -13,7 +13,7 @@
+ import time
+ from types import SimpleNamespace
+ 
+-HERE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-02')
++HERE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01')
+ FRONTEND_NAMES = ('frontend.py','frontend_recipe.py','frontend_results.py','frontend_telemetry.py')
+ 
+ 
+@@ -63,8 +63,8 @@
+                 and self.plan['source_root']==str(c.PREFIX),'current exporter packet differs')
+             c.require(c.file(Path(sys.executable).resolve(strict=True))==self.inputs['python'], 'Python executor differs')
+             self.building=True
+-            self.work=c.X/'.work/hir-options-hash-exporter-frontend-02'
+-            self.build_work=c.X/'.work/hir-options-hash-exporter-build-02'
++            self.work=c.X/'.work/host-wrapper-exporter-frontend-01'
++            self.build_work=c.X/'.work/host-wrapper-exporter-build-01'
+             c.require(not os.path.lexists(self.work),'fresh frontend work required')
+             self.work.mkdir();(self.work/'tmp').mkdir()
+             self.protected={};self.cache={};self.binaries={};self.closed=[];self.closures=[]

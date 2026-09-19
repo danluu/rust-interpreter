@@ -1,0 +1,18 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01/before-test-initializer-overlay-01/validate_published.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01/validate_published.py
+@@ -61,13 +61,13 @@
+             'fixed frontend source declaration required')
+     selected = json.loads(source(front, ref['sha256']))
+     require(type(selected) is dict and set(selected) == {'files'}
+-            and type(selected['files']) is dict and len(selected['files']) == 25,
++            and type(selected['files']) is dict and len(selected['files']) == 26,
+             'complete frontend source selection required')
+     files = inventory['files']
+     extra = {str(HERE / name) for name in ('publish.py', 'validate_published.py')}
+     extra |= {str(R / 'scripts' / name) for name in ('interpreter.py', 'workspace_cache.py')}
+     extra.add(str(HERE.parent / 'host-wrapper-opt-01/host_codegen_opt.py'))
+-    require(type(files) is dict and len(files) == 31
++    require(type(files) is dict and len(files) == 32
+             and set(files) == set(selected['files']) | extra | {str(front)}
+             and files[str(front)] == ref['sha256']
+             and all(files.get(name) == digest for name, digest in selected['files'].items()),

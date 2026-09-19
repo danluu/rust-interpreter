@@ -1,0 +1,9 @@
+# Direct Rust test qualification
+
+Attempt01 compiled host_codegen successfully, then closed with five passed cases and one failed legacy-O1 case. That test cleared compiler_rustc while retaining stable_cgu_partitioning=off, so the existing guard rejected its incomplete context. The other three suites did not run. Its exact source, initial input table, command output and closed parent/controller records remain preserved.
+
+Attempt02 changes only that test context by clearing stable_cgu_partitioning as well, and uses an explicit path to the unchanged original production module. Fresh output routes preserve attempt01. All 43 cases passed: 6 host_codegen, 6 host_library, 6 host_proc_macro, and 25 wrapper_route. Four direct D2/B3 compilations and four single-threaded native test executions closed normally. Exact names, full stdout/stderr, command environments, source bindings and parent/child records are retained.
+
+These are std-only routing tests. No Cargo compiler_roles integration suite, full exporter, bytecode workload or performance measurement is qualified. The native Cargo fixture02 is an earlier separate qualification referenced by its actual hashes. Source handoffs and bindings retain their historical unrun status; actual result records establish what subsequently ran.
+
+The successful producer fully read all 355 declared source rows and both build tools before/after. The independent saved reader authenticated those equal tables, rehashed 20 nonprovider sources and checked current stamps for 335 B3 entries and two tools; it did not repeat provider/tool payload reads. The failed attempt has no full after-table, and its readback states that limit explicitly. No test-binary/provider payload is duplicated here. There were no signals or automatic retries; fixed resource thresholds remain observational, not atomic reservations.

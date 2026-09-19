@@ -1,0 +1,233 @@
+#!/usr/bin/env python3
+"""Materialize qualified source238 plus the exact four-file host wrapper overlay and prepare ordinary D2/B3/runtime07 metadata.
+
+This preparation runs no subprocess or compiler. It reads current providers under
+the canonical lock, then writes only fresh owned source/packet/evidence paths.
+"""
+import argparse
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import sys
+import time
+
+HERE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01')
+
+
+def bootstrap(digest):
+    path = HERE/'sources.json'; data = path.read_bytes()
+    if hashlib.sha256(data).hexdigest() != digest:
+        raise RuntimeError('reviewed exporter source manifest differs')
+    sources = json.loads(data)['files']
+    if sources.get(str(Path(__file__).resolve())) != hashlib.sha256(Path(__file__).read_bytes()).hexdigest():
+        raise RuntimeError('preparer source differs')
+    for name, expected in sources.items():
+        p = Path(name)
+        if p.resolve(strict=True) != p or p.is_symlink() or hashlib.sha256(p.read_bytes()).hexdigest() != expected:
+            raise RuntimeError('authenticated source changed: '+name)
+    path = HERE/'common.py'
+    if str(path) not in sources:
+        raise RuntimeError('common source is unauthenticated')
+    spec = importlib.util.spec_from_file_location('_exporter07_common', path)
+    module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+    return module, sources
+
+
+def prepare(c, sources, mods, proof, ready):
+    for path, digest in c.PINS.items():
+        c.file(path, digest)
+    old = c.read(c.OLD, c.PINS[str(c.OLD)])
+    files, memberships, compiler = c.providers(mods, ready, old)
+    c.sdk_guard(full=True)
+    census = c.source_rows()
+    config = c.configuration()
+    # The explicit source copy is the only new workspace; no current checkout
+    # byte, Git HEAD assumption, hardlink, symlink or selected-file omission.
+    source = c.materialize(census)
+    memberships[str(c.PREFIX)] = c.tree(c.PREFIX)
+    files.update({row['path']: row for row in source.values()})
+    for path, digest in sources.items():
+        files[path] = c.file(path, digest)
+    for path, digest in c.PINS.items():
+        files[path] = c.file(path, digest)
+    for row in proof.values():
+        files[row['path']] = c.file(row['path'], row['sha256'])
+    for name in ('ready.json','admission.json','qualification.json'):
+        path = c.RUNTIME.parent/name; files[str(path)] = c.file(path)
+    historical_metadata = c.X/'.work/runtime-exporter-metadata-01/cargo-metadata.json'
+    files[str(historical_metadata)] = c.file(historical_metadata,
+        'd2c2bc3240569e120a4497e1fed25e3b2e2ff2fdf03fce737de6145ab22d4362')
+    vm = old['future_VM']
+    files[vm['binary']['path']] = c.file(vm['binary']['path'],vm['binary']['sha256'])
+    for ref in vm['evidence']+[vm['source_diff']]:
+        files[ref['path']] = c.file(ref['path'],ref['sha256'])
+    # Actual B3 role probes authenticate D2's exact version/default sysroot.
+    bwork = c.A/'.work/hir-options-hash-beta-composition-08'
+    baudit = c.read(c.B3_AUDIT, c.PINS[str(c.B3_AUDIT)])
+    terminal = c.read(bwork/'receipt.json', baudit['receipt_sha256'])
+    c.require(terminal['status'] == 'passed', 'B3 parent was not successful')
+    outputs = []
+    for index, argv in [(2,[str(c.D2/'bin/rustc'),'-vV']),
+                        (3,[str(c.D2/'bin/rustc'),'--print','sysroot'])]:
+        ref = terminal['commands'][index]; path = Path(ref['path']); receipt = c.read(path, ref['sha256'])
+        c.require(path == bwork/'commands'/f'{index:03d}'/'receipt.json'
+                  and receipt['status'] == 'finished' and receipt['returncode'] == 0
+                  and receipt['command'] == argv, 'saved D2 role probe association differs')
+        files[str(path)] = c.file(path, ref['sha256'])
+        for stream in ('stdout','stderr'):
+            item = path.parent/stream; files[str(item)] = c.file(item, receipt[stream+'_sha256'])
+        c.require((path.parent/'stderr').read_bytes() == b'', 'successful saved D2 probe stderr differs')
+        outputs.append((path.parent/'stdout').read_text())
+    files[str(bwork/'receipt.json')] = c.file(bwork/'receipt.json', baudit['receipt_sha256'])
+    c.require(outputs[1] == str(c.D2)+'\n', 'actual D2 default sysroot differs')
+    version = outputs[0]
+    c.require([v[6:] for v in version.splitlines() if v.startswith('host: ')] == [c.HOST],
+              'D2 host is missing/repeated/different')
+    driver = [n for n in compiler.identity['files'] if n.startswith('lib/librustc_driver-')]
+    c.require(len(driver) == 1, 'ambiguous native driver')
+    clang = old['support_executables']['clang']
+    flags = ['--sysroot='+str(c.B3), '-Lnative='+str(c.RUNTIME/'lib'), '-Clinker='+clang]
+    binding = dict(schema_version=1, policy='separate-compiler-roles-v1',
+        build=dict(executable=dict(path=str(c.D2/'bin/rustc'),sha256=files[str(c.D2/'bin/rustc')]['sha256']),
+                   verbose_version=version,default_sysroot=str(c.D2)),
+        runtime=dict(executable=dict(path=str(compiler.rustc),sha256=compiler.identity['files']['bin/rustc']),
+                     verbose_version=compiler.identity['compiler'],default_sysroot=str(c.RUNTIME)),
+        runtime_source_commit=compiler.identity['provenance']['source_commit'],
+        runtime_driver=dict(path=str(c.RUNTIME/driver[0]),sha256=compiler.identity['files'][driver[0]]),
+        private_sysroot_manifest=dict(path=str(c.PRIVATE),sha256=c.PINS[str(c.PRIVATE)]),build_rustflags=flags)
+    mods.tools.runtime_binding(compiler, binding)
+    environment = dict(old['environment'])
+    environment.update(PATH=str(c.D2/'bin')+':'+str(Path(old['support_executables']['cargo']).parent)
+                       +':/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin',
+                       TMPDIR=str(c.WORK/'tmp')+'/')
+    cf = os.environ.get('__CF_USER_TEXT_ENCODING')
+    c.require(type(cf) is str and cf.split(':')[0].lower() == hex(os.getuid()), 'actual Darwin environment required')
+    environment['__CF_USER_TEXT_ENCODING'] = cf
+    build_environment = environment | dict(RUSTC=str(c.D2/'bin/rustc'),RUSTDOC=str(c.D2/'bin/rustdoc'),
+        RUSTC_BOOTSTRAP='1',RUST_INTERP_COMPILER_ROLES=str(c.PACKET/'compiler-roles.json'),
+        CARGO_ENCODED_RUSTFLAGS='\x1f'.join(flags))
+    metadata_environment = build_environment | {'CARGO_TARGET_DIR': str(c.WORK/'cargo-target')}
+    future_build_environment = build_environment | {
+        'TMPDIR': str(c.X/'.work/host-wrapper-exporter-build-01/tmp')+'/'}
+    cargo = old['support_executables']['cargo']
+    metadata = [cargo,'metadata','--locked','--offline','--format-version=1','--manifest-path',str(c.PREFIX/'Cargo.toml')]
+    build = [cargo,'build','--release','--locked','--offline','--jobs','2','-vv',
+        '--message-format=json-render-diagnostics','--manifest-path',str(c.PREFIX/'Cargo.toml'),
+        '--target-dir',str(c.TARGET),'-p','rust-interp-mir-export','--bin','rust-interp-mir-export',
+        '--bin','rust-interp-rustc-wrapper']
+    # Every input to the future actual library-closure parser is explicitly
+    # captured with both native-architecture otool views. No old row numbers.
+    binaries = [str(c.D2/'bin/rustc'), str(c.RUNTIME/'bin/rustc'), *old['support_executables'].values()]
+    native_libraries = sorted(p for p in files if
+        (Path(p).parent in (c.D2/'lib',c.RUNTIME/'lib')
+         and (Path(p).name.startswith('librustc_driver-') or Path(p).name=='libLLVM.dylib'))
+        or p.startswith('/opt/homebrew/') and Path(p).name == 'Python')
+    inspector_inputs = sorted(set(binaries+native_libraries))
+    children = []
+    def add(label, argv, env=environment, cwd=c.X, stdout=None):
+        children.append(dict(label=label,command=argv,environment=env,cwd=str(cwd),expected=[0],
+                             expected_stdout_sha256=stdout))
+    # Reuse the same saved SDK query set through exact old child selection.
+    sdk_queries = []
+    for row in old['children']:
+        if row['argv'][0] in ('/usr/bin/xcode-select','/usr/bin/xcrun') and row['argv'] not in sdk_queries:
+            sdk_queries.append(row['argv'])
+    prior_receipt = c.X/'.work/runtime-exporter-metadata-01/receipt.json'
+    previous = c.read(prior_receipt,'82ab3670c0f18a6a77be0ad308f0a417ed65ad468ed3e9e923ba3987a42be39a')
+    c.require(previous['status']=='passed' and len(previous['commands'])==53,
+              'historical metadata parent differs')
+    files[str(prior_receipt)] = c.file(prior_receipt,'82ab3670c0f18a6a77be0ad308f0a417ed65ad468ed3e9e923ba3987a42be39a')
+    sdk_stdout = {}
+    for argv in sdk_queries:
+        ref = next(row for row in previous['commands'] if row['command'] == argv)
+        path = Path(ref['path']); child = c.read(path,ref['sha256'])
+        c.require(child['status']=='finished' and child['returncode']==0 and child['command']==argv,
+                  'historical selected SDK command differs')
+        files[str(path)] = c.file(path,ref['sha256'])
+        for stream in ('stdout','stderr'):
+            files[str(path.parent/stream)] = c.file(path.parent/stream,child[stream+'_sha256'])
+        c.require((path.parent/'stderr').read_bytes()==b'','historical SDK query stderr differs')
+        sdk_stdout[tuple(argv)] = child['stdout_sha256']
+    for i, argv in enumerate(sdk_queries): add('sdk-'+str(i),argv,stdout=sdk_stdout[tuple(argv)])
+    for path in inspector_inputs:
+        for flag in ('-L','-l'): add('loader-'+str(len(children)),['/usr/bin/otool','-arch','arm64',flag,path])
+    for name in ('build','runtime'):
+        executable = binding[name]['executable']['path']
+        add(name+'-version',[executable,'-vV'],environment|{'DYLD_PRINT_LIBRARIES':'1'})
+        add(name+'-sysroot',[executable,'--print','sysroot'])
+    add('cargo-version',[cargo,'-Vv'])
+    add('cargo-metadata',metadata,metadata_environment,c.PREFIX)
+    for i, argv in enumerate(sdk_queries): add('sdk-after-'+str(i),argv,stdout=sdk_stdout[tuple(argv)])
+    plan = dict(schema_version=1,status='prepared-unexecuted',owner=str(c.X),source_root=str(c.PREFIX),
+        source_checkpoint=c.CHECKPOINT,runtime_key=c.KEY,runtime_owner=str(c.R),binding=binding,
+        runtime_qualification=proof,files=files,memberships=memberships,configuration=config,
+        routes=old['routes'],platform=mods.loaders.platform_identity(),launch_environment=environment,
+        build_environment=build_environment,metadata_target=str(c.WORK/'cargo-target'),
+        children=children,loader_binaries=binaries,
+        historical_cargo_metadata=dict(path=str(historical_metadata),sha256=files[str(historical_metadata)]['sha256']),
+        registry_packages=old['registry_packages'],historical_cargo_version=old['historical_cargo_version'],
+        source_overlay=dict(path=str(c.OVERLAY),sha256=c.PINS[str(c.OVERLAY)]),
+        host_codegen_application_qualified=False,source_materialization=source,source_snapshot_census=dict(path=str(c.CENSUS),sha256=c.PINS[str(c.CENSUS)]),
+        future_build=dict(command=build,cwd=str(c.PREFIX),environment=future_build_environment,
+                          exporter_builds=1,compiler_builds=0,VM_builds=0),
+        adopted_VM=vm,
+        future_frontend=dict(recipe='exact18-current-runtime',diagnostic_pairs=9,
+            template=str(c.X/'.work/options-hash-exporter-later-invocation-template-01.json'),
+            template_sha256='d8541e5d97309518ef14adbe52c7f514a43a103e0a0f92988c70ec7c4e50fc9d',
+            corrected_telemetry_source=str(c.X/'experiments/runtime-exporter/frontend-continue-01/telemetry.py'),
+            std_required=False,guest_executions=0),
+        canonical_lock=str(c.LOCK),wait_seconds=600,capacity=dict(entry_gib=16,stop_gib=9,floor_gib=8),
+        compiler_builds=0,exporter_builds=0,application_qualified=False,performance_measurement=False)
+    c.PACKET.mkdir()
+    roles = c.write(c.PACKET/'compiler-roles.json',binding)
+    plan['files'][roles['path']] = roles
+    for path, row in files.items():
+        c.require(c.stamp(path) == row['identity'], 'input changed before packet publication: '+path)
+    c.sdk_guard()
+    plan_row = c.write(c.PACKET/'plan.json',plan)
+    inputs = c.write(c.PACKET/'inputs.json',dict(policy='runtime07-exporter-source-freeze-v1',
+        plan=plan_row,files=sources,python=c.file(Path(sys.executable).resolve(strict=True))))
+    launch = c.write(c.PACKET/'launch.json',dict(status='unexecuted',cwd=str(c.X),
+        command=[c.PYTHON,'-B',str(c.HERE/'metadata.py'),'--inputs-sha256',inputs['sha256'],
+                 '--sources-sha256',c.file(c.HERE/'sources.json')['sha256']],
+        environment=environment,inputs=inputs,plan=plan_row,capacity=plan['capacity']))
+    return dict(plan=plan_row,inputs=inputs,launch=launch,compiler_roles=roles,
+                source_files=len(source),source_bytes=sum(v['bytes'] for v in source.values()),
+                current_input_files=len(files),metadata_children=len(children))
+
+
+def main():
+    parser = argparse.ArgumentParser(__doc__)
+    for name in ('sources-sha256','runtime-audit-sha256','runtime-audit-execution-sha256'):
+        parser.add_argument('--'+name,required=True)
+    args = parser.parse_args(); c, sources = bootstrap(args.sources_sha256)
+    c.require(Path.cwd() == c.X and sys.dont_write_bytecode and not sys.flags.optimize,
+              'fixed exporter owner and Python -B required')
+    c.require(all(not os.path.lexists(p) for p in (c.PREPARATION,c.PACKET,c.PREFIX,c.TARGET,c.WORK)),
+              'fresh preparation/source/packet/metadata paths required')
+    proof, ready = c.audit_gate(args.runtime_audit_sha256,args.runtime_audit_execution_sha256)
+    mods = c.modules(sources)
+    c.PREPARATION.mkdir()
+    record = dict(status='waiting',pid=os.getpid(),parent_pid=os.getppid(),started_at=time.time(),
+        command=list(sys.argv),cwd=os.getcwd(),sources_sha256=args.sources_sha256,runtime=proof,
+        compiler_calls=0,provider_probes=0,signals=0,retries=0)
+    mods.owned.write(c.PREPARATION/'record.json',record)
+    try:
+        with mods.owned.workload_lock(c.LOCK,600):
+            record.update(admitted_at=time.time(),entry_free_bytes=mods.owned.disk(c.X,16))
+            mods.owned.write(c.PREPARATION/'record.json',record)
+            with c.aliases(mods.public):
+                record['outputs'] = prepare(c,sources,mods,proof,ready)
+            record.update(status='passed',finished_at=time.time(),free_bytes_after=mods.owned.disk(c.X,8))
+    except BaseException as error:
+        record.update(status='failed',error=repr(error),finished_at=time.time())
+        raise
+    finally:
+        mods.owned.write(c.PREPARATION/'record.json',record)
+    print(json.dumps(record,sort_keys=True))
+
+
+if __name__ == '__main__':
+    main()

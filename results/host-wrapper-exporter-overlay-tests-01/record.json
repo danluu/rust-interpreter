@@ -1,0 +1,36 @@
+{
+  "child_maxrss": 35848192,
+  "child_pid": 85600,
+  "command": [
+    "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "-B",
+    "-c",
+    "\nimport atexit,hashlib,json,os,resource,runpy,sys\nfrom pathlib import Path\nout=Path(sys.argv[1]);test=Path(sys.argv[2]);sources=json.loads((out/'source-before.json').read_text())\nresource.setrlimit(resource.RLIMIT_CPU,(30,30));resource.setrlimit(resource.RLIMIT_FSIZE,(4*1024*1024,4*1024*1024))\ndef deny(event,args):\n if event in ('subprocess.Popen','os.system','os.posix_spawn','os.kill','os.killpg'):raise RuntimeError('pure test denied '+event)\nsys.addaudithook(deny)\ndef finish():\n rows={}\n for name,m in list(sys.modules.items()):\n  p=getattr(m,'__file__',None)\n  if not p:continue\n  p=Path(p).resolve()\n  if p.suffix=='.py' and str(p).startswith('/Users/danluu/dev/'):\n   if str(p) not in sources:raise RuntimeError('undeclared pure source '+str(p))\n   b=p.read_bytes();h=hashlib.sha256(b).hexdigest()\n   if h!=sources[str(p)]['sha256']:raise RuntimeError('pure source changed')\n   rows[str(p)]=h\n (out/'loaded-sources.json').write_text(json.dumps(rows,sort_keys=True,indent=2)+'\\n')\natexit.register(finish)\nsys.argv=[str(test)];runpy.run_path(str(test),run_name='__main__')\n",
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/host-wrapper-exporter-overlay-tests-01",
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01/test_source_overlay.py"
+  ],
+  "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01",
+  "environment": {
+    "HOME": "/Users/danluu",
+    "PATH": "/opt/homebrew/bin:/usr/bin:/bin",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONHASHSEED": "0",
+    "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/host-wrapper-exporter-overlay-tests-01/tmp"
+  },
+  "finished_at": 1789842738.9986298,
+  "limits": {
+    "child_processes": "denied by audit hook",
+    "cpu_seconds": 30,
+    "raw_file_bytes": 4194304,
+    "total_owned_bytes": 67108864
+  },
+  "normal_wait_completed": true,
+  "owned_bytes": 6091,
+  "parent_pid": 80990,
+  "pid": 85598,
+  "returncode": 0,
+  "source_files": 3,
+  "sources_unchanged": true,
+  "started_at": 1789842738.390502,
+  "status": "closed"
+}

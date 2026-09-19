@@ -1,0 +1,36 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-02/execute.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01/execute.py
+@@ -10,10 +10,10 @@
+ 
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-HERE = ROOT/'experiments/runtime-exporter-after-installation07-02'
++HERE = ROOT/'experiments/host-wrapper-exporter-01'
+ SUPERVISOR_SHA = '019608c2d37fcecb55ed436fafe3753498bfe11e1a1805a46ae49a59c7d6a1b2'
+-SOURCES_SHA = '1517b945e4ef190aa9960db4b62564a5da5dc922260501f8306ce38fb591c044'
+-BUILD_SOURCES_SHA = 'bce87300954ed5eefddfb80cb7a43e6f467be37e0e440838dc023c87fb7db589'
++SOURCES_SHA = '4e17ba1f0be6548ea3875322a1216c56e5bfb857ca99d57278e18925632cfeb3'
++BUILD_SOURCES_SHA = '190a4e56c5083d595f91b3e3bac7ac6e8c8c883bfc32befe49b31473a99e58e1'
+ 
+ 
+ def sha(path):
+@@ -50,7 +50,7 @@
+     command = list(launch['command'])
+     if args.phase in ('build', 'frontend'):
+         assert args.metadata_receipt_sha256
+-        prior = read(X/'.work/hir-options-hash-exporter-metadata-02/receipt.json', args.metadata_receipt_sha256)
++        prior = read(X/'.work/host-wrapper-exporter-metadata-01/receipt.json', args.metadata_receipt_sha256)
+         assert prior['status'] == 'passed' and prior['phase'] == 'metadata'
+         command = ['/opt/homebrew/bin/python3', '-B', str(HERE/(args.phase+'.py')),
+             '--inputs-sha256', launch['inputs']['sha256'], '--sources-sha256', SOURCES_SHA,
+@@ -67,8 +67,8 @@
+         assert args.frontend_sources_sha256 is args.build_receipt_sha256 is args.built_tools_sha256 is None
+     supervisor = X/'scripts/supervise_experiment.py'
+     assert sha(supervisor) == SUPERVISOR_SHA
+-    outer = X/'.work/experiments'/('hir-options-hash-exporter-'+args.phase+'-supervisor-02')
+-    execution = ROOT/'.work'/('runtime-exporter07-'+args.phase+'-execution-02')
++    outer = X/'.work/experiments'/('host-wrapper-exporter-'+args.phase+'-supervisor-01')
++    execution = ROOT/'.work'/('host-wrapper-exporter-'+args.phase+'-execution-01')
+     assert not outer.exists() and not execution.exists()
+     outer.mkdir(); execution.mkdir()
+     outer_plan = dict(owner=str(X), command=command, supervisor_sha256=SUPERVISOR_SHA)

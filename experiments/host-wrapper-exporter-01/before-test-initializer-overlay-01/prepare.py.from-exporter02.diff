@@ -1,0 +1,37 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-02/prepare.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01/prepare.py
+@@ -1,5 +1,5 @@
+ #!/usr/bin/env python3
+-"""Materialize exact238 source and prepare ordinary D2/B3/runtime07 metadata.
++"""Materialize qualified source238 plus the exact four-file host wrapper overlay and prepare ordinary D2/B3/runtime07 metadata.
+ 
+ This preparation runs no subprocess or compiler. It reads current providers under
+ the canonical lock, then writes only fresh owned source/packet/evidence paths.
+@@ -13,7 +13,7 @@
+ import sys
+ import time
+ 
+-HERE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-02')
++HERE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01')
+ 
+ 
+ def bootstrap(digest):
+@@ -110,7 +110,7 @@
+         CARGO_ENCODED_RUSTFLAGS='\x1f'.join(flags))
+     metadata_environment = build_environment | {'CARGO_TARGET_DIR': str(c.WORK/'cargo-target')}
+     future_build_environment = build_environment | {
+-        'TMPDIR': str(c.X/'.work/hir-options-hash-exporter-build-02/tmp')+'/'}
++        'TMPDIR': str(c.X/'.work/host-wrapper-exporter-build-01/tmp')+'/'}
+     cargo = old['support_executables']['cargo']
+     metadata = [cargo,'metadata','--locked','--offline','--format-version=1','--manifest-path',str(c.PREFIX/'Cargo.toml')]
+     build = [cargo,'build','--release','--locked','--offline','--jobs','2','-vv',
+@@ -168,7 +168,8 @@
+         children=children,loader_binaries=binaries,
+         historical_cargo_metadata=dict(path=str(historical_metadata),sha256=files[str(historical_metadata)]['sha256']),
+         registry_packages=old['registry_packages'],historical_cargo_version=old['historical_cargo_version'],
+-        source_materialization=source,source_snapshot_census=dict(path=str(c.CENSUS),sha256=c.PINS[str(c.CENSUS)]),
++        source_overlay=dict(path=str(c.OVERLAY),sha256=c.PINS[str(c.OVERLAY)]),
++        host_codegen_application_qualified=False,source_materialization=source,source_snapshot_census=dict(path=str(c.CENSUS),sha256=c.PINS[str(c.CENSUS)]),
+         future_build=dict(command=build,cwd=str(c.PREFIX),environment=future_build_environment,
+                           exporter_builds=1,compiler_builds=0,VM_builds=0),
+         adopted_VM=vm,

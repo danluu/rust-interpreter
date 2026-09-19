@@ -1,0 +1,64 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-02/publication-launch.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01/publication-launch.py
+@@ -12,14 +12,12 @@
+ 
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-HERE = ROOT/'experiments/runtime-exporter-after-installation07-02'
++HERE = ROOT/'experiments/host-wrapper-exporter-01'
+ SUPERVISOR_SHA = '019608c2d37fcecb55ed436fafe3753498bfe11e1a1805a46ae49a59c7d6a1b2'
+-SOURCES_SHA = '1517b945e4ef190aa9960db4b62564a5da5dc922260501f8306ce38fb591c044'
+-BUILD_SOURCES_SHA = 'bce87300954ed5eefddfb80cb7a43e6f467be37e0e440838dc023c87fb7db589'
+-FRONTEND_SOURCES_SHA = '4ece397a765fb4f41dd4f4277bff940a5a4dcb18ca39b8573292b71ee048c0f3'
+-PUBLICATION_SOURCES_SHA = '213729fe32c89414d7872881cc7af9c0e59e4107b3bb87ae66e97bfc783fed40'
+-LAUNCH_SHA = '5fc9f8acda80fc34f799be9f8fa8502f902af8b40eb0b9b87004b6df1fda4185'
+-METADATA_RECEIPT_SHA = 'cfc8b15814a00eee9c97761ba8ab98b2285cb1273cf558fbbfacad833055fbd8'
++SOURCES_SHA = '4e17ba1f0be6548ea3875322a1216c56e5bfb857ca99d57278e18925632cfeb3'
++BUILD_SOURCES_SHA = '190a4e56c5083d595f91b3e3bac7ac6e8c8c883bfc32befe49b31473a99e58e1'
++FRONTEND_SOURCES_SHA = '9d8490fd749d92c9dc38c506e9e399fd8bd3073a8496bde4d23204f2d330d0b4'
++PUBLICATION_SOURCES_SHA = '94a9faf5250e108dd3bd4014b219c1dd347548bc47f979a71782eb5d5decbb25'
+ 
+ 
+ def sha(path):
+@@ -49,8 +47,6 @@
+     args = parser.parse_args()
+     if not all(re.fullmatch('[0-9a-f]{64}', value) for value in vars(args).values()):
+         raise RuntimeError('Exact actual receipt digests required')
+-    if args.launch_sha256 != LAUNCH_SHA or args.metadata_receipt_sha256 != METADATA_RECEIPT_SHA:
+-        raise RuntimeError('Reviewed metadata packet/receipt binding differs')
+     args.phase = 'publication'
+     args.frontend_sources_sha256 = FRONTEND_SOURCES_SHA
+     launch = read(HERE/'packet-01/launch.json', args.launch_sha256)
+@@ -60,10 +56,10 @@
+     assert launch['cwd'] == str(X)
+     read(HERE/'publication-sources.json', PUBLICATION_SOURCES_SHA)
+     for phase in ('metadata', 'build', 'frontend'):
+-        prior = read(X/'.work'/('hir-options-hash-exporter-'+phase+'-02')/'receipt.json',
++        prior = read(X/'.work'/('host-wrapper-exporter-'+phase+'-01')/'receipt.json',
+                      getattr(args, phase+'_receipt_sha256'))
+         assert prior['status'] == 'passed' and prior['phase'] == phase and 'error' not in prior
+-    read(X/'.work/hir-options-hash-exporter-build-02/built-tools.json', args.built_tools_sha256)
++    read(X/'.work/host-wrapper-exporter-build-01/built-tools.json', args.built_tools_sha256)
+     command = ['/opt/homebrew/bin/python3', '-B', str(HERE/'publish.py'),
+         '--inputs-sha256', launch['inputs']['sha256'], '--sources-sha256', SOURCES_SHA,
+         '--build-sources-sha256', BUILD_SOURCES_SHA, '--frontend-sources-sha256', FRONTEND_SOURCES_SHA,
+@@ -74,8 +70,8 @@
+         '--frontend-receipt-sha256', args.frontend_receipt_sha256]
+     supervisor = X/'scripts/supervise_experiment.py'
+     assert sha(supervisor) == SUPERVISOR_SHA
+-    outer = X/'.work/experiments'/('hir-options-hash-exporter-'+args.phase+'-supervisor-02')
+-    execution = ROOT/'.work'/('runtime-exporter07-'+args.phase+'-execution-02')
++    outer = X/'.work/experiments'/('host-wrapper-exporter-'+args.phase+'-supervisor-01')
++    execution = ROOT/'.work'/('host-wrapper-exporter-'+args.phase+'-execution-01')
+     assert not outer.exists() and not execution.exists()
+     outer.mkdir(); execution.mkdir()
+     outer_plan = dict(owner=str(X), command=command, supervisor_sha256=SUPERVISOR_SHA)
+@@ -88,7 +84,7 @@
+         frontend_sources_sha256=args.frontend_sources_sha256,
+         build_receipt_sha256=args.build_receipt_sha256, built_tools_sha256=args.built_tools_sha256,
+         frontend_receipt_sha256=args.frontend_receipt_sha256, publication_sources_sha256=PUBLICATION_SOURCES_SHA,
+-        resource_policy='Three publication children and sampled disk guards; no CPU, wall-time or memory cap.')
++        resource_policy='Four publication children and sampled disk guards; no CPU, wall-time or memory cap.')
+     write(execution/'record.json', record)
+     with (execution/'stdout').open('xb') as stdout, (execution/'stderr').open('xb') as stderr:
+         child = subprocess.Popen(argv, cwd=X, env=launch['environment'], stdin=subprocess.DEVNULL,

@@ -1,0 +1,24 @@
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/execute_host_wrapper_opt_rust_tests_01.py
++++ /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/execute_host_wrapper_opt_rust_tests_02.py
+@@ -8,9 +8,9 @@
+ 
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+-SOURCE = ROOT/'experiments/host-wrapper-opt-rust-tests-01'
+-OUT = ROOT/'.work/host-wrapper-opt-rust-tests-execution-01'
+-EXPECTED = '85123dfda3837adf99650958bc50ac3a86d539e8883d9b9856a5affae4a76273'
++SOURCE = ROOT/'experiments/host-wrapper-opt-rust-tests-02'
++OUT = ROOT/'.work/host-wrapper-opt-rust-tests-execution-02'
++EXPECTED = '7d60a8dcf6024195ac8ec7d8a2d715d7754b061d9c33ed40b73f4fa8ea43baef'
+ 
+ 
+ def digest(path):
+@@ -48,7 +48,7 @@
+     stdout_sha256=digest(OUT/'stdout'),stderr_sha256=digest(OUT/'stderr'))
+ save(record)
+ assert code == 0
+-receipt_path = ROOT/'results/host-wrapper-opt-rust-tests-01/record.json'
++receipt_path = ROOT/'results/host-wrapper-opt-rust-tests-02/record.json'
+ receipt = json.loads(receipt_path.read_text())
+ assert receipt['status'] == 'passed' and receipt['pid'] == child.pid
+ assert receipt['parent_pid'] == os.getpid()

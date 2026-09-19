@@ -1,0 +1,5 @@
+The successor retains four std-only test suites and their 43 case names. Only the legacy O1 test context changes: it clears stable_cgu_partitioning together with compiler_rustc before selecting the old public-compiler library policy. The corrected test lives here; its explicit module path selects the unchanged original wrapper_route.rs and nested host_proc_macro.rs. The original failing test and all harness01 evidence remain unchanged. The other three test crates use their original paths and bytes.
+
+The runner differs from01 only in fresh output namespaces and its opening description. It compiles each test crate with the same bound D2 and full B3 build flags, then runs it once with one test thread. Four compile/run pairs retain exact test-name/footer checks. No Cargo, compiler_roles integration suite, exporter, RBC, or performance claim is included.
+
+Canonical600,1GiB entry,30-second observed command and256MiB output thresholds, normal wait, no signals/retries, complete source/tool before/after checks and owned TMPDIR are unchanged. These are observed limits, not a kill timer or atomic disk quota. This packet is source-only and unrun pending review.

@@ -1,0 +1,108 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-02/publish.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01/publish.py
+@@ -12,10 +12,10 @@
+ import time
+ from types import SimpleNamespace
+ 
+-HERE=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-02')
++HERE=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01')
+ OPTIONS=('stable-cgu-partitioning','compiler-argv-record-v1','function-cache-auto',
+          'inline-leaves','trap-unsupported-calls','run-try-callbacks','host-proc-macro-opt-v1',
+-         'entry-catalog','list-tests')
++         'entry-catalog','list-tests','host-codegen-opt-v1')
+ NAMES=('rust-interp-mir-export','rust-interp-rustc-wrapper','rust-interp-vm')
+ 
+ 
+@@ -26,7 +26,7 @@
+     inventory=json.loads(payload)
+     if (set(inventory)!={'policy','frontend_sources','files'}
+             or inventory['policy']!='runtime-exporter07-publication-sources-v1'
+-            or type(inventory['files']) is not dict or len(inventory['files'])!=25):
++            or type(inventory['files']) is not dict or len(inventory['files'])!=31):
+         raise RuntimeError('publication source manifest schema differs')
+     files=inventory['files'];front=HERE/'frontend-sources.json'
+     data=front.read_bytes()
+@@ -36,6 +36,7 @@
+     R=Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+     extra={str(HERE/n) for n in ('publish.py','validate_published.py')}
+     extra|={str(R/'scripts'/n) for n in ('interpreter.py','workspace_cache.py')}
++    extra.add(str(HERE.parent/'host-wrapper-opt-01/host_codegen_opt.py'))
+     if (set(files)!=set(selected)|extra|{str(front)}
+             or files.get(str(front))!=args.frontend_sources_sha256
+             or inventory['frontend_sources']!=dict(path=str(front),sha256=args.frontend_sources_sha256)
+@@ -66,9 +67,9 @@
+                 and self.plan['source_root']==str(c.PREFIX),'current exporter packet differs')
+             c.require(c.file(Path(sys.executable).resolve(strict=True))==self.inputs['python'],'Python executor differs')
+             self.building=True
+-            self.work=c.X/'.work/hir-options-hash-exporter-publication-02'
+-            self.front_work=c.X/'.work/hir-options-hash-exporter-frontend-02'
+-            self.build_work=c.X/'.work/hir-options-hash-exporter-build-02'
++            self.work=c.X/'.work/host-wrapper-exporter-publication-01'
++            self.front_work=c.X/'.work/host-wrapper-exporter-frontend-01'
++            self.build_work=c.X/'.work/host-wrapper-exporter-build-01'
+             c.require(not os.path.lexists(self.work),'fresh publication work required')
+             self.work.mkdir();(self.work/'tmp').mkdir()
+             self.protected={};self.cache={};self.binaries={};self.closed=[];self.closures=[];self.published={}
+@@ -198,12 +199,14 @@
+             composition=dict(kind=self.mods.tools.POLICY,compiler_key=c.KEY,compiler_sysroot=str(c.RUNTIME),
+                 binaries=self.built['binaries'],compiler_roles=self.plan['binding'],
+                 source=dict(owner=str(c.X),root=str(c.PREFIX),checkpoint=c.CHECKPOINT,files=sources,
++                    overlay=self.plan['source_overlay'],
+                     metadata=self.record['metadata']['receipt']),
+                 actual_build=dict(receipt=self.record['build']['receipt'],tools=self.record['build']['result'],
+                     evidence=self.built['evidence'],recipe=self.plan['future_build'],strip_failures=0),
+                 adopted_VM=self.plan['adopted_VM'],direct_frontend=self.front_refs,
+                 ordinary_launcher=dict(owner=str(c.R),source_files=readers),
+-                guest_execution_qualified=False,benchmark=False)
++                host_codegen_policy='host-codegen-opt-v1',host_codegen_application_qualified=False,
++                frontend_host_codegen_mode='off',guest_execution_qualified=False,benchmark=False)
+             self.key=self.mods.tools.digest(composition);self.directory=c.R/'.work/interpreter-tools'/self.key
+             self.composition=composition
+             c.require(set(OPTIONS)<=set(self.built['capabilities']['export_options']),'ordinary application options missing')
+@@ -261,6 +264,8 @@
+                 cwd=str(c.X),environment=env|{'DYLD_PRINT_LIBRARIES':'1'},expected=[0]),
+                 dict(label='published-wrapper',command=[str(self.directory/NAMES[1]),'--rust-interp-compiler-roles'],
+                 cwd=str(c.X),environment=env,expected=[0]),
++                dict(label='published-host-codegen',command=[str(self.directory/NAMES[1]),'--rust-interp-host-codegen-capability'],
++                cwd=str(c.X),environment=env,expected=[0]),
+                 dict(label='ordinary-installed-reader',command=[c.PYTHON,'-B',str(HERE/'validate_published.py'),
+                     '--publication-sources-sha256',self.args.publication_sources_sha256,'--tool-key',self.key,
+                     '--runtime-compiler-key',c.KEY],cwd=str(c.R),environment=env,expected=[0])]
+@@ -275,13 +280,17 @@
+             wrapper=self.command(self.schedule[1]);c.require(not wrapper['stderr'],'published wrapper diagnostics')
+             compiler=self.mods.runtime.load_runtime_compiler(c.R,c.KEY)
+             self.mods.tools.bind_recorded_wrapper(caps,self.built['binaries'],compiler,wrapper['stdout'])
++            host_codegen=self.command(self.schedule[2])
++            c.require(not host_codegen['stderr'],'published host policy query diagnostics')
++            helper=metadata.imported_host_codegen(c,self.publication_sources)
++            helper.bind_recorded_wrapper_capability(self.built['binaries'],caps,compiler,host_codegen['stdout'])
+             caps.update(tool_key=self.key,exporter_sha256=self.built['binaries'][NAMES[0]])
+             c.require(set(OPTIONS)<=set(caps['export_options']),'ordinary published options missing')
+             for n,value in (('compiler.json',self.composition),('capabilities.json',caps),('ready.json',self.built['binaries'])):
+                 raw=c.encoded(value);c.require(len(raw)<=8*2**20,'bounded publication metadata exceeded')
+                 p=self.directory/n;c.write(p,raw);p.chmod(0o444);self.published[str(p)]=c.file(p)
+             self.directory.chmod(0o555)
+-            validation=self.command(self.schedule[2])
++            validation=self.command(self.schedule[3])
+             c.require(not validation['stderr'] and json.loads(validation['stdout'])==dict(status='passed',
+                 tool_key=self.key,runtime_key=c.KEY,directory=str(self.directory)), 'ordinary installed tool validation failed')
+             c.require(set(c.tree(self.directory))==set(NAMES)|{'compiler.json','capabilities.json','ready.json'},
+@@ -290,7 +299,8 @@
+             return c.write(self.work/'published-tools.json',dict(tool_key=self.key,directory=str(self.directory),
+                 composition=self.composition,copied=copied,capabilities=caps,loaded_images=loaded,
+                 actual_exporter_probe=exporter['path'],actual_wrapper_probe=wrapper['path'],
+-                installed_validation=validation['path'],guest_execution=False,benchmark=False))
++                actual_host_codegen_probe=host_codegen['path'],host_codegen_application_qualified=False,
++                frontend_host_codegen_mode='off',installed_validation=validation['path'],guest_execution=False,benchmark=False))
+ 
+         def execute(self):
+             try:
+@@ -299,7 +309,7 @@
+                     self.guard(full=True);self.check_build();self.frontend_proof();self.compose()
+                     with self.tool_lock():
+                         self.guard(full=True);result=self.publish();self.guard(full=True)
+-                    self.c.require(len(self.record['commands'])==3,'three actual publication probes required')
++                    self.c.require(len(self.record['commands'])==4,'four actual publication probes required')
+                     self.record.update(status='passed',finished_at=time.time(),frontend_qualified=True,
+                         publication=True,tool_key=self.key,published_directory=str(self.directory),
+                         result=result,published_tools_sha256=result['sha256'],free_bytes_after=self.mods.owned.disk(self.c.R,8));self.save()

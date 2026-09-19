@@ -1,0 +1,18 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/crates/mir-export/tests/host_codegen.rs
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-rust-tests-02/tests/host_codegen.rs
+@@ -1,5 +1,5 @@
+ #[allow(dead_code)]
+-#[path = "../src/wrapper_route.rs"]
++#[path = "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/crates/mir-export/src/wrapper_route.rs"]
+ mod wrapper_route;
+ use wrapper_route::{Environment, route};
+ 
+@@ -90,7 +90,7 @@
+ 
+ #[test]
+ fn legacy_o1_vector_stays_distinct_from_new_o3() {
+-    let mut e=env();e.compiler_rustc=None;e.host_codegen_opt=None;e.host_library_opt=Some("on".into());
++    let mut e=env();e.compiler_rustc=None;e.stable_cgu_partitioning=None;e.host_codegen_opt=None;e.host_library_opt=Some("on".into());
+     let old=unit("lib",&[],&e).unwrap();assert!(old.args.contains(&"-Copt-level=1".to_owned()));
+     assert!(!old.args.contains(&"-Copt-level=3".to_owned()));
+     e.host_proc_macro_opt=Some("on".into());assert!(unit("lib",&[],&e).is_err());

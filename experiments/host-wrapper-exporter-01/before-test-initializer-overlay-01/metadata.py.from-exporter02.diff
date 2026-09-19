@@ -1,0 +1,38 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-02/metadata.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01/metadata.py
+@@ -14,7 +14,7 @@
+ import sys
+ import time
+ 
+-HERE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-02')
++HERE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01')
+ 
+ 
+ def bootstrap(digest):
+@@ -42,6 +42,17 @@
+     return module
+ 
+ 
++def imported_host_codegen(c, sources):
++    path=c.HOST_HELPER
++    c.require(str(path) in sources, 'host policy helper is not authenticated')
++    c.file(path,sources[str(path)])
++    name='_host_wrapper_exporter_capability'
++    c.require(name not in sys.modules, 'unexpected host policy module')
++    spec=importlib.util.spec_from_file_location(name,path)
++    module=importlib.util.module_from_spec(spec);sys.modules[name]=module;spec.loader.exec_module(module)
++    return module
++
++
+ def loaded_libraries(c, raw, pid, allowed, driver):
+     return imported('dyld_parser').loaded_libraries(c, raw, pid, allowed, driver)
+ 
+@@ -56,7 +67,7 @@
+             and self.plan['source_root']==str(c.PREFIX),'current exporter packet differs')
+         c.require(c.file(Path(sys.executable).resolve(strict=True))==self.inputs['python'], 'Python executor differs')
+         self.building=args.phase=='build'
+-        self.work=c.X/'.work/hir-options-hash-exporter-build-02' if self.building else c.WORK
++        self.work=c.X/'.work/host-wrapper-exporter-build-01' if self.building else c.WORK
+         c.require(not os.path.lexists(self.work),'fresh exporter stage required')
+         c.require(not os.path.lexists(c.TARGET),'fresh Cargo target required')
+         self.work.mkdir();(self.work/'tmp').mkdir()

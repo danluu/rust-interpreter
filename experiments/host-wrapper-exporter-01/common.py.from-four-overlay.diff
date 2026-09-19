@@ -1,0 +1,19 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01/before-test-initializer-overlay-01/common.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01/common.py
+@@ -45,7 +45,7 @@
+ OVERLAY = HERE/'source-overlay.json'
+ HOST_HELPER = ROOT/'experiments/host-wrapper-opt-01/host_codegen_opt.py'
+ PINS = {
+-    str(OVERLAY): '93e2b66b101c019be5ba59c7cd16c8b8beaada43cfe0051c87ff5a12080e1f4f',
++    str(OVERLAY): 'b788f5a3deb83ea8505a46dd35b9bf55fc38f0fc178c2b205a09aedbebbfc892',
+     str(CENSUS): '67137cfbe6808c240177150559331adda214003f605dbca9d45f96065030528c',
+     str(OLD): '6de794d266012bce0479ff5b25894cbad7cac3ba41815bfb33a917a790541d62',
+     str(PRIVATE): 'a9707c26e48cae023ed32cec4a0d119d2c80d33f1904006aab495f60b8980d4e',
+@@ -226,6 +226,7 @@
+     overlay = read(OVERLAY, PINS[str(OVERLAY)])
+     expected = {'crates/mir-export/src/'+n for n in
+                 ('host_proc_macro.rs', 'wrapper_route.rs', 'wrapper_main.rs', 'main.rs')}
++    expected.add('crates/mir-export/tests/compiler_roles.rs')
+     require(set(overlay) == {'policy', 'baseline_census', 'baseline_files', 'baseline_checkpoint', 'files'}
+             and overlay['policy'] == 'host-wrapper-exporter-source-overlay-v1'
+             and overlay['baseline_census'] == dict(path=str(CENSUS), sha256=PINS[str(CENSUS)])

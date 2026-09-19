@@ -1,0 +1,59 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-02/common.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01/common.py
+@@ -19,12 +19,12 @@
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ A = Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+-HERE = ROOT/'experiments/runtime-exporter-after-installation07-02'
+-PREFIX = X/'.work/hir-options-hash-exporter-source-02'
+-TARGET = X/'.work/hir-options-hash-exporter-target-02'
++HERE = ROOT/'experiments/host-wrapper-exporter-01'
++PREFIX = X/'.work/host-wrapper-exporter-source-01'
++TARGET = X/'.work/host-wrapper-exporter-target-01'
+ PACKET = HERE/'packet-01'
+-WORK = X/'.work/hir-options-hash-exporter-metadata-02'
+-PREPARATION = X/'.work/hir-options-hash-exporter-preparation-02'
++WORK = X/'.work/host-wrapper-exporter-metadata-01'
++PREPARATION = X/'.work/host-wrapper-exporter-preparation-01'
+ D2 = X/'.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage0'
+ B3 = X/'.work/hir-options-hash-compiler-01/beta-sysroot'
+ KEY = 'f031d981666f450f760ccf303dccba986053ec6b9a143a60f3d26680f9ac7c70'
+@@ -42,7 +42,10 @@
+ HOST = 'aarch64-apple-darwin'
+ LOCK = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+ PYTHON = '/opt/homebrew/bin/python3'
++OVERLAY = HERE/'source-overlay.json'
++HOST_HELPER = ROOT/'experiments/host-wrapper-opt-01/host_codegen_opt.py'
+ PINS = {
++    str(OVERLAY): '93e2b66b101c019be5ba59c7cd16c8b8beaada43cfe0051c87ff5a12080e1f4f',
+     str(CENSUS): '67137cfbe6808c240177150559331adda214003f605dbca9d45f96065030528c',
+     str(OLD): '6de794d266012bce0479ff5b25894cbad7cac3ba41815bfb33a917a790541d62',
+     str(PRIVATE): 'a9707c26e48cae023ed32cec4a0d119d2c80d33f1904006aab495f60b8980d4e',
+@@ -220,6 +223,27 @@
+         relative(name)
+         require(row['path'] == str(X/name) and row['retained_snapshot']['sha256'] == row['frozen_sha256'],
+                 'retained source association differs')
++    overlay = read(OVERLAY, PINS[str(OVERLAY)])
++    expected = {'crates/mir-export/src/'+n for n in
++                ('host_proc_macro.rs', 'wrapper_route.rs', 'wrapper_main.rs', 'main.rs')}
++    require(set(overlay) == {'policy', 'baseline_census', 'baseline_files', 'baseline_checkpoint', 'files'}
++            and overlay['policy'] == 'host-wrapper-exporter-source-overlay-v1'
++            and overlay['baseline_census'] == dict(path=str(CENSUS), sha256=PINS[str(CENSUS)])
++            and overlay['baseline_files'] == 238 and overlay['baseline_checkpoint'] == CHECKPOINT
++            and set(overlay['files']) == expected, 'exact qualified-baseline overlay required')
++    for name, replacement in overlay['files'].items():
++        original = rows[name]
++        require(set(replacement) == {'original_sha256', 'path', 'sha256', 'bytes'}
++                and replacement['original_sha256'] == original['frozen_sha256']
++                and replacement['path'] == str(ROOT/'experiments/host-wrapper-opt-01'/name),
++                'overlay does not match the qualified source238 donor')
++        file(original['retained_snapshot']['path'], original['frozen_sha256'])
++        new = file(replacement['path'], replacement['sha256'])
++        require(type(replacement['bytes']) is int and new['bytes'] == replacement['bytes'],
++                'overlay source length differs')
++        rows[name] = dict(original, frozen_sha256=new['sha256'], frozen_bytes=new['bytes'],
++                         retained_snapshot=new)
++    require(len(rows) == 238, 'overlay changed ordinary source membership')
+     return rows
+ 
+ 

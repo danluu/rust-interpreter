@@ -1,0 +1,19 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01/before-test-initializer-overlay-01/publish.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-exporter-01/publish.py
+@@ -26,7 +26,7 @@
+     inventory=json.loads(payload)
+     if (set(inventory)!={'policy','frontend_sources','files'}
+             or inventory['policy']!='runtime-exporter07-publication-sources-v1'
+-            or type(inventory['files']) is not dict or len(inventory['files'])!=31):
++            or type(inventory['files']) is not dict or len(inventory['files'])!=32):
+         raise RuntimeError('publication source manifest schema differs')
+     files=inventory['files'];front=HERE/'frontend-sources.json'
+     data=front.read_bytes()
+@@ -205,6 +205,7 @@
+                     evidence=self.built['evidence'],recipe=self.plan['future_build'],strip_failures=0),
+                 adopted_VM=self.plan['adopted_VM'],direct_frontend=self.front_refs,
+                 ordinary_launcher=dict(owner=str(c.R),source_files=readers),
++                host_codegen_helper=dict(path=str(c.HOST_HELPER),sha256=self.publication_sources[str(c.HOST_HELPER)]),
+                 host_codegen_policy='host-codegen-opt-v1',host_codegen_application_qualified=False,
+                 frontend_host_codegen_mode='off',guest_execution_qualified=False,benchmark=False)
+             self.key=self.mods.tools.digest(composition);self.directory=c.R/'.work/interpreter-tools'/self.key
