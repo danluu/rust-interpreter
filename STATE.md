@@ -127,3 +127,15 @@ mechanism evidence. No command speedup or default adoption; changed-source prima
 remains required. Runtime source is deliberately retained on its experimental branch.
 Exact primary05 retired compiler intermediates cleaned15152files/2,991,235,194bytes;
 11410protected hashes unchanged, independent closure complete. Neverrepeatcleanup.
+
+## 2026-09-19 scheduler changed-source screen passes
+
+Primary06 is closed:40actualsource commands plus two strictrejection controls,
+114originaloutcomes/artifacts/source restoration. Median candidate/adopted wall
+0.9311698739+A/A0.0308233457=0.9619932196;CPU0.9104683898+0.0308595313=
+0.9413279211. Bothgates pass. Nativewall1.2718753876; defaultunchanged. Tool
+60bc004658a1db09e1c905eed50e25062f1ff8ae27811331aed9ad51b206a5a5 uses
+qualified normal scheduler VM/server with adoptedcompiler tools. Fullthreecycle
+110command guard is next; no adoption until it and laterprojectguards pass.
+Primary06 closedcache cleanup15152files2991235289bytes,11413protectedhashes
+unchanged and independentlyclosed; neverrepeat. Runtime source remainsbranchonly.
