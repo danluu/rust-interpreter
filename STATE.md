@@ -33,15 +33,17 @@ non-test release VM; closure38245/38249. Every attempt remains in results.
 
 Full build01 under52151/52154 passes635Rust tests per profile,14ignored, and
 434Python tests/22skipped (456discovered). Exact retained VM installed with the
-unchanged adopted exporter/wrapper. Closed by40140 (child in terminal receipt).
+unchanged adopted exporter/wrapper. Closed by40140/40144.
 Tool `7a4e2bc034fc55c0ca89e174b0d403d0af8174eb8046443e09b11311d52af4ca`.
 VM `d071c9123c40cd9ee9ad4dd1bb13faed046373a7d743ebc85919b08c029e8ebd`.
 Build sourcef90e816e, runtime sourceef50023f; setup105.17s plus focused28.02s.
+Strict qualification121 commands passed under56495/56498 and is CLOSED by
+61762/61805: native/reference/cache agreement, unreachable type/borrow errors,
+actual partial artifact rejection and source restoration all pass.
 No original project guest or performance command has run for this candidate.
 No template runtime has been merged to main.
 
-Next run121strict native/reference/cache/Cargo commands using qualify.py and
-close_qualification.py. Then suite.py/close_suite.py: six full pgrust parser
+Next run suite.py/close_suite.py: six full pgrust parser
 runs (original/wrong edit × ordinary-two/shared-one/shared-two), one private
 rg-aot one-entry run and six mode/partial rejection commands. Actual shared hits
 must occur on both parser states before timing; zero hits cancel timing, not
