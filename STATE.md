@@ -122,3 +122,10 @@ Publish qualified evidence regularly.
 Publish exact proof/docs paths on main, fetch/ff first; do not copy experimental
 runtime or overwrite compiler work. Prior detail archived at
  docs/history/STATE-20260919-before-session-runtime-composition.md.
+
+New prepared, UNSTARTED exact full-token retirement:
+benchmarks/experiments/session-runtime-token-cache-retirement. Only nine completed
+full-token namespaces, no folded/later cache. May run after terminal folded and
+independent closure, under lock and fresh build/parser disk admission. Older
+Nushell/custom/native/native-lines/check retirement receipts already exist; do
+not revisit those caches blindly or repeat them for a hoped-for larger result.
