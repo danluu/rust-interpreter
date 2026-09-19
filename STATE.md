@@ -177,6 +177,13 @@ Focused06 fixes only that controller syntax, keeps20Rust/16Python checks and
 retained VM, and all experiment controllers pass syntax compilation. Build01
 now requires closed focused06; no successful command is being repeated.
 
+Focused06 under72299/72302 passes16Python controls, then Rust compilation
+rejects a preexisting scratch-value test closure: Jit now contains invariant
+Mutex storage, so its separately captured Program lifetime cannot satisfy the
+closure argument. Closed83483/83595 before correction. The test now reads the
+same function through jit.program; assertions are unchanged. Focused07 retains
+the closed16Python result and starts only the two Rust profiles and VM build.
+
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally
 its incremental parser history and the latest selective-repair primary's

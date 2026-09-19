@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='shared-emission-templates-focused-06'
+RUN='shared-emission-templates-focused-07'
 def read(p):return json.loads(p.read_text())
 def main():
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
@@ -20,6 +20,17 @@ def main():
         prior=ROOT/'results/native-reuse-scope-01';closed=read(prior/'closure.json')
         assert closed['status']=='closed' and closed['all_hashes_verified'] and sha(prior/'summary.json')==closed['summary_sha256']
         paths += [prior/'closure.json',prior/'summary.json']
+        prior=ROOT/'results/shared-emission-templates-focused-06';closed=read(prior/'closure.json')
+        assert closed['status']=='closed' and closed['all_hashes_verified'] and sha(prior/'summary.json')==closed['summary_sha256']
+        previous=ROOT/'.work/shared-emission-templates-focused-06'
+        previous_summary=read(prior/'summary.json')
+        assert sha(previous/'plan.json')==previous_summary['plan_sha256'] and sha(previous/'records.json')==previous_summary['records_sha256']
+        python,=[r for r in read(previous/'records.json') if r['label']=='python'];assert python['returncode']==0
+        for stream in ['stdout','stderr']:assert sha(previous/('python.'+stream))==python[stream+'_sha256']
+        assert 'Ran 16 tests in ' in (previous/'python.stderr').read_text() and '\nOK\n' in (previous/'python.stderr').read_text()
+        for p,h in read(previous/'plan.json')['frozen'].items():
+            if p.startswith(('scripts/','tests/')):assert sha(ROOT/p)==h
+        paths += [prior/'closure.json',prior/'summary.json',previous/'plan.json',previous/'records.json',previous/'python.stdout',previous/'python.stderr']
         prior=ROOT/'results/shared-emission-templates-focused-03';closed=read(prior/'closure.json')
         assert closed['status']=='closed' and closed['all_hashes_verified'] and sha(prior/'summary.json')==closed['summary_sha256']
         paths += [prior/'closure.json',prior/'summary.json']
@@ -29,7 +40,8 @@ def main():
         raw=ROOT/'.work'/RUN;raw.mkdir(exist_ok=False)
         write(raw/'plan.json',dict(owner=str(ROOT),source_revision=revision,frozen=frozen,
             controller_command=[sys.executable,*sys.orig_argv[1:]],target=str(target.relative_to(ROOT)),
-            required_free_bytes=needed,allocated_target_bytes=allocated,minimum_child_gib=8,expected_commands=4,
+            required_free_bytes=needed,allocated_target_bytes=allocated,minimum_child_gib=8,expected_commands=3,
+            reused_python_controls='shared-emission-templates-focused-06',
             tests_per_profile=20,python_tests=16,original_project_guest_commands=0,native_fixture_execution=True,
             executable_code_publication=True,production_runtime_changes=1,option_default=False,performance_measurement=False))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_','CARGO_'))
@@ -39,7 +51,7 @@ def main():
             CARGO_PROFILE_TEST_DEBUG='0',RUST_TEST_THREADS='2',CARGO_TERM_COLOR='never',PYTHONDONTWRITEBYTECODE='1')
         records=[];write(raw/'records.json',records)
         outputs={}
-        for label,extra in [('python',[]),('debug',[]),('release',['--release']),('vm',['--release'])]:
+        for label,extra in [('debug',[]),('release',['--release']),('vm',['--release'])]:
             require_space(ROOT,8);assert shutil.disk_usage(ROOT).free>=needed
             command=['cargo','+nightly-2026-09-08','test',*extra,'--locked','--offline','--jobs','2',
                 '--manifest-path',str(ROOT/'Cargo.toml'),'--target-dir',str(target),'-p','rust-interp-bytecode','--lib','jit::emission_templates::']
@@ -64,7 +76,8 @@ def main():
             assert all(sha(ROOT/p)==h for p,h in frozen.items());print(label,'passed',flush=True)
         out=ROOT/'results'/RUN;out.mkdir(exist_ok=False)
         write(out/'summary.json',dict(status='passed',source_revision=revision,raw=str(raw.relative_to(ROOT)),
-            plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),tests_per_profile=20,python_tests=16,commands=4,outputs=outputs,
+            plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),tests_per_profile=20,python_tests=16,commands=3,outputs=outputs,
+            reused_python_controls='shared-emission-templates-focused-06',
             setup_seconds=sum(r['seconds'] for r in records),original_project_guest_commands=0,native_fixture_execution=True,executable_code_publication=True,
             production_runtime_changes=1,option_default=False,performance_measurement=False))
 
@@ -88,7 +101,7 @@ def close():
                 p=raw/(r['label']+'.'+stream);assert sha(p)==r[stream+'_sha256'];evidence[str(p.relative_to(ROOT))]=sha(p)
         out.mkdir(exist_ok=True);assert not (out/'closure.json').exists()
         if terminal['returncode']==0:
-            summary=read(out/'summary.json');assert summary['status']=='passed' and len(records)==4
+            summary=read(out/'summary.json');assert summary['status']=='passed' and len(records)==3
             assert summary['plan_sha256']==sha(raw/'plan.json') and summary['records_sha256']==sha(raw/'records.json')
             for p,h in summary['outputs'].items():assert sha(ROOT/p)==h;evidence[p]=h
         else:

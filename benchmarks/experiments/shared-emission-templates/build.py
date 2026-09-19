@@ -33,7 +33,7 @@ def main():
         retained,key=installed_tools(BASELINE);assert key==BASELINE
         assert all(sha(retained/n)==h for n,h in integration['binaries'].items())
         paths=[integration_path]+[retained/n for n in [*integration['binaries'],'ready.json','source.json','capabilities.json']]
-        for stage,number in [('focused','06')]:
+        for stage,number in [('focused','07')]:
             folder=ROOT/'results'/f'shared-emission-templates-{stage}-{number}'
             closed,summary=read(folder/'closure.json'),read(folder/'summary.json')
             assert closed['status']=='closed' and closed['all_hashes_verified']
@@ -42,7 +42,7 @@ def main():
             for p,h in read(plan_path)['frozen'].items():
                 if p.startswith(('crates/','scripts/','tests/')) or p in ['Cargo.toml','Cargo.lock','rust-toolchain.toml']:assert sha(ROOT/p)==h
             paths += [folder/'closure.json',folder/'summary.json',folder/'terminal.json',plan_path]
-        focused=read(ROOT/'results/shared-emission-templates-focused-06/summary.json')
+        focused=read(ROOT/'results/shared-emission-templates-focused-07/summary.json')
         vm_outputs=[(ROOT/p,h) for p,h in focused['outputs'].items() if p.endswith('/rust-interp-vm')]
         assert len(vm_outputs)==1
         retained_vm,vm_hash=vm_outputs[0];assert sha(retained_vm)==vm_hash

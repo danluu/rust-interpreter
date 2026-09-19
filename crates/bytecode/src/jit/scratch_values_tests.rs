@@ -129,7 +129,7 @@ fn scratch_memory_overlapping_reused_copy_invalidates_its_original_source() {
         let mut old=Jit::new_resumable(&p,false,super::super::MAX_CODE_BYTES,true).unwrap();
         old.scratch_values_enabled=false;
         let new=Jit::new_resumable(&p,false,super::super::MAX_CODE_BYTES,true).unwrap();
-        let emit=|jit:&Jit<'_>|jit.emit_function_inner(&p.functions[0],super::super::MAX_CODE_BYTES/4,0,None).unwrap().unwrap().words;
+        let emit=|jit:&Jit<'_>|jit.emit_function_inner(&jit.program.functions[0],super::super::MAX_CODE_BYTES/4,0,None).unwrap().unwrap().words;
         // Partial overlap must reload the changed source. Exact/disjoint writes
         // leave another valid copy of the same bits available in x9.
         let reusable=delta==0 || delta.unsigned_abs()>=8;
