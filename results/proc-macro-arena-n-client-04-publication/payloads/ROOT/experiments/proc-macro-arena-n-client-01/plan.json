@@ -1,0 +1,2801 @@
+{
+  "actual_result": null,
+  "cases": [
+    {
+      "errors": [],
+      "name": "pass-default",
+      "returncode": 0,
+      "source": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/pass.rs",
+      "strategy": "default"
+    },
+    {
+      "errors": [],
+      "name": "pass-same-thread",
+      "returncode": 0,
+      "source": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/pass.rs",
+      "strategy": "same-thread"
+    },
+    {
+      "errors": [
+        {
+          "code": null,
+          "message": "ARENA_FIXTURE_DIAGNOSTIC",
+          "primary_line": 1
+        }
+      ],
+      "name": "diagnostic",
+      "returncode": 1,
+      "source": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/diagnostic.rs",
+      "strategy": "default"
+    },
+    {
+      "errors": [
+        {
+          "code": null,
+          "help": "message: ARENA_FIXTURE_PANIC",
+          "message": "proc macro panicked",
+          "primary_line": 1
+        }
+      ],
+      "name": "panic",
+      "returncode": 1,
+      "source": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/panic.rs",
+      "strategy": "default"
+    },
+    {
+      "errors": [
+        {
+          "code": "E0308",
+          "message": "mismatched types",
+          "primary_line": 2
+        }
+      ],
+      "name": "type-error",
+      "returncode": 1,
+      "source": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/type_error.rs",
+      "strategy": "default"
+    },
+    {
+      "errors": [
+        {
+          "code": "E0502",
+          "message": "cannot borrow `value` as mutable because it is also borrowed as immutable",
+          "primary_line": 4
+        }
+      ],
+      "name": "borrow-error",
+      "returncode": 1,
+      "source": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/borrow_error.rs",
+      "strategy": "default"
+    },
+    {
+      "errors": [
+        {
+          "code": null,
+          "help": "message: use-after-free of `proc_macro` symbol",
+          "message": "proc macro panicked",
+          "primary_line": 1
+        }
+      ],
+      "name": "stale-ident",
+      "returncode": 1,
+      "source": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/stale_ident.rs",
+      "strategy": "same-thread"
+    },
+    {
+      "errors": [
+        {
+          "code": null,
+          "help": "message: use-after-free of `proc_macro` symbol",
+          "message": "proc macro panicked",
+          "primary_line": 1
+        }
+      ],
+      "name": "stale-literal",
+      "returncode": 1,
+      "source": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/stale_literal.rs",
+      "strategy": "same-thread"
+    },
+    {
+      "errors": [
+        {
+          "code": null,
+          "help": "message: ARENA_FIXTURE_PANIC",
+          "message": "proc macro panicked",
+          "primary_line": 1
+        },
+        {
+          "code": null,
+          "message": "ARENA_FIXTURE_AFTER_PANIC",
+          "primary_line": 2
+        }
+      ],
+      "name": "panic-recovery",
+      "returncode": 1,
+      "source": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/panic_recovery.rs",
+      "strategy": "same-thread"
+    }
+  ],
+  "command_counts": {
+    "matched_library_builds": 3,
+    "real_macro_commands": 20,
+    "total": 27,
+    "whole_crate_test_builds": 2,
+    "whole_crate_test_runs": 2
+  },
+  "commands": [
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--crate-name",
+        "rustc_literal_escaper",
+        "--edition=2021",
+        "--crate-type=rlib",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/literal/src/lib.rs",
+        "-C",
+        "metadata=arena04_n_dep01",
+        "-C",
+        "extra-filename=-arena04_n_dep01",
+        "-Zembed-metadata=no",
+        "--extern",
+        "core=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libcore-e6bfc1e0480d020f.rlib",
+        "--extern",
+        "core=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libcore-e6bfc1e0480d020f.rmeta",
+        "-C",
+        "opt-level=3",
+        "-C",
+        "codegen-units=16",
+        "-C",
+        "debuginfo=1",
+        "-C",
+        "split-debuginfo=unpacked",
+        "-C",
+        "embed-bitcode=yes",
+        "-C",
+        "force-frame-pointers=non-leaf",
+        "-C",
+        "panic=unwind",
+        "-Zbinary-dep-depinfo",
+        "--error-format=json",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency/librustc_literal_escaper-arena04_n_dep01.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency/librustc_literal_escaper-arena04_n_dep01.rmeta,link=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency/librustc_literal_escaper-arena04_n_dep01.rlib"
+      ],
+      "arm": "shared",
+      "case": "library",
+      "child_cpu_seconds": 240,
+      "child_observer_seconds": 360,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency/librustc_literal_escaper-arena04_n_dep01.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency/tmp"
+      },
+      "expected_returncode": 0,
+      "metadata": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency/librustc_literal_escaper-arena04_n_dep01.rmeta",
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency/librustc_literal_escaper-arena04_n_dep01.rlib",
+      "role": "build-shared-real-normal-literal"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--crate-name",
+        "proc_macro",
+        "--edition=2024",
+        "--crate-type=rlib",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/lib.rs",
+        "--cfg",
+        "feature=\"default\"",
+        "--cfg",
+        "feature=\"rustc-dep-of-std\"",
+        "--check-cfg",
+        "cfg(test,bootstrap)",
+        "--check-cfg",
+        "cfg(feature, values(\"default\", \"rustc-dep-of-std\"))",
+        "-C",
+        "metadata=arena04_n_stock01",
+        "-C",
+        "extra-filename=-arena04_n_stock01",
+        "-Zembed-metadata=no",
+        "--extern",
+        "core=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libcore-e6bfc1e0480d020f.rlib",
+        "--extern",
+        "core=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libcore-e6bfc1e0480d020f.rmeta",
+        "--extern",
+        "std=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libstd-3df04bf8b96fcb36.dylib",
+        "--extern",
+        "std=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libstd-3df04bf8b96fcb36.rlib",
+        "--extern",
+        "std=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libstd-3df04bf8b96fcb36.rmeta",
+        "--extern",
+        "rustc_literal_escaper=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency/librustc_literal_escaper-arena04_n_dep01.rlib",
+        "--extern",
+        "rustc_literal_escaper=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency/librustc_literal_escaper-arena04_n_dep01.rmeta",
+        "-L",
+        "dependency=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency",
+        "-C",
+        "opt-level=3",
+        "-C",
+        "codegen-units=16",
+        "-C",
+        "debuginfo=1",
+        "-C",
+        "split-debuginfo=unpacked",
+        "-C",
+        "embed-bitcode=yes",
+        "-C",
+        "force-frame-pointers=non-leaf",
+        "-C",
+        "panic=unwind",
+        "-Zbinary-dep-depinfo",
+        "--error-format=json",
+        "-Cprefer-dynamic",
+        "-Zinline-mir",
+        "-Zinline-mir-preserve-debug",
+        "-Zmir_strip_debuginfo=locals-in-tiny-functions",
+        "--remap-path-scope=all",
+        "--remap-path-prefix=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro=/rustc-client/arena04-n/proc_macro",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/stock/libproc_macro-arena04_n_stock01.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/stock/libproc_macro-arena04_n_stock01.rmeta,link=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/stock/libproc_macro-arena04_n_stock01.rlib"
+      ],
+      "arm": "stock",
+      "case": "library",
+      "child_cpu_seconds": 240,
+      "child_observer_seconds": 360,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/stock",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/stock/libproc_macro-arena04_n_stock01.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/stock/tmp"
+      },
+      "expected_returncode": 0,
+      "metadata": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/stock/libproc_macro-arena04_n_stock01.rmeta",
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/stock/libproc_macro-arena04_n_stock01.rlib",
+      "role": "build-stock-client"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--crate-name",
+        "proc_macro",
+        "--edition=2024",
+        "--crate-type=rlib",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/lib.rs",
+        "--cfg",
+        "feature=\"default\"",
+        "--cfg",
+        "feature=\"rustc-dep-of-std\"",
+        "--check-cfg",
+        "cfg(test,bootstrap)",
+        "--check-cfg",
+        "cfg(feature, values(\"default\", \"rustc-dep-of-std\"))",
+        "-C",
+        "metadata=arena04_n_candidate01",
+        "-C",
+        "extra-filename=-arena04_n_candidate01",
+        "-Zembed-metadata=no",
+        "--extern",
+        "core=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libcore-e6bfc1e0480d020f.rlib",
+        "--extern",
+        "core=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libcore-e6bfc1e0480d020f.rmeta",
+        "--extern",
+        "std=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libstd-3df04bf8b96fcb36.dylib",
+        "--extern",
+        "std=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libstd-3df04bf8b96fcb36.rlib",
+        "--extern",
+        "std=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libstd-3df04bf8b96fcb36.rmeta",
+        "--extern",
+        "rustc_literal_escaper=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency/librustc_literal_escaper-arena04_n_dep01.rlib",
+        "--extern",
+        "rustc_literal_escaper=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency/librustc_literal_escaper-arena04_n_dep01.rmeta",
+        "-L",
+        "dependency=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency",
+        "-C",
+        "opt-level=3",
+        "-C",
+        "codegen-units=16",
+        "-C",
+        "debuginfo=1",
+        "-C",
+        "split-debuginfo=unpacked",
+        "-C",
+        "embed-bitcode=yes",
+        "-C",
+        "force-frame-pointers=non-leaf",
+        "-C",
+        "panic=unwind",
+        "-Zbinary-dep-depinfo",
+        "--error-format=json",
+        "-Cprefer-dynamic",
+        "-Zinline-mir",
+        "-Zinline-mir-preserve-debug",
+        "-Zmir_strip_debuginfo=locals-in-tiny-functions",
+        "--remap-path-scope=all",
+        "--remap-path-prefix=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro=/rustc-client/arena04-n/proc_macro",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/candidate/libproc_macro-arena04_n_candidate01.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/candidate/libproc_macro-arena04_n_candidate01.rmeta,link=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/candidate/libproc_macro-arena04_n_candidate01.rlib"
+      ],
+      "arm": "candidate",
+      "case": "library",
+      "child_cpu_seconds": 240,
+      "child_observer_seconds": 360,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/candidate",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/candidate/libproc_macro-arena04_n_candidate01.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/candidate/tmp"
+      },
+      "expected_returncode": 0,
+      "metadata": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/candidate/libproc_macro-arena04_n_candidate01.rmeta",
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/candidate/libproc_macro-arena04_n_candidate01.rlib",
+      "role": "build-candidate-client"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--crate-name",
+        "proc_macro",
+        "--edition=2024",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/lib.rs",
+        "--cfg",
+        "feature=\"default\"",
+        "--cfg",
+        "feature=\"rustc-dep-of-std\"",
+        "--check-cfg",
+        "cfg(test,bootstrap)",
+        "--check-cfg",
+        "cfg(feature, values(\"default\", \"rustc-dep-of-std\"))",
+        "-C",
+        "metadata=arena04_n_stock01",
+        "-C",
+        "extra-filename=-arena04_n_stock01",
+        "--extern",
+        "core=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libcore-e6bfc1e0480d020f.rlib",
+        "--extern",
+        "core=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libcore-e6bfc1e0480d020f.rmeta",
+        "--extern",
+        "std=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libstd-3df04bf8b96fcb36.dylib",
+        "--extern",
+        "std=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libstd-3df04bf8b96fcb36.rlib",
+        "--extern",
+        "std=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libstd-3df04bf8b96fcb36.rmeta",
+        "--extern",
+        "rustc_literal_escaper=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency/librustc_literal_escaper-arena04_n_dep01.rlib",
+        "--extern",
+        "rustc_literal_escaper=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency/librustc_literal_escaper-arena04_n_dep01.rmeta",
+        "-L",
+        "dependency=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency",
+        "-C",
+        "opt-level=3",
+        "-C",
+        "codegen-units=16",
+        "-C",
+        "debuginfo=1",
+        "-C",
+        "split-debuginfo=unpacked",
+        "-C",
+        "embed-bitcode=yes",
+        "-C",
+        "force-frame-pointers=non-leaf",
+        "-C",
+        "panic=unwind",
+        "-Zbinary-dep-depinfo",
+        "--error-format=json",
+        "-Cprefer-dynamic",
+        "-Zinline-mir",
+        "-Zinline-mir-preserve-debug",
+        "-Zmir_strip_debuginfo=locals-in-tiny-functions",
+        "--remap-path-scope=all",
+        "--remap-path-prefix=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro=/rustc-client/arena04-n/proc_macro",
+        "--test",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/stock/proc_macro_tests.d,link=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/stock/proc_macro_tests"
+      ],
+      "arm": "stock",
+      "case": "test-build",
+      "child_cpu_seconds": 240,
+      "child_observer_seconds": 360,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/stock",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/stock/proc_macro_tests.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/stock/tmp"
+      },
+      "expected_returncode": 0,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/stock/proc_macro_tests",
+      "role": "build-whole-crate-tests"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/stock/proc_macro_tests",
+        "--test-threads=1",
+        "--color",
+        "never"
+      ],
+      "arm": "stock",
+      "case": "test-run",
+      "child_cpu_seconds": 60,
+      "child_observer_seconds": 90,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/stock",
+      "environment": {
+        "DYLD_LIBRARY_PATH": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib",
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/stock/tmp"
+      },
+      "expected_returncode": 0,
+      "role": "run-whole-crate-tests",
+      "tests": []
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--crate-name",
+        "proc_macro",
+        "--edition=2024",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/lib.rs",
+        "--cfg",
+        "feature=\"default\"",
+        "--cfg",
+        "feature=\"rustc-dep-of-std\"",
+        "--check-cfg",
+        "cfg(test,bootstrap)",
+        "--check-cfg",
+        "cfg(feature, values(\"default\", \"rustc-dep-of-std\"))",
+        "-C",
+        "metadata=arena04_n_candidate01",
+        "-C",
+        "extra-filename=-arena04_n_candidate01",
+        "--extern",
+        "core=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libcore-e6bfc1e0480d020f.rlib",
+        "--extern",
+        "core=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libcore-e6bfc1e0480d020f.rmeta",
+        "--extern",
+        "std=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libstd-3df04bf8b96fcb36.dylib",
+        "--extern",
+        "std=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libstd-3df04bf8b96fcb36.rlib",
+        "--extern",
+        "std=/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib/libstd-3df04bf8b96fcb36.rmeta",
+        "--extern",
+        "rustc_literal_escaper=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency/librustc_literal_escaper-arena04_n_dep01.rlib",
+        "--extern",
+        "rustc_literal_escaper=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency/librustc_literal_escaper-arena04_n_dep01.rmeta",
+        "-L",
+        "dependency=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency",
+        "-C",
+        "opt-level=3",
+        "-C",
+        "codegen-units=16",
+        "-C",
+        "debuginfo=1",
+        "-C",
+        "split-debuginfo=unpacked",
+        "-C",
+        "embed-bitcode=yes",
+        "-C",
+        "force-frame-pointers=non-leaf",
+        "-C",
+        "panic=unwind",
+        "-Zbinary-dep-depinfo",
+        "--error-format=json",
+        "-Cprefer-dynamic",
+        "-Zinline-mir",
+        "-Zinline-mir-preserve-debug",
+        "-Zmir_strip_debuginfo=locals-in-tiny-functions",
+        "--remap-path-scope=all",
+        "--remap-path-prefix=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro=/rustc-client/arena04-n/proc_macro",
+        "--test",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/candidate/proc_macro_tests.d,link=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/candidate/proc_macro_tests"
+      ],
+      "arm": "candidate",
+      "case": "test-build",
+      "child_cpu_seconds": 240,
+      "child_observer_seconds": 360,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/candidate",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/candidate/proc_macro_tests.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/candidate/tmp"
+      },
+      "expected_returncode": 0,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/candidate/proc_macro_tests",
+      "role": "build-whole-crate-tests"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/candidate/proc_macro_tests",
+        "--test-threads=1",
+        "--color",
+        "never"
+      ],
+      "arm": "candidate",
+      "case": "test-run",
+      "child_cpu_seconds": 60,
+      "child_observer_seconds": 90,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/candidate",
+      "environment": {
+        "DYLD_LIBRARY_PATH": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib",
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/candidate/tmp"
+      },
+      "expected_returncode": 0,
+      "role": "run-whole-crate-tests",
+      "tests": [
+        "bridge::arena::reuse_tests::empty_and_zero_length_reset_stay_unallocated",
+        "bridge::arena::reuse_tests::growth_after_reuse_preserves_doubling_and_releases_extra",
+        "bridge::arena::reuse_tests::multiple_chunks_are_released_and_vector_shrink_is_best_effort",
+        "bridge::arena::reuse_tests::ordinary_page_and_cursor_are_reused",
+        "bridge::arena::reuse_tests::oversized_first_chunk_is_not_retained",
+        "bridge::arena::reuse_tests::populated_arena_move_preserves_reuse_reset_and_growth",
+        "bridge::arena::reuse_tests::recorded_capacity_tracks_empty_growth_retention_and_oversized_reset",
+        "bridge::arena::reuse_tests::reset_after_caught_unwind_reuses_storage",
+        "bridge::arena::reuse_tests::retained_disjoint_mutable_strings_survive_shared_growth",
+        "bridge::arena::reuse_tests::unicode_and_live_allocations_keep_exact_contents",
+        "bridge::symbol::arena_reuse_tests::double_clear_and_oversized_unicode_symbol_preserve_identity",
+        "bridge::symbol::arena_reuse_tests::duplicate_ids_and_stale_rejection_survive_reset",
+        "bridge::symbol::arena_reuse_tests::overflow_and_clear_keep_existing_nonpanicking_boundary"
+      ]
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--edition=2024",
+        "--crate-type=proc-macro",
+        "--crate-name",
+        "arena04_macros",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/macros.rs",
+        "-C",
+        "panic=unwind",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-Zbinary-dep-depinfo",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/libarena04_macros.d,link=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/libarena04_macros.dylib",
+        "--error-format=json",
+        "--extern",
+        "proc_macro=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/stock/libproc_macro-arena04_n_stock01.rlib",
+        "--extern",
+        "proc_macro=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/stock/libproc_macro-arena04_n_stock01.rmeta",
+        "-L",
+        "dependency=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency",
+        "-L",
+        "dependency=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/stock"
+      ],
+      "arm": "stock",
+      "child_cpu_seconds": 120,
+      "child_observer_seconds": 180,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/libarena04_macros.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/tmp"
+      },
+      "expected_returncode": 0,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/libarena04_macros.dylib",
+      "role": "build-macro-dylib"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--edition=2024",
+        "--crate-type=lib",
+        "--crate-name",
+        "arena04_pass_default",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/pass.rs",
+        "--extern",
+        "arena04_macros=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/libarena04_macros.dylib",
+        "-C",
+        "panic=unwind",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-Zbinary-dep-depinfo",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/pass-default.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/pass-default.rmeta",
+        "--error-format=json"
+      ],
+      "arm": "stock",
+      "case": "pass-default",
+      "child_cpu_seconds": 30,
+      "child_observer_seconds": 60,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/pass-default.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/tmp"
+      },
+      "expected_returncode": 0,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/pass-default.rmeta",
+      "role": "caller",
+      "strategy": "default"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--edition=2024",
+        "--crate-type=lib",
+        "--crate-name",
+        "arena04_pass_same_thread",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/pass.rs",
+        "--extern",
+        "arena04_macros=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/libarena04_macros.dylib",
+        "-C",
+        "panic=unwind",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-Zbinary-dep-depinfo",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/pass-same-thread.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/pass-same-thread.rmeta",
+        "--error-format=json",
+        "-Zproc-macro-execution-strategy=same-thread"
+      ],
+      "arm": "stock",
+      "case": "pass-same-thread",
+      "child_cpu_seconds": 30,
+      "child_observer_seconds": 60,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/pass-same-thread.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/tmp"
+      },
+      "expected_returncode": 0,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/pass-same-thread.rmeta",
+      "role": "caller",
+      "strategy": "same-thread"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--edition=2024",
+        "--crate-type=lib",
+        "--crate-name",
+        "arena04_diagnostic",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/diagnostic.rs",
+        "--extern",
+        "arena04_macros=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/libarena04_macros.dylib",
+        "-C",
+        "panic=unwind",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-Zbinary-dep-depinfo",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/diagnostic.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/diagnostic.rmeta",
+        "--error-format=json"
+      ],
+      "arm": "stock",
+      "case": "diagnostic",
+      "child_cpu_seconds": 30,
+      "child_observer_seconds": 60,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/diagnostic.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/tmp"
+      },
+      "expected_returncode": 1,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/diagnostic.rmeta",
+      "role": "caller",
+      "strategy": "default"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--edition=2024",
+        "--crate-type=lib",
+        "--crate-name",
+        "arena04_panic",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/panic.rs",
+        "--extern",
+        "arena04_macros=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/libarena04_macros.dylib",
+        "-C",
+        "panic=unwind",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-Zbinary-dep-depinfo",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/panic.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/panic.rmeta",
+        "--error-format=json"
+      ],
+      "arm": "stock",
+      "case": "panic",
+      "child_cpu_seconds": 30,
+      "child_observer_seconds": 60,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/panic.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/tmp"
+      },
+      "expected_returncode": 1,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/panic.rmeta",
+      "role": "caller",
+      "strategy": "default"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--edition=2024",
+        "--crate-type=lib",
+        "--crate-name",
+        "arena04_type_error",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/type_error.rs",
+        "--extern",
+        "arena04_macros=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/libarena04_macros.dylib",
+        "-C",
+        "panic=unwind",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-Zbinary-dep-depinfo",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/type-error.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/type-error.rmeta",
+        "--error-format=json"
+      ],
+      "arm": "stock",
+      "case": "type-error",
+      "child_cpu_seconds": 30,
+      "child_observer_seconds": 60,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/type-error.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/tmp"
+      },
+      "expected_returncode": 1,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/type-error.rmeta",
+      "role": "caller",
+      "strategy": "default"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--edition=2024",
+        "--crate-type=lib",
+        "--crate-name",
+        "arena04_borrow_error",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/borrow_error.rs",
+        "--extern",
+        "arena04_macros=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/libarena04_macros.dylib",
+        "-C",
+        "panic=unwind",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-Zbinary-dep-depinfo",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/borrow-error.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/borrow-error.rmeta",
+        "--error-format=json"
+      ],
+      "arm": "stock",
+      "case": "borrow-error",
+      "child_cpu_seconds": 30,
+      "child_observer_seconds": 60,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/borrow-error.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/tmp"
+      },
+      "expected_returncode": 1,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/borrow-error.rmeta",
+      "role": "caller",
+      "strategy": "default"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--edition=2024",
+        "--crate-type=lib",
+        "--crate-name",
+        "arena04_stale_ident",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/stale_ident.rs",
+        "--extern",
+        "arena04_macros=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/libarena04_macros.dylib",
+        "-C",
+        "panic=unwind",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-Zbinary-dep-depinfo",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/stale-ident.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/stale-ident.rmeta",
+        "--error-format=json",
+        "-Zproc-macro-execution-strategy=same-thread"
+      ],
+      "arm": "stock",
+      "case": "stale-ident",
+      "child_cpu_seconds": 30,
+      "child_observer_seconds": 60,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/stale-ident.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/tmp"
+      },
+      "expected_returncode": 1,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/stale-ident.rmeta",
+      "role": "caller",
+      "strategy": "same-thread"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--edition=2024",
+        "--crate-type=lib",
+        "--crate-name",
+        "arena04_stale_literal",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/stale_literal.rs",
+        "--extern",
+        "arena04_macros=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/libarena04_macros.dylib",
+        "-C",
+        "panic=unwind",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-Zbinary-dep-depinfo",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/stale-literal.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/stale-literal.rmeta",
+        "--error-format=json",
+        "-Zproc-macro-execution-strategy=same-thread"
+      ],
+      "arm": "stock",
+      "case": "stale-literal",
+      "child_cpu_seconds": 30,
+      "child_observer_seconds": 60,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/stale-literal.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/tmp"
+      },
+      "expected_returncode": 1,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/stale-literal.rmeta",
+      "role": "caller",
+      "strategy": "same-thread"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--edition=2024",
+        "--crate-type=lib",
+        "--crate-name",
+        "arena04_panic_recovery",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/panic_recovery.rs",
+        "--extern",
+        "arena04_macros=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/libarena04_macros.dylib",
+        "-C",
+        "panic=unwind",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-Zbinary-dep-depinfo",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/panic-recovery.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/panic-recovery.rmeta",
+        "--error-format=json",
+        "-Zproc-macro-execution-strategy=same-thread"
+      ],
+      "arm": "stock",
+      "case": "panic-recovery",
+      "child_cpu_seconds": 30,
+      "child_observer_seconds": 60,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/panic-recovery.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/tmp"
+      },
+      "expected_returncode": 1,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/stock/panic-recovery.rmeta",
+      "role": "caller",
+      "strategy": "same-thread"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--edition=2024",
+        "--crate-type=proc-macro",
+        "--crate-name",
+        "arena04_macros",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/macros.rs",
+        "-C",
+        "panic=unwind",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-Zbinary-dep-depinfo",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/libarena04_macros.d,link=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/libarena04_macros.dylib",
+        "--error-format=json",
+        "--extern",
+        "proc_macro=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/candidate/libproc_macro-arena04_n_candidate01.rlib",
+        "--extern",
+        "proc_macro=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/candidate/libproc_macro-arena04_n_candidate01.rmeta",
+        "-L",
+        "dependency=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/dependency",
+        "-L",
+        "dependency=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/candidate"
+      ],
+      "arm": "candidate",
+      "child_cpu_seconds": 120,
+      "child_observer_seconds": 180,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/libarena04_macros.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/tmp"
+      },
+      "expected_returncode": 0,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/libarena04_macros.dylib",
+      "role": "build-macro-dylib"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--edition=2024",
+        "--crate-type=lib",
+        "--crate-name",
+        "arena04_pass_default",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/pass.rs",
+        "--extern",
+        "arena04_macros=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/libarena04_macros.dylib",
+        "-C",
+        "panic=unwind",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-Zbinary-dep-depinfo",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/pass-default.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/pass-default.rmeta",
+        "--error-format=json"
+      ],
+      "arm": "candidate",
+      "case": "pass-default",
+      "child_cpu_seconds": 30,
+      "child_observer_seconds": 60,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/pass-default.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/tmp"
+      },
+      "expected_returncode": 0,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/pass-default.rmeta",
+      "role": "caller",
+      "strategy": "default"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--edition=2024",
+        "--crate-type=lib",
+        "--crate-name",
+        "arena04_pass_same_thread",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/pass.rs",
+        "--extern",
+        "arena04_macros=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/libarena04_macros.dylib",
+        "-C",
+        "panic=unwind",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-Zbinary-dep-depinfo",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/pass-same-thread.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/pass-same-thread.rmeta",
+        "--error-format=json",
+        "-Zproc-macro-execution-strategy=same-thread"
+      ],
+      "arm": "candidate",
+      "case": "pass-same-thread",
+      "child_cpu_seconds": 30,
+      "child_observer_seconds": 60,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/pass-same-thread.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/tmp"
+      },
+      "expected_returncode": 0,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/pass-same-thread.rmeta",
+      "role": "caller",
+      "strategy": "same-thread"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--edition=2024",
+        "--crate-type=lib",
+        "--crate-name",
+        "arena04_diagnostic",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/diagnostic.rs",
+        "--extern",
+        "arena04_macros=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/libarena04_macros.dylib",
+        "-C",
+        "panic=unwind",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-Zbinary-dep-depinfo",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/diagnostic.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/diagnostic.rmeta",
+        "--error-format=json"
+      ],
+      "arm": "candidate",
+      "case": "diagnostic",
+      "child_cpu_seconds": 30,
+      "child_observer_seconds": 60,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/diagnostic.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/tmp"
+      },
+      "expected_returncode": 1,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/diagnostic.rmeta",
+      "role": "caller",
+      "strategy": "default"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--edition=2024",
+        "--crate-type=lib",
+        "--crate-name",
+        "arena04_panic",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/panic.rs",
+        "--extern",
+        "arena04_macros=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/libarena04_macros.dylib",
+        "-C",
+        "panic=unwind",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-Zbinary-dep-depinfo",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/panic.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/panic.rmeta",
+        "--error-format=json"
+      ],
+      "arm": "candidate",
+      "case": "panic",
+      "child_cpu_seconds": 30,
+      "child_observer_seconds": 60,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/panic.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/tmp"
+      },
+      "expected_returncode": 1,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/panic.rmeta",
+      "role": "caller",
+      "strategy": "default"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--edition=2024",
+        "--crate-type=lib",
+        "--crate-name",
+        "arena04_type_error",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/type_error.rs",
+        "--extern",
+        "arena04_macros=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/libarena04_macros.dylib",
+        "-C",
+        "panic=unwind",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-Zbinary-dep-depinfo",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/type-error.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/type-error.rmeta",
+        "--error-format=json"
+      ],
+      "arm": "candidate",
+      "case": "type-error",
+      "child_cpu_seconds": 30,
+      "child_observer_seconds": 60,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/type-error.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/tmp"
+      },
+      "expected_returncode": 1,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/type-error.rmeta",
+      "role": "caller",
+      "strategy": "default"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--edition=2024",
+        "--crate-type=lib",
+        "--crate-name",
+        "arena04_borrow_error",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/borrow_error.rs",
+        "--extern",
+        "arena04_macros=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/libarena04_macros.dylib",
+        "-C",
+        "panic=unwind",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-Zbinary-dep-depinfo",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/borrow-error.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/borrow-error.rmeta",
+        "--error-format=json"
+      ],
+      "arm": "candidate",
+      "case": "borrow-error",
+      "child_cpu_seconds": 30,
+      "child_observer_seconds": 60,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/borrow-error.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/tmp"
+      },
+      "expected_returncode": 1,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/borrow-error.rmeta",
+      "role": "caller",
+      "strategy": "default"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--edition=2024",
+        "--crate-type=lib",
+        "--crate-name",
+        "arena04_stale_ident",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/stale_ident.rs",
+        "--extern",
+        "arena04_macros=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/libarena04_macros.dylib",
+        "-C",
+        "panic=unwind",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-Zbinary-dep-depinfo",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/stale-ident.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/stale-ident.rmeta",
+        "--error-format=json",
+        "-Zproc-macro-execution-strategy=same-thread"
+      ],
+      "arm": "candidate",
+      "case": "stale-ident",
+      "child_cpu_seconds": 30,
+      "child_observer_seconds": 60,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/stale-ident.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/tmp"
+      },
+      "expected_returncode": 1,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/stale-ident.rmeta",
+      "role": "caller",
+      "strategy": "same-thread"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--edition=2024",
+        "--crate-type=lib",
+        "--crate-name",
+        "arena04_stale_literal",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/stale_literal.rs",
+        "--extern",
+        "arena04_macros=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/libarena04_macros.dylib",
+        "-C",
+        "panic=unwind",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-Zbinary-dep-depinfo",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/stale-literal.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/stale-literal.rmeta",
+        "--error-format=json",
+        "-Zproc-macro-execution-strategy=same-thread"
+      ],
+      "arm": "candidate",
+      "case": "stale-literal",
+      "child_cpu_seconds": 30,
+      "child_observer_seconds": 60,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/stale-literal.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/tmp"
+      },
+      "expected_returncode": 1,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/stale-literal.rmeta",
+      "role": "caller",
+      "strategy": "same-thread"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+        "--target",
+        "aarch64-apple-darwin",
+        "--edition=2024",
+        "--crate-type=lib",
+        "--crate-name",
+        "arena04_panic_recovery",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/panic_recovery.rs",
+        "--extern",
+        "arena04_macros=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/libarena04_macros.dylib",
+        "-C",
+        "panic=unwind",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-Zbinary-dep-depinfo",
+        "--emit=dep-info=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/panic-recovery.d,metadata=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/panic-recovery.rmeta",
+        "--error-format=json",
+        "-Zproc-macro-execution-strategy=same-thread"
+      ],
+      "arm": "candidate",
+      "case": "panic-recovery",
+      "child_cpu_seconds": 30,
+      "child_observer_seconds": 60,
+      "cwd": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate",
+      "depinfo": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/panic-recovery.d",
+      "environment": {
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/usr/bin:/bin",
+        "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.4.sdk",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/tmp"
+      },
+      "expected_returncode": 1,
+      "output": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01/macro-tests/candidate/panic-recovery.rmeta",
+      "role": "caller",
+      "strategy": "same-thread"
+    }
+  ],
+  "compiler": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+  "environment_policy": {
+    "base": "explicit C locale /usr/bin:/bin; SDKROOT from saved N build; owned TMPDIR",
+    "inherited_environment": false,
+    "native_test_loader": "DYLD_LIBRARY_PATH contains only the fully bound N target library directory",
+    "source_record": {
+      "bytes": 177438,
+      "identity": {
+        "ctime_ns": 1789784312213958608,
+        "dev": 16777229,
+        "ino": 1055144850,
+        "mode": 33152,
+        "mtime_ns": 1789784312213497523,
+        "nlink": 1,
+        "size": 177438
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-build-continuation-01/commands/000/receipt.json",
+      "sha256": "a1b5984a6b524097a6dcd296566c07e03c18156489a310f6ab1f3f6ebb20dbda"
+    }
+  },
+  "future_results": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-n-client-01",
+  "future_work": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-client-01",
+  "inputs": {
+    "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/proc-macro-arena-client-wire-source-review-01.json": {
+      "bytes": 7319,
+      "identity": {
+        "ctime_ns": 1789821266445902329,
+        "dev": 16777229,
+        "ino": 1056884313,
+        "mode": 33152,
+        "mtime_ns": 1789821266445902329,
+        "nlink": 1,
+        "size": 7319
+      },
+      "path": "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/proc-macro-arena-client-wire-source-review-01.json",
+      "sha256": "6abe57bd81ea0836ec0a99d718efa3492688726513592c4199538750a6e49550"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/rustc-literal-escaper-0.0.8/Cargo.toml": {
+      "bytes": 1137,
+      "identity": {
+        "ctime_ns": 1789781814782452987,
+        "dev": 16777229,
+        "ino": 1054954548,
+        "mode": 33152,
+        "mtime_ns": 1153704088000000000,
+        "nlink": 1,
+        "size": 1137
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/rustc-literal-escaper-0.0.8/Cargo.toml",
+      "sha256": "42864d0d78afe687857242cd08b274a381d2b0d24f7d0ddb5fd44ec116365335"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/rustc-literal-escaper-0.0.8/src/lib.rs": {
+      "bytes": 21694,
+      "identity": {
+        "ctime_ns": 1789781814782105903,
+        "dev": 16777229,
+        "ino": 1054954556,
+        "mode": 33152,
+        "mtime_ns": 1153704088000000000,
+        "nlink": 1,
+        "size": 21694
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/cargo-home/registry/src/index.crates.io-1949cf8c6b5b557f/rustc-literal-escaper-0.0.8/src/lib.rs",
+      "sha256": "d79e2b634a4d25f44258c2a8afd854e1f87c967716fb564603feb89246c0f722"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/Cargo.toml": {
+      "bytes": 598,
+      "identity": {
+        "ctime_ns": 1789775930281798017,
+        "dev": 16777229,
+        "ino": 1054611071,
+        "mode": 33152,
+        "mtime_ns": 1789775930281798017,
+        "nlink": 1,
+        "size": 598
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/Cargo.toml",
+      "sha256": "f91d22525f86110eb784ba390dd389033b87e8f7841c071a7803a1c63121a990"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/arena.rs": {
+      "bytes": 4384,
+      "identity": {
+        "ctime_ns": 1789775930281933226,
+        "dev": 16777229,
+        "ino": 1054611074,
+        "mode": 33152,
+        "mtime_ns": 1789775930281933226,
+        "nlink": 1,
+        "size": 4384
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/arena.rs",
+      "sha256": "ce4f02d336d885145e8bbe5770781ebf11af7ac2488d59c8d930fdab62e9376e"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/buffer.rs": {
+      "bytes": 3345,
+      "identity": {
+        "ctime_ns": 1789775930281992393,
+        "dev": 16777229,
+        "ino": 1054611075,
+        "mode": 33152,
+        "mtime_ns": 1789775930281992393,
+        "nlink": 1,
+        "size": 3345
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/buffer.rs",
+      "sha256": "858499925d66e8014bf779ded30d67718ce9fed9541442f4a81b799b7f302560"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/client.rs": {
+      "bytes": 8977,
+      "identity": {
+        "ctime_ns": 1789775930282055684,
+        "dev": 16777229,
+        "ino": 1054611076,
+        "mode": 33152,
+        "mtime_ns": 1789775930282055684,
+        "nlink": 1,
+        "size": 8977
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/client.rs",
+      "sha256": "fe5d6760d816a6f1f612d85107eed3a88d8929af93cb4309ababcd3e9b4565b2"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/closure.rs": {
+      "bytes": 915,
+      "identity": {
+        "ctime_ns": 1789775930282109434,
+        "dev": 16777229,
+        "ino": 1054611077,
+        "mode": 33152,
+        "mtime_ns": 1789775930282109434,
+        "nlink": 1,
+        "size": 915
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/closure.rs",
+      "sha256": "03453e29c27d9a3ffafe2455bee14d65815fa6c8df1e9d6cf131aacc2ef624a8"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/fxhash.rs": {
+      "bytes": 3364,
+      "identity": {
+        "ctime_ns": 1789775930282158143,
+        "dev": 16777229,
+        "ino": 1054611078,
+        "mode": 33152,
+        "mtime_ns": 1789775930282158143,
+        "nlink": 1,
+        "size": 3364
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/fxhash.rs",
+      "sha256": "43c95da90564aa359a25b5a567cb5da351f40092caa260c29d009b7e25c68647"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/handle.rs": {
+      "bytes": 2113,
+      "identity": {
+        "ctime_ns": 1789775930282209852,
+        "dev": 16777229,
+        "ino": 1054611079,
+        "mode": 33152,
+        "mtime_ns": 1789775930282209852,
+        "nlink": 1,
+        "size": 2113
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/handle.rs",
+      "sha256": "cd7e0b6c7940f7ae9baad9c463e4bc3a77dd5db29922a2e988dfeef4230d5bde"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/mod.rs": {
+      "bytes": 12226,
+      "identity": {
+        "ctime_ns": 1789775930282274768,
+        "dev": 16777229,
+        "ino": 1054611080,
+        "mode": 33152,
+        "mtime_ns": 1789775930282274768,
+        "nlink": 1,
+        "size": 12226
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/mod.rs",
+      "sha256": "cdcdf5e2d24471f06b59f2baa7f254c5160bc0acc25a06c535f8cb3872eeb83b"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/panic_message.rs": {
+      "bytes": 1910,
+      "identity": {
+        "ctime_ns": 1789775930282326352,
+        "dev": 16777229,
+        "ino": 1054611081,
+        "mode": 33152,
+        "mtime_ns": 1789775930282326352,
+        "nlink": 1,
+        "size": 1910
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/panic_message.rs",
+      "sha256": "56d2ceea35eaae7cf601a8029e5351b24a3ac56c3e3f4f4b2d4fd6d933aed971"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/rpc.rs": {
+      "bytes": 6724,
+      "identity": {
+        "ctime_ns": 1789775930282384393,
+        "dev": 16777229,
+        "ino": 1054611082,
+        "mode": 33152,
+        "mtime_ns": 1789775930282384393,
+        "nlink": 1,
+        "size": 6724
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/rpc.rs",
+      "sha256": "611a26a3f2080a821a6921c1f0e74e734bf9cb9dd37891c82765f9755a6cf06c"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/selfless_reify.rs": {
+      "bytes": 2970,
+      "identity": {
+        "ctime_ns": 1789775930282440852,
+        "dev": 16777229,
+        "ino": 1054611083,
+        "mode": 33152,
+        "mtime_ns": 1789775930282440852,
+        "nlink": 1,
+        "size": 2970
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/selfless_reify.rs",
+      "sha256": "ee921c120b8a72c6e1e0df5ec3d5b0662b5411c49673a7ceecbc37b421c76edd"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/server.rs": {
+      "bytes": 10509,
+      "identity": {
+        "ctime_ns": 1789775930282521894,
+        "dev": 16777229,
+        "ino": 1054611084,
+        "mode": 33152,
+        "mtime_ns": 1789775930282521894,
+        "nlink": 1,
+        "size": 10509
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/server.rs",
+      "sha256": "1a6eb7d13e8af5b16e3fa7930e4ff2925bf861ec4b86e06df75595d01e9e8d3a"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/symbol.rs": {
+      "bytes": 6908,
+      "identity": {
+        "ctime_ns": 1789775930282587311,
+        "dev": 16777229,
+        "ino": 1054611085,
+        "mode": 33152,
+        "mtime_ns": 1789775930282587311,
+        "nlink": 1,
+        "size": 6908
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/symbol.rs",
+      "sha256": "75f80e816a8f4ded235d57b50914bc4f1854e8696a8dd160a75e4e0d46ae1869"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/diagnostic.rs": {
+      "bytes": 5858,
+      "identity": {
+        "ctime_ns": 1789775930282652602,
+        "dev": 16777229,
+        "ino": 1054611086,
+        "mode": 33152,
+        "mtime_ns": 1789775930282652602,
+        "nlink": 1,
+        "size": 5858
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/diagnostic.rs",
+      "sha256": "8c84548915beeea0de620ac65ab93d89d124e19ac02632b080293b0c1c80cb8a"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/escape.rs": {
+      "bytes": 1787,
+      "identity": {
+        "ctime_ns": 1789775930282708186,
+        "dev": 16777229,
+        "ino": 1054611087,
+        "mode": 33152,
+        "mtime_ns": 1789775930282708186,
+        "nlink": 1,
+        "size": 1787
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/escape.rs",
+      "sha256": "66c6b2d053be4c6b8a63c508c475173322ea3a70e495018938ba5f93b8662dfd"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/lib.rs": {
+      "bytes": 75695,
+      "identity": {
+        "ctime_ns": 1789775930282834020,
+        "dev": 16777229,
+        "ino": 1054611088,
+        "mode": 33152,
+        "mtime_ns": 1789775930282834020,
+        "nlink": 1,
+        "size": 75695
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/lib.rs",
+      "sha256": "68237ec6a7a9a2d1dd7cd81e41ccb2996414df1891e4d8dba9e4f19a862c1f50"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/quote.rs": {
+      "bytes": 18499,
+      "identity": {
+        "ctime_ns": 1789775930282915478,
+        "dev": 16777229,
+        "ino": 1054611089,
+        "mode": 33152,
+        "mtime_ns": 1789775930282915478,
+        "nlink": 1,
+        "size": 18499
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/quote.rs",
+      "sha256": "87451d78d39b8de71a06744cb20b38cd415c38f621e41c9112b0cf005128d2b0"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/to_tokens.rs": {
+      "bytes": 9240,
+      "identity": {
+        "ctime_ns": 1789775930282990979,
+        "dev": 16777229,
+        "ino": 1054611090,
+        "mode": 33152,
+        "mtime_ns": 1789775930282990979,
+        "nlink": 1,
+        "size": 9240
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/to_tokens.rs",
+      "sha256": "8d6dd0acef632336cf4b10319eb1f4a035a035b6bb4b0d3ba57aed11f917e48a"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-build-continuation-01/commands/000/receipt.json": {
+      "bytes": 177438,
+      "identity": {
+        "ctime_ns": 1789784312213958608,
+        "dev": 16777229,
+        "ino": 1055144850,
+        "mode": 33152,
+        "mtime_ns": 1789784312213497523,
+        "nlink": 1,
+        "size": 177438
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-build-continuation-01/commands/000/receipt.json",
+      "sha256": "a1b5984a6b524097a6dcd296566c07e03c18156489a310f6ab1f3f6ebb20dbda"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-build-continuation-03/compiled.json": {
+      "bytes": 1917164,
+      "identity": {
+        "ctime_ns": 1789788496939062479,
+        "dev": 16777229,
+        "ino": 1055379772,
+        "mode": 33152,
+        "mtime_ns": 1789788496938767687,
+        "nlink": 1,
+        "size": 1917164
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-build-continuation-03/compiled.json",
+      "sha256": "d25af45ba1a77bcd35d11cc6a4476651614c2c33688a51fb11cd63a5ac38b572"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-build-continuation-03/receipt.json": {
+      "bytes": 9496,
+      "identity": {
+        "ctime_ns": 1789788496940106398,
+        "dev": 16777229,
+        "ino": 1055379773,
+        "mode": 33152,
+        "mtime_ns": 1789788496940022272,
+        "nlink": 1,
+        "size": 9496
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-build-continuation-03/receipt.json",
+      "sha256": "1384d6c6a51d39b5f6e9022d44b50af19f954b15cedbd584d165f372a1c8a39e"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/proc-macro-arena04-N-client-only-deployment-proposal-01.json": {
+      "bytes": 100977,
+      "identity": {
+        "ctime_ns": 1789821608929132465,
+        "dev": 16777229,
+        "ino": 1056920803,
+        "mode": 33152,
+        "mtime_ns": 1789821608929132465,
+        "nlink": 1,
+        "size": 100977
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/proc-macro-arena04-N-client-only-deployment-proposal-01.json",
+      "sha256": "2c0dd7b0cdaa6892008bca11bf9de9214510b4914b0fa1746e08b5f7c3ee087b"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-04/preflight-plan-01/specification.json": {
+      "bytes": 783401,
+      "identity": {
+        "ctime_ns": 1789815890569425764,
+        "dev": 16777229,
+        "ino": 1056534622,
+        "mode": 33152,
+        "mtime_ns": 1789815890569425764,
+        "nlink": 1,
+        "size": 783401
+      },
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-04/preflight-plan-01/specification.json",
+      "sha256": "63b167fba858639a202dce97d1b0001df4ac36682f78cb23686aa28a936f5a1f"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/borrow_error.rs": {
+      "bytes": 168,
+      "identity": {
+        "ctime_ns": 1789820566859996971,
+        "dev": 16777229,
+        "ino": 1056855752,
+        "mode": 33152,
+        "mtime_ns": 1789820566859996971,
+        "nlink": 1,
+        "size": 168
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/borrow_error.rs",
+      "sha256": "c8db3ff0040dea2c61bb7948d3ece078f30081a36aa0361ab73df5cfd7ef5da1"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/diagnostic.rs": {
+      "bytes": 46,
+      "identity": {
+        "ctime_ns": 1789820566860099804,
+        "dev": 16777229,
+        "ino": 1056855753,
+        "mode": 33152,
+        "mtime_ns": 1789820566860099804,
+        "nlink": 1,
+        "size": 46
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/diagnostic.rs",
+      "sha256": "65b5b1dfa7bb2eb262cffd2e5ecb9cd17f1bb68c5c45e5be1bf046c3801db9cd"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/macros.rs": {
+      "bytes": 9006,
+      "identity": {
+        "ctime_ns": 1789820566860223263,
+        "dev": 16777229,
+        "ino": 1056855754,
+        "mode": 33152,
+        "mtime_ns": 1789820566860223263,
+        "nlink": 1,
+        "size": 9006
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/macros.rs",
+      "sha256": "4236fde95bdf38b03eed30d8012a9851ffa65799f923b046260dd87e0389d96e"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/panic.rs": {
+      "bytes": 37,
+      "identity": {
+        "ctime_ns": 1789820566860310346,
+        "dev": 16777229,
+        "ino": 1056855755,
+        "mode": 33152,
+        "mtime_ns": 1789820566860310346,
+        "nlink": 1,
+        "size": 37
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/panic.rs",
+      "sha256": "7abff165ad4644a889c6709de38b70424c851c7f7c1172cedb2ff07522a14aa5"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/panic_recovery.rs": {
+      "bytes": 69,
+      "identity": {
+        "ctime_ns": 1789820566860479680,
+        "dev": 16777229,
+        "ino": 1056855756,
+        "mode": 33152,
+        "mtime_ns": 1789820566860479680,
+        "nlink": 1,
+        "size": 69
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/panic_recovery.rs",
+      "sha256": "79e67de098ea799f53de19fc97eba439b26367cb95814f9e4ec747cebe3f2ee7"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/pass.rs": {
+      "bytes": 1264,
+      "identity": {
+        "ctime_ns": 1789820566860567264,
+        "dev": 16777229,
+        "ino": 1056855757,
+        "mode": 33152,
+        "mtime_ns": 1789820566860567264,
+        "nlink": 1,
+        "size": 1264
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/pass.rs",
+      "sha256": "2a2f1c69eca1d2e2e1abced7ba83b380bdef07765b06a0418b2b8d498ff74a9f"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/plan.json": {
+      "bytes": 50076,
+      "identity": {
+        "ctime_ns": 1789820711558882831,
+        "dev": 16777229,
+        "ino": 1056855761,
+        "mode": 33152,
+        "mtime_ns": 1789820711558882831,
+        "nlink": 1,
+        "size": 50076
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/plan.json",
+      "sha256": "9c041b35bba1c23774e9da923556f232a6c7da3911256a0be124b2f638ae3593"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/run_once.py": {
+      "bytes": 18791,
+      "identity": {
+        "ctime_ns": 1789820711559424916,
+        "dev": 16777229,
+        "ino": 1056855762,
+        "mode": 33152,
+        "mtime_ns": 1789820711559424916,
+        "nlink": 1,
+        "size": 18791
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/run_once.py",
+      "sha256": "bf2387cdfa74970ab1a22cb185deff9bf70031703cbfddfaf016f94262424a04"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/stale_ident.rs": {
+      "bytes": 35,
+      "identity": {
+        "ctime_ns": 1789820566860655180,
+        "dev": 16777229,
+        "ino": 1056855758,
+        "mode": 33152,
+        "mtime_ns": 1789820566860655180,
+        "nlink": 1,
+        "size": 35
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/stale_ident.rs",
+      "sha256": "a5fe3a4ad50072e5958e9dc2762f0092df099e659122a81f39aa01923879e937"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/stale_literal.rs": {
+      "bytes": 37,
+      "identity": {
+        "ctime_ns": 1789820566860752180,
+        "dev": 16777229,
+        "ino": 1056855759,
+        "mode": 33152,
+        "mtime_ns": 1789820566860752180,
+        "nlink": 1,
+        "size": 37
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/stale_literal.rs",
+      "sha256": "1396de8cbf804a7dbc514fb2b5048117d06dbbfc1a4985dd38d9c99faaf6b94e"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/type_error.rs": {
+      "bytes": 89,
+      "identity": {
+        "ctime_ns": 1789820566860845764,
+        "dev": 16777229,
+        "ino": 1056855760,
+        "mode": 33152,
+        "mtime_ns": 1789820566860845764,
+        "nlink": 1,
+        "size": 89
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-compiler-02/type_error.rs",
+      "sha256": "adeaacd756e62fd998999009973ad8c66611c14b833276e55ed8f50ffae79ea2"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/borrow_error.rs": {
+      "bytes": 168,
+      "identity": {
+        "ctime_ns": 1789821902053837907,
+        "dev": 16777229,
+        "ino": 1056958699,
+        "mode": 33152,
+        "mtime_ns": 1789821902053837907,
+        "nlink": 1,
+        "size": 168
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/borrow_error.rs",
+      "sha256": "c8db3ff0040dea2c61bb7948d3ece078f30081a36aa0361ab73df5cfd7ef5da1"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/diagnostic.rs": {
+      "bytes": 46,
+      "identity": {
+        "ctime_ns": 1789821902054034325,
+        "dev": 16777229,
+        "ino": 1056958700,
+        "mode": 33152,
+        "mtime_ns": 1789821902054034325,
+        "nlink": 1,
+        "size": 46
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/diagnostic.rs",
+      "sha256": "65b5b1dfa7bb2eb262cffd2e5ecb9cd17f1bb68c5c45e5be1bf046c3801db9cd"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/macros.rs": {
+      "bytes": 9006,
+      "identity": {
+        "ctime_ns": 1789821902054220992,
+        "dev": 16777229,
+        "ino": 1056958701,
+        "mode": 33152,
+        "mtime_ns": 1789821902054220992,
+        "nlink": 1,
+        "size": 9006
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/macros.rs",
+      "sha256": "4236fde95bdf38b03eed30d8012a9851ffa65799f923b046260dd87e0389d96e"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/panic.rs": {
+      "bytes": 37,
+      "identity": {
+        "ctime_ns": 1789821902054359867,
+        "dev": 16777229,
+        "ino": 1056958702,
+        "mode": 33152,
+        "mtime_ns": 1789821902054359867,
+        "nlink": 1,
+        "size": 37
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/panic.rs",
+      "sha256": "7abff165ad4644a889c6709de38b70424c851c7f7c1172cedb2ff07522a14aa5"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/panic_recovery.rs": {
+      "bytes": 69,
+      "identity": {
+        "ctime_ns": 1789821902054510284,
+        "dev": 16777229,
+        "ino": 1056958703,
+        "mode": 33152,
+        "mtime_ns": 1789821902054510284,
+        "nlink": 1,
+        "size": 69
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/panic_recovery.rs",
+      "sha256": "79e67de098ea799f53de19fc97eba439b26367cb95814f9e4ec747cebe3f2ee7"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/pass.rs": {
+      "bytes": 1264,
+      "identity": {
+        "ctime_ns": 1789821902054673117,
+        "dev": 16777229,
+        "ino": 1056958704,
+        "mode": 33152,
+        "mtime_ns": 1789821902054673117,
+        "nlink": 1,
+        "size": 1264
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/pass.rs",
+      "sha256": "2a2f1c69eca1d2e2e1abced7ba83b380bdef07765b06a0418b2b8d498ff74a9f"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/stale_ident.rs": {
+      "bytes": 35,
+      "identity": {
+        "ctime_ns": 1789821902054944535,
+        "dev": 16777229,
+        "ino": 1056958705,
+        "mode": 33152,
+        "mtime_ns": 1789821902054944535,
+        "nlink": 1,
+        "size": 35
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/stale_ident.rs",
+      "sha256": "a5fe3a4ad50072e5958e9dc2762f0092df099e659122a81f39aa01923879e937"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/stale_literal.rs": {
+      "bytes": 37,
+      "identity": {
+        "ctime_ns": 1789821902055189910,
+        "dev": 16777229,
+        "ino": 1056958706,
+        "mode": 33152,
+        "mtime_ns": 1789821902055189910,
+        "nlink": 1,
+        "size": 37
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/stale_literal.rs",
+      "sha256": "1396de8cbf804a7dbc514fb2b5048117d06dbbfc1a4985dd38d9c99faaf6b94e"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/type_error.rs": {
+      "bytes": 89,
+      "identity": {
+        "ctime_ns": 1789821902055497036,
+        "dev": 16777229,
+        "ino": 1056958707,
+        "mode": 33152,
+        "mtime_ns": 1789821902055497036,
+        "nlink": 1,
+        "size": 89
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/fixtures/type_error.rs",
+      "sha256": "adeaacd756e62fd998999009973ad8c66611c14b833276e55ed8f50ffae79ea2"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/proposal.json": {
+      "bytes": 100977,
+      "identity": {
+        "ctime_ns": 1789821902055865911,
+        "dev": 16777229,
+        "ino": 1056958708,
+        "mode": 33152,
+        "mtime_ns": 1789821902055865911,
+        "nlink": 1,
+        "size": 100977
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/proposal.json",
+      "sha256": "2c0dd7b0cdaa6892008bca11bf9de9214510b4914b0fa1746e08b5f7c3ee087b"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/runtime-inventory.json": {
+      "bytes": 26867,
+      "identity": {
+        "ctime_ns": 1789822077085196863,
+        "dev": 16777229,
+        "ino": 1056958709,
+        "mode": 33152,
+        "mtime_ns": 1789822077085196863,
+        "nlink": 1,
+        "size": 26867
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/runtime-inventory.json",
+      "sha256": "84341c23952ff1b4920a015cfcc3ae3484fe8a0681acf6da030b8ae7946f1049"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source-bindings.json": {
+      "bytes": 63291,
+      "identity": {
+        "ctime_ns": 1789821902066282140,
+        "dev": 16777229,
+        "ino": 1056958710,
+        "mode": 33152,
+        "mtime_ns": 1789821902066282140,
+        "nlink": 1,
+        "size": 63291
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source-bindings.json",
+      "sha256": "66f60a203cb539071a161addb616547eeacb8fafe801456af517976c85aff496"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/Cargo.toml": {
+      "bytes": 598,
+      "identity": {
+        "ctime_ns": 1789821902047658604,
+        "dev": 16777229,
+        "ino": 1056958674,
+        "mode": 33152,
+        "mtime_ns": 1789821902047658604,
+        "nlink": 1,
+        "size": 598
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/Cargo.toml",
+      "sha256": "f91d22525f86110eb784ba390dd389033b87e8f7841c071a7803a1c63121a990"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/arena.rs": {
+      "bytes": 12636,
+      "identity": {
+        "ctime_ns": 1789821902048119855,
+        "dev": 16777229,
+        "ino": 1056958677,
+        "mode": 33152,
+        "mtime_ns": 1789821902048119855,
+        "nlink": 1,
+        "size": 12636
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/arena.rs",
+      "sha256": "a2b05d25db81e5703fa5872e4b7961774a961a3360c0420daf8d2c740e4e5fa2"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/buffer.rs": {
+      "bytes": 3345,
+      "identity": {
+        "ctime_ns": 1789821902048414147,
+        "dev": 16777229,
+        "ino": 1056958678,
+        "mode": 33152,
+        "mtime_ns": 1789821902048414147,
+        "nlink": 1,
+        "size": 3345
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/buffer.rs",
+      "sha256": "858499925d66e8014bf779ded30d67718ce9fed9541442f4a81b799b7f302560"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/client.rs": {
+      "bytes": 8977,
+      "identity": {
+        "ctime_ns": 1789821902048572856,
+        "dev": 16777229,
+        "ino": 1056958679,
+        "mode": 33152,
+        "mtime_ns": 1789821902048572856,
+        "nlink": 1,
+        "size": 8977
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/client.rs",
+      "sha256": "fe5d6760d816a6f1f612d85107eed3a88d8929af93cb4309ababcd3e9b4565b2"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/closure.rs": {
+      "bytes": 915,
+      "identity": {
+        "ctime_ns": 1789821902048724023,
+        "dev": 16777229,
+        "ino": 1056958680,
+        "mode": 33152,
+        "mtime_ns": 1789821902048724023,
+        "nlink": 1,
+        "size": 915
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/closure.rs",
+      "sha256": "03453e29c27d9a3ffafe2455bee14d65815fa6c8df1e9d6cf131aacc2ef624a8"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/fxhash.rs": {
+      "bytes": 3364,
+      "identity": {
+        "ctime_ns": 1789821902048906815,
+        "dev": 16777229,
+        "ino": 1056958681,
+        "mode": 33152,
+        "mtime_ns": 1789821902048906815,
+        "nlink": 1,
+        "size": 3364
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/fxhash.rs",
+      "sha256": "43c95da90564aa359a25b5a567cb5da351f40092caa260c29d009b7e25c68647"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/handle.rs": {
+      "bytes": 2113,
+      "identity": {
+        "ctime_ns": 1789821902049255482,
+        "dev": 16777229,
+        "ino": 1056958682,
+        "mode": 33152,
+        "mtime_ns": 1789821902049255482,
+        "nlink": 1,
+        "size": 2113
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/handle.rs",
+      "sha256": "cd7e0b6c7940f7ae9baad9c463e4bc3a77dd5db29922a2e988dfeef4230d5bde"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/mod.rs": {
+      "bytes": 12226,
+      "identity": {
+        "ctime_ns": 1789821902049628358,
+        "dev": 16777229,
+        "ino": 1056958683,
+        "mode": 33152,
+        "mtime_ns": 1789821902049628358,
+        "nlink": 1,
+        "size": 12226
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/mod.rs",
+      "sha256": "cdcdf5e2d24471f06b59f2baa7f254c5160bc0acc25a06c535f8cb3872eeb83b"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/panic_message.rs": {
+      "bytes": 1910,
+      "identity": {
+        "ctime_ns": 1789821902050025192,
+        "dev": 16777229,
+        "ino": 1056958684,
+        "mode": 33152,
+        "mtime_ns": 1789821902050025192,
+        "nlink": 1,
+        "size": 1910
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/panic_message.rs",
+      "sha256": "56d2ceea35eaae7cf601a8029e5351b24a3ac56c3e3f4f4b2d4fd6d933aed971"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/rpc.rs": {
+      "bytes": 6724,
+      "identity": {
+        "ctime_ns": 1789821902050436193,
+        "dev": 16777229,
+        "ino": 1056958685,
+        "mode": 33152,
+        "mtime_ns": 1789821902050436193,
+        "nlink": 1,
+        "size": 6724
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/rpc.rs",
+      "sha256": "611a26a3f2080a821a6921c1f0e74e734bf9cb9dd37891c82765f9755a6cf06c"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/selfless_reify.rs": {
+      "bytes": 2970,
+      "identity": {
+        "ctime_ns": 1789821902050792402,
+        "dev": 16777229,
+        "ino": 1056958686,
+        "mode": 33152,
+        "mtime_ns": 1789821902050792402,
+        "nlink": 1,
+        "size": 2970
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/selfless_reify.rs",
+      "sha256": "ee921c120b8a72c6e1e0df5ec3d5b0662b5411c49673a7ceecbc37b421c76edd"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/server.rs": {
+      "bytes": 10509,
+      "identity": {
+        "ctime_ns": 1789821902050950569,
+        "dev": 16777229,
+        "ino": 1056958687,
+        "mode": 33152,
+        "mtime_ns": 1789821902050950569,
+        "nlink": 1,
+        "size": 10509
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/server.rs",
+      "sha256": "1a6eb7d13e8af5b16e3fa7930e4ff2925bf861ec4b86e06df75595d01e9e8d3a"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/symbol.rs": {
+      "bytes": 9042,
+      "identity": {
+        "ctime_ns": 1789821902051107486,
+        "dev": 16777229,
+        "ino": 1056958688,
+        "mode": 33152,
+        "mtime_ns": 1789821902051107486,
+        "nlink": 1,
+        "size": 9042
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/bridge/symbol.rs",
+      "sha256": "086c4712892a0377af36274941cce3585cf306290ebbb06158ccf4789bdbe3ba"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/diagnostic.rs": {
+      "bytes": 5858,
+      "identity": {
+        "ctime_ns": 1789821902051259069,
+        "dev": 16777229,
+        "ino": 1056958689,
+        "mode": 33152,
+        "mtime_ns": 1789821902051259069,
+        "nlink": 1,
+        "size": 5858
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/diagnostic.rs",
+      "sha256": "8c84548915beeea0de620ac65ab93d89d124e19ac02632b080293b0c1c80cb8a"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/escape.rs": {
+      "bytes": 1787,
+      "identity": {
+        "ctime_ns": 1789821902051504778,
+        "dev": 16777229,
+        "ino": 1056958690,
+        "mode": 33152,
+        "mtime_ns": 1789821902051504778,
+        "nlink": 1,
+        "size": 1787
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/escape.rs",
+      "sha256": "66c6b2d053be4c6b8a63c508c475173322ea3a70e495018938ba5f93b8662dfd"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/lib.rs": {
+      "bytes": 75695,
+      "identity": {
+        "ctime_ns": 1789821902051911571,
+        "dev": 16777229,
+        "ino": 1056958691,
+        "mode": 33152,
+        "mtime_ns": 1789821902051911571,
+        "nlink": 1,
+        "size": 75695
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/lib.rs",
+      "sha256": "68237ec6a7a9a2d1dd7cd81e41ccb2996414df1891e4d8dba9e4f19a862c1f50"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/quote.rs": {
+      "bytes": 18499,
+      "identity": {
+        "ctime_ns": 1789821902052335738,
+        "dev": 16777229,
+        "ino": 1056958692,
+        "mode": 33152,
+        "mtime_ns": 1789821902052335738,
+        "nlink": 1,
+        "size": 18499
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/quote.rs",
+      "sha256": "87451d78d39b8de71a06744cb20b38cd415c38f621e41c9112b0cf005128d2b0"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/to_tokens.rs": {
+      "bytes": 9240,
+      "identity": {
+        "ctime_ns": 1789821902052721822,
+        "dev": 16777229,
+        "ino": 1056958693,
+        "mode": 33152,
+        "mtime_ns": 1789821902052721822,
+        "nlink": 1,
+        "size": 9240
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/candidate/proc_macro/src/to_tokens.rs",
+      "sha256": "8d6dd0acef632336cf4b10319eb1f4a035a035b6bb4b0d3ba57aed11f917e48a"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/literal/Cargo.toml": {
+      "bytes": 1137,
+      "identity": {
+        "ctime_ns": 1789821902053413865,
+        "dev": 16777229,
+        "ino": 1056958697,
+        "mode": 33152,
+        "mtime_ns": 1789821902053413865,
+        "nlink": 1,
+        "size": 1137
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/literal/Cargo.toml",
+      "sha256": "42864d0d78afe687857242cd08b274a381d2b0d24f7d0ddb5fd44ec116365335"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/literal/src/lib.rs": {
+      "bytes": 21694,
+      "identity": {
+        "ctime_ns": 1789821902053152365,
+        "dev": 16777229,
+        "ino": 1056958696,
+        "mode": 33152,
+        "mtime_ns": 1789821902053152365,
+        "nlink": 1,
+        "size": 21694
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/literal/src/lib.rs",
+      "sha256": "d79e2b634a4d25f44258c2a8afd854e1f87c967716fb564603feb89246c0f722"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/Cargo.toml": {
+      "bytes": 598,
+      "identity": {
+        "ctime_ns": 1789821902042427469,
+        "dev": 16777229,
+        "ino": 1056958652,
+        "mode": 33152,
+        "mtime_ns": 1789821902042427469,
+        "nlink": 1,
+        "size": 598
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/Cargo.toml",
+      "sha256": "f91d22525f86110eb784ba390dd389033b87e8f7841c071a7803a1c63121a990"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/arena.rs": {
+      "bytes": 4384,
+      "identity": {
+        "ctime_ns": 1789821902042792178,
+        "dev": 16777229,
+        "ino": 1056958655,
+        "mode": 33152,
+        "mtime_ns": 1789821902042792178,
+        "nlink": 1,
+        "size": 4384
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/arena.rs",
+      "sha256": "ce4f02d336d885145e8bbe5770781ebf11af7ac2488d59c8d930fdab62e9376e"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/buffer.rs": {
+      "bytes": 3345,
+      "identity": {
+        "ctime_ns": 1789821902042999637,
+        "dev": 16777229,
+        "ino": 1056958656,
+        "mode": 33152,
+        "mtime_ns": 1789821902042999637,
+        "nlink": 1,
+        "size": 3345
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/buffer.rs",
+      "sha256": "858499925d66e8014bf779ded30d67718ce9fed9541442f4a81b799b7f302560"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/client.rs": {
+      "bytes": 8977,
+      "identity": {
+        "ctime_ns": 1789821902043208221,
+        "dev": 16777229,
+        "ino": 1056958657,
+        "mode": 33152,
+        "mtime_ns": 1789821902043208221,
+        "nlink": 1,
+        "size": 8977
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/client.rs",
+      "sha256": "fe5d6760d816a6f1f612d85107eed3a88d8929af93cb4309ababcd3e9b4565b2"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/closure.rs": {
+      "bytes": 915,
+      "identity": {
+        "ctime_ns": 1789821902043394763,
+        "dev": 16777229,
+        "ino": 1056958658,
+        "mode": 33152,
+        "mtime_ns": 1789821902043394763,
+        "nlink": 1,
+        "size": 915
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/closure.rs",
+      "sha256": "03453e29c27d9a3ffafe2455bee14d65815fa6c8df1e9d6cf131aacc2ef624a8"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/fxhash.rs": {
+      "bytes": 3364,
+      "identity": {
+        "ctime_ns": 1789821902043564555,
+        "dev": 16777229,
+        "ino": 1056958659,
+        "mode": 33152,
+        "mtime_ns": 1789821902043564555,
+        "nlink": 1,
+        "size": 3364
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/fxhash.rs",
+      "sha256": "43c95da90564aa359a25b5a567cb5da351f40092caa260c29d009b7e25c68647"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/handle.rs": {
+      "bytes": 2113,
+      "identity": {
+        "ctime_ns": 1789821902043722763,
+        "dev": 16777229,
+        "ino": 1056958660,
+        "mode": 33152,
+        "mtime_ns": 1789821902043722763,
+        "nlink": 1,
+        "size": 2113
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/handle.rs",
+      "sha256": "cd7e0b6c7940f7ae9baad9c463e4bc3a77dd5db29922a2e988dfeef4230d5bde"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/mod.rs": {
+      "bytes": 12226,
+      "identity": {
+        "ctime_ns": 1789821902043907972,
+        "dev": 16777229,
+        "ino": 1056958661,
+        "mode": 33152,
+        "mtime_ns": 1789821902043907972,
+        "nlink": 1,
+        "size": 12226
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/mod.rs",
+      "sha256": "cdcdf5e2d24471f06b59f2baa7f254c5160bc0acc25a06c535f8cb3872eeb83b"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/panic_message.rs": {
+      "bytes": 1910,
+      "identity": {
+        "ctime_ns": 1789821902044298098,
+        "dev": 16777229,
+        "ino": 1056958662,
+        "mode": 33152,
+        "mtime_ns": 1789821902044298098,
+        "nlink": 1,
+        "size": 1910
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/panic_message.rs",
+      "sha256": "56d2ceea35eaae7cf601a8029e5351b24a3ac56c3e3f4f4b2d4fd6d933aed971"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/rpc.rs": {
+      "bytes": 6724,
+      "identity": {
+        "ctime_ns": 1789821902044732182,
+        "dev": 16777229,
+        "ino": 1056958663,
+        "mode": 33152,
+        "mtime_ns": 1789821902044732182,
+        "nlink": 1,
+        "size": 6724
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/rpc.rs",
+      "sha256": "611a26a3f2080a821a6921c1f0e74e734bf9cb9dd37891c82765f9755a6cf06c"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/selfless_reify.rs": {
+      "bytes": 2970,
+      "identity": {
+        "ctime_ns": 1789821902045191599,
+        "dev": 16777229,
+        "ino": 1056958664,
+        "mode": 33152,
+        "mtime_ns": 1789821902045191599,
+        "nlink": 1,
+        "size": 2970
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/selfless_reify.rs",
+      "sha256": "ee921c120b8a72c6e1e0df5ec3d5b0662b5411c49673a7ceecbc37b421c76edd"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/server.rs": {
+      "bytes": 10509,
+      "identity": {
+        "ctime_ns": 1789821902045631434,
+        "dev": 16777229,
+        "ino": 1056958665,
+        "mode": 33152,
+        "mtime_ns": 1789821902045631434,
+        "nlink": 1,
+        "size": 10509
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/server.rs",
+      "sha256": "1a6eb7d13e8af5b16e3fa7930e4ff2925bf861ec4b86e06df75595d01e9e8d3a"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/symbol.rs": {
+      "bytes": 6908,
+      "identity": {
+        "ctime_ns": 1789821902045988726,
+        "dev": 16777229,
+        "ino": 1056958666,
+        "mode": 33152,
+        "mtime_ns": 1789821902045988726,
+        "nlink": 1,
+        "size": 6908
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/bridge/symbol.rs",
+      "sha256": "75f80e816a8f4ded235d57b50914bc4f1854e8696a8dd160a75e4e0d46ae1869"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/diagnostic.rs": {
+      "bytes": 5858,
+      "identity": {
+        "ctime_ns": 1789821902046139268,
+        "dev": 16777229,
+        "ino": 1056958667,
+        "mode": 33152,
+        "mtime_ns": 1789821902046139268,
+        "nlink": 1,
+        "size": 5858
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/diagnostic.rs",
+      "sha256": "8c84548915beeea0de620ac65ab93d89d124e19ac02632b080293b0c1c80cb8a"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/escape.rs": {
+      "bytes": 1787,
+      "identity": {
+        "ctime_ns": 1789821902046284602,
+        "dev": 16777229,
+        "ino": 1056958668,
+        "mode": 33152,
+        "mtime_ns": 1789821902046284602,
+        "nlink": 1,
+        "size": 1787
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/escape.rs",
+      "sha256": "66c6b2d053be4c6b8a63c508c475173322ea3a70e495018938ba5f93b8662dfd"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/lib.rs": {
+      "bytes": 75695,
+      "identity": {
+        "ctime_ns": 1789821902046498019,
+        "dev": 16777229,
+        "ino": 1056958669,
+        "mode": 33152,
+        "mtime_ns": 1789821902046498019,
+        "nlink": 1,
+        "size": 75695
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/lib.rs",
+      "sha256": "68237ec6a7a9a2d1dd7cd81e41ccb2996414df1891e4d8dba9e4f19a862c1f50"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/quote.rs": {
+      "bytes": 18499,
+      "identity": {
+        "ctime_ns": 1789821902046823769,
+        "dev": 16777229,
+        "ino": 1056958670,
+        "mode": 33152,
+        "mtime_ns": 1789821902046823769,
+        "nlink": 1,
+        "size": 18499
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/quote.rs",
+      "sha256": "87451d78d39b8de71a06744cb20b38cd415c38f621e41c9112b0cf005128d2b0"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/to_tokens.rs": {
+      "bytes": 9240,
+      "identity": {
+        "ctime_ns": 1789821902047215562,
+        "dev": 16777229,
+        "ino": 1056958671,
+        "mode": 33152,
+        "mtime_ns": 1789821902047215562,
+        "nlink": 1,
+        "size": 9240
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source/stock/proc_macro/src/to_tokens.rs",
+      "sha256": "8d6dd0acef632336cf4b10319eb1f4a035a035b6bb4b0d3ba57aed11f917e48a"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/patched/arena.rs": {
+      "bytes": 12636,
+      "identity": {
+        "ctime_ns": 1789817630476544713,
+        "dev": 16777229,
+        "ino": 1056594490,
+        "mode": 33152,
+        "mtime_ns": 1789817630476544713,
+        "nlink": 1,
+        "size": 12636
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/patched/arena.rs",
+      "sha256": "a2b05d25db81e5703fa5872e4b7961774a961a3360c0420daf8d2c740e4e5fa2"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/patched/symbol.rs": {
+      "bytes": 9042,
+      "identity": {
+        "ctime_ns": 1789817614577914990,
+        "dev": 16777229,
+        "ino": 1056594491,
+        "mode": 33152,
+        "mtime_ns": 1789817614577914990,
+        "nlink": 1,
+        "size": 9042
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/patched/symbol.rs",
+      "sha256": "086c4712892a0377af36274941cce3585cf306290ebbb06158ccf4789bdbe3ba"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/execution.json": {
+      "bytes": 55794,
+      "identity": {
+        "ctime_ns": 1789821251332234009,
+        "dev": 16777229,
+        "ino": 1056883704,
+        "mode": 33152,
+        "mtime_ns": 1789821251332117425,
+        "nlink": 1,
+        "size": 55794
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/execution.json",
+      "sha256": "4e67f9eb66ed8247cf70c0c085ab7576b54dbf4c45d4e56f9d19b27e1e39eac3"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/result.json": {
+      "bytes": 358,
+      "identity": {
+        "ctime_ns": 1789821251332406092,
+        "dev": 16777229,
+        "ino": 1056883705,
+        "mode": 33152,
+        "mtime_ns": 1789821251332406092,
+        "nlink": 1,
+        "size": 358
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-compiler-02/result.json",
+      "sha256": "db87d2a204bd11f2c024a3e8132a04882706f0acd1a2fd46cdde540752e5f39f"
+    }
+  },
+  "qualifications": {
+    "candidate_whole_crate_tests": 13,
+    "compiler_distribution": false,
+    "holdouts": false,
+    "old_T_tests_are_provenance_only": true,
+    "original_N_proofs_unchanged": true,
+    "performance": false,
+    "runtime_composition": false,
+    "stock_whole_crate_tests": 0,
+    "zero_stock_tests_are_compilation_smoke_only": true
+  },
+  "resources": {
+    "canonical_wait_seconds": 600,
+    "capacity_floor_bytes": 8589934592,
+    "child_file_limit_bytes": 67108864,
+    "entry_free_bytes": 15032385536,
+    "overall_observer_seconds": 2400,
+    "owned_output_limit_bytes": 268435456,
+    "retries": 0,
+    "signals": [],
+    "stop_free_bytes": 9663676416
+  },
+  "runtime_inventory": {
+    "bytes": 26867,
+    "identity": {
+      "ctime_ns": 1789822077085196863,
+      "dev": 16777229,
+      "ino": 1056958709,
+      "mode": 33152,
+      "mtime_ns": 1789822077085196863,
+      "nlink": 1,
+      "size": 26867
+    },
+    "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/runtime-inventory.json",
+    "sha256": "84341c23952ff1b4920a015cfcc3ae3484fe8a0681acf6da030b8ae7946f1049"
+  },
+  "scope": "matched N external proc-macro clients only; unchanged N server and builtin quote",
+  "source_bindings": {
+    "bytes": 63291,
+    "identity": {
+      "ctime_ns": 1789821902066282140,
+      "dev": 16777229,
+      "ino": 1056958710,
+      "mode": 33152,
+      "mtime_ns": 1789821902066282140,
+      "nlink": 1,
+      "size": 63291
+    },
+    "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01/source-bindings.json",
+    "sha256": "66f60a203cb539071a161addb616547eeacb8fafe801456af517976c85aff496"
+  },
+  "source_root": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-01",
+  "status": "source-only-unrun",
+  "sysroot": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1",
+  "whole_crate_test_names": {
+    "candidate": [
+      "bridge::arena::reuse_tests::empty_and_zero_length_reset_stay_unallocated",
+      "bridge::arena::reuse_tests::growth_after_reuse_preserves_doubling_and_releases_extra",
+      "bridge::arena::reuse_tests::multiple_chunks_are_released_and_vector_shrink_is_best_effort",
+      "bridge::arena::reuse_tests::ordinary_page_and_cursor_are_reused",
+      "bridge::arena::reuse_tests::oversized_first_chunk_is_not_retained",
+      "bridge::arena::reuse_tests::populated_arena_move_preserves_reuse_reset_and_growth",
+      "bridge::arena::reuse_tests::recorded_capacity_tracks_empty_growth_retention_and_oversized_reset",
+      "bridge::arena::reuse_tests::reset_after_caught_unwind_reuses_storage",
+      "bridge::arena::reuse_tests::retained_disjoint_mutable_strings_survive_shared_growth",
+      "bridge::arena::reuse_tests::unicode_and_live_allocations_keep_exact_contents",
+      "bridge::symbol::arena_reuse_tests::double_clear_and_oversized_unicode_symbol_preserve_identity",
+      "bridge::symbol::arena_reuse_tests::duplicate_ids_and_stale_rejection_survive_reset",
+      "bridge::symbol::arena_reuse_tests::overflow_and_clear_keep_existing_nonpanicking_boundary"
+    ],
+    "stock": []
+  }
+}

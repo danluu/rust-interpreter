@@ -1,0 +1,45 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-03/run_once.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-04/run_once.py
+@@ -12,12 +12,12 @@
+ import time
+ 
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+-SOURCE = ROOT/'experiments/proc-macro-arena-n-client-03'
+-WORK = ROOT/'.work/proc-macro-arena-n-client-03'
+-OUT = ROOT/'results/proc-macro-arena-n-client-03'
++SOURCE = ROOT/'experiments/proc-macro-arena-n-client-04'
++WORK = ROOT/'.work/proc-macro-arena-n-client-04'
++OUT = ROOT/'results/proc-macro-arena-n-client-04'
+ TC = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1')
+ LOCK = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+-PLAN_SHA = '360a6d21eb3520880a6cbf491219139c77767858e9c48ce0ab138fa98d3a6306'
++PLAN_SHA = 'e7cf786c2ac4ec52890a856edb38ea8d3221a129781f2f3eead8955a57f189e1'
+ FIELDS = ('dev', 'ino', 'mode', 'nlink', 'size', 'mtime_ns', 'ctime_ns')
+ START = time.monotonic()
+ 
+@@ -298,12 +298,14 @@
+     literal_dependency = None
+     if spec['role'] in ['build-stock-client','build-candidate-client','build-whole-crate-tests','build-macro-dylib']:
+         metadata_only = spec['role'] in ['build-stock-client','build-candidate-client']
++        direct_literal = spec['role'] != 'build-macro-dylib'
+         supplied = {}
+         for suffix in ['rlib','rmeta']:
+             name = str(WORK/'dependency'/('librustc_literal_escaper-arena04_n_dep01.'+suffix))
+             require(file_record(name) == built[name], 'matched normal literal artifact changed')
+-            require(any(spec['argv'][i:i+2] == ['--extern','rustc_literal_escaper='+name]
+-                        for i in range(len(spec['argv'])-1)), 'explicit literal metadata/code argument missing')
++            if direct_literal:
++                require(any(spec['argv'][i:i+2] == ['--extern','rustc_literal_escaper='+name]
++                            for i in range(len(spec['argv'])-1)), 'explicit literal metadata/code argument missing')
+             if suffix == 'rmeta' or not metadata_only:
+                 require(name in text, 'required literal crate source missing from dep-info')
+             supplied[suffix] = dict(path=name, **built[name])
+@@ -311,6 +313,8 @@
+         # rlib when producing an rlib after loading its rmeta. Record the
+         # supplied code archive without mislabeling it as selected or linked.
+         literal_dependency = dict(metadata_only_rlib_build=metadata_only, supplied=supplied,
++            direct_extern_required=direct_literal,
++            dependency_route='direct' if direct_literal else 'transitive-through-matched-proc-macro',
+             required_depinfo_flavors=['rmeta'] if metadata_only else ['rlib','rmeta'],
+             code_archive_linkage_required=not metadata_only,
+             code_archive_present_in_depinfo=supplied['rlib']['path'] in text)
