@@ -254,3 +254,17 @@ Pinned MIR visitor changesany projectedplacebase toProjection; custom first-Dere
 visitor maytreat pointerbaseasvalueCopy whilestillrejectingborrowofslot. Existing
 byte_writes::ByteUses alreadydistinguishespointeeuses/readslot, usefulreviewbut
 its any-Deref ruleisbroader thanproposedthin-pointer first-Deref admission.
+
+## September 19 resumed: stop overlapping pointer draft
+
+Historical review found private-pointer-screen-token-01 already measured this
+raw-pointer mechanism: 32 correct commands, 0.34% paired wall/CPU improvement,
+failed preregistered10% target. Preserved unbuilt September19 patch/source/plan
+in benchmarks/experiments/private-pointer-review-20260919; restored original
+private-pointer-promotion/PLAN.md and all production edits to df4aebf6.
+No build/test/newguest/cleanup ran. AddedRefs not independently justified and
+naive candidateunion could violate legacy-first256slot capacity. Do not retry.
+Main d73ab139 already pushed all qualified loop/copy/payload evidence, preserving
+peer e694389f. Next direction must consult complete experiment/result archive.
+Revalidated suggestionsSHA4d74b3dc unchanged,free19.9GiB,cleaner29541 readonly.
+No active owned command. Goal stillpaused; no subagents.

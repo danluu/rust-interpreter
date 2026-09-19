@@ -1,0 +1,236 @@
+diff --git a/benchmarks/experiments/private-pointer-promotion/PLAN.md b/benchmarks/experiments/private-pointer-promotion/PLAN.md
+index 0e0aff35..48d1eeaf 100644
+--- a/benchmarks/experiments/private-pointer-promotion/PLAN.md
++++ b/benchmarks/experiments/private-pointer-promotion/PLAN.md
+@@ -1,43 +1,59 @@
+-# Keep private pointer values out of local memory
++# Private thin-pointer promotion experiment
+ 
+-Current real-suite profiles show substantial logical Local/Copy/Load/Store work
+-in generic code and Rust's precondition checks. The exporter already promotes
+-private primitive local slots to bytecode registers, but its type filter excludes
+-raw pointers. Investigate extending that existing proof to private raw-pointer
+-values. This is a generic compiler transformation, with no project/function-name
+-special cases and no changes to the guest pointer representation or call ABI.
++The default scalar promoter handles private primitive numeric MIR locals.
++Pointer locals are excluded by both its type gate and the default visitor's
++projection context. Existing bytecode Copy/Load/Store work and the failed narrow
++emitter experiments motivate investigating this earlier representation choice.
+ 
+-First inspect the exact typed-use and final-bytecode address proofs. A pointer
+-value and the storage holding that pointer are distinct: dereferencing the value
+-does not itself expose its local slot. Taking the address of the slot does.
+-Keep function arguments/results, call operands/destinations, aggregates, borrows,
+-address exposure, ambiguous overlapping colored ranges and unknown uses excluded.
+-The existing final-bytecode proof must still accept only full-width accesses via
+-unique, dominated Local addresses; never use sampled values as an alias proof.
+-Start with thin raw pointers of the pinned 64-bit guest ABI. Do not admit fat
+-pointers, references or function pointers in the first candidate.
++The candidate is a default-OFF Cargo feature, private-pointer-promotion. The
++entire bytecode/runtime crate remains identical to adopted fca687eb; no new JIT,
++interpreter, LLVM or foreign-engine path. Full rustc checking still precedes
++lowering. The exporter binary digest already namespaces function-cache entries,
++so feature-on and feature-off binaries cannot reuse each other's lowered code.
++Verify that contract with installed binary hashes before any real experiment.
+ 
+-Preserve old promotion opportunities and bounded work. Adding pointer candidates
+-must not cause a function that previously fit the 256-slot bound to lose all its
+-integer/float promotions. Retain legacy candidates first, admit only remaining
+-new capacity, and report both categories. No new bytecode opcode/version or VM
+-change is required. Logical budgets continue to count each resulting artifact.
++Eligibility is limited to non-argument/non-result Ref/RawPtr locals of exactly
++eight bytes. No frame packing change. A first Deref projection reads the pointer
++value even when the pointee is written or borrowed. Taking the address of the
++pointer slot itself still rejects promotion. All other contexts follow the
++existing conservative policy; a rejected local cannot be readmitted. Visit index
++operands/types normally. Fat pointers, function pointers, aggregates and owning
++ADT values remain excluded. Bound to4096 locals/32768 MIR events and existing
++lowering/transform limits. Preserve direct call-argument, call-result, aggregate
++operand, overlapping-slot and unproved bytecode-address exclusions.
+ 
+-Qualify typed Rust fixtures for dereference, pointer arithmetic, branches, loops,
+-stores through pointers, address-exposed pointer slots, calls, aliases and strict
+-unused type/borrow errors. Compare both interpreters/JITs against native assertions,
+-preserve faults at remaining guest memory accesses, and verify unchanged excluded
+-functions. Run workspace tests in both profiles and real exports before timing.
++Use the existing typed scalar transform, zero initialization, branch remapping
++and move elimination. Record candidate and actually promoted pointer offsets
++separately from existing numeric counts. No externally supplied bytecode obtains
++a nonescape assumption. Tests must distinguish pointer storage from pointee
++aliases; treating all projection uses as harmless would be unsound.
+ 
+-Use an early actual source-edit/build/test screen with native, retained and
+-candidate controls, unchanged profiles/workers/limits and original assertions.
+-Require at least 10% paired token wall improvement with no CPU regression and
+-separate folded/pgrust regression guards before broad qualification. Predeclare
+-the exact edits/order/identities before execution. Failed screens stop without
+-retiming; do not reopen the parked scalar call ABI, whole-call inliner, clearing,
+-function-cache, rematerialization or register-cache experiments.
++Qualification sequence, not yet run:
+ 
+-One workload at a time, global lock with a 45-second wait, two Cargo workers and
+-8 GiB free before children. Preserve raw evidence, sources, installed tools,
+-private caches and unrelated work. This remains a feasibility investigation until
+-the typed proof and real exports establish useful coverage.
++1. Recompute shared-target disk reserve. If needed, retire only exact closed
++   task-owned compiler caches after independent evidence/inactivity/open-file
++   checks. Never clean the shared target or interfere with peer processes.
++2. Run focused scalar-promotion tests with the feature off/on in debug/release,
++   including context/escape controls and interpreter/native pointee-alias tests.
++   Build and retain the candidate exporter/wrapper, using the exact adopted VM.
++3. Use real checked MIR fixtures for thin shared/mutable/raw pointers, loops,
++   direct borrowed slot mutation, direct call operands/results, index operands,
++   fat pointers and reference-to-pointer escapes. Require positive actual
++   pointer-promotion counts where intended and rejection where not. Compare
++   feature-off output with adopted output, and feature-on guest outputs with
++   native Rust/feature-off. Check strict unreachable E0308/E0499 before export.
++4. Qualify workspace/default-feature behavior and full original public/private
++   test-body suites before a complete changed-source screen. Candidate bytecode
++   intentionally changes: require original assertions, catalog/test identities,
++   wrong-edit failures and restoration, not false byte-for-byte equality.
++   The harness/accounting needs separate prequalification for this frontend
++   experiment; do not reuse a runtime screen that assumes identical artifacts.
++5. Freeze a complete-edit native/adopted/duplicate/candidate/anchor primary and
++   all regression guards before timing. Preserve CPU, build and execution costs,
++   same-run A/A variation, resource admission and failed outcomes. Do not retime
++   an unchanged failed candidate or infer adoption from static counts.
++
++No build or fixture has been run yet. Current free space is below the last
++dynamic build reserve; source preparation is allowed, build admission is pending.
++Two Cargo/test workers, shared benchmark lock45s, conservative disk checks and
++independent closure. No change to paused goal or other sessions.
+diff --git a/crates/mir-export/Cargo.toml b/crates/mir-export/Cargo.toml
+index 08e7bc0a..4cb6f524 100644
+--- a/crates/mir-export/Cargo.toml
++++ b/crates/mir-export/Cargo.toml
+@@ -5,6 +5,10 @@ edition = "2024"
+ publish = false
+ build = "build.rs"
+ 
++[features]
++# Experimental lowering policy, off until complete source-edit qualification.
++private-pointer-promotion = []
++
+ [[bin]]
+ name = "rust-interp-rustc-wrapper"
+ path = "src/wrapper_main.rs"
+diff --git a/crates/mir-export/src/lower/scalar_promote.rs b/crates/mir-export/src/lower/scalar_promote.rs
+index 7581776b..1319994d 100644
+--- a/crates/mir-export/src/lower/scalar_promote.rs
++++ b/crates/mir-export/src/lower/scalar_promote.rs
+@@ -4,11 +4,17 @@ use rustc_middle::mir::visit::{MutatingUseContext,NonMutatingUseContext,PlaceCon
+ use std::sync::atomic::{AtomicU64,Ordering};
+ #[path="scalar_promote_transform.rs"]
+ mod transform;
++#[cfg(feature="private-pointer-promotion")]
++mod private_pointers;
+ static NANOS:AtomicU64=AtomicU64::new(0);
+ static SLOTS:AtomicU64=AtomicU64::new(0);
+ static ADDRESSES:AtomicU64=AtomicU64::new(0);
+ static REWRITTEN:AtomicU64=AtomicU64::new(0);
+ static MOVES:AtomicU64=AtomicU64::new(0);
++#[cfg(feature="private-pointer-promotion")]
++static POINTER_CANDIDATES:AtomicU64=AtomicU64::new(0);
++#[cfg(feature="private-pointer-promotion")]
++static POINTER_SLOTS:AtomicU64=AtomicU64::new(0);
+ struct Uses<'a> { eligible:&'a mut [bool] }
+ impl<'tcx> Visitor<'tcx> for Uses<'_> {
+     fn visit_local(&mut self,local:mir::Local,context:PlaceContext,_:mir::Location) {
+@@ -40,6 +46,8 @@ pub(super) fn apply(lower:&mut Lower<'_, '_>)->Result<()> {
+     let start=std::time::Instant::now();
+     if lower.locals.len()>4096 || lower.code.len()>100_000 {return Ok(());}
+     let mut eligible=lower.scalar_eligibility.take().unwrap_or_else(|| visitor_eligibility(lower));
++    #[cfg(feature="private-pointer-promotion")]
++    let pointer_locals=private_pointers::extend(lower,&mut eligible);
+     // These direct-operand exclusions only clear eligibility, so they commute
+     // with either the saved packing visitor or the original fallback visitor.
+     for block in lower.body.basic_blocks.iter() {
+@@ -50,6 +58,9 @@ pub(super) fn apply(lower:&mut Lower<'_, '_>)->Result<()> {
+         }
+         if let TerminatorKind::Call{args,..}=&block.terminator().kind {for arg in args {exclude_operand(&mut eligible,&arg.node);}}
+     }
++    #[cfg(feature="private-pointer-promotion")]
++    let pointer_offsets:BTreeSet<_>=pointer_locals.iter().enumerate()
++        .filter(|&(i,yes)|*yes&&eligible[i]).map(|(i,_)|lower.locals[i].offset).collect();
+     // Merge exact colored ranges, then reject overlaps with any other range.
+     // A prefix maximum avoids a quadratic scan in large MIR functions.
+     let mut ranges=BTreeMap::<(usize,usize),bool>::new();
+@@ -66,6 +77,11 @@ pub(super) fn apply(lower:&mut Lower<'_, '_>)->Result<()> {
+         prefix_end=prefix_end.max(end);
+     }
+     let r=transform::promote(&mut lower.code,&mut lower.registers,&slots);
++    #[cfg(feature="private-pointer-promotion")]
++    {
++        POINTER_CANDIDATES.fetch_add(pointer_offsets.len() as u64,Ordering::Relaxed);
++        POINTER_SLOTS.fetch_add(r.promoted_offsets.iter().filter(|&&offset|pointer_offsets.contains(&offset)).count() as u64,Ordering::Relaxed);
++    }
+     SLOTS.fetch_add(r.slots as u64,Ordering::Relaxed);ADDRESSES.fetch_add(r.removed_addresses as u64,Ordering::Relaxed);
+     MOVES.fetch_add(r.removed_moves as u64,Ordering::Relaxed);
+     REWRITTEN.fetch_add(r.rewritten as u64,Ordering::Relaxed);NANOS.fetch_add(start.elapsed().as_nanos() as u64,Ordering::Relaxed);
+@@ -74,6 +90,9 @@ pub(super) fn apply(lower:&mut Lower<'_, '_>)->Result<()> {
+ pub(super) fn report() {
+     eprintln!("rust-interp-scalar-promotion: slots={} removed_addresses={} rewritten={} seconds={:.6} removed_moves={}",
+         SLOTS.load(Ordering::Relaxed),ADDRESSES.load(Ordering::Relaxed),REWRITTEN.load(Ordering::Relaxed),NANOS.load(Ordering::Relaxed) as f64/1e9,MOVES.load(Ordering::Relaxed));
++    #[cfg(feature="private-pointer-promotion")]
++    eprintln!("rust-interp-pointer-promotion: candidates={} promoted={}",
++        POINTER_CANDIDATES.load(Ordering::Relaxed),POINTER_SLOTS.load(Ordering::Relaxed));
+ }
+ 
+ #[cfg(test)]
+diff --git a/crates/mir-export/src/lower/scalar_promote_tests.rs b/crates/mir-export/src/lower/scalar_promote_tests.rs
+index f9f8fcec..7440c4da 100644
+--- a/crates/mir-export/src/lower/scalar_promote_tests.rs
++++ b/crates/mir-export/src/lower/scalar_promote_tests.rs
+@@ -111,3 +111,22 @@ fn scalar_promotion_preserves_faults_at_remaining_memory_accesses() {
+         }
+     }
+ }
++
++#[test]
++fn scalar_promotion_private_pointer_slots_preserve_pointee_aliases() {
++    // These are pointers to offset48, not pointers to the promoted slots16/24.
++    // A write through one copy must remain visible through the other copy.
++    let p=program(function(vec![
++        Op::Imm{dst:0,value:11},Op::Local{dst:1,offset:48},Op::Store{address:1,src:0,size:8},
++        Op::Local{dst:2,offset:16},Op::Store{address:2,src:1,size:8},
++        Op::Local{dst:3,offset:24},Op::Copy{dst:3,src:2,size:8},
++        Op::Load{dst:4,address:3,size:8},Op::Load{dst:5,address:4,size:8},
++        Op::Imm{dst:6,value:7},Op::Store{address:4,src:6,size:8},
++        Op::Load{dst:7,address:2,size:8},Op::Load{dst:8,address:7,size:8},
++        Op::Binary{dst:9,overflow:10,op:Binary::Add,a:5,b:8,bits:64,signed:false},
++        Op::Local{dst:11,offset:0},Op::Store{address:11,src:9,size:16},Op::Return,
++    ],12));
++    let (out,r)=transformed(&p,&[Slot{offset:16,size:8},Slot{offset:24,size:8}]);
++    assert_eq!(r.slots,2);
++    check(&p,&[],18);check(&out,&[],18);
++}
+diff --git a/crates/mir-export/src/lower/scalar_promote_transform.rs b/crates/mir-export/src/lower/scalar_promote_transform.rs
+index 4585afc1..8bc4d6f2 100644
+--- a/crates/mir-export/src/lower/scalar_promote_transform.rs
++++ b/crates/mir-export/src/lower/scalar_promote_transform.rs
+@@ -5,7 +5,11 @@ use rust_interp_bytecode::{Op,Reg,Slot};
+ use std::collections::BTreeMap;
+ 
+ #[derive(Default,Debug)]
+-pub(super) struct Report { pub slots:usize, pub removed_addresses:usize, pub rewritten:usize, pub removed_moves:usize }
++pub(super) struct Report {
++    pub slots:usize, pub removed_addresses:usize, pub rewritten:usize, pub removed_moves:usize,
++    #[cfg(feature="private-pointer-promotion")]
++    pub promoted_offsets:Vec<usize>,
++}
+ 
+ // Explicit matches force review when the bytecode gains a register operand.
+ fn registers(op:&Op,mut read:impl FnMut(Reg),mut write:impl FnMut(Reg)) {
+@@ -99,7 +103,11 @@ pub(super) fn promote(code:&mut Vec<Op>,count:&mut u32,slots:&[Slot])->Report {
+     for (yes,uses) in candidate.iter_mut().zip(uses) {*yes &= uses>0;}
+     let mut canonical=vec![None;slots.len()];let mut output=Vec::with_capacity(code.len()+slots.len());let mut report=Report::default();
+     for (slot,&yes) in candidate.iter().enumerate() {
+-        if yes {let dst=*count;*count+=1;canonical[slot]=Some(dst);output.push(Op::Imm{dst,value:0});report.slots+=1;}
++        if yes {
++            let dst=*count;*count+=1;canonical[slot]=Some(dst);output.push(Op::Imm{dst,value:0});report.slots+=1;
++            #[cfg(feature="private-pointer-promotion")]
++            report.promoted_offsets.push(slots[slot].offset);
++        }
+     }
+     if report.slots==0 {return report;}
+     let promoted=|r:Reg|addresses[r as usize].and_then(|slot|canonical[slot]);
