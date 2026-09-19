@@ -2,202 +2,81 @@
 
 Manual optimization continues indefinitely; the saved goal stays PAUSED.
 No goal tools, subagents or independent model calls. Root owns
-`/Users/danluu/dev/rust-interp` on `experiment/shared-emission-templates-20260918`.
-Private repository: `danluu/rust-interpreter`; push qualified work regularly.
+`/Users/danluu/dev/rust-interp`, branch
+`experiment/shared-emission-templates-20260918`, private repository
+`danluu/rust-interpreter`. Push qualified work regularly; do not stop at a milestone.
 
-## Current direction
+## Current experiment
 
-Selective full-width repair is PARKED. Tool6c26c1c8 /VM610a3574 passes
-634Rust tests/profile,16ignored;427Pythonpass/22skip;121strict/cache commands;
-three exact original profiles. Profile01 had an observer label bug after one
-successful guest. Its closed capture was reused in02, which ran only two new
-guests and7observer controls. Native layouts/bytes match parked3e53b127 except
-validated address immediates at427/532/21scalar sites; all PC arrays match.
+Shared immutable emission templates between prepared suite workers, explicit
+`--jit-shared-templates`, default OFF. This is different from existing per-worker
+PreparedJit reuse and does not introduce persistent native files or skip checking.
+Owners borrow the same checked Program but keep independent native arenas,
+scalar admission/budgets/targets, assertion indices and all mutable guest state.
+Ordinary finish_preparation alone publishes rebound code. Rebinding that would
+change immediate instruction width misses. Store retains at most64MiB with one
+variant per numeric function ID, short mutex operations and poison/full misses.
+One effective worker uses ordinary preparation. Counters are hits/misses/restored
+bytes, never a claim of time saved. Compiler intervals include cache overhead.
 
-The40-command changed-source primary9299/9303 is CLOSED: all outcomes pass;
-wall1.011454947,CPU0.998580341,A/Awall0.017814673. Wallmargin1.029269619
-fails.1,674evidencefiles/56artifacts verified. No larger history started.
-Branch `experiment/selective-narrow-repair-20260918` is pushed throughb3e6a630.
-Mainfb5ea729 publishes only its result documentation, preserving all peer
-commits through55003f67. No experimental runtime was merged.
-[Decision](docs/SELECTIVE-NARROW-REPAIR-RESULT-20260918.md).
+Stages1–3 are CLOSED:6/12/17 focused controls per profile, including exact native
+words/entry metadata and real separate native arena execution with budgets,
+faults, static/TLS reset, fallback, concurrency and scope controls. Stage4 adds
+production API/CLI/lazy path and bounded capture. Focused04 never acquired lock;
+closed43862/43905. First closer89522/89598 also timed out. Focused05 controller
+syntax failed before admission; closed before correction. Focused06 under
+72299/72302 passes16Python controls then compile-fails an old test closure because
+Mutex makes Jit invariant. Closed83483/83595 before adjusting the test to read
+its function through jit.program; assertions unchanged. Focused07 under2155/2173
+passes20Rust controls/profile, reuses the16closed Python controls and retains a
+non-test release VM; closure38245/38249. Every attempt remains in results.
 
-Root Rust/Cargo sources are restored exactly to adopted source
-`fca687ebac0ea9374a1426addd01169fe707f608`. Do not build the parked variant
-or treat its focused tests as controls for a new runtime. Next run a bounded
-offline audit of JIT preparation costs from already closed real changed-source
-suite receipts. PreparedJit already retains compiled code within each worker.
-Measure remaining preparation before proposing cross-process native reuse.
-Sum overlapping worker durations honestly; counters are not CPU time or causal
-wall savings. No new guest, compiler build or runtime change is needed.
-Audit01 is closed after6controls passed and the observer incorrectly required
-two workers for the historical one-test private case, which requested one.
-Audit02 preserves each original1or2-worker request and adds a seventh control.
-The95-receipt audit and7controls are prepared in
-`benchmarks/experiments/jit-preparation-costs`, including the incremental parser
-and latest primary baseline. Audit02 passes7controls and95receipts under33033/33036, source272e041d.
-Its direct closer and named retry69934/69938 both timed out45seconds waiting
-for the shared lock; neither reran analysis. Closure03 under60841/60866 succeeds,
-binding141inputs,12source files and136evidence files to the original terminal.
-Root production source remains exactly adopted.
-Median compiler-interval sums are258ms token,73ms folded,4.7ms pgrust,2.5ms
-private,15ms Nushell types,214ms parser and255ms recent token. These overlap
-across workers and are not promised savings. Next typed identity feasibility
-uses saved artifacts; no cache/runtime implementation is admitted yet.
-An unexecuted integration-test observer is prepared at
-`crates/bytecode/tests/native_reuse_inputs.rs` with7controls and1ignored census.
-Its plan is `benchmarks/experiments/native-reuse-inputs/PLAN.md`. It hashes
-complete Function bodies plus direct-callee bodies and a conservative program
-namespace, preserves numeric IDs, validates full artifacts, and emits no code.
-Bounds:128artifacts,128MiB/artifact,4GiB total input,2million function records,
-512MiB total output. The controller and chronological analyzer are prepared,
-including4Python controls,7Rust controls/profile and1ignored typed observer.
-Input census01 is closed after4Python controls and a debug fixture failure:
-6pass/1fail/1ignored. TLS offset0 is reserved; the corrected fixture uses16
-and separately checks TLS changes with an identical backing initializer.
-No saved artifact census or guest ran. The controller now records Python's
-original arguments including -B so terminal binding preserves interpreter flags.
-Input census02 passes and is CLOSED under24540/24583, source886c94c2:
-54artifacts/788MB,194171function records/65.7MB,133transitions/95valid edits,
-7Rust controls/profile and4Python controls; no guest. Closure30391/30395 binds
-339inputs,223sources and185evidence files. All history median complete-key
-stability is zero because the conservative namespace changes on most edits.
-Do not interpret this as proof all native code is invalid: initializer contents
-may be execution-state inputs rather than emitter inputs. Local-body stability
-is65.14%token,68.70%folded,94.19%pgrust,4.95%private,7.39%types,99.95%parser,
-61.56%recent token. Some stable callers also invalidate on direct-callee edits.
-The next prepared observer is `benchmarks/experiments/native-reuse-scope`:
-5controls,133chronological comparisons and two exact original token code pools.
-It preserves IDs/heap mode/function count while separating whole-global churn.
-The weighted comparisons are original-to-edited, never edited-execution hit
-rates. No new artifact census, guest, build or production cache is needed.
-Scope01 is now CLOSED under83470/83473:5controls,295inputs,223sources,79evidence.
-Median stable body/direct-callee fractions48.68%token,51.81%folded,91.11%pgrust,
-4.59%private,4.60%types,99.91%fullparser,42.96%recenttoken. Stable bytecode-op
-fractions13.49%token/99.28%parser. Against edited states, original unprofiled
-token block/exhaustive arenas retain median11.60%/11.13%bytes under this scope;
-NOT chronological cache hits. Adjacent edits2/3can still be highly stable.
-Important label correction: internal `nushell-parser-incremental` is actually
-pgrust `gram_core` (the original manifest/package proves it). Retain closed
-labels/hashes, use pgrust in prose/future work. No data reruns are needed.
-Next prototype bounded immutable emission templates shared between suite workers,
-which use the same checked Program. Each owner must retain independent native
-arena, scalar/assertion relocation, admission and guest state. Begin with
-template correctness before production wiring/timing. This is distinct from
-the existing per-worker PreparedJit cache; persistent cross-edit caching remains
-deferred pending a complete validity/I/O contract.
-The Stage1 prototype is now prepared entirely under cfg(test), with precise
-assertion/scalar immediate relocation records and6staging controls. Nothing
-is connected to guest execution or CLI options. Source module
-`jit/emission_templates.rs`; controller/plan
-`benchmarks/experiments/shared-emission-templates`. Focused01 passes6controls
-per profile under91727/91773, sourcef89ba1e2, and is CLOSED by20954/20991:
-223inputs,221source bindings,11evidence.
-No guest or executable code publication. The full native words/entry metadata
-match fresh emission after assertion/scalar rebinding. Next add bounded shared
-storage and concurrency/lifetime controls before connecting guest execution.
-Stage2 is now prepared: a64MiB bounded per-Program store, one immutable Arc per
-numeric ID, short locked snapshot/publication, capacity/poison misses and6new
-controls. Focused02 passes12controls/profile under84646/84649, sourcecee78bed,
-and is CLOSED by94278/94292 (225inputs,221sources,13evidence). All code remains
-cfg(test), with no guest execution, disk cache or production option so far.
-Next add explicit native fixture execution and compare restored templates with
-ordinary JIT errors, limits and fresh guest state; production wiring remains off.
-Stage3 is CLOSED:17controls/profile under59737/59786, source5b45cbba; closer
-83521/83526 verifies225inputs,221sources,13evidence. Four native fixtures use
-real separate simultaneously-live arenas and require actual cache hits. Original
-faults/all0..22instruction prefixes/five memory/four depth limits, fresh static/
-TLS after success/failure, full-store and zero-arena fallback pass. A fifth new
-control rejects partial-validation scope. No original workload or production
-cache/CLI option has run yet. Next add explicit opt-in suite integration, then
-qualify full workspace/strict behavior and original workload sharing coverage
-before selecting a real edited-source primary. Keep default behavior unchanged.
+Full build01 under52151/52154 passes635Rust tests per profile,14ignored, and
+434Python tests/22skipped (456discovered). Exact retained VM installed with the
+unchanged adopted exporter/wrapper. Closed by40140 (child in terminal receipt).
+Tool `7a4e2bc034fc55c0ca89e174b0d403d0af8174eb8046443e09b11311d52af4ca`.
+VM `d071c9123c40cd9ee9ad4dd1bb13faed046373a7d743ebc85919b08c029e8ebd`.
+Build sourcef90e816e, runtime sourceef50023f; setup105.17s plus focused28.02s.
+No original project guest or performance command has run for this candidate.
+No template runtime has been merged to main.
 
-Integration design under consideration: public opaque PreparedTemplates borrows
-the exact Program and owns Arc<Store>; PreparedJit::new_with_templates attaches
-its Arc after existing validation/metadata preparation. Each Jit owns counters
-for actual hits/misses/rebound bytes. prepare_function keeps scalar preparation
-first, then tries a restored staging object or ordinary emission; normal
-finish_preparation alone publishes. Store snapshots/cloning occur outside the
-mutex; one variant/ID, bounded64MiB, poison/full/mismatch miss. No shared arena
-or owner Jit crosses threads. New --jit-shared-templates should be explicit and
-limited to prepared suites; with one effective worker use documented no-sharing
-behavior. A separate CLI/suite parameter can avoid changing Limits/Execution.
-Record per-owner counters through PreparedJit getters and store totals in suite
-JSON; do not call code bytes or hits time saved. Include constructor/population/
-locking/copying in real command timing. Production metadata recording should be
-disabled when sharing is off (cfg(test) may always record for controls). Move
-test helpers behind a tests module when enabling the core template module.
-Stage4 implementation is now prepared along those lines: production core module,
-public opaque store/API, lazy prepare_function integration, default-off explicit
-CLI/launcher flag, prepared-suite sharing and per-invocation deltas/storage totals.
-One effective worker uses no store. Added two public API/concurrent native tests;
-focused04 expects19controls/profile and a non-test release VM build retained in
-its raw directory. No original workload/benchmark has run. Check/close this
-stage before correction; then full workspace+Python, strict/CLI and actual
-sharing coverage must precede timing. Focused04 under83420/83423 timed out on
-the shared lock before creating any stage directory or build/test child. Peer
-96769 (compiler-build-continuation-01) owns that workload; never control it.
-The prepared preserve_admission.py binds this failure to archivedf26ae422;
-run it when the lock is free before changing focus.py to a new run ID.
-While waiting,7new Python tests and launcher receipt validation are prepared:
-prepared-only option/one-worker compatibility, explicit mode/store/counter bounds,
-failed-test deltas and rejection of unrequested/inconsistent reuse claims.
-These changes have not been tested, and the new production Rust integration
-has not been compiled yet (the19-control run never admitted).
-Further review adds a bounded-capture preflight before native/entry buffers are
-copied, using remaining store budget, fallible exact reservations and a final
-retained-capacity check. Arc allocation now happens outside the store mutex.
-One new bound control makes20focused Rust controls; the Python modules contain
-16focused tests total (7new). A future focused05 should freeze the new launcher/
-receipt helpers/tests, run20controls/profile,16Python controls, then preserve a
-non-test VM executable. Do not change focus.py until focused04 admission failure
-has been preserved. scripts/interpreter.py now validates shared receipts and
-adds configuration/store metadata to timing receipts only when requested.
-Full build.py and success close_stage.py are prepared but unexecuted. They
-require closed focused05 with matching Rust/script/test bindings, expect all
-20template controls in both workspace profiles (minimum635pass/14ignored),
-and full Python minimum456discovered/22skipped. Install the exact retained
-focused VM with adopted exporter/wrapper; no redundant VM rebuild. Preserve
-partial successful commands if a later stage/observer fails. Review these
-controllers before execution. The current main publication is stillbb0d32f0;
-no shared-template runtime has been merged or performance-tested.
+Next run121strict native/reference/cache/Cargo commands using qualify.py and
+close_qualification.py. Then suite.py/close_suite.py: six full pgrust parser
+runs (original/wrong edit × ordinary-two/shared-one/shared-two), one private
+rg-aot one-entry run and six mode/partial rejection commands. Actual shared hits
+must occur on both parser states before timing; zero hits cancel timing, not
+trigger reruns. All114 original parser assertions/outcomes stay intact. Saved
+original artifacts are bound to prior closed native histories; ordinary entropy.
 
-Focused04 admission failure is now CLOSED by43862/43905 after the first
-closer89522/89598 also timed out before admission. No successful work was rerun.
-Focused05 is prepared with20Rust controls/profile,16Python controls and a retained
-non-test VM. The strict121-command controller/closer and prospective32-command
-pgrust parser primary contract are prepared in QUALIFICATION.md; no runtime
-qualification or performance command has started yet. Admission is fresh: free
-space about18.7GiB and the shared lock was briefly available at19:29.
+The prospective primary is prepared (UNTESTED) in
+`benchmarks/experiments/shared-emission-templates-screen`:32commands,8states ×
+4rotating modes (native/adopted/adopted duplicate/candidate). Five valid edited
+pairs only enter the wall/CPU gates; anchors, wrong edit and restoration remain
+mandatory. Full native/custom workflows,2Cargo workers/2native test threads/
+2suite workers, ordinary entropy. Require24GiB initial/8GiB child disk admission.
+Run its19protocol controls and close them before timing. Primary choice was
+frozen before candidate timing; gate and qualification contract in
+`benchmarks/experiments/shared-emission-templates/QUALIFICATION.md`. A failed
+wall or CPU gate cancels larger comparisons; do not retime unchanged failures.
 
-Focused05 under53981/54020 failed parsing its controller (a mismatched list
-bracket) before admission or any build/test. It is CLOSED against85f2de01.
-Focused06 fixes only that controller syntax, keeps20Rust/16Python checks and
-retained VM, and all experiment controllers pass syntax compilation. Build01
-now requires closed focused06; no successful command is being repeated.
+## Why this direction
 
-Focused06 under72299/72302 passes16Python controls, then Rust compilation
-rejects a preexisting scratch-value test closure: Jit now contains invariant
-Mutex storage, so its separately captured Program lifetime cannot satisfy the
-closure argument. Closed83483/83595 before correction. The test now reads the
-same function through jit.program; assertions are unchanged. Focused07 retains
-the closed16Python result and starts only the two Rust profiles and VM build.
+Closed jit-preparation-costs02 audits95saved adopted changed-source receipts:
+compiler-interval medians258ms token,73folded,4.7small pgrust,2.5private,15types,
+214full parser,255recent token. These worker durations overlap and are not CPU
+or critical-path savings. Input census02 checks54artifacts/194171function rows;
+namespace changes invalidate the conservative whole-program keys on most edits.
+Scope01 separates that churn: original-token arenas retain only11.60%/11.13%
+body/callee-stable bytes; parser bytecode-op stability99.28%. These are bounded
+identity ceilings, not actual hits or savings. Persistent cross-edit reuse is
+deferred; sharing the exact immutable Program is a narrower first contract.
 
-Focused07 is CLOSED:2155/2173 ran20Rust controls/profile and retained VM
-d071c9123c40cd9ee9ad4dd1bb13faed046373a7d743ebc85919b08c029e8ebd;
-38245/38249 verified closure. The16Python controls are reused from closed06.
-Build01 now requires07 and will run full workspace/Python before installing
-that exact VM. suite.py/close_suite.py are prepared (not executed): six full
-parser runs covering original/wrong source and off/one/two workers, one private
-one-entry run, six CLI/partial rejections. Strict121 commands precede them.
-
-Candidate audit inputs: the adopted baseline rows (only) from closed
-`runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally
-its incremental parser history and the latest selective-repair primary's
-baseline. Candidate45a1529e in the older campaign is REJECTED because the
-parser CPUmargin failed1.05; its completed controls remain valid evidence.
-Do not mistake the five-project pass for overall adoption.
+The old internal label `nushell-parser-incremental` is WRONG: it is pgrust
+`gram_core`. Retain closed hashes/labels but use correct prose/future names.
+Actual Nushell type-relations is a different case. All audits closed and pushed;
+preparation-cost documentation/results are on mainbb0d32f0. Scope details,
+identity controls, old ownership and every failed stage are archived in
+[previous state](docs/history/STATE-20260918-before-shared-template-qualification.md).
 
 ## Adopted identities
 
@@ -222,7 +101,7 @@ zero unassigned. Preserve every successful capture without reruns.
   `acquire_lock(lock,45)`. Two Cargo/test workers. Only root target is
   `.work/fixed-frame-clear-combined-build-01/target`; NEVER clean it.
 - Build floor max(14GiB,8GiB+2*allocated target); analysis12GiB; children8GiB;
-  primary14GiB; closures8–10GiB as declared. Current free space about23GiB;
+  primary14GiB; closures8–10GiB as declared. Current free space about18.5GiB;
   admit every stage freshly. Nushell real six-cache reservation is about47GiB.
 - Independent cleaner read-only status:
   `/usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status`.
