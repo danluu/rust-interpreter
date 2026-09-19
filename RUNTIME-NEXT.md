@@ -1,15 +1,19 @@
 # Next runtime work
 
-Current branch experiment/shared-literal-keys-20260919. Newprototype prepared,
-not tested: immutable perrequest Function digest cache shared via OnceLock across
-workers,4MiB/65536functionbound+uncachedfallback,newliteral-v2domain;currentcallee/
-context inputs still perowner, fullnormalizedpreimagecharged against4MiB.
-Five newtests;focused01source8ded298b completed25265/25284 CLOSED40033:
-39/profile+31featureoff passed. Full01sourcec029ed04 ACTIVE45587/controller45610,
-678Rust/profile17ignored+33diag+10offsession31offmodel/defaultVM;Python442+22skip
-hashboundreuse. Freeze crates/scripts/tests andshared-literal-keys-workspace until
-closure. Replay/phase/install controllersprepared newshared-keynames;notrunyet.
-See docs/SHARED-LITERAL-KEYS-20260919.md.
+Current branch diagnostic/session-worker-tail-20260919. Shared-key candidate is
+PARKED: full678/profile17ignored+33diag+10offsession31offmodel/defaultVM pass;
+actual1824/19673verifiedhits (10978 CLOSED17870), phase1824/19151observedhits
+(29352 CLOSED33152/33156). Keymedian9.003vsparent10.278ms, ordinary21.952vs21.703;
+summedordinary287.264vs282.252 across10workers. No affirmativeaggregatebenefit;
+NO install/newprimary/primary05cleanup. Allcontrollers for those remainunstarted.
+
+Next bounded read-only session-worker-tail-census01 prepared. Preliminarysaved
+primary05 rows: reference-vector test index113 islast in all5validrequests,
+196.8-228.7ms itself after37.5-62.7ms prior tests onitsworker; peerthenidle.
+General previous-duration priority hypothesis needs completecensus beforecode.
+Keep everycurrententry/freshguest/currentlimits andcanonicaloriginalreportindex.
+No name-specific scheduling, cachedresult, assertion/workload change. Future
+candidate should use literalparameterization but sharedkey featureOFF.
 Parent parameterized-literals candidate remains experimental and primary05failed. Explicit selected large
 literals are opaque to folding/range/call-slot analyses; checked native relocation
 sites and a separate emission manifest carry their current values. Preserve small
