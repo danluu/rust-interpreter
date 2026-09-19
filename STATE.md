@@ -57,10 +57,18 @@ Input census01 is closed after4Python controls and a debug fixture failure:
 and separately checks TLS changes with an identical backing initializer.
 No saved artifact census or guest ran. The controller now records Python's
 original arguments including -B so terminal binding preserves interpreter flags.
-Next execute native-reuse-inputs-02 under the shared lock and fresh disk
-admission. Expected133chronological transitions include95valid edits; all
-original, wrong-edit and revert snapshots remain included. No guest or runtime
-implementation is admitted. The preparation audit closure is complete.
+Input census02 passes and is CLOSED under24540/24583, source886c94c2:
+54artifacts/788MB,194171function records/65.7MB,133transitions/95valid edits,
+7Rust controls/profile and4Python controls; no guest. Closure30391/30395 binds
+339inputs,223sources and185evidence files. All history median complete-key
+stability is zero because the conservative namespace changes on most edits.
+Do not interpret this as proof all native code is invalid: initializer contents
+may be execution-state inputs rather than emitter inputs. Local-body stability
+is65.14%token,68.70%folded,94.19%pgrust,4.95%private,7.39%types,99.95%parser,
+61.56%recent token. Some stable callers also invalidate on direct-callee edits.
+Next audit actual emitter global dependencies and compare existing body/callee
+identities across namespace changes; join exact original-artifact native maps
+only with explicit original-to-edited scope. No production cache yet.
 
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally
