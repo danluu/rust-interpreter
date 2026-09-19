@@ -68,26 +68,13 @@ def validate_trace(data, artifact_sha256, *, max_bytes=MAX_BYTES, max_events=MAX
     require(isinstance(artifact_sha256, str) and len(artifact_sha256) == 64 and
             all(c in '0123456789abcdef' for c in artifact_sha256),
             'invalid selected artifact digest')
-    decoder = None
-
-    def decode_event(text):
-        nonlocal decoder
-        # Keep decoder construction and parsing under json.loads' wrapper frame.
-        if decoder is None:
-            decoder = json.JSONDecoder(object_pairs_hook=_object, parse_constant=_nonfinite)
-        return decoder.decode(text)
-
     count, offset, complete = 0, 0, False
     while offset < len(data):
         require(count < max_events and not complete,
                 'allocation trace exceeds event bound or continues after completion')
         end = data.index(b'\n', offset)
-        text = data[offset:end].decode('utf-8')
-        if text.startswith('\ufeff'):
-            # Keep json.loads' original leading-BOM error and call depth.
-            event = json.loads(text, object_pairs_hook=_object, parse_constant=_nonfinite)
-        else:
-            event = decode_event(text)
+        event = json.loads(data[offset:end].decode('utf-8'),
+                           object_pairs_hook=_object, parse_constant=_nonfinite)
         require(isinstance(event, dict) and type(event.get('event')) is int and
                 event['event'] == count and event.get('kind') in KINDS,
                 'allocation trace event identity differs')

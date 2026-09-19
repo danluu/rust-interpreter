@@ -1,0 +1,11 @@
+# Allocation decoder proposal v4: baseline-invalid test correction
+
+Source-only proposal; no new workload has run. Production allocation_trace.py is byte-identical to v3 (`888622f2a5f39c896a440310ce194cfed1bab8d20237338a87f4c5e06a7cb9ff`). V4 changes exactly one of the seven new test methods and its name. The other six tests and all helpers are byte-identical to v3. Existing project tests remain untouched.
+
+The first v3 unit attempt failed on the unchanged baseline, before candidate implementation tests ran. Its C scanner accepted depth4096, contradicting the new test's assumption that every scanner would raise RecursionError there. The pure-Python subcase and the other six tests passed. The original failure, its two settled child receipts and source bindings remain preserved in allocation-decoder-probe/unit-screen-01; result SHA256 is ba47f8284e996ef84ee685f02487e9c5dc00817c7d3208de9e3e24b204d45b1e. This is a correction of an invalid baseline test expectation, not an interpretation of candidate performance.
+
+The renamed `test_nested_records_and_parser_recovery_with_both_scanners` requires each scanner to accept a depth32 valid record, reject a depth32 trailing-comma record with JSONDecodeError, then accept the valid record again. Only py_make_scanner is required to reject depth4096 with RecursionError and recover afterward. The C scanner's budget need not follow Python's recursion limit; no depth4096 acceptance or rejection expectation is imposed on it.
+
+The frozen dense paired qualification remains unchanged:7308 nested-input cases and4872 caller-stack/BOM cases, exact outcomes between actual baseline/candidate modules under both scanners and limits200/1000, plus the other frozen correctness checks. Seven tests per arm plus19 metrics tests per arm still total52. All numeric adoption gates, trace inputs and timing schedules remain unchanged. No new import, test, fixture, build, timing or process control occurred while preparing this packet. V1/v2/v3 packets, the failed unit attempt and its controllers are untouched.
+
+The v3 lazy per-call decoder, single wrapper frame, original caller-level BOM path, hooks, validation order and sidecar integrity behavior remain as reviewed. The complete four-trace actual-API timing panel is still pending. No performance claim is made.

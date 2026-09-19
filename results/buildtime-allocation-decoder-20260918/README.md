@@ -1,0 +1,11 @@
+# Reuse allocation-trace JSON decoders
+
+Validating an opt-in allocation diagnostic previously constructed a strict JSON decoder for every event. The change constructs it once per validation, after the original input checks, and reuses it across records. Duplicate-field and nonfinite-number hooks, BOM errors, nesting behavior, validation order and sidecar integrity checks are retained.
+
+The frozen comparison passed all 64 adoption criteria. Component CPU decreased 20.27–28.09% across four real exporter traces and both public validation APIs, with 20/20 paired wins in every case. These are opt-in verification measurements; no total build, default launcher, exporter, guest-runtime or holdout improvement is claimed. Full-process CPU, wall and memory guards passed; the small caller selected-trace process was 0.41% slower in CPU, within its 1% guard.
+
+Correctness: 52 unit-test executions across both implementations (26 per arm), 33 transport rejection cases per arm, four real traces with exact public API receipts, and 12,360 finite paired scanner/nesting/caller-stack outcomes with recovery checks. The first baseline-only unit failure and its test correction are retained. No favorable rerun or sample exclusion was used.
+
+See [the complete evidence and method](evidence/README.md) and [unrounded results](evidence/summary.json). The evidence subdirectory is a frozen 77-file bundle: its manifest verifies every other file, including compressed original receipts, complete recursion rows and all 1,520 child stdout/stderr logs. Decompression restores exact source evidence. The original measurement worktrees remain intact.
+
+Integration used a separate publication worktree. [The initial integration proof](integration-01.json) records the unrelated VM sampling changes since measurement base835382db. [The subsequent integration proof](integration-02.json) advances the publication parent to282cc5d2 with unrelated HIR experiment/evidence files. The tested parser, tests and relevant launcher sources remain byte-identical. [The final integration proof](integration-03.json) advances the parent to9b3dad1d with unrelated Ruff diagnostic archive files; the measured parser and tests are still identical. These integration records sit outside the frozen evidence bundle.
