@@ -232,3 +232,11 @@ Nextcommit/push then supervise short-clear-tail-focused-01 qualify.py; freeze
 allruntime/controllerfiles through terminalandqualify.py --close. Defaultdf4006
 unmodified. Wholeworkspace/frontend/guestprofilequalification andES8primary
 thenallprojectguards stillrequired.
+
+Focused short-clear-tail-focused01 CLOSED:7nativecontrols/debug+release,
+sourcea2176a42, supervisor53195/controller53198, terminal0 andindependentclose0.
+Coldsetup29.119swall47.212sCPU,target131874816allocatedbytes;14GiBadmission
+free23.31GB. No protectedtargettouch. Newseparateworkspacefolder prepared
+4commandsPython468/22skip,Rust615passed13ignoredperprofile(expectedbaseline614
+plus1nativecontract),releaseVMsnapshot. Sameownedtargetcap3GiB, max14GiB/
+8GiB+2allocation,2jobs. Nextcommit/push then superviseshort-clear-tail-workspace01.

@@ -91,3 +91,12 @@ names perdebug/release. Freshownedruntime-onlytarget .work/short-clear-tail-
 runtime-build-01/target withowner.json, cap3GiBbetweencommands andadmission
 max14GiB,8GiB+2*allocated. Coldsetupwall/CPUrecorded. Sharedoldtargetneverclean
 andits26.63GBfloorunchanged. currentfree~21.8GiB. No originalguesttimingyet.
+
+LATEST: focused01 CLOSED(7testseachdebug/release,53195/53198,sourcea2176a42).
+Coldtwobuilds29.119s/47.212CPU, target~126MiB allocated. New
+benchmarks/experiments/short-clear-tail-workspace/{PLAN.md,qualify.py} parsed,
+notyetlaunched. Nextcommit/pushthen supervise short-clear-tail-workspace-01
+absolutequalify.py; freeze throughterminaland--close. ExpectedPython468skip22,
+Rust615pass13ignoreeachdebug/release(618heapfeature minus4heaptests plus1new).
+VMreleasebuildsnapshotfourthcommand. Samefreshownedtargetcap3GiB and14GiBfloor;
+oldsharedtargetuntouched. Code2filesonlyvsfca. Currentdefaultinstalleddf4006.
