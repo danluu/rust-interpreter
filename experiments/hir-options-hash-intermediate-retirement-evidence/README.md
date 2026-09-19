@@ -1,0 +1,7 @@
+# Completed compiler-intermediate retirement evidence
+
+This evidence-only stage retains the failed first removal, its observed one-file partial transition, six passing tiny filesystem controls, and the later4,645-file removal with all13,935 durable intent/completion/validation events. It retains full before/partial/remaining inventories, protected-provider proofs, both actual probe histories, launcher records and independent audits. No further cleanup, compiler, recipe or process probe runs.
+
+All177 distinct historical frozen files are included. The old compiler continuation03 prepare.py is taken from the separately retained exact pre-transition copy, with its original pathname and hash explicitly mapped; the newer live preparer is not relabelled. Original snapshots and incomplete check-stamp observations are historical evidence. Removed disposable compiler outputs are represented by exact content hashes and source/actual-command provenance; byte-identical reconstruction is not promised.
+
+The controller uses canonical600-second admission and a9GiB live floor. Its raw compressed writer refuses writes exceeding64MiB, with384MiB logical/384-member bounds. Full member readback and gzip EOF/trailer are checked before success. The platform identity binds the four kernel/architecture fields, while full hostname observations are retained as context. Execution requires separate review of the concrete frozen packet.
