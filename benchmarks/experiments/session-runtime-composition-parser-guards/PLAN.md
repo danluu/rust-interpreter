@@ -30,3 +30,11 @@ benchmark.lock and45s acquisition. Read the independent disk sampler before
 launch. Freeze all source/tool/controller inputs through closure. Preserve source
 restoration, original outcomes, same-state artifacts and every failed prefix.
 Do not clean shared targets, private source, or peer work. No session signaling.
+
+Protocol02 supersedes only the prepared controller/admission bindings before any
+history here ran. Pgrust01 is preserved as a strict-fixture failure with zero
+timed commands and zero guest requests; require corrected closed pgrust02.
+Use core::hint::black_box, and bind both actual probe bodies byte-for-byte to the
+four closed std/no_std compiler rejections in the portable pgrust protocol.
+No performance threshold, arm, original assertion or accounting rule changes.
+Keep protocol01 evidence; protocol02 must qualify and close before execution.

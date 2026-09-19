@@ -7,7 +7,8 @@ import focus
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
 from prerequisites import components
-RUN='session-runtime-composition-parser-protocol-01'
+from strict_probe_evidence import verified_paths
+RUN='session-runtime-composition-parser-protocol-02'
 def read(p):return json.loads(p.read_text())
 def main():
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
@@ -27,7 +28,7 @@ def main():
         for stream in ['stdout','stderr']:bind(old/('accounting.'+stream),old_records[0][stream+'_sha256'])
         for name in ['accounting.py','test_accounting.py']:
             assert sha(Path(__file__).parent/name)==sha(ROOT/'benchmarks/experiments/cross-program-template-full-parser'/name)
-        base,candidate,paths=components()
+        base,candidate,paths=components();paths+=verified_paths()
         for p in paths:bind(p)
         for p in [*Path(__file__).parent.glob('*.py'),*Path(__file__).parent.glob('*.md'),Path(focus.__file__),
                 ROOT/'benchmarks/experiments/cross-program-template-screen/session_owner.py',
@@ -55,7 +56,7 @@ def main():
         write(out/'summary.json',dict(status='passed',source_revision=revision,raw=str(raw.relative_to(ROOT)),
             plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),tests=14,reused_tests=8,new_tests=6,
             commands=1,reused_commands=1,validated_commands=2,original_project_guest_commands=0,
-            candidate_key=candidate['tool_key'],performance_measurement=False,default_runtime_adoption=False))
+            candidate_key=candidate['tool_key'],performance_measurement=False,default_runtime_adoption=False,portable_probe_source_verified=True,portable_probe_proof='session-runtime-composition-pgrust-protocol-01'))
 if __name__=='__main__':
     if sys.argv[1:]==['--close']:focus.RUN=RUN;focus.close()
     else:assert len(sys.argv)==1;main()

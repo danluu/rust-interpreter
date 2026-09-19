@@ -1,103 +1,173 @@
-# Runtime continuation, September 19
+# Runtime continuation, September19
 
-The user requests indefinite manual optimization using actual changed-source
-benchmarks and regular qualified publication to private danluu/rust-interpreter.
-No subagents, independent model calls, goal tools, peer process/session control,
-AWS activation or browser work. The saved goal stays PAUSED.
-Only this checkout and .work/publication-main are owned here. The compiler/Cargo
-session remains independent. Preserve its files, commits, processes and caches.
+Continue indefinite manual optimization using genuine changed-source end-to-end
+benchmarks. No subagents, independent model calls, goal tools, peer process
+control, AWS activation or browser work. Goal stays PAUSED. Only this checkout
+and .work/publication-main are ours. Preserve the independent compiler session.
+No unchanged timing retries; do not adopt a failed composition.
 
-## Current decision
+## Current experiment
 
-Branch experiment/session-duration-order-20260919. The experimental generic
-previous-duration scheduler plus parameterized template history passed both parser
-gates but FAILED the held-out fre token wall gate. Do not adopt this composition,
-retry unchanged timings, or launch the later folded/pgrust/private/Nushell guards.
-The prepared folded replay is unstarted. Default runtime remains the adopted
-scratch/scalar composition, tool df4006e03daad7dd008eab34c24a03390d892ec14e55154c43e2d5568c0bba62.
+Branch experiment/session-runtime-composition-20260919; runtime b34b6f10,
+launcher test contract fix d293d909. Compose earlier2599a193 native indirect
+transitions, checked readonly scalar leaves and successor spilling with current
+parameterized-template history/duration scheduling. Compiler/exporter/wrapper
+remain adopted df4006e0 bytes. This is a NEW composition; its primary passed, and full guards are pending.
 
-Candidate tool60bc004658a1db09e1c905eed50e25062f1ff8ae27811331aed9ad51b206a5a5;
-normal server a4634740fa5188b7b4bb5e17cd2970f1eebe14dd4e4b781d2d3657d5c031f6e1.
-Feature jit-session-duration-order, shared keys OFF, literal domain v1, artifact
-digest reuse ON, large-function threshold65536. Strict Rust checks remain intact.
+Both parents remain failed: runtime composition passed726 project commands but
+parser CPU margin1.0502179853 exceeded1.05; duration/session composition passed
+both parser gates but failed fre wall.970558296+A/A.055748790=1.026307086.
+The latter's prepared folded replay is CANCELLED/UNSTARTED. No parent is adopted.
+Current normal-PC/memory diagnostics are independently closed. Address selection
+and data loads dominate; frame-base10/4 of1716/1294 samples is below1%, parked.
+Do not repeat failed checked-address/bias/budget or range-threshold candidates.
 
-## Closed evidence
+New template domain cross-program-staging-literals-v3 includes exact current
+indirect signature ordinals, metadata state and test spill flag. Dynamic target
+layouts/pointers remain current-owner data. Preserve existing callee-zero,
+scalar/assertion/literal relocation checks. Session indirect is explicit and
+reported; old request means disabled, enabled request rejects unsupported server
+before sending. No source-check relaxation. Scalar external reads preserve ordered
+fault/replay and private memory; call/branch/resource controls retained.
 
-- Full qualification02:679 Rust/profile,17 ignored;39 diagnostic,10 feature-off
-  session,31 ordinary-model controls and default VM;442 Python passes,22 skips
-  hash-bound reuse.48 owned servers/92 clients including retained completed prefix.
-- Parser replay:1824 invocations,19597 independently regenerated template hits.
-- Parser primary06:40 changed-source commands+2 strict controls; wall ratio
-  .931169874+A/A.030823346=.96199322 PASS. CPU.91046839+.03085953=.94132792.
-- Full parser03:110 commands+2 strict;wall.924398703+.045926122=.970324825 PASS;
-  CPU.902712343+.039480337=.94219268. Candidate/native wall1.249979858.
-- Fre verified replay:192 original invocations,14892 regenerated hits.
-- Project protocol02:22 controls (12 retained accounting,6 commands,4 controller).
-- Fre session-project-edit-token-01, sourcec3312ce6:176 commands+2 strict;
-  completed47524/47574, independent closure97087/97090. All original outcomes,
-  artifacts, source restoration, resource limits and kernel CPU validated.
-  FAILED wall.970558296+A/A.05574879=1.026307086. CPU.977822719+.048471522
-  =1.02629424 passes its1.05 guard. Native wall1.66097733. No adoption.
-- Saved fre cost analysis sourcefe5e7052:75 reports, completed4852/4855,
-  closed9206. Build1503.463ms,execution2439.142ms,longest2367.489ms,preceding0;
-  compile intervals sum193.436ms,median1938 history hits. Overlapping durations
-  and medians are not additive and are not CPU.
+## Qualification and live processes
 
-## Current diagnostic follow-up
+- Focused01 b34b6f10: supervisor51790/controller51793;8 Python and6 interaction
+  controls in each Rust profile,2 owned servers/8 clients; independently CLOSED61721.
+- Workspace01 43096a51:96661/96664 stopped after Python failure in an outdated
+  mocked receipt-call expectation; zero Rust/workload commands. CLOSED6794.
+  Fixed that expectation and added actual enabled-option forwarding coverage.
+- Workspace02 d293d909:9596/9599; ALL7 fresh commands pass.720 Rust/profile,
+  19 ignored;468 Python discovered,446 passed/22 declared skips;41 diagnostic,
+  11 scheduler-feature-off session,34 ordinary-model and default VM.52 owned
+  servers/108 clients. CLOSED61016:479 frozen inputs,1546 evidence files.
+  Setup162.803s. Normal VM78378e47c23ea937598285e2e0c4a73a2bd10787e4afa1cf21d9c0189152182a;
+  normal server18fba6dc5673d5f0c95291b2535efcd635689194af7813eedca0d0c279f7a408.
+  Both saved under .work/session-runtime-composition-qualification-02/release-*.
+- Primary protocol01:73951,16 fresh controls(7 accounting,5 commands,4 source/
+  native outcome); CLOSED78349. Prospective40-command fre, five arms including
+  historical anchor, full session kernel/setup/tail cost. Maxindividual A/A gates
+  unchanged. Controller benchmarks/experiments/session-runtime-composition-screen.
+- Parser verified replay01 c411265e:85874; all16 suites/1824 invocations pass,
+  19815 independently regenerated hits, original errors/limits/CPU correct.
+  CLOSED91007:507 frozen inputs/116 evidence files. No timing claim.
+- Fre verified replay01 b318df6d:2863/controller2908; all16 suites/192 invocations,
+  14548 independently regenerated hits, original errors/limits/CPU; CLOSED12775.
+  Immutable install01 source28c4c6a2:19116 CLOSED25894. Tool key
+  3ebea1cdc1a521169df8bba1ca139df97759aaf200798c2bcb91bef4cba3c5ad.
+- Primary session-runtime-composition-screen-token-01 source15261907:29647/29683,
+  40 changed-source commands plus2 strict controls, independently CLOSED84442.
+  Wall/adopted.9537077504 + maxindividual A/A.0373937777 = .9911015281 PASS;
+  CPU/adopted.9303316367 + A/A.0284700056 = .9588016423 PASS.
+  Native wall1.5416394568, CPU1.9224508795. No adoption from this screen.
+- Full public protocol01 sourcef36e8c8d:5058/5061,10 fresh controls plus12
+  exact unchanged accounting controls, CLOSED42265:529 inputs/54 evidence.
+- Full fre token01 sourcef43a950e:43562/43565, all176 changed-source commands
+  across3cycles/8arms plus2 strict controls pass, independently CLOSED35515.
+  Wall/adopted.9414513615 + A/A.0268743944 = .9683257559 PASS;
+  CPU/adopted.9390737150 + A/A.0239171867 = .9629909017 PASS.
+  Native wall1.5806520070, CPU1.9441990829. All12 outcomes and restoration pass.
+- Exact closed-primary cache retirement source73b34df0:42462/42465, CLOSED60900.
+  Six completed primary namespaces,3191 compiler files/2047542482 logical bytes,
+  2792 protected hashes unchanged; about1.59GiB actual headroom. NEVER REPEAT.
+- Parser protocol01 source3d0acbd8:62584,14 controls (6 fresh/8 exact reused),
+  CLOSED68461. Controllers session-runtime-composition-parser-guards qualified.
+- Large protocol01 source97ddb268:73784,all23 fresh controls pass. Independent
+  CLOSED84235; controller session-runtime-composition-large-guards.
 
-Preparation phases02 source4c80f23e completed24944/controller24947 and closed41114:
-192 original invocations,14878 observed history hits, no compilation declines.
-Cached ordinary emission median sum73.394ms vs249.505ms fresh; key28.867ms,
-miss34.526ms,restore7.805ms,scalar3.645ms,publication9.208ms. These intervals overlap
-and are diagnostic only. Attempt01's module-name collision is separately closed;
-one successful suite preceded receipt validation failure. Attempt02 reseeded a
-new owned session and retained that prefix, without repeating acceptance timing.
+- Full folded01 source07f614bf:91338/91341, all176 commands+2strict passed,
+  independently CLOSED95676. Wall/adopted.9863968592+A/A.0197796103=1.0061764695;
+  CPU/adopted.9649114604+A/A.0221465280=.9870579884. Regression gate PASS;
+  no wall-gain claim beyond noise. Candidate/nativewall1.0105716567.
+- Full token cache retirement sourcebb657235:6128/6131, independently CLOSED33463.
+  Nine exact completed token namespaces,13399files/3949807963logical bytes;
+  3759 protected hashes unchanged, about2.39GiB reclaimed. NEVER REPEAT.
+- Pgrust01 sourced6ef6474:39230/39298 FAILED its second strict control before
+  any timed/guest command. The hashfn crate is no_std; std::hint::black_box caused
+  E0433, not the required E0499. Two compiler errors,2ownedservers/0requests;
+  source restored. Independently CLOSED97727 by session-runtime-pgrust-probe-failure.
+- Dedicated pgrust02 controller prepared in session-runtime-composition-pgrust-guard:
+  same176-state/arm/gate protocol, only borrow probe now core::hint::black_box.
+  Original public controller and all old results remain unchanged. Fresh namespaces.
+- Portable pgrust protocol01 sourcead446618:24770 passed26controls (18 exact
+  retained accounting/command controls,4 fresh source/outcome controls and4 real
+  pinned-rustc std/no_std type/borrow rejections). Independently CLOSED40059.
+  No metadata/code emitted; no shared target used (tiny probe admission14GiB).
+- Pgrust02 source34dd8e57:53869/53872, all176 commands+2strict pass. Initial
+  audit90875 failed before mutation because source tuples differ from JSON lists;
+  values match exactly. Separate auditor2ea7a85c normalizes only this comparison,
+  preserves that failure, and independently CLOSED4260. No benchmark was rerun.
+  Wall/adopted1.0031383653+A/A.0120627776=1.0152011429;
+  CPU/adopted1.0005123570+A/A.0131577991=1.0136701561; regression PASS.
+  Four original hashfn tests, nativewall1.1193991052. No clear speed claim.
+- Parser protocol02 source14f59b70:14413 passed14 controls plus exact portable
+  probe binding; CLOSED23181.
+- Large protocol02 source2b8add9c:31950 passed23 controls, independently CLOSED43657.
+  First audit44308 and premature rg outer86482/86485 timed out at shared-lock
+  admission before any workload. Both are preserved; no peer was controlled.
+- First actual private rg-aot history sourcef799aa49:52568/52579 under outer
+  session-runtime-composition-edit-rg-aot-01-admitted-02; all176 commands+2strict
+  pass. Dedicated admission-recovery/close_rg.py independently CLOSED94315.
+  Raw/result run remains session-runtime-composition-edit-rg-aot-01. The initial
+  empty admission is separately CLOSED in session-runtime-composition-rg-aot-admission-01.
+  Wall/adopted1.0004170757+A/A.0304443108=1.0308613865;
+  CPU/adopted1.0101769480+A/A.0273294777=1.0375064256; regression PASS.
+  One original private test, two persistent slots fully charged; nativewall.5910980861.
+- Disposable compression compatibility probe02 sourceb55b6d52:67506, CLOSED4233.
+  Two synthetic fixtures preserve plaintext, ordinary reads/seek/mmap, mode,
+  owner, mtime and a synthetic xattr through transparent compression/restoration.
+  Existing evidence modified0. Probe01 setup failure is independently preserved.
+  Repetitive fixture blocks2850816->28672 is synthetic, not real savings.
 
-Next current native-PC diagnostics: benchmarks/experiments/session-fre-runtime-sampling.
-Preparation01 source4d72802f completed58761/58803;55 frozen inputs and229 archived
-candidate VM sources. Normal VM784aef73f3bac42d3eec002008318932ececc4ef95a677070fcd08c6ebe20f01.
-One fresh block and one exhaustive guest with same original artifact, ordinary
-entropy and original limits/assertions. Existing qualified profiles are STATIC
-identity only; same-process dumps must independently reconstruct every native word.
-Both captures completed64185/72317 (guest64190/72324); analysis76632 passed and
-closure86007 verified all evidence. Generated self samples1716block/1294exhaustive,
-Copy434/228,Call351/314,Load202/83. Full attribution is closed; no timing claim.
-Memory subparts01 ACTIVE32466/controller32469, Cargo child32475: two offline
-reconstruction tests plus retained-PC attribution; zero guest/code publications.
-Sourceed5bbeb2; controller benchmarks/experiments/session-fre-memory-parts/run.py.
-First build admitted23.178GiB vs22.971GiB required. Freeze all qualified Rust,
-scripts and memory-parts folder until closure. Preserve completed prefix if a
-later admission check fails. Existing six partition/ambiguity controls reused.
+## Next actions
 
-## Resources and source safety
+All four full project guards are CLOSED. Parser incremental and repository
+profiles then Nushell remain required before current-main integration/adoption.
+Both parser and large protocol02 qualifications are CLOSED. Parser needs24GiB;
+Nushell needs66.54872655GiB for nine namespaces. Last free17.6GiB, so no parser
+workload is admitted yet. Inventory exact manifest-listed completed public raw
+files with benchmarks/experiments/closed-evidence-inventory; read-only, no real
+compression authorized by the inventory itself. A separate exact-path protocol
+and full hash/metadata/open-file checks are required before any storage mutation.
+Do not compress sources/tools/live/private caches or alter benchmark bytes.
+New folded compiler caches could also be retired after exact proof verification;
+primary/token and older Nushell caches are already retired: NEVER repeat.
+No unchanged timing retry. A failed gate stops later guards. Preserve strict
+checks, original assertions, source restoration and full server CPU accounting.
+Gate every dependent shell command on verified success explicitly.
 
-Serialize substantial work through .work/benchmark.lock,45-second admission.
-Two Cargo/native/test workers. Shared target .work/fixed-frame-clear-combined-build-01/target
-must never be cleaned. Build floor max(14GiB,8GiB+2*allocated target), analysis/
-replay12GiB, closure/child8GiB, parser24GiB plus16GiB cache allowance, fre16GiB,
-pgrust12GiB; Nushell at least47GiB, recompute for additional arm. Free space was
-about16.5GiB and changes continuously. Read-only cleaner status:
-/usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status
-Never repair or compete with it or touch peer workloads.
+## Resources and ownership
 
-Completed exact cache retirements MUST NOT be repeated: session primary01/02,
-primary03 plus strict01/02/03, primary04, primary05, primary06, fullparser01,
-recenttoken02, frecustom01, and old failed runtime-token01 setup namespaces.
-Keep all executables, artifacts, source snapshots, proofs, shared target and peers.
-New retirements closed: fullparser03 6398 CLOSED32218,16734files/3112062462bytes,
-11672 protected; fre sessiontoken01 33662 CLOSED53143,13399files/3949807971bytes,
-3755 protected; guarded-indirect token01 incomplete52-command prefix19216
-CLOSED25862,5880files/2607338516bytes,2827 protected. All exact namespaces;
-NEVER REPEAT. Old runtime-composition token02 audit66663 found ZERO eligible
-files, removednothing and is closed11825. Do not retry that audit either.
+Shared .work/benchmark.lock,45s admission; two Cargo/test workers. Shared target
+.work/fixed-frame-clear-combined-build-01/target MUST NEVER be cleaned. Builds
+require max(14GiB,8GiB+2*current allocated target), re-evaluated before each child.
+Replay/analysis12GiB, closure/children8GiB; fre16GiB, parser24GiB plus namespace
+allowance, pgrust12GiB, Nushell66.54872655GiB. Last free~17.6GiB; recheck continuously.
+Cleaner read-only: /usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status.
+Never compete with it, repair it, signal peers or use broad cleanup.
 
-Suggestions.txt unchanged, SHA256
+NEW exact retirement closed: closed-composition-parser-cache-retirement-01,
+sourcef6bd8e77,85338/85341 CLOSED96652. Four terminal failed-composition parser
+namespaces,14333 nonexecutable compiler files/2280402421 logical bytes removed;
+11256 protected hashes unchanged; about1.86GiB reclaimed. NEVER REPEAT.
+Previous exact retirements are listed in the archived state; all remain terminal,
+including the empty composition-token audit. No shared targets/private/peer files.
+
+suggestions.txt remains user-owned/untracked, SHA256
 4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f;
-re-read September19. Detailed disposition docs/SUGGESTIONS-REVIEW-20260913-1245.md.
-Budget-per-region and SipHash guards already exist; don't recreate them.
+reread this turn. Detailed dispositions docs/SUGGESTIONS-REVIEW-20260913-1245.md.
 
-Publication worktree at484d2483 on integration/guarded-local-facts-main-20260913,
-pushed to main preserving peerc1842851. Failed fre and saved-cost proofs are pushed. Publish later proofs by exact paths,
-fetching/fast-forwarding main first. Do not publish
-experimental runtime changes. Previous chronology is archived at
- docs/history/STATE-20260919-before-fre-session-failure.md.
+Main publicationfb594d1d includes closed folded, token retirement and portable
+pgrust strict-probe qualification. Closed pgrust02/private guard, parser/large
+protocol02 and storage compatibility proof publication are pending. Experimental
+branch remote last2b8add9c; push current commits regularly. Runtime stays df4006e0.
+Publish exact proof/docs paths on main, fetch/ff first; do not copy experimental
+runtime or overwrite compiler work. Prior detail archived at
+ docs/history/STATE-20260919-before-session-runtime-composition.md.
+
+New CLOSED exact full-token retirement:
+benchmarks/experiments/session-runtime-token-cache-retirement. Only nine completed
+full-token namespaces, no folded/later cache. Completed after independently closed folded; every protected hash is unchanged.
+Never repeat it. Older
+Nushell/custom/native/native-lines/check retirement receipts already exist; do
+not revisit those caches blindly or repeat them for a hoped-for larger result.
