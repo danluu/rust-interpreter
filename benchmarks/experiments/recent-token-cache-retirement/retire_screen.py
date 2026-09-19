@@ -8,7 +8,7 @@ from workflow_io import write_json as write
 from native_suite import test_status
 from suite_reports import validate_report
 
-NAME='closed-recent-token-cache-retirement-01'
+NAME='closed-recent-token-cache-retirement-02'
 RUNS=['shared-cold-tail-screen-token-01','implicit-zero-storage-screen-token-01','selective-narrow-repair-screen-token-01']
 
 def identity(path):
@@ -80,7 +80,7 @@ with ExitStack() as stack:
     from workflow_io import require_space
     from workflow_cases import WORKFLOW_VARIANTS
     require_space(ROOT,8)
-    roots=set();proofs={};process_checks=[];evidence_roots=set();pids=set()
+    roots=set();proofs={};process_checks=[];evidence_roots=set();pids=set();historical=[]
     for run in RUNS:
         base=ROOT/'.work'/run;evidence_roots.add(base)
         result=bind(ROOT/'results'/run/'summary.json');assert result['status']=='passed' and result['commands']==40
@@ -88,10 +88,19 @@ with ExitStack() as stack:
         closure=bind(ROOT/'results'/run/'closure.json');assert closure['status']=='passed' and closure['repeated_screen_commands']==0
         assert closure['performance_gate_passed']==result['gate_passed']==False
         assert closure['parked']
-        bind(ROOT/closure['source_bindings_path'],closure['source_bindings_sha256'])
+        source_bindings=bind(ROOT/closure['source_bindings_path'],closure['source_bindings_sha256'])['files']
         evidence=bind(ROOT/closure['evidence_path'],closure['evidence_sha256'])
         assert len(evidence)==closure['evidence_files']
-        for p,h in evidence.items():bind(ROOT/p,h)
+        for p,h in evidence.items():
+            if p.startswith(('.work/','results/')):bind(ROOT/p,h)
+            else:
+                import hashlib
+                binding=source_bindings[p];assert binding['sha256']==h
+                revision,bound_path=binding['git_source'].split(':',1);assert bound_path==p
+                assert len(revision)==40 and all(c in '0123456789abcdef' for c in revision)
+                data=subprocess.check_output(['git','show',binding['git_source']],cwd=ROOT)
+                assert hashlib.sha256(data).hexdigest()==h,p
+                historical.append(dict(run=run,path=p,git_source=binding['git_source'],sha256=h))
         terminal(run)
         for name in ['plan','records','transitions','space']:bind(base/(name+'.json'),result[name+'_sha256'])
         plan=json.loads((base/'plan.json').read_text());rows=json.loads((base/'records.json').read_text())
@@ -133,7 +142,8 @@ with ExitStack() as stack:
             invocation=stack.enter_context((root/'invocation.lock').open('r+'));acquire_lock(invocation,45)
     assert all(sha(ROOT/path)==digest for path,digest in proofs.items())
     work=ROOT/'.work'/NAME;work.mkdir(exist_ok=False)
-    rows=[];protected=dict(proofs);open_checks=[];sizes=[]
+    write(work/'historical-sources.json',historical)
+    rows=[];protected=dict(proofs);protected[str((work/'historical-sources.json').relative_to(ROOT))]=sha(work/'historical-sources.json');open_checks=[];sizes=[]
     for root in roots:
         open_checks.append(check_open(root))
         count_before=len(rows);bytes_before=sum(r['size'] for r in rows)
