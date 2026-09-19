@@ -21,3 +21,9 @@ Stage requires8GiB,45s lock admission; no benchmark or guest execution, shared
 target cleanup, tool removal or peer cache changes. Terminal and independent
 closure verify all removed paths absent and protected bytes unchanged. Free-space
 change is a host-wide observation, not exact physical recovery attribution.
+
+The delayed stage now includes both closed failed40-command session primaries,
+01and02:ten exact caches and80 commands. The size-tier build admission stopped
+with zero workload commands when host free space fell to about12.9GiB. The same
+protection/locking rules apply independently to both complete histories. Do not
+include either separate strict-control cache. No admission floor is lowered.

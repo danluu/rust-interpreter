@@ -9,7 +9,7 @@ from native_suite import test_status
 from suite_reports import validate_report
 
 NAME='closed-session-primary-parser-cache-retirement-01'
-RUNS=['cross-program-template-parser-screen-incremental-01']
+RUNS=['cross-program-template-parser-screen-incremental-01','cross-program-template-parser-screen-incremental-02']
 
 def identity(path):
     s=path.lstat()
@@ -133,7 +133,7 @@ with ExitStack() as stack:
             snapshots(row)
         assert all(h==plan['original_source_sha256'] for h in previous.values())
         assert len(rows)==len(plan['schedule'])==40
-    assert len(roots)==5;roots=sorted(roots);assert all(p.resolve(strict=True)==p for p in roots)
+    assert len(roots)==10;roots=sorted(roots);assert all(p.resolve(strict=True)==p for p in roots)
     check=subprocess.run(['ps','-p',','.join(map(str,sorted(pids))),'-o','pid,ppid,lstart,tty,command'],capture_output=True,text=True)
     assert check.returncode in [0,1] and not check.stderr and not any(run in line for run in RUNS for line in check.stdout.splitlines()[1:])
     process_checks.append(dict(pids=sorted(pids),returncode=check.returncode,stdout=check.stdout))
@@ -175,7 +175,7 @@ with ExitStack() as stack:
     write(work/'plan.json',dict(owner=str(ROOT),script_sha256=sha(Path(__file__)),completed_runs=RUNS,
         roots=sizes,process_checks=process_checks,open_checks=open_checks,files=len(rows),
         logical_bytes=sum(r['size'] for r in rows),free_before=before,started_at=started,
-        scope='Five exact completed public compiler caches from the closed failed40-command template-session incremental parser primary. Successful supervisors, source pins/restoration, original assertions and snapshots are verified. Only nonexecutable compiler intermediates are eligible. Preserve every executable, bytecode/catalog snapshot and raw proof under shared/invocation locks and fresh process/open-file checks. No private cache, shared target, installed tool, unstarted later-case cache or peer cache.'))
+        scope='Ten exact completed public compiler caches from the two closed failed40-command template-session incremental parser primaries. Successful supervisors, source pins/restoration, original assertions and snapshots are verified. Only nonexecutable compiler intermediates are eligible. Preserve every executable, bytecode/catalog snapshot and raw proof under shared/invocation locks and fresh process/open-file checks. No private cache, shared target, installed tool, unstarted later-case cache or peer cache.'))
     assert all(sha(ROOT/p)==h for p,h in proofs.items())
     for root in roots:
         check_open(root)
@@ -190,5 +190,5 @@ with ExitStack() as stack:
         free_before=before,free_after=shutil.disk_usage(ROOT).free,started_at=started,finished_at=time.time(),
         protected_files=len(protected),all_protected_hashes_unchanged=True,
         inventory_sha256=sha(work/'inventory.json'),protected_manifest_sha256=sha(work/'protected.json'),
-        plan_sha256=sha(work/'plan.json'),raw=str(work.relative_to(ROOT)),performance_measurement=False,completed_histories=1,completed_commands=40)
+        plan_sha256=sha(work/'plan.json'),raw=str(work.relative_to(ROOT)),performance_measurement=False,completed_histories=2,completed_commands=80)
     write(work/'summary.json',result);print(json.dumps(result),flush=True)
