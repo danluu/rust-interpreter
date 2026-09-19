@@ -786,6 +786,9 @@ fn create_jit<'program, const PROFILE: bool, const USE_JIT: bool, const CALL_STU
     Ok(jit)
 }
 
+#[cfg(any(test, feature = "preparation-observer"))]
+mod preparation_observation;
+
 struct ExecutionMetadata {
     needs_register_zeroes: Vec<bool>,
     local_call_arguments: Vec<Vec<bool>>,

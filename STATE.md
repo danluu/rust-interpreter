@@ -49,7 +49,12 @@ not the parked template candidate. Establish actual cost before designing a
 negative cache, shared scalar preparation or metadata reuse. Do not infer that
 large declined bodies dominate just because there are two declines.
 
-No preparation-phase implementation/build/guest has started yet. Exact old
+The Stage1 recorder is prepared in preparation_observation.rs and
+benchmarks/experiments/preparation-phases: six controls/profile,65,536bucket
+cap, separate nested phases, incomplete/overflow flags, Rc confinement and
+owned snapshots. It is compiled only for tests/explicit feature and is not yet
+connected to any runtime path. No diagnostic guest or native-code publication
+is admitted in this first recorder-only stage. Exact old
 candidate qualification, failed attempts, audit details and ownership are in
 [previous state](docs/history/STATE-20260918-before-preparation-phases.md).
 
