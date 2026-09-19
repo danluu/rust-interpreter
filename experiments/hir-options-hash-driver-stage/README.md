@@ -58,7 +58,24 @@ isolated adapter to select the exact A-owned aggregate monitor. Admission
 requires actual compiler, B3, native and run-make histories and independent
 audits. Complete D2/E2/B3 membership, metadata/source/SDK guards and inherited
 frozen inputs remain checked around the unchanged three-command core. Its final
-status would still require independent audit. The preparer, source retention,
-final run-make schema binding and integration controls remain unfinished;
-there is no runnable admission packet. Only AST parsing has been performed on
-this controller draft.
+status would still require independent audit. `prepare.py` is now a source-only
+discovery draft requiring four supplied actual audit paths and exact hashes.
+It uses canonical admission for bounded read-only discovery, then calls the
+controller's guards and prerequisite readers before publishing a launch proposal.
+It has neither been imported nor executed.
+
+The controller retains selected source/proof bytes before any workload command,
+with 64 MiB per-file and 128 MiB total logical limits under the existing aggregate
+evidence cap. The selection includes imported local modules, driver/fixture,
+plans/freezes, audits, terminal receipts and provider catalogs. Complete provider
+payloads remain hashed and inventoried rather than duplicated into snapshots.
+
+The direct-rustc environment is derived from the qualified native predecessor.
+Exactly the reviewed Cargo/Git/bootstrap-only keys are omitted; their values
+are retained in the plan and rechecked against that predecessor. SDK, explicit
+linker, ordinary environment and offline PATH remain bound; no ambient compiler
+or loader overrides are admitted. The three-command core is unchanged.
+
+Final run-make schema binding and integration controls remain unfinished, and
+there is no runnable admission packet. Only AST parsing and source review have
+been performed on the enclosing controller/preparer drafts.

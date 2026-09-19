@@ -28,6 +28,29 @@ BETA_SOURCE = A/'experiments/hir-options-hash-beta-composition-04'
 BETA_WORK = A/'.work/hir-options-hash-beta-composition-04'
 RECIPE_SOURCE = O/'experiments/hir-options-hash-run-make-stage-02'
 RECIPE_WORK = O/'.work/hir-options-hash-run-make-01'
+SNAPSHOT_FILE_LIMIT = 64*2**20
+SNAPSHOT_TOTAL_LIMIT = 128*2**20
+DRIVER_ENVIRONMENT_KEYS = frozenset({
+    'PATH', 'HOME', 'USER', 'LOGNAME', 'LANG', 'LC_ALL', 'TZ', 'TMPDIR',
+    'SDKROOT', 'PYTHONDONTWRITEBYTECODE', 'PYTHONNOUSERSITE', '__CF_USER_TEXT_ENCODING',
+})
+BOOTSTRAP_ENVIRONMENT_KEYS = frozenset({
+    'CARGO_BUILD_JOBS', 'CARGO_HOME', 'CARGO_NET_OFFLINE', 'CARGO_TERM_COLOR',
+    'CC', 'CXX', 'GIT_CONFIG_COUNT', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_KEY_0',
+    'GIT_CONFIG_KEY_1', 'GIT_CONFIG_KEY_2', 'GIT_CONFIG_NOSYSTEM',
+    'GIT_CONFIG_VALUE_0', 'GIT_CONFIG_VALUE_1', 'GIT_CONFIG_VALUE_2',
+    'GIT_OPTIONAL_LOCKS', 'GIT_TERMINAL_PROMPT', 'RUSTUP_DIST_SERVER',
+})
+
+
+def driver_environment(inherited, temporary):
+    """Select the direct-rustc environment; retain every omitted bootstrap key."""
+    if set(inherited) - DRIVER_ENVIRONMENT_KEYS != BOOTSTRAP_ENVIRONMENT_KEYS:
+        raise RuntimeError('unreviewed predecessor environment keys')
+    selected = {key: value for key, value in inherited.items() if key in DRIVER_ENVIRONMENT_KEYS}
+    selected['TMPDIR'] = str(temporary)
+    omitted = {key: inherited[key] for key in sorted(BOOTSTRAP_ENVIRONMENT_KEYS)}
+    return selected, omitted
 
 
 @contextmanager
@@ -223,6 +246,10 @@ class Stage:
                      'B3 producer inventory/strip proof differs')
         self.audit('beta', BETA_WORK/'receipt.json')
         native_plan = self.inherited_freeze(NATIVE_SOURCE)
+        environment, omitted = driver_environment(native_plan['environment'], self.core.ARTIFACTS/'tmp')
+        self.require(self.plan['environment'] == environment
+                     and self.plan['omitted_bootstrap_environment'] == omitted,
+                     'hash environment does not match the qualified native predecessor')
         native = self.read_json(NATIVE_WORK/'receipt.json')
         result = self.read_json(NATIVE_WORK/'native-controls.json')
         self.require(native['inputs_sha256'] == self.owned.sha(NATIVE_SOURCE/'inputs.json')
@@ -278,6 +305,35 @@ class Stage:
         return bundle.loader.closure(binary, cwd=self.core.S, dyld='',
             admitted=self.plan['runtime_private_providers'], macho=self.modules['metadata'].macho)
 
+    def retain_sources(self):
+        """Copy bounded controller/proof bytes; provider payloads remain inventoried."""
+        names = self.freeze['snapshot_inputs']
+        self.require(type(names) is list and names == sorted(set(names))
+                     and set(names) <= set(self.freeze['files']), 'invalid source snapshot selection')
+        rows = {name: dict(path=name, **self.freeze['files'][name]) for name in names}
+        freeze_path = HERE/'inputs.json'
+        rows[str(freeze_path)] = self.comp.check_file(dict(path=str(freeze_path), sha256=self.inputs_sha256))
+        self.require(all(row['size'] <= SNAPSHOT_FILE_LIMIT for row in rows.values())
+                     and sum(row['size'] for row in rows.values()) <= SNAPSHOT_TOTAL_LIMIT,
+                     'bounded source/proof snapshot budget exceeded')
+        directory = WORK/'source-snapshots'
+        directory.mkdir()
+        manifest = {}
+        for name, row in sorted(rows.items()):
+            self.budget()
+            destination = directory/row['sha256']
+            if not destination.exists():
+                with destination.open('xb') as stream:
+                    self.require(self.comp.check_file(row, stream, self.budget) == row,
+                                 'source changed during retained copy')
+                    stream.flush(); os.fsync(stream.fileno())
+            self.require(self.owned.sha(destination) == row['sha256']
+                         and destination.stat().st_size == row['size'], 'retained source readback differs')
+            manifest[name] = dict(path=str(destination), sha256=row['sha256'], bytes=row['size'])
+        self.owned.write(WORK/'source-snapshots.json', manifest)
+        self.record['source_snapshots_sha256'] = self.owned.sha(WORK/'source-snapshots.json')
+        self.save(); self.budget()
+
     def execute(self):
         try:
             with self.owned.workload_lock(self.owned.CANONICAL_LOCK, 600) as fd:
@@ -286,6 +342,7 @@ class Stage:
                 self.guard(True)
                 self.record['prerequisites'] = self.prerequisites()
                 self.save(); self.budget()
+                self.retain_sources()
                 result = self.core.execute(self.plan, evidence_root=WORK, canonical_fd=fd,
                     owned=self.owned, monitor=self.monitor, check_inputs=lambda: self.guard(True),
                     inspect_closure=self.closure)
