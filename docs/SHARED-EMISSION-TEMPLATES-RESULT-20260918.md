@@ -56,3 +56,11 @@ Overlapping worker durations cannot be added as command savings. Sharing ordinar
 emission leaves scalar proof/lowering/emission and per-owner metadata work in
 place, and constructing the shared scope adds validation. Those are hypotheses
 to measure before another change, not an explanation established by this result.
+
+The subsequent closed audit of all15edited custom receipts finds median summed
+compiler intervals209.8ms adopted,211.9ms A/A and200.9ms candidate; largest-worker
+intervals122.5/123.0/116.8ms. Owner constructor sums are44.0/44.2/43.7ms, with
+another5.6ms of candidate store construction. These descriptive, overlapping
+intervals do not change the failed paired gate. The next diagnostic will
+attribute preparation by phase and function on the adopted runtime before
+choosing another mechanism. [Audit](../results/shared-template-costs-01/ASSESSMENT.md).
