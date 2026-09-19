@@ -73,8 +73,14 @@ VM8e369c0f3a6f6fd0b793372d27c26f4848db8536f4cb8bfcf8672b0d0a12ca72,
 unchanged exporter/wrapper. The first evidence-closing command timed out45s
 waiting for peer compiler-build PID92782; all build commands remain successful.
 Closure retry74141/74168 now passes461frozen inputs/450Git bindings without
-repeating a build command. Next strict121-command workflows and3exact
-current-host profiles before the primary. Controllers are in
+repeating a build command. Strict121commands now pass (93897/93900), and3new
+original profiles match adopted controls at every PC, memory peak and entropy
+(8078/8081). Maps reconstruct exactly, scalar bodies/counts remain unchanged,
+zero declines. Native bytes11,952,720→11,687,140;14,508,196→14,198,260;
+1,978,352→1,916,484. These are correctness/code-size results, not timing.
+The primary protocol passes13+3controls (30396/30399) and reuses exact449Python
+build checks. Next start `implicit-zero-storage-screen-token-01` with all four
+closed build/strict/profile/protocol summaries. Primary gates remain unchanged. Controllers are in
 `benchmarks/experiments/implicit-zero-storage-workflows` and
 `benchmarks/experiments/implicit-zero-storage-screen`.
 [Contract](docs/IMPLICIT-ZERO-REGISTER-DESIGN-20260918.md),
