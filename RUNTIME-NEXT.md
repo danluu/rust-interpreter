@@ -8,12 +8,19 @@ catalog phase.015ms vsold8.602; no command speedup claim. Installed tool
 c8e795d30e15350ee3a4cbf781e3e84f0901849f7367e4ef484c2fada55e444d and server
 f91dfea0d7961101dbb13f72eba488fd4924d838e12d4654b6be5d07c3c3fc45. Allclosed.
 
-Next primary04, unchanged40-command protocol/gates plus2strict controls.
-Prerequisites now bind this qualified installation/replay. Source/policies frozen
-through closure once started. See cross-program-template-screen/DIGEST-PRIMARY.md.
-Retired8exactclosedparsernamespaces:17,546nonexecutable intermediates3,635,477,875
-logicalbytes removed,13,912protectedhashesunchanged; CLOSED36634/36638. No repeat.
-Freeabout31GiB before primary; recheck admission, never assume it stays constant.
+Primary04 f50d99f8 passed40commands+2strict controls, CLOSED2787/2793.
+Wall.9593396007+A/A.0400753281=.9994149288 (narrow pass);CPU.9338512222+
+.0131285115=.9469797337. Native ratio1.32168wall; no adoption.
+Next110-command full three-cycle parser guard, same gates/15edited pairs.
+Full accounting17290bdd passed8controls, CLOSED24083/24089.
+Controller cross-program-template-full-parser/benchmark.py, runID
+cross-program-template-parser-full-incremental-01. Source frozen once started.
+
+Retired8exactclosedparser01/02strict+03namespaces:17,546intermediates,
+3,635,477,875logicalbytes,13,912protectedhashes; CLOSED36634/36638.
+Also retired6primary04namespaces afterclosure:15,152intermediates,
+2,991,235,282logicalbytes,11,410protectedhashes; CLOSED34795/34798. No repeat.
+Free~24.7GiB before full guard; recheck admission, never assume it stays constant.
 
 Size-tier primary03 is closed UNMEASURABLE under its original8% A/Avariance rule:
 wall.921620065+.088141211=1.009761276. No unchanged retry or adoption. Old installed
@@ -29,7 +36,7 @@ subagents, other-session/process controls or new billing/service activation.
 Compiler/Cargo/application admission belongs to other sessions.
 
 Only root and .work/publication-main are this runtime session's worktrees. Main
-a0605c71 pushed, preserving peer753ef81e; digest qualification/replay/phase published,
+c4e8c1b6 pushed, preserving peer753ef81e; digest qualification/replay/phase published,
 no experimental runtime adopted. Fetch/merge preserving peer work before publication.
 Adopted tool df4006e03daad7dd008eab34c24a03390d892ec14e55154c43e2d5568c0bba62,
 VM6ac4dd9e964e0ebb0a050f8412c8ec8877bd197e8ad7876832db378ed03ca7cf,
