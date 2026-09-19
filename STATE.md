@@ -139,3 +139,17 @@ qualified normal scheduler VM/server with adoptedcompiler tools. Fullthreecycle
 110command guard is next; no adoption until it and laterprojectguards pass.
 Primary06 closedcache cleanup15152files2991235289bytes,11413protectedhashes
 unchanged and independentlyclosed; neverrepeat. Runtime source remainsbranchonly.
+
+## 2026-09-19 full scheduler parser comparison passes
+
+Full03 closed:110realchangedsourcecommands+2strictrejections,15editedpairs,
+114originaloutcomes/artifacts/source restoration,22requests/session andcomplete
+CPU accounting. Wallratio0.924398703+maximumA/A0.045926122=0.970324825;CPUratio
+0.902712343+0.039480337=0.94219268. Bothgatespass. Nativewall1.249979858.
+Priorfull02 wasnotadmitted because protocol01 froze previouscandidateselection;
+zero workload/timingcommands. Sameeightcontrols requalified asprotocol02 before03.
+Savedcosts: candidatebuild1223.803ms/exec267.423ms/longest210.638ms/preceding0/
+serveroutside29.520ms. Durations overlap andmediansarenotadditive. Next verified
+fre token artifactreplay, then remainingprojectguards; runtime/defaultunchanged.
+Additionalclosedsetupcachecleanup941files438200579bytes,2209protectedhashes
+unchanged andindependentlyclosed. Neverrepeatretirement; nopeerworktouched.
