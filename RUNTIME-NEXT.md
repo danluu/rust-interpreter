@@ -23,3 +23,6 @@ verification. No activeownedcommands atcheckpoint; sharedlock45s/2workers.
 Compression01failed beforeinventory/mutation ontypedfile-hashschema; retained
 verifiedfailure, actualownershipSHAunchanged. New02correctsreader andbindsfailure.
 Launch02next; focusstillUNRUN. Main4be97e5e pushednegativeevidencepreservingpeers.
+Remainingcompression02 now CLOSED64files,1.34GiBreclaimed. Free24.96GiB>floor23.94.
+Nextlaunch heap-layout-table-focused01, qualify.py, independent --close. Heap
+workspace01 registeredbutmustwaitforclosedfocus. BothdefaultVM/benchmarksunchanged.

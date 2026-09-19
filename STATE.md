@@ -108,3 +108,11 @@ sha256}, notbarehash. ActualownerSHA exactlymatches. Closedpreflightfailure
 retained; new02 normalizesonlythetwoexactformats andbindsfailure. No replay.
 Main4be97e5e overwrittennegativepublicationverified, preservingpeeree68f923.
 HeapfocusstillUNRUN; commitcorrectionthenlaunchcompression02 beforebuildadmission.
+
+Remainingcompression02 source027aa15a supervisor19410/controller19413 finished0;
+independentclose95238 passed64bytecodesnapshots,1912537088→475934720allocatedbytes,
+1.34GiBreclaimed. Allbytes/requiredmetadata/birthtimesidentical; NEVER replay.
+Free26795442176 vsbuildfloor25700851712 (allocatedtarget8555458560) admitsfocus.
+Heapworkspace01 registeredUNRUN expects618Rust/profile13ignored,446Python22skip,
+retainedfeatureVM; requiresclosedfocus16heap+6C/profile first. No guest/timing.
+Nextlaunchfocus afterthiscommit; sourcesfreeze throughitsindependentclosure.
