@@ -67,10 +67,11 @@ fixture-assumption failures remain archived.
 
 Full build shared-cold-tail-build-01 is closed at7bba166d:615 Rust tests per
 profile (14 ignored),427 Python tests pass (22 skipped), four commands. Immutable
-tool8bce082f / VM93b75492 retains exporter cf4b3499 and wrapper45bca4f2. Next run
-121 strict/cache commands, then three original candidate profiles against the
-closed current-host adopted control rows in runtime-composition-profile-02.
-Only after correctness passes start the unchanged40-command edited-source primary.
+tool8bce082f / VM93b75492 retains exporter cf4b3499 and wrapper45bca4f2. The121 strict/cache commands and three original candidate profiles now pass
+and are closed against the current-host adopted control rows in
+runtime-composition-profile-02. Every logical PC, memory peak, entropy count
+and scalar execution count matches. Next qualify the primary protocol, then
+start the unchanged40-command edited-source primary.
 No guest performance is measured yet; no runtime adoption is authorized by these
 results. All larger histories remain conditional on the existing primary gate.
 [Build](results/shared-cold-tail-build-01/ASSESSMENT.md).
