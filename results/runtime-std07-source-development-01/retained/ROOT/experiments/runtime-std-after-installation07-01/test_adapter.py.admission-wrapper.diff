@@ -1,0 +1,21 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-std-after-installation07-01/history-before-admission-wrapper-fix/test_adapter.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-std-after-installation07-01/test_adapter.py
+@@ -137,6 +137,18 @@
+         with self.assertRaisesRegex(RuntimeError, 'command differs'):
+             factory.command(plan, 'b'*64)
+ 
++    def test_admission_wrapper_matches_complete_ready_identity(self):
++        identity = {'admission': {'loader_probe': {'architecture': 'arm64'}}, 'files': {'a': 'b'}}
++        factory.publication_identity({'identity': identity},
++            {'identity': copy.deepcopy(identity), 'snapshots': []})
++
++    def test_raw_specification_or_changed_admission_identity_rejected(self):
++        identity = {'admission': {'loader_probe': {'architecture': 'arm64'}}, 'files': {'a': 'b'}}
++        for admission in [identity['admission'], {'identity': identity['admission'], 'snapshots': []},
++                          {'identity': identity, 'snapshots': [], 'extra': True}]:
++            with self.subTest(admission=admission), self.assertRaisesRegex(RuntimeError, 'wrapper differs'):
++                factory.publication_identity({'identity': identity}, admission)
++
+ 
+ if __name__ == '__main__':
+     unittest.main()

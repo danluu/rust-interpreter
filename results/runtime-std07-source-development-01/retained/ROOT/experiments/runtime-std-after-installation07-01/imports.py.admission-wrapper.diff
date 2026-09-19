@@ -1,0 +1,25 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-std-after-installation07-01/history-before-admission-wrapper-fix/imports.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-std-after-installation07-01/imports.py
+@@ -129,6 +129,11 @@
+     return [frozen_sha if type(item) is dict else item for item in plan['command']]
+ 
+ 
++def publication_identity(ready, admission):
++    require(type(admission) is dict and set(admission) == {'identity', 'snapshots'}
++            and same(ready['identity'], admission['identity']), 'runtime admission wrapper differs')
++
++
+ def runtime_proof(plan, check_source):
+     """Consume the actual saved installation audit; do not replay its proof tree."""
+     key = plan['runtime_key']
+@@ -166,9 +171,9 @@
+     require(terminal['status'] == 'passed' and terminal['phase'] == 'installation'
+             and terminal['runtime_key'] == terminal['installed_runtime_key'] == key
+             and terminal['sysroot'] == str(prefix/'sysroot'), 'passed runtime owner differs')
++    publication_identity(ready, admission)
+     require(ready['status'] == 'installed' and ready['owner'] == str(R) and ready['key'] == key
+             and ready['sysroot'] == str(prefix/'sysroot')
+-            and same(ready['identity']['admission'], admission)
+             and proof['key'] == key and proof['owner'] == str(R), 'runtime ready/source qualification differs')
+     for record in (audit, phase, terminal):
+         require(all(record[name] is False for name in

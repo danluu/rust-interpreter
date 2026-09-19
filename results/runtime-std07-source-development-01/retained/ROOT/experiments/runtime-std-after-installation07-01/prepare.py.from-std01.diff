@@ -1,0 +1,67 @@
+--- /Users/danluu/dev/rust-interp-runtime-installation-r-20260918/experiments/runtime-compiler-installation/std-01/prepare.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-std-after-installation07-01/prepare.py
+@@ -4,11 +4,11 @@
+ from pathlib import Path
+ import sys,time
+ 
+-ROOT=Path(__file__).resolve().parents[3]
++ROOT=Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ HERE=Path(__file__).resolve().parent
+ PLAN=HERE/'plan.json'
+ FROZEN=HERE/'inputs.json'
+-WORK=ROOT/'.work/runtime-std-preparation-supervision-01'
++WORK=ROOT/'.work/hir-options-hash-runtime-std-supervision-07-01'
+ 
+ 
+ def require(ok,message):
+@@ -35,13 +35,25 @@
+         require(str(Path(sys.executable).resolve())==frozen['python']['resolved']
+                 and sha(Path(sys.executable).resolve())==frozen['python']['sha256'],'std Python differs')
+     sources()
+-    owned_path=ROOT/'experiments/stable-cgu/owned_stage.py'
+-    spec=importlib.util.spec_from_file_location('runtime_std_owned',owned_path);owned=importlib.util.module_from_spec(spec);sys.modules[spec.name]=owned;spec.loader.exec_module(owned)
+-    sys.path.insert(0,str(ROOT/'scripts'))
+-    import runtime_compiler as runtime
+-    import std_mir_source_paths as std
+-    from custom_cargo_libraries import platform_identity
+-    from toolchain_lookup import _stamp
++    def check_source(path):
++        path=Path(path);digest=sha(path)
++        require(frozen['files'].get(str(path))==digest,'unfrozen std source/proof: '+str(path))
++        return digest
++    for path in [Path(__file__).resolve(),PLAN,HERE/'imports.py',HERE/'std_cli.py']:
++        check_source(path)
++    spec=importlib.util.spec_from_file_location('_std07_supervisor_factory',HERE/'imports.py')
++    factory=importlib.util.module_from_spec(spec);sys.modules[spec.name]=factory;spec.loader.exec_module(factory)
++    factory.validate_plan(plan,args.frozen_sha)
++    runtime_proof=factory.runtime_proof(plan,check_source)
++    modules=factory.definitions(check_source)
++    with factory.aliases(modules.public_aliases):
++        return supervised(args,frozen,plan,sources,modules,factory,runtime_proof)
++
++
++def supervised(args,frozen,plan,sources,modules,factory,runtime_proof):
++    owned=modules.owned;runtime=modules.runtime;std=modules.std
++    platform_identity=modules.cargo.platform_identity;_stamp=modules.toolchain._stamp
++    command=factory.command(plan,args.frozen_sha)
+     for module in list(sys.modules.values()):
+         filename=getattr(module,'__file__',None)
+         if filename and filename.startswith('/Users/danluu/dev/rust-interp'):
+@@ -59,7 +71,7 @@
+     WORK.mkdir(parents=True,exist_ok=False)
+     record=dict(schema_version=1,status='starting',owner=str(ROOT),pid=os.getpid(),parent_pid=os.getppid(),
+         started_at=time.time(),frozen_sha256=args.frozen_sha,plan_sha256=sha(PLAN),runtime_key=compiler.key,
+-        command=plan['command'],environment=plan['environment'],application_qualified=False,benchmark=False)
++        command=command,environment=plan['environment'],runtime_prerequisite=runtime_proof,application_qualified=False,benchmark=False)
+     def save():owned.write(WORK/'receipt.json',record)
+     save()
+     try:
+@@ -77,7 +89,7 @@
+             require(target.stat().st_nlink==1 and sha(target)==digest,'std retained input readback differs')
+         sources();state();owned.disk(ROOT,16)
+         try:
+-            child=owned.run(plan['command'],cwd=ROOT,env=plan['environment'],out=WORK/'command',capacity_root=ROOT)
++            child=owned.run(command,cwd=ROOT,env=plan['environment'],out=WORK/'command',capacity_root=ROOT)
+         finally:
+             if (WORK/'command/receipt.json').exists():
+                 record['child']=dict(path=str(WORK/'command/receipt.json'),sha256=sha(WORK/'command/receipt.json'));save()
