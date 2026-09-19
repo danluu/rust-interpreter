@@ -34,6 +34,13 @@ owner reports one decline. Broad/conditional demand candidates already failed;
 see conditional-demand-parser-screen-incremental01 and old jit-emission-stages01.
 Do not reimplement demand or liveness-only changes from these observations.
 
+The model02 passed five/profile under49716/49719. Closer02 timed out45seconds
+on the peer lock; closer03 CLOSED6688/6693 without changing original sources.
+Staged integration drafts were applied only after closure. Current integrated01
+controller tests seven/profile: five models, combined4MiB payload bound, and
+exact sparse/dense staging across joins/loops/long regions, profile/register/heap
+modes and six code capacities. No guest execution or native publication yet.
+
 Next bounded register workspace model lives in jit/register_workspace.rs under
 cfg(test) only, unused by runtime. Replaces temporary BTree map/set storage in a
 future prototype using per-function dense slots and touched resets, preserving

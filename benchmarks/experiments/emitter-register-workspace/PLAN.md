@@ -41,3 +41,18 @@ also fails that same assertion. Close the attempt before changing it to require
 all members absent. Add explicit callback visitation-order checking to the
 existing filter test. The map/set implementation is unchanged. Model02 reruns
 the failed debug command and the previously unstarted release command.
+
+Model02 passes five/profile under49716/49719. Closer02 timed out on the shared
+lock before touching source; closer03 under6688/6693 subsequently CLOSED it.
+The staged integration drafts were prepared without changing frozen sources and
+applied only after that closure. Stage2 connects only ordinary-region fact/set
+storage, leaving transitions and other paths sparse. Bound all three dense maps'
+combined payload to4MiB, with separate actual-capacity checks per allocation.
+
+Seven controls/profile now include the existing five model controls, combined
+allocation bounds, and exact sparse/dense staging across three programs with
+joins, loops, long-region splitting, memory facts and assertions; both profile,
+persistent-register and heap modes; six code capacities including zero. Compare
+words, entries, resumes, assertions, operation counts and facts. This stage
+changes production preparation storage but publishes/executes no native code.
+Full controls and exact original saved-code reconstruction are still required.

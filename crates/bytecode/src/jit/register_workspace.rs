@@ -1,5 +1,4 @@
-//! Prototype: bounded dense register facts with sparse fallback and touched resets.
-//! No runtime emitter uses this model yet.
+//! Bounded per-function ordinary-emitter facts; sparse defaults for other paths.
 use crate::Reg;
 use std::collections::BTreeMap;
 
@@ -84,6 +83,22 @@ impl Set {
     pub(super) fn clear(&mut self) { self.0.clear(); }
 }
 
+/// Bound the combined dense workspace, in addition to each map's allocation.
+/// Sparse fallback retains the original collection's allocation behavior.
+pub(super) fn tables(registers: usize) -> (Map<super::Fact>, Set, Set) {
+    fn bytes<V>(n: usize) -> Option<usize> {
+        n.checked_mul(std::mem::size_of::<Option<V>>().checked_add(1 + std::mem::size_of::<Reg>())?)
+    }
+    let sizes = bytes::<super::Fact>(registers).zip(bytes::<()>(registers));
+    if let Some((facts, membership)) = sizes {
+        if registers <= MAX_REGISTERS && facts.checked_add(membership.saturating_mul(2))
+            .is_some_and(|total| total <= MAX_DENSE_BYTES) {
+            return (Map::dense(registers, facts), Set::dense(registers, membership), Set::dense(registers, membership));
+        }
+    }
+    (Map::default(), Set::default(), Set::default())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -150,6 +165,71 @@ mod tests {
                 for i in 0..1024 {let r=((i*73+pass*13)%257) as Reg;assert_eq!(set.insert(r),oracle.insert(r));assert_eq!(set.contains(&r),oracle.contains(&r));}
                 set.clear();oracle.clear();assert!((0..257).all(|r|!set.contains(&r)));
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod integration_tests {
+    use super::*;
+    use super::super::{Jit, MAX_CODE_BYTES};
+    use crate::{Function, Op, Program, Slot};
+    fn payload<V>(map: &Map<V>) -> usize {
+        match &map.0 { Storage::Sparse(_) => 0, Storage::Dense(d) =>
+            d.slots.capacity()*std::mem::size_of::<Option<V>>() + d.seen.capacity() + d.touched.capacity()*std::mem::size_of::<Reg>() }
+    }
+    #[test]
+    fn register_workspace_combined_dense_payload_is_bounded_and_large_functions_keep_sparse_tables() {
+        for registers in [0,1,128,MAX_REGISTERS,MAX_REGISTERS+1,usize::MAX] {
+            let (facts,defined,live)=tables(registers);
+            let bytes=payload(&facts)+payload(&defined.0)+payload(&live.0);
+            assert!(bytes<=MAX_DENSE_BYTES);
+            if registers==0 || registers>MAX_REGISTERS {assert_eq!(bytes,0);}
+            else {assert!(matches!(facts.0,Storage::Dense(_)) && matches!(defined.0.0,Storage::Dense(_)) && matches!(live.0.0,Storage::Dense(_)));}
+        }
+    }
+    fn program(code: Vec<Op>) -> Program {
+        Program {version:crate::VERSION,target:"aarch64-apple-darwin".into(),entry:0,
+            data:vec![],statics:vec![],thread_locals:vec![],
+            functions:vec![Function {name:"workspace region boundaries".into(),frame_size:64,frame_align:16,
+                registers:32,args:vec![],result:Slot {offset:8,size:8},code}]}
+    }
+    #[test]
+    fn register_workspace_dense_and_sparse_emission_match_regions_joins_loops_profiles_and_capacity() {
+        let branch=vec![Op::Imm{dst:0,value:17},Op::Imm{dst:1,value:1<<95},Op::Local{dst:2,offset:0},
+            Op::Store{address:2,src:0,size:8},Op::Jump{target:5},Op::Load{dst:3,address:2,size:8},
+            Op::Binary{dst:4,overflow:5,op:crate::Binary::Add,a:0,b:3,bits:64,signed:false},
+            Op::Switch{value:4,cases:vec![(0,10),(17,8)],otherwise:8},Op::Imm{dst:6,value:1},
+            Op::Jump{target:5},Op::Imm{dst:6,value:2},Op::Assert{value:6,expected:true,message:"workspace assertion".into()},
+            Op::Local{dst:7,offset:8},Op::Store{address:7,src:6,size:8},Op::Return];
+        let mut long=vec![];
+        for i in 0..2200 {long.push(Op::Imm{dst:(i%16) as Reg,value:(i as u128)<<70});}
+        long.push(Op::Return);
+        let mut joins=vec![];
+        for i in 0..64 {
+            joins.push(Op::Imm{dst:(i%8) as Reg,value:i as u128});
+            joins.push(Op::Jump{target:joins.len()+1});
+        }
+        joins.push(Op::Return);
+        for code in [branch,long,joins] {
+            let p=program(code);crate::validate(&p).unwrap();
+            for profiled in [false,true] {for persistent in [false,true] {for heap in [false,true] {
+                let mut sparse=Jit::new_resumable(&p,profiled,MAX_CODE_BYTES,persistent).unwrap();
+                sparse.dense_register_workspace=false;sparse.uses_heap=heap;
+                let mut dense=Jit::new_resumable(&p,profiled,MAX_CODE_BYTES,persistent).unwrap();dense.uses_heap=heap;
+                for budget in [0,1,16,128,1024,MAX_CODE_BYTES/4] {
+                    let a=sparse.emit_function(&p.functions[0],budget).unwrap();
+                    let b=dense.emit_function(&p.functions[0],budget).unwrap();assert_eq!(a.is_some(),b.is_some());
+                    if let (Some(a),Some(b))=(a,b) {
+                        assert_eq!(a.words,b.words);assert_eq!(a.resumes,b.resumes);assert_eq!(a.assertions,b.assertions);
+                        assert_eq!((a.operations,a.register_pairs,a.liveness_declined),(b.operations,b.register_pairs,b.liveness_declined));
+                        let entries=|e:Vec<Option<super::super::Block>>|e.into_iter().map(|b|b.map(|b|(b.offset,b.end))).collect::<Vec<_>>();
+                        assert_eq!(entries(a.entries),entries(b.entries));
+                        assert_eq!(a.local_fact_events,b.local_fact_events);assert_eq!(a.retained_local_writes,b.retained_local_writes);
+                    }
+                }
+                assert!(sparse.code.is_none() && dense.code.is_none());assert_eq!(sparse.bytes+dense.bytes,0);
+            }}}
         }
     }
 }
