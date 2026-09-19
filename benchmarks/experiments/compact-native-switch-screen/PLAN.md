@@ -26,3 +26,8 @@ main is independently qualified.
 16GiB initial floor,8GiB child floor, exact independent namespaces and preserved
 raw outputs/executables/artifacts. Acquire .work/benchmark.lock, freeze inputs,
 restore source with SourceEdit and independently close. No peer workload control.
+
+Protocol admission01 timed out before creating a stage or running any test.
+Its terminal/source hashes are retained in results/compact-native-switch-screen-
+protocol-01. Protocol02 uses identical controls and waits for ordinary shared-
+lock availability; no benchmark timing has occurred or is being repeated.

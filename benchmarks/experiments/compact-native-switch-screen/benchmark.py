@@ -22,7 +22,7 @@ from screen import native_executable
 CASE_INPUTS={'token':('fre','token-phrase-allocation','token_phrase::tests::','prepared-suite-token-01'),
     'folded':('fre','folded-literal-trie','folded_literal_trie::tests::','prepared-suite-folded-01'),
     'pgrust':('pgrust',None,'','prepared-catalog-pgrust-03')}
-PROTOCOL='compact-native-switch-screen-protocol-01'
+PROTOCOL='compact-native-switch-screen-protocol-02'
 def read(p):return json.loads(p.read_text())
 def case_states(original,case):
     states=list(source_states(original.decode(),case,1,['baseline','duplicate','candidate'],True))

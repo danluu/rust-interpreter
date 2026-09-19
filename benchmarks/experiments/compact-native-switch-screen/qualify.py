@@ -6,7 +6,7 @@ sys.path.insert(0,str(ROOT/'benchmarks/experiments/cross-program-template-model'
 import focus
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='compact-native-switch-screen-protocol-01'
+RUN='compact-native-switch-screen-protocol-02'
 def read(p):return json.loads(p.read_text())
 def main():
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
