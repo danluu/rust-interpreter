@@ -27,15 +27,16 @@ Full03 sourceb2adc45f COMPLETE70158/70161 CLOSED51019:110+2strictcorrect,
 Savedcosts7e6ba673 COMPLETE53038 CLOSED69433:build1223.803ms/exec267.423ms,
 longest210.638ms/preceding0/serveroutside29.520ms; overlapping/nonadditive.
 Fre token replay22ebd53b COMPLETE70196/70201 CLOSED10305:192invocations,
-14892independentlyverifiedhits. Next implement actualsource session-project-guards
-controller/prerequisites/closure. PLAN/accounting/tests/check now exist; protocol01
-c567045e COMPLETE56848 CLOSED68597:12controls pass. Do not mutate qualifiedfiles
-without updating/requalifying affected proof; no sourcebenchmark forfre launched.
-Eightmode public guards176commands retainoriginalanchor/native_lines/check plus
-same-runtimehistoryoff; originaltoken strictwin andotherheldout5%rules, fullCPU.
-Need raise public admission for addednamespace (propose16GiBfre/12pgrust), specify
-and qualify currentcontroller beforetiming. Private/Nushell adapters remainpending.
-Main7e64e149 pushedfullparser/costs preservingpeercee8324a; sourcebranchonly.
+14892independentlyverifiedhits. Public sourcecontroller now implemented in
+benchmarks/experiments/session-project-guards/{benchmark,commands,admission,close}.py.
+Protocol01 c567045e12accounting controls COMPLETE56848 CLOSED68597; protocol02
+741f6988 COMPLETE36082,6newcommand+4newcontrollercontrols,12retained=22;closure
+underway. Fulltoken176commands+2strict next, originalanchor/native_lines/check
+and currentruntimehistoryoff retained. TwoCargo/native/sessionworkers. Raised
+admission16GiBfre/12pgrust includes2GiBextra namespace allowance. Freeze qualified
+controllerfolder/crates/scripts/tests until runningguardclosure. Large/private
+adapters remain unimplemented; their one-test idleworker overhead must beexplicit.
+Main7e64e149 pushed fullparser/costs preservingpeercee8324a; runtimebranchonly.
 Primary06cachecleanup CLOSED2706 after93584 source2838da6e:15152files/2991235289bytes,
 11413protectedhashesunchanged. Failedsetupcachecleanup bc52545f COMPLETE20731
 CLOSED28087:941files438200579bytes,2209protectedhashesunchanged. NEVER repeat
