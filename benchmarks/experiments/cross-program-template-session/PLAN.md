@@ -176,3 +176,13 @@ Install that VM with byte-identical adopted exporter/wrapper under a new immutab
 composition key. This does not adopt the runtime or alter compiler/Cargo policy.
 Then replay the actual retained parser edits through independent clients and the
 same launcher receipt verifier before changed-source comparisons.
+
+Launcher01 stopped after463Python tests:439passed,22skipped and two old archive
+fixture failures. All seven new controls passed. The failing tests referenced
+archives under the retired semantic-reuse worktree; exact archives are present
+in this checkout. Close the failed attempt before the repair. Two test-only
+constant overrides now select this checkout's archive files, retaining all exact
+hash/manifest/raw-evidence checks. Production compiler helpers are unchanged.
+Launcher02 verifies these exact two-line additions and every other Rust/script/test
+hash, preserves the439 passes, and runs only the two repaired controls plus the
+unstarted ordinary VM build/install. No full-suite rerun or skipped failure.

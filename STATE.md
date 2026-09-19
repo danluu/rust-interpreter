@@ -286,3 +286,9 @@ CLOSED17057/17061. All seven new session/launcher/receipt controls passed.
 HIR tests use a missing retired peer worktree archive path. Local exact archives
 exist; investigating portable fixture binding without changing peer runtime/code.
 DefaultVM build and tool installation did not run. Preserve Python captures.
+
+Launcher02 prepared after closed01. Two test-only decorators bind archived
+fixtures to currentcheckout results, preserving fixedhashes and actualrawchecks;
+productioncompiler code and peerworktrees unchanged. Controller verifies exact
+2line additions and allother Rust/script/testhashes, carries439passed+22skipped,
+then runs only two repaired tests and unstarted defaultVM build/toolcomposition.

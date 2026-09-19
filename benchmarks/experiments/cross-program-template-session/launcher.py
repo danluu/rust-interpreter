@@ -7,7 +7,7 @@ ROOT=focus.ROOT
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
 from interpreter import installed_tools
-RUN='cross-program-template-session-launcher-01'
+RUN='cross-program-template-session-launcher-02'
 BASELINE='df4006e03daad7dd008eab34c24a03390d892ec14e55154c43e2d5568c0bba62'
 def read(p):return json.loads(p.read_text())
 
@@ -34,13 +34,40 @@ def main():
         paths += [Path(focus.__file__),previous/'closure.json',previous/'summary.json',old_plan,vm,server,integration_path]
         paths += [retained/n for n in [*integration['binaries'],'ready.json','source.json','capabilities.json']]
         frozen={str(p.relative_to(ROOT)):sha(p) for p in paths}
+        prior=ROOT/'results/cross-program-template-session-launcher-01';closure=read(prior/'closure.json')
+        assert closure['status']=='closed' and closure['all_hashes_verified'] and sha(prior/'summary.json')==closure['summary_sha256']
+        old=read(prior/'summary.json');assert old['status']=='focused-failed' and old['returncodes']==[1]
+        old_raw=ROOT/old['raw'];assert sha(old_raw/'plan.json')==old['plan_sha256'] and sha(old_raw/'records.json')==old['records_sha256']
+        old_plan=read(old_raw/'plan.json');old_record,=read(old_raw/'records.json');assert old_record['label']=='python'
+        replacements={
+            'tests/test_hir_arena_identity_upgrade.py':('    def test_diagnostic_cannot_be_promoted_to_native_success_or_change_source_or_observation(self):',
+                "    @patch.object(m, 'ARCHIVE', ROOT / 'results/hir-diagnostic-native-01')\n"),
+            'tests/test_hir_fixture_env_upgrade.py':('    def test_separate_archive_verification_propagates_any_missing_payload(self):',
+                "    @patch.object(m, 'FAILURE', ROOT / 'results/hir-native-correctness-failed-01')\n")}
+        for p,h in old_plan['frozen'].items():
+            if p.startswith(('crates/','scripts/','tests/')) or p in ['Cargo.toml','Cargo.lock','rust-toolchain.toml']:
+                if p in replacements:
+                    original=subprocess.check_output(['git','show',old_plan['source_revision']+':'+p],cwd=ROOT,text=True)
+                    anchor,prefix=replacements[p];assert original.count(anchor)==1
+                    assert (ROOT/p).read_text()==original.replace(anchor,prefix+anchor)
+                else:assert sha(ROOT/p)==h
+        for p in [prior/'closure.json',prior/'summary.json',old_raw/'plan.json',old_raw/'records.json']:
+            frozen[str(p.relative_to(ROOT))]=sha(p)
+        for stream in ['stdout','stderr']:
+            p=old_raw/('python.'+stream);assert sha(p)==old_record[stream+'_sha256'];frozen[str(p.relative_to(ROOT))]=sha(p)
+        old_log=(old_raw/'python.stderr').read_text()
+        assert 'Ran 463 tests in ' in old_log and 'FAILED (failures=1, errors=1, skipped=22)' in old_log
+        assert old_log.count(' ... ok\n')==439
+        for folder in ['hir-diagnostic-native-01','hir-native-correctness-failed-01']:
+            for name in ['evidence.tar.gz','manifest.json','summary.json']:
+                p=ROOT/'results'/folder/name;frozen[str(p.relative_to(ROOT))]=sha(p)
         assert not subprocess.check_output(['git','diff','--name-only','HEAD'],cwd=ROOT).strip()
         revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
         raw=ROOT/'.work'/RUN;raw.mkdir(exist_ok=False)
         write(raw/'plan.json',dict(owner=str(ROOT),source_revision=revision,frozen=frozen,
             controller_command=[sys.executable,*sys.orig_argv[1:]],target=str(target.relative_to(ROOT)),
             required_free_bytes=needed,allocated_target_bytes=allocated,minimum_child_gib=8,expected_commands=2,
-            minimum_python_tests=463,expected_skipped=22,original_project_guest_commands=0,
+            python_repaired_controls=2,preserved_python_passes=439,expected_skipped=22,original_project_guest_commands=0,
             default_runtime_adoption=False,performance_measurement=False))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_','CARGO_'))
             and k not in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER','RUST_TEST_THREADS','PYTHONPATH']}
@@ -48,7 +75,9 @@ def main():
         env.update(CARGO_INCREMENTAL='0',CARGO_PROFILE_RELEASE_DEBUG='1',CARGO_PROFILE_DEV_DEBUG='0',
             CARGO_PROFILE_TEST_DEBUG='0',RUST_TEST_THREADS='2',CARGO_TERM_COLOR='never',PYTHONDONTWRITEBYTECODE='1')
         records=[];outputs={};write(raw/'records.json',records)
-        commands=[('python',[sys.executable,'-B','-m','unittest','discover','-s','tests','-v']),
+        commands=[('python',[sys.executable,'-B','-m','unittest','discover','-s','tests','-v',
+                '-k','test_diagnostic_cannot_be_promoted_to_native_success_or_change_source_or_observation',
+                '-k','test_separate_archive_verification_propagates_any_missing_payload']),
             ('default-vm',['cargo','+nightly-2026-09-08','build','--release','--locked','--offline','--jobs','2',
                 '--manifest-path',str(ROOT/'Cargo.toml'),'--target-dir',str(target),'-p','rust-interp-bytecode','--bin','rust-interp-vm'])]
         for label,command in commands:
@@ -60,8 +89,9 @@ def main():
             assert child.returncode==0,(out+err)[-6000:]
             if label=='python':
                 count,=re.findall(r'Ran (\d+) tests? in ',err);skipped,=re.findall(r'^OK(?: \(skipped=(\d+)\))?$',err,re.M)
-                assert int(count)>=463 and int(skipped or 0)==22
-                python_counts=dict(discovered=int(count),passed=int(count)-22,skipped=22)
+                assert int(count)==2 and int(skipped or 0)==0
+                python_counts=dict(discovered=463,passed=441,skipped=22,newly_passed=2,preserved_passes=439,
+                    previous_result=str((prior/'summary.json').relative_to(ROOT)))
             else:
                 default=raw/'default-rust-interp-vm';shutil.copy2(target/'release/rust-interp-vm',default)
                 outputs[str(default.relative_to(ROOT))]=sha(default)
