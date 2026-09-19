@@ -2,13 +2,31 @@
 //! The caller's original Call PC/profile/budget charge has already happened.
 use crate::{Memory,Program,Reg,Limits,ExecutionProfile,PARTIAL_VALIDATION};
 use crate::scalar_ir::{self,native_leaf::Native};
-use std::cell::Cell;
+use std::cell::{Cell,RefCell};
 
 #[derive(Clone,Copy,Debug,Default)]
 struct Statistics {attempts:usize,commits:usize,declines:usize}
 thread_local! {
     static ENABLED:Cell<bool>=const {Cell::new(false)};
     static STATISTICS:Cell<Statistics>=Cell::new(Statistics::default());
+    static SNAPSHOT_ENABLED:Cell<bool>=const {Cell::new(false)};
+    static SNAPSHOT:RefCell<Option<(Vec<u8>,Vec<u8>)>>=const {RefCell::new(None)};
+}
+// Test-only success/error observation, recovered independently of the parked
+// store/path mechanisms. Normal execution allocates no diagnostic snapshot.
+impl Drop for Memory {
+    fn drop(&mut self) {
+        if SNAPSHOT_ENABLED.with(Cell::get) {
+            SNAPSHOT.with(|slot|*slot.borrow_mut()=Some((self.bytes.to_vec(),self.heap.bytes.to_vec())));
+        }
+    }
+}
+pub(crate) fn with_memory_snapshot<T>(run:impl FnOnce()->T)->(T,Option<(Vec<u8>,Vec<u8>)>) {
+    struct Enabled;
+    impl Drop for Enabled {fn drop(&mut self) {SNAPSHOT_ENABLED.with(|s|s.set(false));SNAPSHOT.with(|s|s.borrow_mut().take());}}
+    assert!(!SNAPSHOT_ENABLED.with(|s|s.replace(true)));let _enabled=Enabled;
+    SNAPSHOT.with(|s|s.borrow_mut().take());
+    let result=run();let bytes=SNAPSHOT.with(|s|s.borrow_mut().take());(result,bytes)
 }
 struct Enabled;
 impl Enabled {

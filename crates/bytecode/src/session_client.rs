@@ -81,6 +81,10 @@ pub(super) fn run(ready_path:&str,artifact:&str,catalog:&str,report:&str,limits:
     let (ready,ready_hash)=private_readiness(ready_path)?;
     let cwd=std::env::current_dir().map_err(|e|e.to_string())?;
     if ready["cwd"]!=cwd.to_string_lossy().as_ref() {return Err("session working directory differs".into());}
+    if limits.jit_indirect_calls && ready["indirect_calls"]!=true {
+        return Err("session server does not support indirect calls; no request sent".into());
+    }
+    let options=json!({"persistent_registers":limits.jit_persistent_registers,"scalar_calls":limits.jit_scalar_calls,"indirect_calls":limits.jit_indirect_calls});
     let (artifact,catalog)=input_bindings(artifact,catalog)?;let report=new_report(report)?;
     let mut environment=Vec::new();let mut charged=0usize;
     for (key,value) in std::env::vars_os() {
@@ -89,9 +93,10 @@ pub(super) fn run(ready_path:&str,artifact:&str,catalog:&str,report:&str,limits:
         if environment.len()>=4096 || charged>1024*1024 || key.contains(&0) || value.contains(&0) {return Err("session environment exceeds bound".into());}
         environment.push((key,value));
     }
-    let body=json!({"command":"run","artifact":artifact,"catalog":catalog,"report":report,"cwd":cwd,"environment":environment,
+    let mut body=json!({"command":"run","artifact":artifact,"catalog":catalog,"report":report,"cwd":cwd,"environment":environment,
         "budget":{"instructions":limits.instructions,"allocations":limits.allocations,"memory_bytes":limits.memory,
             "frames":limits.frames,"code_bytes":limits.jit_code_bytes,"persistent_registers":limits.jit_persistent_registers,"scalar_calls":limits.jit_scalar_calls}});
+    if ready["indirect_calls"]==true {body["budget"]["indirect_calls"]=limits.jit_indirect_calls.into();}
     let mut stream=UnixStream::connect(ready["socket"].as_str().unwrap()).map_err(|e|e.to_string())?;
     stream.set_read_timeout(Some(std::time::Duration::from_secs(30))).map_err(|e|e.to_string())?;
     stream.set_write_timeout(Some(std::time::Duration::from_secs(30))).map_err(|e|e.to_string())?;
@@ -135,7 +140,8 @@ pub(super) fn run(ready_path:&str,artifact:&str,catalog:&str,report:&str,limits:
             || result["completed"]!=result["selected"] || result["status"]!=response["status"] || result["schema_version"]!=1
             || result["mode"]!="prepared" || result["workers"]!=2 || result["poisoned"]!=false
             || result["runtime_limits"]!=json!({"instructions":limits.instructions,"allocations":limits.allocations,"memory_bytes":limits.memory,"frames":limits.frames})
-            || result["jit_code_limit_bytes"]!=limits.jit_code_bytes {
+            || result["jit_code_limit_bytes"]!=limits.jit_code_bytes
+            || ready["indirect_calls"]==true && result["jit_options"]!=options {
             return Err("session report identity or coverage differs".into());
         }
         let tests=result["tests"].as_array().ok_or("missing session test outcomes")?;

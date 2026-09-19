@@ -2,7 +2,8 @@ import copy,hashlib,json
 from pathlib import Path
 import sys,tempfile,unittest
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
-from template_session_receipt import read_receipt
+from template_session_receipt import read_receipt,validate_selection
+from types import SimpleNamespace
 
 class TemplateSessionReceipts(unittest.TestCase):
     def setUp(self):
@@ -56,5 +57,39 @@ class TemplateSessionReceipts(unittest.TestCase):
         for value in ['',None,'x'*64,4]:
             self.write(self.catalog,dict(artifact_sha256=value,entries=[]))
             with self.assertRaisesRegex(RuntimeError,'invalid catalog artifact digest'):self.read()
+
+    def capable_report(self,options):
+        ready=json.loads(self.ready.read_text());ready['indirect_calls']=True;self.write(self.ready,ready)
+        report=json.loads(self.report.read_text());report['jit_options']=options;self.write(self.report,report)
+        self.receipt['readiness_sha256']=self.sha(self.ready)
+        self.receipt['report_sha256']=self.receipt['response']['report_sha256']=self.sha(self.report)
+        self.write(self.path,self.receipt)
+
+    def test_session_composition_options_are_boolean_exact_and_match_the_request(self):
+        options=dict(persistent_registers=True,scalar_calls=True,indirect_calls=True)
+        self.capable_report(options)
+        self.assertIsNotNone(read_receipt(self.ready,self.report,self.artifact,self.catalog,0,expected_jit_options=options))
+        with self.assertRaisesRegex(RuntimeError,'requested JIT options differ'):
+            read_receipt(self.ready,self.report,self.artifact,self.catalog,0,expected_jit_options=dict(options,indirect_calls=False))
+        for bad in [None,{},dict(options,indirect_calls=1),dict(options,indirect_calls='true'),dict(options,extra=False)]:
+            self.capable_report(bad)
+            with self.assertRaisesRegex(RuntimeError,'invalid JIT options'):self.read()
+
+    def test_session_composition_old_server_cannot_claim_enabled_indirect_calls(self):
+        disabled=dict(persistent_registers=True,scalar_calls=True,indirect_calls=False)
+        self.assertIsNotNone(read_receipt(self.ready,self.report,self.artifact,self.catalog,0,expected_jit_options=disabled))
+        with self.assertRaisesRegex(RuntimeError,'server lacks indirect calls'):
+            read_receipt(self.ready,self.report,self.artifact,self.catalog,0,expected_jit_options=dict(disabled,indirect_calls=True))
+
+    def test_session_composition_selection_requires_explicit_server_capability(self):
+        args=SimpleNamespace(tool_key='a'*64,engine='jit',jit_resumable_calls=True,isolated_batch='prepared',suite_workers=2,
+            jit_shared_templates=False,jit_indirect_calls=True,allocation_trace=False,audit_entries=None,list_tests=False,
+            jit_template_session=self.ready.resolve(),suite_report=self.root/'new.json')
+        for capability in [None,False,1,'true']:
+            ready=json.loads(self.ready.read_text());ready['indirect_calls']=capability;self.write(self.ready,ready)
+            with self.assertRaisesRegex(ValueError,'does not support indirect'):validate_selection(args)
+        ready['indirect_calls']=True;self.write(self.ready,ready);validate_selection(args)
+        args.jit_shared_templates=True
+        with self.assertRaisesRegex(ValueError,'prepared two-worker'):validate_selection(args)
 
 if __name__=='__main__':unittest.main()

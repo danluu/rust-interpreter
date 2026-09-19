@@ -41,6 +41,7 @@ mod native_calls;
 mod native_regions;
 mod resumable;
 mod scalar_calls;
+mod indirect;
 mod call_slots;
 mod code_dump;
 mod code_spans;
@@ -63,6 +64,8 @@ mod relocatable_immediate_census;
 mod scratch_locals;
 #[cfg(test)]
 mod flush_census;
+#[cfg(test)]
+mod successor_flush_tests;
 #[cfg(test)]
 mod memory_parts;
 #[cfg(test)]
@@ -384,6 +387,7 @@ pub(crate) struct Jit<'a> {
     persistent_registers: bool,
     resumable: Option<resumable::Entries>,
     scalar: Option<scalar_calls::State>,
+    indirect: Option<indirect::Metadata<'a>>,
     #[cfg(test)]
     disable_call_slot_hints: bool,
     #[cfg(test)]
@@ -400,6 +404,8 @@ pub(crate) struct Jit<'a> {
     observe_flush: bool,
     #[cfg(test)]
     observe_memory_parts: bool,
+    #[cfg(test)]
+    omit_dead_exit_spills: bool,
     pub register_functions: usize,
     pub register_pairs: usize,
     pub liveness_declines: usize,
@@ -443,7 +449,7 @@ impl<'a> Jit<'a> {
             prepared: vec![false; program.functions.len()],
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
-            assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None, scalar: None,
+            assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None, scalar: None, indirect: None,
             #[cfg(test)]
             disable_call_slot_hints: false,
             #[cfg(test)]
@@ -460,6 +466,8 @@ impl<'a> Jit<'a> {
             observe_flush: false,
             #[cfg(test)]
             observe_memory_parts: false,
+            #[cfg(test)]
+            omit_dead_exit_spills: true,
             persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
             region_plans: if native_call_stubs { vec![native_regions::RegionPlan::default(); program.functions.len()] } else { vec![] } })
     }
@@ -753,7 +761,11 @@ impl<'a> Jit<'a> {
                 }
                 #[cfg(test)]
                 { a.flush_tail_consumed = terminal.is_none(); }
-                a.flush_facts(start, pc);
+                #[cfg(test)]
+                let retain_tail_reads = !self.omit_dead_exit_spills;
+                #[cfg(not(test))]
+                let retain_tail_reads = false;
+                a.flush_facts(start, pc, retain_tail_reads);
                 span!(Flush, None);
                 a.exit(terminal, pc)?;
                 if terminal.is_some() { span!(Operation, Some(pc - 1)); }
@@ -836,7 +848,12 @@ impl<'a> Jit<'a> {
                 operations += pc - start;
             }
             if pc == start {
-                if resumable && matches!(f.code[pc], Op::Call { .. } | Op::Return) {
+                if resumable && (matches!(f.code[pc], Op::Call { .. } | Op::Return)
+                    || match &f.code[pc] {
+                        Op::CallIndirect {arg_sizes,result_size,..} => self.indirect.as_ref()
+                            .and_then(|m|m.signature(arg_sizes,*result_size)).is_some(),
+                        _ => false,
+                    }) {
                     let offset = words.len() * 4;
                     let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), slots.get(&pc).map(Vec::as_slice))?;
                     code_spans::record(&mut spans, words.len(), pc, Some(pc),
@@ -1693,7 +1710,7 @@ impl Assembler<'_> {
             }
         }
     }
-    fn flush_facts(&mut self, start: usize, end: usize) {
+    fn flush_facts(&mut self, start: usize, end: usize, retain_tail_reads: bool) {
         // Registers are not guest-addressable. A value used only inside this
         // straight-line region needs no spill. Conservatively retain every
         // value read elsewhere. Also retain values read before their first
@@ -1702,7 +1719,10 @@ impl Assembler<'_> {
         let live: Vec<_> = self.facts.iter().filter_map(|(&reg, &fact)| {
             if matches!(fact, Fact::Physical { .. }) { return None; }
             if let Some(values) = self.values {
-                return (values.live.at(end - 1, reg) || values.live.after(end - 1, reg)).then_some((reg, fact));
+                // exit() consumes its branch operand from the unchanged facts
+                // and x5/x6 after flushing. Tree-call tails keep their prior rule.
+                return (values.live.after(end - 1, reg)
+                    || retain_tail_reads && values.live.at(end - 1, reg)).then_some((reg, fact));
             }
             self.reads[reg as usize]
                 .filter(|&(first, last)| matches!(fact, Fact::Cached { .. }) || first < start || last >= end || self.live_in.contains(&reg))

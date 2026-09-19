@@ -82,7 +82,7 @@ impl Collector {
                     || pc < row.region_pc || pc >= region.end || seen[pc] {
                     return Err("operation map invalid or repeated PC".into());
                 }
-                if row.kind == Kind::Transition && !matches!(f.code[pc], Op::Call { .. } | Op::Return) {
+                if row.kind == Kind::Transition && !matches!(f.code[pc], Op::Call { .. } | Op::CallIndirect { .. } | Op::Return) {
                     return Err("operation map invalid transition PC".into());
                 }
                 seen[pc] = true;
@@ -120,6 +120,7 @@ pub(super) struct Map<'a> {
     profiled: bool,
     persistent_registers: bool,
     resumable_calls: bool,
+    indirect_calls: bool,
     complete: bool,
     reconstructed_bytes_match: bool,
     spans: usize,
@@ -214,7 +215,7 @@ impl Jit<'_> {
         if assertions != self.assertions.len() { return Err("operation map incomplete assertion coverage".into()); }
         Ok(Map { schema_version: if self.scalar.is_some() {2} else {1}, pid: std::process::id(), arena_base, code_bytes: bytes.len(),
             code_sha256: format!("{:x}", Sha256::digest(bytes)), profiled: self.profiled,
-            persistent_registers: self.persistent_registers, resumable_calls: self.resumable.is_some(),
+            persistent_registers: self.persistent_registers, resumable_calls: self.resumable.is_some(), indirect_calls: self.indirect.is_some(),
             complete: true, reconstructed_bytes_match: true, spans, functions,
             note: "Reconstructed after execution and checked against this process's published bytes, entries and assertions. Spans cover emitted bytes, including unexecuted tails; zero-word operations are explicit. Transition spans include complete native Call/Return machinery. Scalar-leaf spans cover independently reconstructed whole bodies; they do not assign body words to individual original PCs. Static size is not sampled time or retired instructions. Diagnostic I/O is not benchmark evidence." })
     }
@@ -230,3 +231,6 @@ fn verify_words(words: &[u32], bytes: &[u8]) -> Result<(), String> {
 
 #[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
 mod tests;
+
+#[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+mod successor_flush;

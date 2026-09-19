@@ -453,6 +453,9 @@ pub struct Limits {
     pub jit_resumable_calls: bool,
     /// Experimental confined scalar leaves called directly by resumable code.
     pub jit_scalar_calls: bool,
+    /// Experimental native indirect Calls with exact signature/layout metadata.
+    /// Requires resumable calls; disabled by default.
+    pub jit_indirect_calls: bool,
     /// Diagnostic only: create a new directory containing published JIT bytes
     /// and address ranges after successful execution. Requires Engine::Jit.
     pub jit_code_dump: Option<std::path::PathBuf>,
@@ -475,6 +478,7 @@ impl Default for Limits {
             jit_persistent_registers: false,
             jit_resumable_calls: false,
             jit_scalar_calls: false,
+            jit_indirect_calls: false,
             jit_code_dump: None,
             jit_operation_map: false,
         }
@@ -735,6 +739,9 @@ fn execute_observed<const PROFILE: bool>(
     if engine == Engine::Interpreter && limits.jit_persistent_registers {
         return Err("persistent registers require the JIT engine".into());
     }
+    if limits.jit_indirect_calls && !limits.jit_resumable_calls {
+        return Err("native indirect calls require resumable calls".into());
+    }
     if limits.jit_resumable_calls {
         if engine != Engine::Jit { return Err("resumable calls require the JIT engine".into()); }
         if limits.jit_native_calls || limits.jit_native_call_stubs {
@@ -786,6 +793,10 @@ fn create_jit<'program, const PROFILE: bool, const USE_JIT: bool, const CALL_STU
         if limits.jit_scalar_calls {
             if program.version & PARTIAL_VALIDATION != 0 { return Err("scalar calls require full validation".into()); }
             jit.enable_scalar_calls();
+        }
+        if limits.jit_indirect_calls {
+            if program.version & PARTIAL_VALIDATION != 0 { return Err("native indirect calls require full validation".into()); }
+            jit.enable_indirect_calls();
         }
         jit.compile_nanos = started.elapsed().as_nanos();
     }

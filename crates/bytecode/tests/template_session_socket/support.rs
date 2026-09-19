@@ -247,3 +247,28 @@ fn vm_client_catalog_declarations_never_replace_server_input_validation() {
     let body=request(&socket.session,"binding-recovery",7,1,b"unused");
     assert!(client(&socket,"binding-recovery",&body,"yes",&[]).status.success());socket.close();
 }
+
+#[test]
+fn session_composition_client_transports_and_reports_explicit_indirect_options() {
+    let mut socket=Socket::start("composition-options",1024*1024);
+    assert_eq!(socket.private["indirect_calls"],true);
+    for enabled in [false,true,false] {
+        let id=socket.connect().1["next_id"].as_u64().unwrap();
+        let label=format!("composition-{id}");let body=request(&socket.session,&label,7,1,b"yes");
+        let extra=if enabled {&["--jit-indirect-calls"][..]} else {&[][..]};
+        let result=client(&socket,&label,&body,"yes",extra);
+        assert!(result.status.success(),"{}",String::from_utf8_lossy(&result.stderr));
+        let report:Value=serde_json::from_slice(&std::fs::read(body["report"].as_str().unwrap()).unwrap()).unwrap();
+        assert_eq!(report["jit_options"],json!({"persistent_registers":true,"scalar_calls":true,"indirect_calls":enabled}));
+    }
+    // Advertising no support must fail before sending; it cannot silently run
+    // the request with indirect calls disabled or consume a sequence number.
+    let ready_path=Path::new(socket.private["ready_path"].as_str().unwrap());
+    let bytes=std::fs::read(ready_path).unwrap();let mut old=socket.private.clone();old.as_object_mut().unwrap().remove("indirect_calls");
+    std::fs::write(ready_path,serde_json::to_vec(&old).unwrap()).unwrap();
+    let before=socket.connect().1["next_id"].clone();let body=request(&socket.session,"old-server",7,1,b"yes");
+    let result=client(&socket,"old-server",&body,"yes",&["--jit-indirect-calls"]);
+    assert!(!result.status.success());assert!(String::from_utf8_lossy(&result.stderr).contains("does not support indirect"));
+    assert!(!Path::new(body["report"].as_str().unwrap()).exists());assert_eq!(socket.connect().1["next_id"],before);
+    std::fs::write(ready_path,bytes).unwrap();socket.close();
+}

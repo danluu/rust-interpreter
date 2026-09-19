@@ -696,7 +696,9 @@ def _main(resources):
     if args.jit_template_session is not None:
         from template_session_receipt import read_receipt
         timings['template_session']=read_receipt(args.jit_template_session,args.suite_report,
-            artifacts[0],catalog,result.returncode,expected_artifact_sha256=timings.get('artifact_sha256'))
+            artifacts[0],catalog,result.returncode,expected_artifact_sha256=timings.get('artifact_sha256'),
+            expected_jit_options=dict(persistent_registers=args.jit_persistent_registers,
+                scalar_calls=args.jit_scalar_calls,indirect_calls=args.jit_indirect_calls))
     if args.suite_report is not None and args.suite_report.is_file():
         if args.suite_report.stat().st_size>16*1024*1024:
             raise RuntimeError('suite report exceeds 16 MiB')

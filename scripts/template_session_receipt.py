@@ -5,15 +5,17 @@ from pathlib import Path
 def validate_selection(args):
     if (args.tool_key is None or args.engine!='jit' or not args.jit_resumable_calls or
             args.isolated_batch!='prepared' or args.suite_workers!=2 or args.jit_shared_templates or
-            args.jit_indirect_calls or args.allocation_trace or args.audit_entries is not None or args.list_tests):
-        raise ValueError('--jit-template-session requires --tool-key and a prepared two-worker resumable suite without shared/indirect, tracing or discovery modes')
+            args.allocation_trace or args.audit_entries is not None or args.list_tests):
+        raise ValueError('--jit-template-session requires --tool-key and a prepared two-worker resumable suite without shared templates, tracing or discovery modes')
     ready=args.jit_template_session
     if not ready.is_absolute() or ready.resolve(strict=True)!=ready or not ready.is_file() or ready.stat().st_size>16*1024:
         raise ValueError('--jit-template-session requires a canonical absolute readiness file')
+    if args.jit_indirect_calls and json.loads(ready.read_bytes()).get('indirect_calls') is not True:
+        raise ValueError('session server does not support indirect calls')
     receipt=Path(str(args.suite_report)+'.session.json')
     if receipt.exists() or receipt.is_symlink():raise ValueError('session receipt already exists')
 
-def read_receipt(ready_path,report_path,artifact_path,catalog_path,returncode,*,expected_artifact_sha256=None):
+def read_receipt(ready_path,report_path,artifact_path,catalog_path,returncode,*,expected_artifact_sha256=None,expected_jit_options=None):
     # The server binds its actual input bytes to the catalog and receipt before
     # execution. With stats, also require the launcher's pre-execution digest.
     # Re-reading artifact_path here would describe a later file, not add proof
@@ -58,6 +60,14 @@ def read_receipt(ready_path,report_path,artifact_path,catalog_path,returncode,*,
             report.get('catalog_sha256')==receipt['catalog_sha256'] and report.get('mode')=='prepared' and report.get('workers')==2 and
             report.get('poisoned') is False and report.get('status')==response.get('status') and
             report.get('status')==('passed' if returncode==0 else 'failed'),'suite outcome differs')
+        if ready.get('indirect_calls') is True:
+            options=report.get('jit_options')
+            require(isinstance(options,dict) and set(options)=={'persistent_registers','scalar_calls','indirect_calls'} and
+                all(type(value) is bool for value in options.values()),'invalid JIT options')
+            if expected_jit_options is not None:
+                require(options==expected_jit_options,'requested JIT options differ')
+        elif expected_jit_options is not None:
+            require(expected_jit_options.get('indirect_calls') is False,'server lacks indirect calls')
         from suite_reports import validate_report
         validate_report(report,[entry['name'] for entry in catalog['entries']],'prepared',returncode==0)
         for field in ['user_us','system_us']:

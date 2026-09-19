@@ -23,7 +23,7 @@ struct Binding {path:String,sha256:String}
 #[derive(Clone,Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Budget {instructions:u64,allocations:usize,memory_bytes:usize,frames:usize,code_bytes:usize,
-    persistent_registers:bool,scalar_calls:bool}
+    persistent_registers:bool,scalar_calls:bool,#[serde(default)] indirect_calls:bool}
 impl Budget {
     fn limits(&self)->Result<Limits,String> {
         if self.instructions>100_000_000_000 || self.allocations>rust_interp_bytecode::MAX_ALLOCATION_LIMIT
@@ -32,7 +32,7 @@ impl Budget {
         }
         Ok(Limits{instructions:self.instructions,allocations:self.allocations,memory:self.memory_bytes,frames:self.frames,
             jit_code_bytes:self.code_bytes,jit_resumable_calls:true,jit_persistent_registers:self.persistent_registers,
-            jit_scalar_calls:self.scalar_calls,..Default::default()})
+            jit_scalar_calls:self.scalar_calls,jit_indirect_calls:self.indirect_calls,..Default::default()})
     }
 }
 #[derive(Deserialize)]
@@ -277,6 +277,7 @@ fn run_request(pool:&mut Pool,id:u64,body:Body)->Result<Value,String> {
         "tests":tests,"worker_records":rows,
         "artifact_sha256":artifact.sha256,"catalog_sha256":catalog.sha256,"poisoned":poisoned,
         "runtime_limits":{"instructions":limits.instructions,"allocations":limits.allocations,"memory_bytes":limits.memory,"frames":limits.frames},
+        "jit_options":{"persistent_registers":limits.jit_persistent_registers,"scalar_calls":limits.jit_scalar_calls,"indirect_calls":limits.jit_indirect_calls},
         "jit_code_limit_bytes":limits.jit_code_bytes,"seconds_before_report_write":started.elapsed().as_secs_f64(),
         "scope":"selected test bodies; fresh native owners and guest state, per-request environment; no source build or libtest/thread/unwind semantics"});
     #[cfg(feature = "jit-preparation-observer")]
@@ -321,7 +322,7 @@ fn readiness(bytes:usize,verify:bool,startup:Cpu)->Result<Value,String> {
         "template_miss_observer":cfg!(feature="jit-template-miss-observer"),
         "parameterized_literals":cfg!(feature="jit-parameterized-literals"),
         "shared_literal_keys":cfg!(feature="jit-shared-literal-keys"),
-        "duration_order":cfg!(feature="jit-session-duration-order"),
+        "duration_order":cfg!(feature="jit-session-duration-order"),"indirect_calls":true,
         "cpu_at_entry":startup,"cpu_at_ready":cpu()?}))
 }
 fn serve_stdio(bytes:usize,verify:bool)->Result<(),String> {
@@ -368,6 +369,17 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn session_composition_budget_defaults_and_explicit_indirect_options_are_strict() {
+        let mut value=json!({"instructions":100,"allocations":1,"memory_bytes":4096,"frames":4,"code_bytes":4096,
+            "persistent_registers":true,"scalar_calls":true});
+        assert!(!serde_json::from_value::<Budget>(value.clone()).unwrap().limits().unwrap().jit_indirect_calls);
+        value["indirect_calls"]=true.into();
+        assert!(serde_json::from_value::<Budget>(value.clone()).unwrap().limits().unwrap().jit_indirect_calls);
+        for invalid in [json!(1),json!("true"),Value::Null] {
+            value["indirect_calls"]=invalid;assert!(serde_json::from_value::<Budget>(value.clone()).is_err());
+        }
+    }
     #[test]
     #[cfg(all(feature="jit-session-duration-order",target_arch="aarch64",target_os="macos"))]
     fn duration_order_preserves_fresh_guests_current_budgets_and_original_indices() {

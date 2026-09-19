@@ -129,10 +129,20 @@ fn identity_mode(checked:&Checked<'_>,jit:&Jit<'_>,id:usize,emitter:&[u8;32],lim
     let f=jit.program.functions.get(id)?;
     if f.code.len()>500_000 || f.registers>65_536 {return None;}
     let mut ids=vec![];
-    for op in &f.code {
+    let mut indirect_signatures=vec![];
+    for (pc,op) in f.code.iter().enumerate() {
         if let Op::Call{function,..}=op {
-            if ids.len()==MAX_CALL_SITES {return None;}
+            if ids.len()+indirect_signatures.len()==MAX_CALL_SITES {return None;}
             ids.try_reserve(1).ok()?;ids.push(*function);
+        } else if let Op::CallIndirect{arg_sizes,result_size,..}=op {
+            if ids.len()+indirect_signatures.len()==MAX_CALL_SITES {return None;}
+            indirect_signatures.try_reserve(1).ok()?;
+            // The ordinal is program-wide: an unrelated signature edit may
+            // change the immediate compared with the current dynamic layout.
+            // Layout pointers/offsets/zeroing and entry targets are read only
+            // from this request's owner tables at execution, never embedded.
+            indirect_signatures.push((pc,jit.indirect.as_ref()
+                .and_then(|m|m.signature(arg_sizes,*result_size))));
         }
     }
     ids.sort_unstable();ids.dedup();
@@ -151,19 +161,19 @@ fn identity_mode(checked:&Checked<'_>,jit:&Jit<'_>,id:usize,emitter:&[u8;32],lim
     let assertion_base=(!rebind && f.code.iter().any(|op|matches!(op,Op::Assert{..}))).then_some(jit.assertions.len());
     #[cfg(test)]
     let test_flags=[jit.disable_call_slot_hints,jit.observe_guarded_local_retention,jit.observe_static_local_facts,
-        jit.observe_scalar_copy,jit.observe_scratch_locals,jit.scratch_values_enabled,jit.observe_flush,jit.observe_memory_parts];
+        jit.observe_scalar_copy,jit.observe_scratch_locals,jit.scratch_values_enabled,jit.observe_flush,jit.observe_memory_parts,jit.omit_dead_exit_spills];
     #[cfg(not(test))]
-    let test_flags=[false;8];
+    let test_flags=[false;9];
     let context=(cfg!(test),jit.program.version,&jit.program.target,jit.program.functions.len(),jit.uses_heap,
-        jit.persistent_registers,jit.scalar.is_some(),test_flags,assertion_base);
+        jit.persistent_registers,jit.scalar.is_some(),jit.indirect.is_some(),test_flags,assertion_base,indirect_signatures);
     let mut sink=BoundedHash::new(limit);
     #[cfg(not(feature = "jit-parameterized-literals"))]
-    bincode::serialize_into(&mut sink,&("cross-program-staging-model-v3",rebind,emitter,context,id,f,calls)).ok()?;
+    bincode::serialize_into(&mut sink,&("cross-program-staging-model-v4",rebind,emitter,context,id,f,calls)).ok()?;
     #[cfg(all(feature = "jit-parameterized-literals",not(feature = "jit-shared-literal-keys")))]
     {
         let literals=parameterized_literals::selected(f);
         let input=parameterized_literals::FunctionInput::new(f,&literals);
-        bincode::serialize_into(&mut sink,&("cross-program-staging-literals-v1",rebind,emitter,context,id,&literals,input,calls)).ok()?;
+        bincode::serialize_into(&mut sink,&("cross-program-staging-literals-v3",rebind,emitter,context,id,&literals,input,calls)).ok()?;
     }
     #[cfg(feature = "jit-shared-literal-keys")]
     {
@@ -176,7 +186,7 @@ fn identity_mode(checked:&Checked<'_>,jit:&Jit<'_>,id:usize,emitter:&[u8;32],lim
                 None=>shared_keys::body(f)?,
             }
         } else {shared_keys::body(f)?};
-        bincode::serialize_into(&mut sink,&("cross-program-staging-literals-v2",rebind,emitter,context,id,body,calls)).ok()?;
+        bincode::serialize_into(&mut sink,&("cross-program-staging-literals-v4",rebind,emitter,context,id,body,calls)).ok()?;
         // A short digest must not admit an oversized logical key. Charge both
         // its full normalized preimage and all current owner/callee inputs.
         if sink.bytes.checked_add(body.bytes)?>limit {return None;}
@@ -1223,4 +1233,5 @@ fn cross_program_template_lazy_context_declines_storage_without_changing_guest_e
     let counts=context.counts.borrow();assert!(counts.lookups>0 && counts.capture_declines>0);
     assert_eq!(counts.hits+counts.inserted,0);assert!(history.borrow().entries.is_empty());
 }
+include!("cross_program_composition_tests.rs");
 }
