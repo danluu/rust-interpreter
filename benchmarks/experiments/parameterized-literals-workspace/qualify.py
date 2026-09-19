@@ -6,7 +6,7 @@ import focus
 ROOT=focus.ROOT
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='parameterized-literals-qualification-01'
+RUN='parameterized-literals-qualification-02'
 def read(p):return json.loads(p.read_text())
 
 def main():
