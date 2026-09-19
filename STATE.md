@@ -300,3 +300,9 @@ Installed experimentalclient tool9f7aa601253a6817745070cf16a5122282d4fd9f70b33a1
 VMd84f7bc7b125ff5eaa15407ec2e5f80edb4180ca07ac8caf52a2132bad05a7e7,
 exactadoptedexporter/wrapper; serverc17f9eeb1b022f62ba5149cc425a2bbc9a67d0edca1f7e2bbc7aa8cfe6b8110b.
 This is unadopted candidate only. No activeexperiment afterclosure.
+
+Main publication now416c4fc2 PUSHED, preserving peer73171edb/f67bd00f. Includes
+closed endpoint/client/launcher docs/results and qualified2line archivefixturefix
+a79ea80f. Runtimecandidate remainsbranchonly. Parser-client01 prepared to replay
+16VMcommands/1,824actualsavedparsertests withhistoryoff/on, allhitsverified and
+same launcherreceiptverifier; serverCPU reconcileswithwait4. No sourcebuildtiming.

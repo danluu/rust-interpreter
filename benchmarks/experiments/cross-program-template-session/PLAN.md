@@ -186,3 +186,12 @@ hash/manifest/raw-evidence checks. Production compiler helpers are unchanged.
 Launcher02 verifies these exact two-line additions and every other Rust/script/test
 hash, preserves the439 passes, and runs only the two repaired controls plus the
 unstarted ordinary VM build/install. No full-suite rerun or skipped failure.
+
+Parser-client01 uses the installed qualified client/server for16 separate VM
+commands against the eight retained actual parser states, historyoff/on with
+verification enabled. Bind native expected outcomes and all source/artifact hashes
+to closed suites01. Run the same receipt verifier used by interpreter.py, compare
+all1,824 outcomes/failure texts, verify each cache hit and reconcile server process
+CPU to kernel wait4. Controllers close their owner pipes and reap exact children.
+Retain each completed client/log/report before subsequent assertions. No source
+rebuild, timing claim or original-project mutation in this qualification stage.
