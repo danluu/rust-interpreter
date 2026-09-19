@@ -1,0 +1,125 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-11/audit.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-12/audit.py
+@@ -1,4 +1,4 @@
+-"""Read-only installation06 saved-evidence orchestration, awaiting source review.
++"""Read-only installation07 saved-evidence orchestration, awaiting source review.
+ 
+ This module has no CLI and publishes nothing. A separately reviewed bounded
+ entry must authenticate its own source, actual53/45 qualification, the complete
+@@ -21,12 +21,12 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+-HERE = ROOT/'experiments/hir-options-hash-runtime-audit-11'
++HERE = ROOT/'experiments/hir-options-hash-runtime-audit-12'
+ QUALIFIED_AUDIT = ROOT/'experiments/hir-options-hash-runtime-audit-05'
+-ATTEMPT = ROOT/'experiments/runtime-installation-after-preflight05-02'
++ATTEMPT = ROOT/'experiments/runtime-installation-after-preflight05-03'
+ PREFLIGHT_SOURCE = ROOT/'experiments/runtime-preflight-retry-05'
+ ROUTES_PATH = ATTEMPT/'routes.json'
+-ROUTES_SHA = 'ef75ddf2057ebd395a159623d387b01051ee1479363bf9c878f7641b99ec0dd2'
++ROUTES_SHA = 'd339e74a11edb948f3cf4bcc0afbbba76887cc61aed125c8bb8bf62b1633723a'
+ PHASE_SOURCE = ROOT/'experiments/hir-options-hash-runtime-audit-04'
+ SOURCE = X/'experiments/hir-options-hash/runtime-installation-04'
+ HASH = ROOT/'experiments/hir-options-hash-driver-stage-03'
+@@ -50,6 +50,14 @@
+ INSTALLATION_WORK = ROOT/'.work/runtime-installation-controls-07'
+ INSTALLATION_AUDIT = ROOT/'.work/runtime-installation-controls-independent-verification-07.json'
+ INSTALLATION_COUNT = 25  # Source-derived; actual proof is required separately.
++HISTORICAL_INSTALLATION_SOURCE = ROOT/'experiments/runtime-installation-after-preflight05-02'
++LOADER_SOURCE = ROOT/'experiments/runtime-native-loader-probes-01'
++NATIVE_CONTROL = ROOT/'experiments/runtime-installation-controls-08'
++NATIVE_WORK = ROOT/'.work/runtime-installation-controls-08'
++NATIVE_AUDIT = ROOT/'.work/runtime-installation-controls-independent-verification-08.json'
++NATIVE_COUNT = 48  # Final source-derived suite; actual controls08 proof remains unbound.
++NATIVE_FILES = (*RETRY_FILES, 'imports.py')
++NATIVE_LOADER_FILES = ('runtime_compiler.py', 'producer_recipe.py', 'audit_recipe.py')
+ LINK_SOURCE = ROOT/'experiments/runtime-frozen-link-reader-01'
+ LINK_CONTROL = ROOT/'experiments/runtime-frozen-link-controls-01'
+ LINK_RESULT = ROOT/'results/runtime-frozen-link-controls-01/result.json'
+@@ -338,7 +346,7 @@
+ 
+ def preparation_source_equality(source_rows, files):
+     """Check the whole retained preparation table, including nonpacket sources."""
+-    require(type(source_rows) is dict and 0 < len(source_rows) <= 512
++    require(type(source_rows) is dict and 0 < len(source_rows) <= 520
+         and sum(row['size'] for row in source_rows.values()) <= 8*2**20,
+         'bounded actual preparation source union required')
+     for name, row in source_rows.items():
+@@ -493,7 +501,7 @@
+ 
+ 
+ def verify(*, phase, expected, prepared, inspection, io, reader, recipe,
+-           preflight, final_runtime, factory, entry, actual53, startup_owner, actual39, actual_retry, actual_installation, resource_module, link_reader, actual_links, completed_evidence, guard):
++           preflight, final_runtime, factory, entry, actual53, startup_owner, actual39, actual_retry, actual_installation, actual_native, resource_module, link_reader, actual_links, completed_evidence, guard):
+     """Verify one actual phase with an authenticated inspection context.
+ 
+     ``prepared`` is the original fully expanded runtime freeze. ``inspection``
+@@ -511,10 +519,10 @@
+                  {k:v for k,v in inspection['value'].items() if k != 'files'}),
+             'inspection union changed original runtime metadata')
+     source_identity(reader, io, QUALIFIED_AUDIT/'reader.py')
+-    source_identity(recipe, io, PHASE_SOURCE/'recipe.py')
++    source_identity(recipe, io, LOADER_SOURCE/'audit_recipe.py')
+     source_identity(preflight, io, PHASE_SOURCE/'preflight.py')
+     source_identity(final_runtime, io, PHASE_SOURCE/'final_runtime.py')
+-    source_identity(factory, io, SOURCE/'imports.py')
++    source_identity(factory, io, ATTEMPT/'imports.py')
+     source_identity(entry, io, ATTEMPT/'entry.py')
+     source_identity(startup_owner, io, ATTEMPT/'audit_owner.py')
+     source_identity(startup_owner.environment, io, STARTUP_SOURCE/'environment.py')
+@@ -543,8 +551,14 @@
+     require(actual_installation['path'] == str(INSTALLATION_AUDIT), 'exact installation control route required')
+     installation_controls = actual_controls(reader, io, actual_installation,
+         source=INSTALLATION_CONTROL, work=INSTALLATION_WORK,
+-        modules=[ATTEMPT/name for name in RETRY_FILES], tests=[ATTEMPT/'test_installation.py'], count=INSTALLATION_COUNT)
+-    installation_qualification = dict(installation_controls, source=str(INSTALLATION_CONTROL), evidence=str(INSTALLATION_WORK))
++        modules=[HISTORICAL_INSTALLATION_SOURCE/name for name in RETRY_FILES], tests=[HISTORICAL_INSTALLATION_SOURCE/'test_installation.py'], count=INSTALLATION_COUNT)
++    historical_installation_qualification = dict(installation_controls, source=str(INSTALLATION_CONTROL), evidence=str(INSTALLATION_WORK))
++    require(type(NATIVE_COUNT) is int and NATIVE_COUNT > 0 and actual_native['path'] == str(NATIVE_AUDIT),
++        'separate current native-loader qualification remains unbound')
++    native_controls = actual_controls(reader, io, actual_native, source=NATIVE_CONTROL, work=NATIVE_WORK,
++        modules=[ATTEMPT/name for name in NATIVE_FILES] + [LOADER_SOURCE/name for name in NATIVE_LOADER_FILES],
++        tests=[ATTEMPT/'test_installation.py', ATTEMPT/'test_imports.py', LOADER_SOURCE/'test_native_loader.py'], count=NATIVE_COUNT)
++    installation_qualification = dict(native_controls, source=str(NATIVE_CONTROL), evidence=str(NATIVE_WORK))
+     require(type(LINK_COUNT) is int and LINK_COUNT > 0, 'frozen-link qualification count remains unbound')
+     require(actual_links['path'] == str(LINK_RESULT), 'exact separately qualified frozen-link controls')
+     link_controls = frozen_link_controls(actual_links, read_json=io.read_json,read_bytes=io.read_bytes,
+@@ -568,7 +582,8 @@
+     completed_before = completed_directory_readback(declared, io)
+     require(same(completed_before, completed_evidence['observed']), 'completed directories changed after bootstrap')
+     require(same(plan['retry_qualification'], retry_qualification), 'separate actual retry qualification differs')
+-    require(same(plan['installation_qualification'], installation_qualification), 'separate actual installation qualification differs')
++    require(same(plan['historical_installation_qualification'], historical_installation_qualification), 'historical installation qualification differs')
++    require(same(plan['installation_qualification'], installation_qualification), 'separate current native-loader installation qualification differs')
+     prior_failure = failed_predecessor(plan, routes, io)
+     terminal = io.read_json(work/'receipt.json'); supervisor = io.read_json(outer/'status.json')
+     launcher = io.read_json(expected['launcher_record']); snapshot = io.read_json(packet/'snapshot-plan.json')
+@@ -598,6 +613,14 @@
+     current_guard(inspection['value'], io, guard, frozen_links, full=True)
+     link_observations_before = frozen_link_observations(frozen_links)
+     modules = factory.definitions(HASH, io.file)
++    source_identity(modules.q.runtime, io, LOADER_SOURCE/'runtime_compiler.py')
++    source_identity(modules.recipe, io, LOADER_SOURCE/'producer_recipe.py')
++    require(modules.public_aliases['runtime_compiler'] is modules.q.runtime,
++        'source qualification captured a different runtime module')
++    native_specification = io.read_json(plan['specification']['path'])
++    native_loader_policy = modules.q.runtime.loader_probe_policy(native_specification)
++    require(native_loader_policy is not None and same(native_loader_policy, routes['loader_probe']),
++        'current installation requires its explicit host-derived loader probe policy')
+     startup_owner.owner(plan, launch, terminal, supervisor, launcher, phase=phase, expected=expected,
+         sha=io.sha, read_json=io.read_json, original=reader, workload_environment=workload_environment,
+         validate_qualification=lambda given: same(given, startup_qualification),
+@@ -705,10 +728,11 @@
+         actual_children=len(desired), original_prepared_files=len(prepared['files']),
+         inspection_union=copy.deepcopy(inspection['report']), historical_copy_retirement=retired,
+         actual53=controls53, phase45=controls45, producer52=controls52, continuation70=controls70,
+-        startup39=controls39, retry_controls=retry_controls, installation_controls=installation_controls,
++        startup39=controls39, retry_controls=retry_controls, installation_controls=installation_controls, native_loader_controls=native_controls,
+         source_preflight_audit=copy.deepcopy(expected['source_preflight_audit']), attempt=copy.deepcopy(plan['attempt']),
+         failed_predecessor=prior_failure, saved_audit_source=str(HERE),
+         installation_resources=installation_resources,
++        native_loader_policy=native_loader_policy,
+         historical_saved_audits={key:copy.deepcopy(io.read_json(expected['source_preflight_audit']['path'])[key])
+             for key in ['failed_saved_audit','prior_failed_saved_audit','prior_failed_completed_directory_audit']},
+         completed_evidence_directories=dict(declaration=declared, observed=completed_after, before_after_equal=True),

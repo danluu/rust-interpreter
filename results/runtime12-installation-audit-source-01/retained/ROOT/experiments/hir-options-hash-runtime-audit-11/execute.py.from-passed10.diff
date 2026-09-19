@@ -1,0 +1,171 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-10/execute.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-11/execute.py
+@@ -22,11 +22,12 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-HERE = ROOT/'experiments/hir-options-hash-runtime-audit-10'
++HERE = ROOT/'experiments/hir-options-hash-runtime-audit-11'
+ QUALIFIED_AUDIT = ROOT/'experiments/hir-options-hash-runtime-audit-05'
+-ATTEMPT = ROOT/'experiments/runtime-preflight-retry-05'
++ATTEMPT = ROOT/'experiments/runtime-installation-after-preflight05-02'
+ ROUTES_PATH = ATTEMPT/'routes.json'
+-ROUTES_SHA = '893d6102741b5206a829e2f5e130614667140b1eacc09d0c55616f7311f82e6a'
++ROUTES_SHA = 'ef75ddf2057ebd395a159623d387b01051ee1479363bf9c878f7641b99ec0dd2'
++SOURCE_PREFLIGHT_SHA = 'e2ec858a1e52e6b7573807d8834673699efcdf29ccdd801a84a973322cd9179a'
+ ADAPTER = ATTEMPT
+ STARTUP_SOURCE = ROOT/'experiments/runtime04-environment-adapter-01'
+ LINK_SOURCE = ROOT/'experiments/runtime-frozen-link-reader-01'
+@@ -119,7 +120,7 @@
+ 
+ def inventory(args):
+     value = read(args.source_inventory, args.source_inventory_sha256, 2**20)
+-    require(set(value) == {'policy', 'sources'} and value['policy'] == 'runtime10-reviewed-sources-v1'
++    require(set(value) == {'policy', 'sources'} and value['policy'] == 'runtime11-reviewed-sources-v1'
+             and type(value['sources']) is dict and 8 <= len(value['sources']) <= 24,
+             'bounded reviewed final source inventory required')
+     required = {str(HERE/name) for name in ['bootstrap.py','audit.py','prepare_manifest.py','execute.py','test_completed_directories.py','test_tail.py']} | {
+@@ -172,6 +173,24 @@
+         require(len(values) == 1, 'one source-bound retry count required')
+         count = ast.literal_eval(values[0])
+         require(type(count) is int and count == retry['count'], 'retry producer/auditor counts differ before child')
++    installation_values = [node.value for node in ast.parse(raw(HERE/'prepare_manifest.py')).body
++                           if isinstance(node, ast.Assign) and len(node.targets) == 1
++                           and isinstance(node.targets[0], ast.Name) and node.targets[0].id == 'INSTALLATION_CHAIN']
++    require(len(installation_values) == 1, 'one literal installation qualification declaration required')
++    installation = ast.literal_eval(installation_values[0])
++    require(type(installation) is dict and type(installation['count']) is int and installation['count'] == 25
++        and all(type(installation[key]) is str and re.fullmatch('[a-f0-9]{64}', installation[key])
++                for key in ['audit_sha256','execution_sha256','preparation_sha256'])
++        and all(type(installation[key]) is str and installation[key] for key in
++                ['supervisor','dispatcher','launcher','verifier','executor','execution','preparation','preparation_wrapper']),
++        'future actual installation qualification remains unbound; refuse before evidence or child')
++    for path, name in [(HERE/'audit.py', 'INSTALLATION_COUNT'), (HERE/'bootstrap.py', 'INSTALLATION_COUNT'),
++                       (ATTEMPT/'entry.py', 'INSTALLATION_CONTROL_COUNT')]:
++        values = [node.value for node in ast.parse(raw(path)).body
++                  if isinstance(node, ast.Assign) and len(node.targets) == 1
++                  and isinstance(node.targets[0], ast.Name) and node.targets[0].id == name]
++        require(len(values) == 1 and ast.literal_eval(values[0]) == installation['count']
++                and type(ast.literal_eval(values[0])) is int, 'installation producer/auditor counts differ before child')
+     link_proofs = []
+     for path in [HERE/'prepare_manifest.py',HERE/'audit.py']:
+         values = [node.value for node in ast.parse(raw(path)).body if isinstance(node,ast.Assign)
+@@ -203,30 +222,42 @@
+ 
+ 
+ def manifest_root(phase):
+-    require(phase in ['preflight'], 'exact runtime phase')
+-    return ROOT/('.work/runtime10-saved-audit-'+phase+'-manifest-01')
++    require(phase in ['installation'], 'exact runtime phase')
++    return ROOT/('.work/runtime11-saved-audit-'+phase+'-manifest-01')
+ 
+ 
+ def preparation_execution(phase):
+-    require(phase in ['preflight'], 'exact runtime phase')
+-    return ROOT/('.work/runtime10-saved-audit-'+phase+'-manifest-preparation-execution-01')
++    require(phase in ['installation'], 'exact runtime phase')
++    return ROOT/('.work/runtime11-saved-audit-'+phase+'-manifest-preparation-execution-01')
+ 
+ 
+ def attempt_routes():
+     routes = read(ROUTES_PATH, ROUTES_SHA, 2**20)
+-    require(routes['phase'] == 'preflight' and routes['attempt_source'] == str(ATTEMPT)
++    require(routes['phase'] == 'installation' and routes['attempt_source'] == str(ATTEMPT)
+         and routes['qualified_source'] == str(RUNTIME), 'fixed attempt routes differ')
+     return routes
+ 
+ 
+ def runtime_paths(phase):
+-    require(phase == 'preflight', 'preflight-only retry audit')
++    require(phase == 'installation', 'installation-only saved audit')
+     routes = attempt_routes()
+     packet = Path(routes['packet']); work = Path(routes['work'])
+     outer = Path(routes['supervisor']); launcher = Path(routes['launcher_execution'])
+     return dict(launch=packet/'launch.json', inputs=packet/'inputs.json', snapshot_plan=packet/'snapshot-plan.json',
+                 receipt=work/'receipt.json', result=work/'source-probe/result.json', outer=outer/'status.json',
+                 launcher_record=launcher/'record.json')
++
++
++def source_preflight_reference(expected_sha):
++    prior = attempt_routes()['preflight']
++    reference = dict(path=prior['report'], sha256=digest(expected_sha))
++    require(reference['sha256'] == SOURCE_PREFLIGHT_SHA, 'actual completed audit10 digest required')
++    audit = read(reference['path'], reference['sha256'], 4*2**20)
++    require(audit['status'] == 'verified' and audit['phase'] == 'preflight'
++            and type(audit['actual_children']) is int and audit['actual_children'] == 2
++            and same(audit['attempt'], prior['descriptor']),
++            'actual separately audited source-preflight prerequisite required')
++    return reference
+ 
+ 
+ def producer_preparation_closure(args):
+@@ -240,7 +271,8 @@
+             and record['runtime_admission'] is False and record['signals'] == []
+             and record['finished_at'] <= record['readback_finished_at'],
+             'actual closed runtime preparation required before manifest preparation')
+-    return dict(preparation=dict(path=str(path), sha256=args.runtime_preparation_sha256),
++    preflight = source_preflight_reference(args.source_preflight_audit_sha256)
++    return dict(source_preflight_audit=preflight, preparation=dict(path=str(path), sha256=args.runtime_preparation_sha256),
+                 preparation_launcher=dict(path=str(PREPARATION_LAUNCHER), sha256=args.runtime_preparation_launcher_sha256))
+ 
+ 
+@@ -250,8 +282,8 @@
+     manifest = read(output/'manifest.json', args.manifest_sha256, 4*2**20)
+     preparation = read(output/'preparation.json', args.preparation_sha256, 4*2**20)
+     execution = read(preparation_evidence/'record.json', args.preparation_record_sha256, 4*2**20)
+-    require(set(manifest) == {'policy', 'files', 'actual53', 'phase45', 'preparation', 'preparation_launcher', 'startup_controls', 'retry_controls', 'frozen_links_controls', 'failed_audit'}
+-            and manifest['policy'] == 'runtime05-complete-preparation-saved-audit-source-manifest-v1'
++    require(set(manifest) == {'policy', 'files', 'actual53', 'phase45', 'preparation', 'preparation_launcher', 'startup_controls', 'retry_controls', 'frozen_links_controls', 'installation_controls', 'source_preflight_audit'}
++            and manifest['policy'] == 'runtime06-installation-complete-saved-audit-source-manifest-v1'
+             and type(manifest['files']) is dict and 0 < len(manifest['files']) <= 320
+             and all(type(row['size']) is int and row['size'] >= 0 for row in manifest['files'].values())
+             and sum(row['size'] for row in manifest['files'].values()) <= 8*2**20,
+@@ -289,6 +321,10 @@
+             and same(preparation['runtime_preparation']['preparation'], manifest['preparation'])
+             and same(preparation['runtime_preparation']['preparation_launcher'], manifest['preparation_launcher']),
+             'exact phase-specific runtime preparation association differs')
++    preflight = source_preflight_reference(args.source_preflight_audit_sha256)
++    require(same(manifest['source_preflight_audit'], preflight)
++            and same(preparation['source_preflight_audit'], preflight),
++            'explicit source-preflight qualification differs from prepared manifest')
+     paths = runtime_paths(args.phase)
+     values = {name: read(path, getattr(args, name+'_sha256')) for name, path in paths.items()}
+     terminal = values['receipt']; outer = values['outer']; launcher = values['launcher_record']
+@@ -326,15 +362,17 @@
+     parser.add_argument('mode', choices=['prepare', 'audit'])
+     parser.add_argument('--source-inventory', type=Path, required=True)
+     parser.add_argument('--source-inventory-sha256', required=True)
+-    parser.add_argument('--phase', choices=['preflight'], required=True)
++    parser.add_argument('--phase', choices=['installation'], required=True)
+     parser.add_argument('--runtime-preparation-sha256')
+     parser.add_argument('--runtime-preparation-launcher-sha256')
++    parser.add_argument('--source-preflight-audit-sha256', required=True)
+     for name in ['manifest', 'preparation', 'preparation-record', *PHASE_NAMES]:
+         parser.add_argument('--'+name+'-sha256')
+     args = parser.parse_args()
+     require(Path.cwd() == R and sys.dont_write_bytecode and not sys.flags.optimize
+             and Path(sys.executable).resolve(strict=True) == PYTHON, 'fixed owner/unoptimized Python -B required')
+     digest(args.source_inventory_sha256)
++    digest(args.source_preflight_audit_sha256)
+     resource.setrlimit(resource.RLIMIT_CPU, (900, 900))
+     pins = [getattr(args, name.replace('-', '_')+'_sha256') for name in
+             ['manifest', 'preparation', 'preparation-record', *PHASE_NAMES]]
+@@ -347,7 +385,7 @@
+     output = manifest_root(args.phase); preparation_evidence = preparation_execution(args.phase)
+     sources = inventory(args)
+     source = HERE/('prepare_manifest.py' if args.mode == 'prepare' else 'bootstrap.py')
+-    evidence = preparation_evidence if args.mode == 'prepare' else ROOT/('.work/runtime10-saved-audit-'+args.phase+'-execution-01')
++    evidence = preparation_evidence if args.mode == 'prepare' else ROOT/('.work/runtime11-saved-audit-'+args.phase+'-execution-01')
+     report = output/'preparation.json' if args.mode == 'prepare' else Path(attempt_routes()['report'])
+     require(not os.path.lexists(evidence) and not os.path.lexists(report)
+             and (args.mode != 'prepare' or not os.path.lexists(output)), 'fresh execution and publication routes')
+@@ -398,7 +436,8 @@
+             else:
+                 require(same(producer_preparation_closure(args), closure), 'actual producer preparation changed before admission')
+             recheck(); record.update(admitted_at=time.time(), free_bytes_before=owned.disk(R, 16))
+-            command = [str(PYTHON), '-B', str(source), '--canonical-fd', str(fd)]
++            command = [str(PYTHON), '-B', str(source), '--canonical-fd', str(fd),
++                       '--source-preflight-audit-sha256', args.source_preflight_audit_sha256]
+             if args.mode == 'prepare':
+                 command.extend(['--phase', args.phase, '--source-inventory', str(args.source_inventory),
+                                 '--source-inventory-sha256', args.source_inventory_sha256,

@@ -1,0 +1,295 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-11/prepare_manifest.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-12/prepare_manifest.py
+@@ -20,13 +20,14 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-HERE = ROOT/'experiments/hir-options-hash-runtime-audit-11'
++HERE = ROOT/'experiments/hir-options-hash-runtime-audit-12'
+ QUALIFIED_AUDIT = ROOT/'experiments/hir-options-hash-runtime-audit-05'
+-ATTEMPT = ROOT/'experiments/runtime-installation-after-preflight05-02'
++ATTEMPT = ROOT/'experiments/runtime-installation-after-preflight05-03'
+ ROUTES_PATH = ATTEMPT/'routes.json'
+-ROUTES_SHA = 'ef75ddf2057ebd395a159623d387b01051ee1479363bf9c878f7641b99ec0dd2'
++ROUTES_SHA = 'd339e74a11edb948f3cf4bcc0afbbba76887cc61aed125c8bb8bf62b1633723a'
+ SOURCE_PREFLIGHT_SHA = 'e2ec858a1e52e6b7573807d8834673699efcdf29ccdd801a84a973322cd9179a'
+ ADAPTER = ATTEMPT
++LOADER_SOURCE = ROOT/'experiments/runtime-native-loader-probes-01'
+ STARTUP_SOURCE = ROOT/'experiments/runtime04-environment-adapter-01'
+ LINK_SOURCE = ROOT/'experiments/runtime-frozen-link-reader-01'
+ LINK_CONTROL = ROOT/'experiments/runtime-frozen-link-controls-01'
+@@ -42,25 +43,29 @@
+ OWNED_SHA = '7021a15d3b806ab908f03276051d9d9ca9c9e208bbf8933a60229c9fb35bb68e'
+ FIELDS = ('dev', 'ino', 'mode', 'nlink', 'size', 'mtime_ns', 'ctime_ns')
+ STAMP_FIELDS = ('dev', 'ino', 'mode', 'size', 'mtime_ns', 'ctime_ns', 'nlink')
+-POLICY = 'runtime06-installation-complete-saved-audit-source-manifest-v1'
++POLICY = 'runtime07-installation-native-loader-saved-audit-source-manifest-v1'
+ # Source routes only. Reviewed source digests and the future retry-control
+ # proof chain must be bound independently before this draft can run.
+-INTEGRATION_SOURCE_PATHS = [
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/entry.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/controller.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/audit_owner.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/routes.json',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/prepare.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/prepare_once.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/launch.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/test_installation.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01/environment.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-frozen-link-reader-01/links.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-frozen-link-reader-01/test_links.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-frozen-link-controls-01/run_once.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-frozen-link-controls-01/child.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-frozen-link-controls-01/plan.json',
+-]
++INTEGRATION_SOURCE_PATHS = ['/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03/entry.py',
++ '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03/controller.py',
++ '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03/audit_owner.py',
++ '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03/routes.json',
++ '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03/prepare.py',
++ '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03/prepare_once.py',
++ '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03/launch.py',
++ '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03/test_installation.py',
++ '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01/environment.py',
++ '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-frozen-link-reader-01/links.py',
++ '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-frozen-link-reader-01/test_links.py',
++ '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-frozen-link-controls-01/run_once.py',
++ '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-frozen-link-controls-01/child.py',
++ '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-frozen-link-controls-01/plan.json',
++ '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03/imports.py',
++ '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03/test_imports.py',
++ '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-native-loader-probes-01/runtime_compiler.py',
++ '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-native-loader-probes-01/producer_recipe.py',
++ '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-native-loader-probes-01/audit_recipe.py',
++ '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-native-loader-probes-01/test_native_loader.py']
+ CORE_PATHS = tuple(HERE/name for name in ['bootstrap.py','audit.py','prepare_manifest.py','execute.py','test_completed_directories.py','test_tail.py']) + tuple(
+     QUALIFIED_AUDIT/name for name in ['audit_io.py','reader.py','test_reader.py','test_audit_io.py'])
+ START = time.monotonic()
+@@ -139,57 +144,14 @@
+     'tests': ['test_retry.py'], 'tested_source': 'runtime-preflight-retry-05',
+ }
+ 
+-PREPARATION_TABLE = {'path': '/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/.work/hir-options-hash-runtime-installation-preparation-execution-06/source-rows.json',
+- 'record_sha256': '2979f64660c2154d6fda90da711f3c967e15442cdb93191ff854ced5385c90f8',
+- 'row': {'size': 180903,
+-         'sha256': 'b7e76927bfc727cbad9542b3d6ac47c98289886d2fd6e2c6268831e65e24887d',
+-         'identity': {'dev': 16777229,
+-                      'ino': 1057118855,
+-                      'mode': 33152,
+-                      'nlink': 1,
+-                      'size': 180903,
+-                      'mtime_ns': 1789826797170219717,
+-                      'ctime_ns': 1789826797170219717}}}
+-
+-# Exact preparation-source gaps derived from the authenticated complete502-row table.
++PREPARATION_TABLE = {'path': '/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/.work/hir-options-hash-runtime-installation-preparation-execution-07/source-rows.json',
++ 'record_sha256': None,
++ 'row': None}
++
++# Future exact preparation-source gaps must be derived from its actual authenticated source table.
+ # No provider data or removed retained copies are added.
+-PREPARATION_EXTRA_PATHS = [
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/execute_runtime04_historical_copy_reader_01.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/execute_runtime_prerequisite_controls_audit_04.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/launch_runtime_prerequisite_controls_04_bounded.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime-prerequisite-controls-preparation-execution-04/source/child.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime-prerequisite-controls-preparation-execution-04/source/execution.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime-prerequisite-controls-preparation-execution-04/source/owned_stage.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime-prerequisite-controls-preparation-execution-04/source/prepare.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime-prerequisite-controls-preparation-execution-04/source/run.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime-prerequisite-controls-verification-execution-04/execution.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime-prerequisite-controls-verification-execution-04/source.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime04-historical-copy-reader-preparation-execution-01/source/common.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime04-historical-copy-reader-preparation-execution-01/source/execution.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime04-historical-copy-reader-preparation-execution-01/source/owned_stage.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime04-historical-copy-reader-preparation-execution-01/source/prepare.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime04-historical-copy-reader-preparation-execution-01/source/rehearse.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime04-historical-copy-reader-preparation-execution-02/source/common.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime04-historical-copy-reader-preparation-execution-02/source/execution.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime04-historical-copy-reader-preparation-execution-02/source/owned_stage.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime04-historical-copy-reader-preparation-execution-02/source/prepare.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime04-historical-copy-reader-preparation-execution-02/source/rehearse.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime04-historical-copy-reader-rehearsal-execution-02/source/common.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime04-historical-copy-reader-rehearsal-execution-02/source/execution.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime04-historical-copy-reader-rehearsal-execution-02/source/owned_stage.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime04-historical-copy-reader-rehearsal-execution-02/source/prepare.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime04-historical-copy-reader-rehearsal-execution-02/source/rehearse.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/verify_runtime_prerequisite_controls_04.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-historical-copy-reader-rehearsal-01/common.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-historical-copy-reader-rehearsal-01/prepare.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-historical-copy-reader-rehearsal-01/rehearse.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-historical-copy-reader-rehearsal-02/common.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-historical-copy-reader-rehearsal-02/prepare.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-historical-copy-reader-rehearsal-02/rehearse.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-historical-copy-reader-rehearsal-03/common.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-historical-copy-reader-rehearsal-03/prepare.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-historical-copy-reader-rehearsal-03/rehearse.py',
+-]
++PREPARATION_EXTRA_PATHS = None
++PREPARATION_EXTRA_COUNT = None  # Actual source-table comparison must establish this separately.
+ 
+ 
+ LINK_COUNT = 24  # Source-derived; actual result/record/manifest must be independently bound.
+@@ -213,9 +175,29 @@
+  'tests': ['test_installation.py'],
+  'tested_source': 'runtime-installation-after-preflight05-02'}
+ 
++NATIVE_CHAIN = {'count': 48,
++ 'namespace': 'runtime-installation-controls-08',
++ 'audit': 'runtime-installation-controls-independent-verification-08.json',
++ 'audit_sha256': 'a9c87c2f554f0abeaf877923c24636fce390b0f00cdf25d5117a6f902c4afa7d',
++ 'execution_sha256': '06f7db8da2385245e29fd4f8f1b0b947b4d44e3313bc83f3c77eb6163618192f',
++ 'preparation_sha256': '28e757e6eaf0397446aea4358f1170d86caa28d20717584dd7cb41798b5a103d',
++ 'supervisor': 'runtime-installation-controls-supervisor-08',
++ 'dispatcher': 'launch_runtime_installation_controls_08_bounded.py',
++ 'launcher': 'runtime-installation-controls-launcher-08',
++ 'verifier': 'verify_runtime_installation_controls_08.py',
++ 'executor': 'execute_runtime_installation_controls_audit_08.py',
++ 'execution': 'runtime-installation-controls-verification-execution-08',
++ 'preparation': 'runtime-installation-controls-preparation-execution-08',
++ 'preparation_wrapper': 'prepare_runtime_installation_controls_08_once.py',
++ 'tests': ['/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03/test_installation.py',
++           '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03/test_imports.py',
++           '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-native-loader-probes-01/test_native_loader.py'],
++ 'tested_source': 'runtime-installation-after-preflight05-03'}
++
++
+ def output_root(phase):
+     require(phase in ['installation'], 'exact runtime phase')
+-    return ROOT/('.work/runtime11-saved-audit-'+phase+'-manifest-01')
++    return ROOT/('.work/runtime12-saved-audit-'+phase+'-manifest-01')
+ 
+ 
+ def require(value, message):
+@@ -288,8 +270,8 @@
+                 'exact input bytes differ')
+         require(str(p) not in OBSERVED or same(OBSERVED[str(p)], row), 'input changed after first observation')
+         OBSERVED.setdefault(str(p), row)
+-        require(len(OBSERVED) <= 320 and sum(r['size'] for r in OBSERVED.values()) <= 8*2**20,
+-                'complete supplemental table exceeds 320 rows or 8MiB')
++        require(len(OBSERVED) <= 368 and sum(r['size'] for r in OBSERVED.values()) <= 8*2**20,
++                'complete supplemental table exceeds 368 rows or 8MiB')
+         return data
+     finally:
+         for fd in reversed(descriptors):
+@@ -416,7 +398,7 @@
+     require(handoff['directory'] == str(outer) and handoff['supervisor_pid'] == o['supervisor_pid']
+             == l['supervisor_pid'] and l['controller_pid'] == terminal['pid'] and raw(launcher/'stderr') == b'',
+             'actual launcher raw handoff differs')
+-    if count in [53, 39] or spec['namespace'] in [RETRY_CHAIN['namespace'],INSTALLATION_CHAIN['namespace']]:
++    if count in [53, 39] or spec['namespace'] in [RETRY_CHAIN['namespace'],INSTALLATION_CHAIN['namespace'],NATIVE_CHAIN['namespace']]:
+         require(l['observation_errors'] == [] and l['wrapper_may_be_live'] is False
+                 and l['actual_task_may_be_live'] is False and e['observation_errors'] == []
+                 and p['observation_errors'] == [], 'actual53 corrected observer retained an error')
+@@ -553,7 +535,7 @@
+     return reference
+ 
+ 
+-def runtime_preparation(phase, record_sha, launcher_sha, startup, retry, installation, preflight):
++def runtime_preparation(phase, record_sha, launcher_sha, startup, retry, installation, native, preflight):
+     """Bind a completed producer preparation, never its own future record.
+ 
+     The seven original packet rows remain in the original prepared scope. Their
+@@ -594,21 +576,22 @@
+     require(set(adapter) == {'preparer', 'source_manifest', 'startup_controls', 'retry_controls', 'installation_controls'}
+             and same(adapter['startup_controls'], startup['audit'])
+             and same(adapter['retry_controls'], retry['audit'])
+-            and same(adapter['installation_controls'], installation['audit'])
++            and same(adapter['installation_controls'], native['audit'])
+             and same(invocation['preflight'], preflight)
+             and same(adapter['preparer'], dict(path=str(ADAPTER/'prepare.py'), sha256=sha(ADAPTER/'prepare.py'))),
+             'actual preparation startup qualification/source association differs')
+     ref = adapter['source_manifest']; require(set(ref) == {'path', 'sha256'}, 'exact startup source manifest reference')
+     manifest = read(ref['path'], ref['sha256']); rows = read(directory/'source-rows.json')
+-    require(set(manifest) == {'status', 'files'} and manifest['status'] == 'reviewed-runtime-installation06-startup-source-closure'
+-            and type(manifest['files']) is dict and type(rows) is dict and len(rows) <= 512
++    require(set(manifest) == {'status', 'files'} and manifest['status'] == 'reviewed-runtime-installation07-startup-source-closure'
++            and type(manifest['files']) is dict and type(rows) is dict and len(rows) <= 520
+             and sum(row['size'] for row in rows.values()) <= 8*2**20,
+             'bounded actual preparation source table required')
+     require(str(directory/'source-rows.json') == PREPARATION_TABLE['path']
+         and record_sha == PREPARATION_TABLE['record_sha256']
+         and same(OBSERVED[str(directory/'source-rows.json')],PREPARATION_TABLE['row']),
+         'separately reviewed actual preparation table byte/identity binding differs')
+-    require(type(PREPARATION_EXTRA_PATHS) is list and len(PREPARATION_EXTRA_PATHS) == 35
++    require(type(PREPARATION_EXTRA_COUNT) is int and PREPARATION_EXTRA_COUNT >= 0
++        and type(PREPARATION_EXTRA_PATHS) is list and len(PREPARATION_EXTRA_PATHS) == PREPARATION_EXTRA_COUNT
+         and PREPARATION_EXTRA_PATHS == sorted(set(PREPARATION_EXTRA_PATHS)),
+         'exact reviewed preparation source gap declaration required')
+     for name in PREPARATION_EXTRA_PATHS:
+@@ -617,7 +600,7 @@
+         sha(name, rows[name]['sha256'])
+         require(same(OBSERVED[name], rows[name]), 'additional preparation source differs')
+     # The bootstrap independently expands the original full runtime table and
+-    # requires every one of the502 saved preparation rows before expensive reads.
++    # requires every saved preparation row before expensive reads.
+     for name, row in manifest['files'].items():
+         require(name in rows and same(rows[name], row), 'startup source omitted from actual preparation table')
+         if name in OBSERVED:
+@@ -661,21 +644,25 @@
+     output = output_root(args.phase)
+     require(Path.cwd() == R and sys.dont_write_bytecode and not sys.flags.optimize
+             and Path(sys.executable).resolve(strict=True) == PYTHON, 'fixed manifest owner/Python required')
+-    require(type(INTEGRATION_SOURCE_PATHS) is list and len(INTEGRATION_SOURCE_PATHS) <= 16
++    require(type(INTEGRATION_SOURCE_PATHS) is list and len(INTEGRATION_SOURCE_PATHS) == 20
+             and all(type(name) is str for name in INTEGRATION_SOURCE_PATHS)
+             and len(set(INTEGRATION_SOURCE_PATHS)) == len(INTEGRATION_SOURCE_PATHS)
+             and all((Path(name).parent in [HERE, ADAPTER] or name == str(STARTUP_SOURCE/'environment.py')
++                         or name in {str(LOADER_SOURCE/'runtime_compiler.py'),str(LOADER_SOURCE/'producer_recipe.py'),
++                                     str(LOADER_SOURCE/'audit_recipe.py'),str(LOADER_SOURCE/'test_native_loader.py')}
+                          or name in {str(LINK_SOURCE/'links.py'),str(LINK_SOURCE/'test_links.py'),
+                                      str(LINK_CONTROL/'run_once.py'),str(LINK_CONTROL/'child.py'),str(LINK_CONTROL/'plan.json')})
+                     and str(Path(name)) == name
+                     and name not in {str(path) for path in CORE_PATHS} for name in INTEGRATION_SOURCE_PATHS),
+             'final reviewed integration source list remains unbound')
++    sha_value(ROUTES_SHA)
++    require(type(NATIVE_CHAIN['count']) is int and NATIVE_CHAIN['count'] > 0, 'current native-loader count remains unbound')
+     require(type(RETRY_CHAIN['count']) is int and RETRY_CHAIN['count'] > 0, 'actual retry count remains unbound')
+     require(all(type(RETRY_CHAIN[key]) is str and RETRY_CHAIN[key] for key in
+         ['supervisor','dispatcher','launcher','verifier','executor','execution','preparation','preparation_wrapper']),
+         'actual retry proof routes remain unbound')
+     for name in ['audit_sha256', 'execution_sha256', 'preparation_sha256']:
+-        sha_value(STARTUP_CHAIN[name]); sha_value(RETRY_CHAIN[name]); sha_value(INSTALLATION_CHAIN[name])
++        sha_value(STARTUP_CHAIN[name]); sha_value(RETRY_CHAIN[name]); sha_value(INSTALLATION_CHAIN[name]); sha_value(NATIVE_CHAIN[name])
+     held = os.fstat(args.canonical_fd); named = CANONICAL.lstat()
+     require(stat.S_ISREG(named.st_mode) and named.st_nlink == held.st_nlink == 1
+             and (held.st_dev, held.st_ino) == (named.st_dev, named.st_ino), 'inherited canonical descriptor differs')
+@@ -683,7 +670,7 @@
+     resource.setrlimit(resource.RLIMIT_CPU, (900, 900)); resource.setrlimit(resource.RLIMIT_FSIZE, (4*2**20, 4*2**20))
+     require(not os.path.lexists(output), 'fresh phase-specific manifest output required')
+     inventory = read(args.source_inventory, sha_value(args.source_inventory_sha256))
+-    require(set(inventory) == {'policy', 'sources'} and inventory['policy'] == 'runtime11-reviewed-sources-v1'
++    require(set(inventory) == {'policy', 'sources'} and inventory['policy'] == 'runtime12-reviewed-sources-v1'
+             and type(inventory['sources']) is dict
+             and set(inventory['sources']) == ({str(path) for path in CORE_PATHS} | set(INTEGRATION_SOURCE_PATHS)),
+             'exact separately reviewed enclosing source inventory required')
+@@ -694,17 +681,18 @@
+     startup = control_chain(STARTUP_CHAIN)
+     retry = control_chain(RETRY_CHAIN)
+     installation = control_chain(INSTALLATION_CHAIN)
++    native = control_chain(NATIVE_CHAIN)
+     preflight = source_preflight_reference(args.source_preflight_audit_sha256)
+     frozen_links = frozen_link_controls(dict(path=str(LINK_RESULT),sha256=LINK_PROOF['result_sha256']),
+         read_json=read,read_bytes=raw,sha=sha,identity=lambda name:OBSERVED[str(name)]['identity'])
+     preparation = runtime_preparation(args.phase, args.runtime_preparation_sha256,
+-                                      args.runtime_preparation_launcher_sha256, startup, retry, installation, preflight)
++                                      args.runtime_preparation_launcher_sha256, startup, retry, installation, native, preflight)
+     rows = dict(sorted(OBSERVED.items()))
+     manifest = dict(policy=POLICY, files=rows, actual53=proofs[0]['audit'], phase45=proofs[1]['audit'],
+                     preparation=preparation['preparation'], preparation_launcher=preparation['preparation_launcher'],
+                     startup_controls=startup['audit'], retry_controls=retry['audit'],
+                     frozen_links_controls=frozen_links['result'],
+-                    installation_controls=installation['audit'], source_preflight_audit=preflight)
++                    installation_controls=installation['audit'], native_loader_controls=native['audit'], source_preflight_audit=preflight)
+     for name, row in rows.items():
+         sha(name, row['sha256']); require(same(OBSERVED[name], row), 'source changed before manifest publication')
+     guard(); output.mkdir(mode=0o700)
+@@ -713,7 +701,7 @@
+         sha(name, row['sha256']); require(same(OBSERVED[name], row), 'source changed after manifest publication')
+     summary = dict(status='prepared-audit-source-manifest', phase=args.phase, pid=os.getpid(), parent_pid=os.getppid(),
+                    source_inventory=dict(path=str(args.source_inventory), sha256=args.source_inventory_sha256),
+-                   manifest=dict(path=str(output/'manifest.json'), sha256=digest), controls=[*proofs, startup, retry, installation, frozen_links], source_preflight_audit=preflight,
++                   manifest=dict(path=str(output/'manifest.json'), sha256=digest), controls=[*proofs, startup, retry, installation, native, frozen_links], source_preflight_audit=preflight,
+                    runtime_preparation=preparation,
+                    files=len(rows), logical_bytes=sum(row['size'] for row in rows.values()),
+                    compiler_calls=0, provider_probes=0, process_signals=0, network_calls=0,

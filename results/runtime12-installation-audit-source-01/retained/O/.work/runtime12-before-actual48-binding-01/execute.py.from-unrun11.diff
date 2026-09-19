@@ -1,0 +1,122 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-11/execute.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-12/execute.py
+@@ -22,13 +22,14 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-HERE = ROOT/'experiments/hir-options-hash-runtime-audit-11'
++HERE = ROOT/'experiments/hir-options-hash-runtime-audit-12'
+ QUALIFIED_AUDIT = ROOT/'experiments/hir-options-hash-runtime-audit-05'
+-ATTEMPT = ROOT/'experiments/runtime-installation-after-preflight05-02'
++ATTEMPT = ROOT/'experiments/runtime-installation-after-preflight05-03'
+ ROUTES_PATH = ATTEMPT/'routes.json'
+-ROUTES_SHA = 'ef75ddf2057ebd395a159623d387b01051ee1479363bf9c878f7641b99ec0dd2'
++ROUTES_SHA = 'd339e74a11edb948f3cf4bcc0afbbba76887cc61aed125c8bb8bf62b1633723a'
+ SOURCE_PREFLIGHT_SHA = 'e2ec858a1e52e6b7573807d8834673699efcdf29ccdd801a84a973322cd9179a'
+ ADAPTER = ATTEMPT
++LOADER_SOURCE = ROOT/'experiments/runtime-native-loader-probes-01'
+ STARTUP_SOURCE = ROOT/'experiments/runtime04-environment-adapter-01'
+ LINK_SOURCE = ROOT/'experiments/runtime-frozen-link-reader-01'
+ LINK_CONTROL = ROOT/'experiments/runtime-frozen-link-controls-01'
+@@ -119,9 +120,10 @@
+ 
+ 
+ def inventory(args):
++    digest(ROUTES_SHA)  # Future current route must be reviewed before evidence or Popen.
+     value = read(args.source_inventory, args.source_inventory_sha256, 2**20)
+-    require(set(value) == {'policy', 'sources'} and value['policy'] == 'runtime11-reviewed-sources-v1'
+-            and type(value['sources']) is dict and 8 <= len(value['sources']) <= 24,
++    require(set(value) == {'policy', 'sources'} and value['policy'] == 'runtime12-reviewed-sources-v1'
++            and type(value['sources']) is dict and len(value['sources']) == 30,
+             'bounded reviewed final source inventory required')
+     required = {str(HERE/name) for name in ['bootstrap.py','audit.py','prepare_manifest.py','execute.py','test_completed_directories.py','test_tail.py']} | {
+         str(QUALIFIED_AUDIT/name) for name in ['audit_io.py','reader.py','test_reader.py','test_audit_io.py']}
+@@ -130,6 +132,8 @@
+     for name, expected in value['sources'].items():
+         path = Path(name)
+         require(str(path) == name and (path.parent in [HERE, ADAPTER] or str(path) in required or path == STARTUP_SOURCE/'environment.py'
++                or path in {LOADER_SOURCE/'runtime_compiler.py',LOADER_SOURCE/'producer_recipe.py',
++                            LOADER_SOURCE/'audit_recipe.py',LOADER_SOURCE/'test_native_loader.py'}
+                 or path in {LINK_SOURCE/'links.py',LINK_SOURCE/'test_links.py',
+                             LINK_CONTROL/'run_once.py',LINK_CONTROL/'child.py',LINK_CONTROL/'plan.json'})
+                 and re.fullmatch('[A-Za-z][A-Za-z0-9_.-]*', path.name),
+@@ -141,7 +145,7 @@
+                     and isinstance(node.targets[0], ast.Name) and node.targets[0].id == 'INTEGRATION_SOURCE_PATHS']
+     require(len(declarations) == 1, 'one literal reviewed integration source declaration required')
+     integration = ast.literal_eval(declarations[0])
+-    require(type(integration) is list and len(integration) <= 16 and all(type(name) is str for name in integration)
++    require(type(integration) is list and len(integration) == 20 and all(type(name) is str for name in integration)
+             and len(set(integration)) == len(integration) and not required.intersection(integration)
+             and set(value['sources']) == required | set(integration),
+             'final integration source binding is unset or differs; refuse before evidence or child')
+@@ -184,13 +188,30 @@
+         and all(type(installation[key]) is str and installation[key] for key in
+                 ['supervisor','dispatcher','launcher','verifier','executor','execution','preparation','preparation_wrapper']),
+         'future actual installation qualification remains unbound; refuse before evidence or child')
+-    for path, name in [(HERE/'audit.py', 'INSTALLATION_COUNT'), (HERE/'bootstrap.py', 'INSTALLATION_COUNT'),
++    for path, name in [(HERE/'audit.py', 'INSTALLATION_COUNT'), (HERE/'bootstrap.py', 'INSTALLATION_COUNT')]:
++        values = [node.value for node in ast.parse(raw(path)).body
++                  if isinstance(node, ast.Assign) and len(node.targets) == 1
++                  and isinstance(node.targets[0], ast.Name) and node.targets[0].id == name]
++        require(len(values) == 1 and ast.literal_eval(values[0]) == installation['count']
++                and type(ast.literal_eval(values[0])) is int, 'historical installation auditor counts differ before child')
++    native_values = [node.value for node in ast.parse(raw(HERE/'prepare_manifest.py')).body
++                     if isinstance(node, ast.Assign) and len(node.targets) == 1
++                     and isinstance(node.targets[0], ast.Name) and node.targets[0].id == 'NATIVE_CHAIN']
++    require(len(native_values) == 1, 'one literal current native-loader qualification declaration required')
++    native = ast.literal_eval(native_values[0])
++    require(type(native) is dict and type(native['count']) is int and native['count'] > 0
++        and all(type(native[key]) is str and re.fullmatch('[a-f0-9]{64}', native[key])
++                for key in ['audit_sha256','execution_sha256','preparation_sha256'])
++        and all(type(native[key]) is str and native[key] for key in
++                ['supervisor','dispatcher','launcher','verifier','executor','execution','preparation','preparation_wrapper']),
++        'future actual native-loader qualification remains unbound; refuse before evidence or child')
++    for path, name in [(HERE/'audit.py', 'NATIVE_COUNT'), (HERE/'bootstrap.py', 'NATIVE_COUNT'),
+                        (ATTEMPT/'entry.py', 'INSTALLATION_CONTROL_COUNT')]:
+         values = [node.value for node in ast.parse(raw(path)).body
+                   if isinstance(node, ast.Assign) and len(node.targets) == 1
+                   and isinstance(node.targets[0], ast.Name) and node.targets[0].id == name]
+-        require(len(values) == 1 and ast.literal_eval(values[0]) == installation['count']
+-                and type(ast.literal_eval(values[0])) is int, 'installation producer/auditor counts differ before child')
++        require(len(values) == 1 and type(ast.literal_eval(values[0])) is int
++                and ast.literal_eval(values[0]) == native['count'], 'current native-loader producer/auditor counts differ before child')
+     link_proofs = []
+     for path in [HERE/'prepare_manifest.py',HERE/'audit.py']:
+         values = [node.value for node in ast.parse(raw(path)).body if isinstance(node,ast.Assign)
+@@ -223,12 +244,12 @@
+ 
+ def manifest_root(phase):
+     require(phase in ['installation'], 'exact runtime phase')
+-    return ROOT/('.work/runtime11-saved-audit-'+phase+'-manifest-01')
++    return ROOT/('.work/runtime12-saved-audit-'+phase+'-manifest-01')
+ 
+ 
+ def preparation_execution(phase):
+     require(phase in ['installation'], 'exact runtime phase')
+-    return ROOT/('.work/runtime11-saved-audit-'+phase+'-manifest-preparation-execution-01')
++    return ROOT/('.work/runtime12-saved-audit-'+phase+'-manifest-preparation-execution-01')
+ 
+ 
+ def attempt_routes():
+@@ -282,9 +303,9 @@
+     manifest = read(output/'manifest.json', args.manifest_sha256, 4*2**20)
+     preparation = read(output/'preparation.json', args.preparation_sha256, 4*2**20)
+     execution = read(preparation_evidence/'record.json', args.preparation_record_sha256, 4*2**20)
+-    require(set(manifest) == {'policy', 'files', 'actual53', 'phase45', 'preparation', 'preparation_launcher', 'startup_controls', 'retry_controls', 'frozen_links_controls', 'installation_controls', 'source_preflight_audit'}
+-            and manifest['policy'] == 'runtime06-installation-complete-saved-audit-source-manifest-v1'
+-            and type(manifest['files']) is dict and 0 < len(manifest['files']) <= 320
++    require(set(manifest) == {'policy', 'files', 'actual53', 'phase45', 'preparation', 'preparation_launcher', 'startup_controls', 'retry_controls', 'frozen_links_controls', 'installation_controls', 'native_loader_controls', 'source_preflight_audit'}
++            and manifest['policy'] == 'runtime07-installation-native-loader-saved-audit-source-manifest-v1'
++            and type(manifest['files']) is dict and 0 < len(manifest['files']) <= 368
+             and all(type(row['size']) is int and row['size'] >= 0 for row in manifest['files'].values())
+             and sum(row['size'] for row in manifest['files'].values()) <= 8*2**20,
+             'complete bounded supplemental manifest required')
+@@ -385,7 +406,7 @@
+     output = manifest_root(args.phase); preparation_evidence = preparation_execution(args.phase)
+     sources = inventory(args)
+     source = HERE/('prepare_manifest.py' if args.mode == 'prepare' else 'bootstrap.py')
+-    evidence = preparation_evidence if args.mode == 'prepare' else ROOT/('.work/runtime11-saved-audit-'+args.phase+'-execution-01')
++    evidence = preparation_evidence if args.mode == 'prepare' else ROOT/('.work/runtime12-saved-audit-'+args.phase+'-execution-01')
+     report = output/'preparation.json' if args.mode == 'prepare' else Path(attempt_routes()['report'])
+     require(not os.path.lexists(evidence) and not os.path.lexists(report)
+             and (args.mode != 'prepare' or not os.path.lexists(output)), 'fresh execution and publication routes')

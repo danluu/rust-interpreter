@@ -1,0 +1,417 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-10/prepare_manifest.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-11/prepare_manifest.py
+@@ -20,22 +20,19 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-HERE = ROOT/'experiments/hir-options-hash-runtime-audit-10'
++HERE = ROOT/'experiments/hir-options-hash-runtime-audit-11'
+ QUALIFIED_AUDIT = ROOT/'experiments/hir-options-hash-runtime-audit-05'
+-ATTEMPT = ROOT/'experiments/runtime-preflight-retry-05'
++ATTEMPT = ROOT/'experiments/runtime-installation-after-preflight05-02'
+ ROUTES_PATH = ATTEMPT/'routes.json'
+-ROUTES_SHA = '893d6102741b5206a829e2f5e130614667140b1eacc09d0c55616f7311f82e6a'
++ROUTES_SHA = 'ef75ddf2057ebd395a159623d387b01051ee1479363bf9c878f7641b99ec0dd2'
++SOURCE_PREFLIGHT_SHA = 'e2ec858a1e52e6b7573807d8834673699efcdf29ccdd801a84a973322cd9179a'
+ ADAPTER = ATTEMPT
+ STARTUP_SOURCE = ROOT/'experiments/runtime04-environment-adapter-01'
+ LINK_SOURCE = ROOT/'experiments/runtime-frozen-link-reader-01'
+ LINK_CONTROL = ROOT/'experiments/runtime-frozen-link-controls-01'
+ LINK_RESULT = ROOT/'results/runtime-frozen-link-controls-01/result.json'
+-FAILED_LINK_AUDIT = dict(path=str(ROOT/'.work/runtime06-saved-audit-preflight-execution-01/record.json'),
+-    sha256='4b7e57aa4a1aa0bf09a6725dd47056497cd7a5ef56b0f3a36f2a77fce60fdb2b')
+-FAILED_COMPLETED_AUDIT = dict(path=str(ROOT/'.work/runtime08-saved-audit-preflight-execution-01/record.json'),
+-    sha256='71c59ba889fa71da8ea326b1f04723a472db7e1f580b545a13071dcbee12975c')
+-FAILED_AUDIT = dict(path=str(ROOT/'.work/runtime09-saved-audit-preflight-execution-01/record.json'),
+-    sha256='23786949ac2f542f28aefc95f1a8d03a0ba680322cbf8dd765530c8f57ee1b42')
++
++
+ RUNTIME = X/'experiments/hir-options-hash/runtime-installation-04'
+ PREPARATION_LAUNCHER = ATTEMPT/'prepare_once.py'
+ RUNTIME_LAUNCHER = ATTEMPT/'launch.py'
+@@ -45,18 +42,18 @@
+ OWNED_SHA = '7021a15d3b806ab908f03276051d9d9ca9c9e208bbf8933a60229c9fb35bb68e'
+ FIELDS = ('dev', 'ino', 'mode', 'nlink', 'size', 'mtime_ns', 'ctime_ns')
+ STAMP_FIELDS = ('dev', 'ino', 'mode', 'size', 'mtime_ns', 'ctime_ns', 'nlink')
+-POLICY = 'runtime05-complete-preparation-saved-audit-source-manifest-v1'
++POLICY = 'runtime06-installation-complete-saved-audit-source-manifest-v1'
+ # Source routes only. Reviewed source digests and the future retry-control
+ # proof chain must be bound independently before this draft can run.
+ INTEGRATION_SOURCE_PATHS = [
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/entry.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/controller.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/audit_owner.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/routes.json',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/prepare.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/prepare_once.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/launch.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/test_retry.py',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/entry.py',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/controller.py',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/audit_owner.py',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/routes.json',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/prepare.py',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/prepare_once.py',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/launch.py',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/test_installation.py',
+     '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01/environment.py',
+     '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-frozen-link-reader-01/links.py',
+     '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-frozen-link-reader-01/test_links.py',
+@@ -142,7 +139,19 @@
+     'tests': ['test_retry.py'], 'tested_source': 'runtime-preflight-retry-05',
+ }
+ 
+-# Exact preparation-source gaps derived from the authenticated complete497-row table.
++PREPARATION_TABLE = {'path': '/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/.work/hir-options-hash-runtime-installation-preparation-execution-06/source-rows.json',
++ 'record_sha256': '2979f64660c2154d6fda90da711f3c967e15442cdb93191ff854ced5385c90f8',
++ 'row': {'size': 180903,
++         'sha256': 'b7e76927bfc727cbad9542b3d6ac47c98289886d2fd6e2c6268831e65e24887d',
++         'identity': {'dev': 16777229,
++                      'ino': 1057118855,
++                      'mode': 33152,
++                      'nlink': 1,
++                      'size': 180903,
++                      'mtime_ns': 1789826797170219717,
++                      'ctime_ns': 1789826797170219717}}}
++
++# Exact preparation-source gaps derived from the authenticated complete502-row table.
+ # No provider data or removed retained copies are added.
+ PREPARATION_EXTRA_PATHS = [
+     '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/execute_runtime04_historical_copy_reader_01.py',
+@@ -187,9 +196,26 @@
+ LINK_PROOF = {'result_sha256': 'cfb7577f2345147a9c5f4d44b7c562d7e92e61bdcc91e7b95fbba48c8ac22497', 'record_sha256': 'a2acb45bb98cb6c3b44bddbb7b2f43331281f38aa219a14aa56ac7bddf06441c', 'manifest_sha256': 'a4380c58427d256f7e7c450752e6d724d20d528f45a6d9766f876cc6d1ebab80'}
+ 
+ 
++INSTALLATION_CHAIN = {'count': 25,
++ 'namespace': 'runtime-installation-controls-07',
++ 'audit': 'runtime-installation-controls-independent-verification-07.json',
++ 'audit_sha256': 'f644dc4252351654dcbfea4237ab3b42e7d1df7f94555f13d6c9f8b6998b845c',
++ 'execution_sha256': '5f574079215d9bfa437ebabb3b3afd94f75e23747ff98a32d55ef31bdf826f64',
++ 'preparation_sha256': 'c2677570a8fceaa67b4964715ce008bc658c3c827a96b06cd1da670f2d2e84d5',
++ 'supervisor': 'runtime-installation-controls-supervisor-07',
++ 'dispatcher': 'launch_runtime_installation_controls_07_bounded.py',
++ 'launcher': 'runtime-installation-controls-launcher-07',
++ 'verifier': 'verify_runtime_installation_controls_07.py',
++ 'executor': 'execute_runtime_installation_controls_audit_07.py',
++ 'execution': 'runtime-installation-controls-verification-execution-07',
++ 'preparation': 'runtime-installation-controls-preparation-execution-07',
++ 'preparation_wrapper': 'prepare_runtime_installation_controls_07_once.py',
++ 'tests': ['test_installation.py'],
++ 'tested_source': 'runtime-installation-after-preflight05-02'}
++
+ def output_root(phase):
+-    require(phase in ['preflight'], 'exact runtime phase')
+-    return ROOT/('.work/runtime10-saved-audit-'+phase+'-manifest-01')
++    require(phase in ['installation'], 'exact runtime phase')
++    return ROOT/('.work/runtime11-saved-audit-'+phase+'-manifest-01')
+ 
+ 
+ def require(value, message):
+@@ -390,7 +416,7 @@
+     require(handoff['directory'] == str(outer) and handoff['supervisor_pid'] == o['supervisor_pid']
+             == l['supervisor_pid'] and l['controller_pid'] == terminal['pid'] and raw(launcher/'stderr') == b'',
+             'actual launcher raw handoff differs')
+-    if count in [53, 39] or spec['namespace'] == RETRY_CHAIN['namespace']:
++    if count in [53, 39] or spec['namespace'] in [RETRY_CHAIN['namespace'],INSTALLATION_CHAIN['namespace']]:
+         require(l['observation_errors'] == [] and l['wrapper_may_be_live'] is False
+                 and l['actual_task_may_be_live'] is False and e['observation_errors'] == []
+                 and p['observation_errors'] == [], 'actual53 corrected observer retained an error')
+@@ -514,178 +540,20 @@
+         controls_are_separate_from_actual53=True,compiler_calls=0)
+ 
+ 
+-def failed_link_audit_history():
+-    """Retain exact failed06 sources/raw and its successful manifest preparation."""
+-    directory = Path(FAILED_LINK_AUDIT['path']).parent
+-    record = read(FAILED_LINK_AUDIT['path'], FAILED_LINK_AUDIT['sha256'])
+-    require(record['status'] == 'finished' and type(record['returncode']) is int and record['returncode'] == 1
+-        and record['may_be_live'] is False and record['observation_errors'] == []
+-        and record['mode'] == 'audit' and record['phase'] == 'preflight'
+-        and record['execution_error'] == "RuntimeError('saved evidence child or observation failed; preserve all raw evidence')",
+-        'original failed06 must remain an observed closed failure')
+-    names = {'record.json','stdout','stderr','source.py','execution.py','owned_stage.py','invocation.json','source-inventory.json'}
+-    require({p.name for p in directory.iterdir()} == names, 'complete failed06 execution membership differs')
+-    for name in sorted(names): sha(directory/name)
+-    streams(directory, record)
+-    require(raw(directory/'stdout') == b'' and raw(directory/'stderr').endswith(
+-        b'RuntimeError: symlink or non-directory ancestor\n'), 'exact original frozen-link failure history differs')
+-    require(sha(directory/'source.py') == record['source_sha256']
+-        and sha(directory/'execution.py') == record['execution_source_sha256']
+-        and sha(directory/'owned_stage.py') == record['owned_source_sha256'] == OWNED_SHA,
+-        'failed06 retained executed sources differ')
+-    ref = record['source_inventory']; inventory = read(ref['path'], ref['sha256'])
+-    require(same(inventory, read(directory/'source-inventory.json'))
+-        and inventory['policy'] == 'runtime06-reviewed-sources-v1', 'failed06 source inventory differs')
+-    for name, digest in inventory['sources'].items(): sha(name, digest)
+-    invocation = read(directory/'invocation.json')
+-    pins = record['actual_closure_pins']; old_output = ROOT/'.work/runtime06-saved-audit-preflight-manifest-01'
+-    manifest = read(old_output/'manifest.json', pins['manifest_sha256'])
+-    preparation = read(old_output/'preparation.json', pins['preparation_sha256'])
+-    require(manifest['policy'] == 'runtime05-retry-saved-audit-source-manifest-v1'
+-        and preparation['status'] == 'prepared-audit-source-manifest'
+-        and same(preparation['manifest'], dict(path=str(old_output/'manifest.json'),sha256=pins['manifest_sha256'])), 'failed06 manifest publication differs')
+-    for name,row in manifest['files'].items():
+-        sha(name,row['sha256']);require(same(OBSERVED[name],row),'failed06 source manifest row changed')
+-    old_preparation = ROOT/'.work/runtime06-saved-audit-preflight-manifest-preparation-execution-01'
+-    closed = read(old_preparation/'record.json', pins['preparation_record_sha256']); finished(closed); streams(old_preparation, closed)
+-    require({p.name for p in old_preparation.iterdir()} == names, 'complete failed06 manifest preparation membership differs')
+-    for name in sorted(names): sha(old_preparation/name)
+-    require(closed['mode'] == 'prepare' and closed['phase'] == 'preflight'
+-        and closed['manifest_sha256'] == pins['manifest_sha256']
+-        and closed['result_sha256'] == pins['preparation_sha256']
+-        and closed['canonical_released_at'] <= record['child_started_at']
+-        and closed['pid'] == preparation['pid'] and closed['parent_pid'] == preparation['parent_pid']
+-        and sha(old_preparation/'source.py') == closed['source_sha256']
+-        and sha(old_preparation/'execution.py') == closed['execution_source_sha256']
+-        and sha(old_preparation/'owned_stage.py') == OWNED_SHA,
+-        'failed06 original successful manifest preparation association differs')
+-    require(invocation['mode'] == 'audit' and invocation['phase'] == 'preflight'
+-        and invocation['manifest_sha256'] == pins['manifest_sha256']
+-        and invocation['preparation_sha256'] == pins['preparation_sha256']
+-        and invocation['preparation_record_sha256'] == pins['preparation_record_sha256'],
+-        'failed06 exact invocation proof differs')
+-    # The failure has no recorded release timestamp: preserve that fact, never invent one.
+-    return dict(FAILED_LINK_AUDIT)
+-
+-
+-def failed_completed_audit_history():
+-    """Retain exact failed08 sources/raw and its successful manifest preparation."""
+-    prior = failed_link_audit_history()
+-    directory = Path(FAILED_COMPLETED_AUDIT['path']).parent
+-    record = read(FAILED_COMPLETED_AUDIT['path'], FAILED_COMPLETED_AUDIT['sha256'])
+-    require(record['status'] == 'finished' and type(record['returncode']) is int and record['returncode'] == 1
+-        and record['may_be_live'] is False and record['observation_errors'] == []
+-        and record['mode'] == 'audit' and record['phase'] == 'preflight'
+-        and record['execution_error'] == "RuntimeError('saved evidence child or observation failed; preserve all raw evidence')",
+-        'original failed08 must remain an observed closed failure')
+-    names = {'record.json','stdout','stderr','source.py','execution.py','owned_stage.py','invocation.json','source-inventory.json'}
+-    require({p.name for p in directory.iterdir()} == names, 'complete failed08 execution membership differs')
+-    for name in sorted(names): sha(directory/name)
+-    streams(directory, record)
+-    require(sha(directory/'stderr') == '87fdaacc7bdc459e9d25ecb00b8336aee0f6a6852115bc8eb90a00ed22bcc17c',
+-        'exact failed08 raw traceback differs')
+-    require(raw(directory/'stdout') == b'' and raw(directory/'stderr').endswith(
+-        b'RuntimeError: undeclared saved-evidence path\n'), 'exact completed-directory scope failure history differs')
+-    require(sha(directory/'source.py') == record['source_sha256']
+-        and sha(directory/'execution.py') == record['execution_source_sha256']
+-        and sha(directory/'owned_stage.py') == record['owned_source_sha256'] == OWNED_SHA,
+-        'failed08 retained executed sources differ')
+-    ref = record['source_inventory']; inventory = read(ref['path'], ref['sha256'])
+-    require(same(inventory, read(directory/'source-inventory.json'))
+-        and inventory['policy'] == 'runtime08-reviewed-sources-v1', 'failed08 source inventory differs')
+-    for name, digest in inventory['sources'].items(): sha(name, digest)
+-    invocation = read(directory/'invocation.json')
+-    pins = record['actual_closure_pins']; old_output = ROOT/'.work/runtime08-saved-audit-preflight-manifest-01'
+-    manifest = read(old_output/'manifest.json', pins['manifest_sha256'])
+-    preparation = read(old_output/'preparation.json', pins['preparation_sha256'])
+-    require(manifest['policy'] == 'runtime05-frozen-links-saved-audit-source-manifest-v1'
+-        and preparation['status'] == 'prepared-audit-source-manifest'
+-        and same(preparation['manifest'], dict(path=str(old_output/'manifest.json'),sha256=pins['manifest_sha256'])), 'failed08 manifest publication differs')
+-    require(same(manifest['failed_audit'],prior),'failed08 omitted original failed06 provenance')
+-    for name,row in manifest['files'].items():
+-        sha(name,row['sha256']);require(same(OBSERVED[name],row),'failed08 source manifest row changed')
+-    old_preparation = ROOT/'.work/runtime08-saved-audit-preflight-manifest-preparation-execution-01'
+-    closed = read(old_preparation/'record.json', pins['preparation_record_sha256']); finished(closed); streams(old_preparation, closed)
+-    require({p.name for p in old_preparation.iterdir()} == names, 'complete failed08 manifest preparation membership differs')
+-    for name in sorted(names): sha(old_preparation/name)
+-    require(closed['mode'] == 'prepare' and closed['phase'] == 'preflight'
+-        and closed['manifest_sha256'] == pins['manifest_sha256']
+-        and closed['result_sha256'] == pins['preparation_sha256']
+-        and closed['canonical_released_at'] <= record['child_started_at']
+-        and closed['pid'] == preparation['pid'] and closed['parent_pid'] == preparation['parent_pid']
+-        and sha(old_preparation/'source.py') == closed['source_sha256']
+-        and sha(old_preparation/'execution.py') == closed['execution_source_sha256']
+-        and sha(old_preparation/'owned_stage.py') == OWNED_SHA,
+-        'failed08 original successful manifest preparation association differs')
+-    require(invocation['mode'] == 'audit' and invocation['phase'] == 'preflight'
+-        and invocation['manifest_sha256'] == pins['manifest_sha256']
+-        and invocation['preparation_sha256'] == pins['preparation_sha256']
+-        and invocation['preparation_record_sha256'] == pins['preparation_record_sha256'],
+-        'failed08 exact invocation proof differs')
+-    # The failure has no recorded release timestamp: preserve that fact, never invent one.
+-    return dict(FAILED_COMPLETED_AUDIT)
+-
+-
+-
+-def failed_audit_history():
+-    """Retain exact failed09 sources/raw and its successful manifest preparation."""
+-    prior = failed_completed_audit_history()
+-    directory = Path(FAILED_AUDIT['path']).parent
+-    record = read(FAILED_AUDIT['path'], FAILED_AUDIT['sha256'])
+-    require(record['status'] == 'finished' and type(record['returncode']) is int and record['returncode'] == 1
+-        and record['may_be_live'] is False and record['observation_errors'] == []
+-        and record['mode'] == 'audit' and record['phase'] == 'preflight'
+-        and record['execution_error'] == "RuntimeError('saved evidence child or observation failed; preserve all raw evidence')",
+-        'original failed09 must remain an observed closed failure')
+-    names = {'record.json','stdout','stderr','source.py','execution.py','owned_stage.py','invocation.json','source-inventory.json'}
+-    require({p.name for p in directory.iterdir()} == names, 'complete failed09 execution membership differs')
+-    for name in sorted(names): sha(directory/name)
+-    streams(directory, record)
+-    require(sha(directory/'stderr') == 'cd68e179e6c54b37d36a42ecb816693437226930112128800415d958a6a16078',
+-        'exact failed09 raw traceback differs')
+-    require(raw(directory/'stdout') == b'' and raw(directory/'stderr').endswith(
+-        b'RuntimeError: complete closed output membership differs\n'), 'exact supervisor membership failure history differs')
+-    require(sha(directory/'source.py') == record['source_sha256']
+-        and sha(directory/'execution.py') == record['execution_source_sha256']
+-        and sha(directory/'owned_stage.py') == record['owned_source_sha256'] == OWNED_SHA,
+-        'failed09 retained executed sources differ')
+-    ref = record['source_inventory']; inventory = read(ref['path'], ref['sha256'])
+-    require(same(inventory, read(directory/'source-inventory.json'))
+-        and inventory['policy'] == 'runtime09-reviewed-sources-v1', 'failed09 source inventory differs')
+-    for name, digest in inventory['sources'].items(): sha(name, digest)
+-    invocation = read(directory/'invocation.json')
+-    pins = record['actual_closure_pins']; old_output = ROOT/'.work/runtime09-saved-audit-preflight-manifest-01'
+-    manifest = read(old_output/'manifest.json', pins['manifest_sha256'])
+-    preparation = read(old_output/'preparation.json', pins['preparation_sha256'])
+-    require(manifest['policy'] == 'runtime05-completed-directories-saved-audit-source-manifest-v1'
+-        and preparation['status'] == 'prepared-audit-source-manifest'
+-        and same(preparation['manifest'], dict(path=str(old_output/'manifest.json'),sha256=pins['manifest_sha256'])), 'failed09 manifest publication differs')
+-    require(same(manifest['failed_audit'],prior),'failed09 omitted original failed08 provenance')
+-    for name,row in manifest['files'].items():
+-        sha(name,row['sha256']);require(same(OBSERVED[name],row),'failed09 source manifest row changed')
+-    old_preparation = ROOT/'.work/runtime09-saved-audit-preflight-manifest-preparation-execution-01'
+-    closed = read(old_preparation/'record.json', pins['preparation_record_sha256']); finished(closed); streams(old_preparation, closed)
+-    require({p.name for p in old_preparation.iterdir()} == names, 'complete failed09 manifest preparation membership differs')
+-    for name in sorted(names): sha(old_preparation/name)
+-    require(closed['mode'] == 'prepare' and closed['phase'] == 'preflight'
+-        and closed['manifest_sha256'] == pins['manifest_sha256']
+-        and closed['result_sha256'] == pins['preparation_sha256']
+-        and closed['canonical_released_at'] <= record['child_started_at']
+-        and closed['pid'] == preparation['pid'] and closed['parent_pid'] == preparation['parent_pid']
+-        and sha(old_preparation/'source.py') == closed['source_sha256']
+-        and sha(old_preparation/'execution.py') == closed['execution_source_sha256']
+-        and sha(old_preparation/'owned_stage.py') == OWNED_SHA,
+-        'failed09 original successful manifest preparation association differs')
+-    require(invocation['mode'] == 'audit' and invocation['phase'] == 'preflight'
+-        and invocation['manifest_sha256'] == pins['manifest_sha256']
+-        and invocation['preparation_sha256'] == pins['preparation_sha256']
+-        and invocation['preparation_record_sha256'] == pins['preparation_record_sha256'],
+-        'failed09 exact invocation proof differs')
+-    # The failure has no recorded release timestamp: preserve that fact, never invent one.
+-    return dict(FAILED_AUDIT)
+-
+-
+-def runtime_preparation(phase, record_sha, launcher_sha, startup, retry):
++def source_preflight_reference(expected_sha):
++    routes = read(ROUTES_PATH, ROUTES_SHA)
++    prior = routes['preflight']
++    reference = dict(path=prior['report'], sha256=sha_value(expected_sha))
++    require(reference['sha256'] == SOURCE_PREFLIGHT_SHA, 'actual completed audit10 digest required')
++    audit = read(reference['path'], reference['sha256'])
++    require(audit['status'] == 'verified' and audit['phase'] == 'preflight'
++            and type(audit['actual_children']) is int and audit['actual_children'] == 2
++            and same(audit['attempt'], prior['descriptor']),
++            'actual separately audited source-preflight prerequisite required')
++    return reference
++
++
++def runtime_preparation(phase, record_sha, launcher_sha, startup, retry, installation, preflight):
+     """Bind a completed producer preparation, never its own future record.
+ 
+     The seven original packet rows remain in the original prepared scope. Their
+@@ -723,24 +591,23 @@
+     require(same(invocation, read(directory/'invocation.json')) and invocation['phase'] == phase,
+             'retained original preparation invocation differs')
+     adapter = invocation['adapter']
+-    require(set(adapter) == {'preparer', 'source_manifest', 'startup_controls', 'retry_controls'}
++    require(set(adapter) == {'preparer', 'source_manifest', 'startup_controls', 'retry_controls', 'installation_controls'}
+             and same(adapter['startup_controls'], startup['audit'])
+             and same(adapter['retry_controls'], retry['audit'])
++            and same(adapter['installation_controls'], installation['audit'])
++            and same(invocation['preflight'], preflight)
+             and same(adapter['preparer'], dict(path=str(ADAPTER/'prepare.py'), sha256=sha(ADAPTER/'prepare.py'))),
+             'actual preparation startup qualification/source association differs')
+     ref = adapter['source_manifest']; require(set(ref) == {'path', 'sha256'}, 'exact startup source manifest reference')
+     manifest = read(ref['path'], ref['sha256']); rows = read(directory/'source-rows.json')
+-    require(set(manifest) == {'status', 'files'} and manifest['status'] == 'reviewed-runtime-preflight05-startup-source-closure'
++    require(set(manifest) == {'status', 'files'} and manifest['status'] == 'reviewed-runtime-installation06-startup-source-closure'
+             and type(manifest['files']) is dict and type(rows) is dict and len(rows) <= 512
+             and sum(row['size'] for row in rows.values()) <= 8*2**20,
+             'bounded actual preparation source table required')
+-    # The closed09 preparation pins the complete manifest that already observed
+-    # this retained source table. The producer record itself has no table hash.
+-    failed_record = read(FAILED_AUDIT['path'], FAILED_AUDIT['sha256'])
+-    anchor = read(ROOT/'.work/runtime09-saved-audit-preflight-manifest-01/manifest.json',
+-        failed_record['actual_closure_pins']['manifest_sha256'])
+-    require(same(OBSERVED[str(directory/'source-rows.json')],
+-        anchor['files'][str(directory/'source-rows.json')]), 'actual preparation table anchor differs')
++    require(str(directory/'source-rows.json') == PREPARATION_TABLE['path']
++        and record_sha == PREPARATION_TABLE['record_sha256']
++        and same(OBSERVED[str(directory/'source-rows.json')],PREPARATION_TABLE['row']),
++        'separately reviewed actual preparation table byte/identity binding differs')
+     require(type(PREPARATION_EXTRA_PATHS) is list and len(PREPARATION_EXTRA_PATHS) == 35
+         and PREPARATION_EXTRA_PATHS == sorted(set(PREPARATION_EXTRA_PATHS)),
+         'exact reviewed preparation source gap declaration required')
+@@ -750,7 +617,7 @@
+         sha(name, rows[name]['sha256'])
+         require(same(OBSERVED[name], rows[name]), 'additional preparation source differs')
+     # The bootstrap independently expands the original full runtime table and
+-    # requires every one of the497 saved preparation rows before expensive reads.
++    # requires every one of the502 saved preparation rows before expensive reads.
+     for name, row in manifest['files'].items():
+         require(name in rows and same(rows[name], row), 'startup source omitted from actual preparation table')
+         if name in OBSERVED:
+@@ -783,12 +650,13 @@
+ 
+ def main():
+     parser = argparse.ArgumentParser()
+-    parser.add_argument('--phase', choices=['preflight'], required=True)
++    parser.add_argument('--phase', choices=['installation'], required=True)
+     parser.add_argument('--canonical-fd', type=int, required=True)
+     parser.add_argument('--source-inventory', type=Path, required=True)
+     parser.add_argument('--source-inventory-sha256', required=True)
+     parser.add_argument('--runtime-preparation-sha256', required=True)
+     parser.add_argument('--runtime-preparation-launcher-sha256', required=True)
++    parser.add_argument('--source-preflight-audit-sha256', required=True)
+     args = parser.parse_args()
+     output = output_root(args.phase)
+     require(Path.cwd() == R and sys.dont_write_bytecode and not sys.flags.optimize
+@@ -807,7 +675,7 @@
+         ['supervisor','dispatcher','launcher','verifier','executor','execution','preparation','preparation_wrapper']),
+         'actual retry proof routes remain unbound')
+     for name in ['audit_sha256', 'execution_sha256', 'preparation_sha256']:
+-        sha_value(STARTUP_CHAIN[name]); sha_value(RETRY_CHAIN[name])
++        sha_value(STARTUP_CHAIN[name]); sha_value(RETRY_CHAIN[name]); sha_value(INSTALLATION_CHAIN[name])
+     held = os.fstat(args.canonical_fd); named = CANONICAL.lstat()
+     require(stat.S_ISREG(named.st_mode) and named.st_nlink == held.st_nlink == 1
+             and (held.st_dev, held.st_ino) == (named.st_dev, named.st_ino), 'inherited canonical descriptor differs')
+@@ -815,7 +683,7 @@
+     resource.setrlimit(resource.RLIMIT_CPU, (900, 900)); resource.setrlimit(resource.RLIMIT_FSIZE, (4*2**20, 4*2**20))
+     require(not os.path.lexists(output), 'fresh phase-specific manifest output required')
+     inventory = read(args.source_inventory, sha_value(args.source_inventory_sha256))
+-    require(set(inventory) == {'policy', 'sources'} and inventory['policy'] == 'runtime10-reviewed-sources-v1'
++    require(set(inventory) == {'policy', 'sources'} and inventory['policy'] == 'runtime11-reviewed-sources-v1'
+             and type(inventory['sources']) is dict
+             and set(inventory['sources']) == ({str(path) for path in CORE_PATHS} | set(INTEGRATION_SOURCE_PATHS)),
+             'exact separately reviewed enclosing source inventory required')
+@@ -825,16 +693,18 @@
+     proofs = [control_chain(spec) for spec in CHAINS]
+     startup = control_chain(STARTUP_CHAIN)
+     retry = control_chain(RETRY_CHAIN)
++    installation = control_chain(INSTALLATION_CHAIN)
++    preflight = source_preflight_reference(args.source_preflight_audit_sha256)
+     frozen_links = frozen_link_controls(dict(path=str(LINK_RESULT),sha256=LINK_PROOF['result_sha256']),
+         read_json=read,read_bytes=raw,sha=sha,identity=lambda name:OBSERVED[str(name)]['identity'])
+-    failed_audit = failed_audit_history()
+     preparation = runtime_preparation(args.phase, args.runtime_preparation_sha256,
+-                                      args.runtime_preparation_launcher_sha256, startup, retry)
++                                      args.runtime_preparation_launcher_sha256, startup, retry, installation, preflight)
+     rows = dict(sorted(OBSERVED.items()))
+     manifest = dict(policy=POLICY, files=rows, actual53=proofs[0]['audit'], phase45=proofs[1]['audit'],
+                     preparation=preparation['preparation'], preparation_launcher=preparation['preparation_launcher'],
+                     startup_controls=startup['audit'], retry_controls=retry['audit'],
+-                    frozen_links_controls=frozen_links['result'], failed_audit=failed_audit)
++                    frozen_links_controls=frozen_links['result'],
++                    installation_controls=installation['audit'], source_preflight_audit=preflight)
+     for name, row in rows.items():
+         sha(name, row['sha256']); require(same(OBSERVED[name], row), 'source changed before manifest publication')
+     guard(); output.mkdir(mode=0o700)
+@@ -843,7 +713,7 @@
+         sha(name, row['sha256']); require(same(OBSERVED[name], row), 'source changed after manifest publication')
+     summary = dict(status='prepared-audit-source-manifest', phase=args.phase, pid=os.getpid(), parent_pid=os.getppid(),
+                    source_inventory=dict(path=str(args.source_inventory), sha256=args.source_inventory_sha256),
+-                   manifest=dict(path=str(output/'manifest.json'), sha256=digest), controls=[*proofs, startup, retry, frozen_links], failed_saved_audit=failed_audit,
++                   manifest=dict(path=str(output/'manifest.json'), sha256=digest), controls=[*proofs, startup, retry, installation, frozen_links], source_preflight_audit=preflight,
+                    runtime_preparation=preparation,
+                    files=len(rows), logical_bytes=sum(row['size'] for row in rows.values()),
+                    compiler_calls=0, provider_probes=0, process_signals=0, network_calls=0,

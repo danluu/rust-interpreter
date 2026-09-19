@@ -1,0 +1,104 @@
+"""Pure factory selection controls using recording definition objects only.
+
+No provider or compiler module is imported. The actual factory functions run
+with definition loading replaced by a recorder, or refuse before construction.
+"""
+import ast
+import importlib.util
+from pathlib import Path
+import sys
+from types import SimpleNamespace
+import unittest
+from unittest.mock import Mock, patch
+
+spec=importlib.util.spec_from_file_location('installation07_factory_fixture',Path(__file__).with_name('imports.py'))
+factory=importlib.util.module_from_spec(spec);spec.loader.exec_module(factory)
+
+
+def fixture():
+    calls=[];checks=[];objects={};hash_source=Path('/fixture/hash')
+    inherited_monitor=SimpleNamespace(owned=object())
+    stage=SimpleNamespace(dependencies=lambda:{'snapshot_bindings':SimpleNamespace(__file__=str(hash_source/'snapshot_bindings.py')),
+        'monitor':inherited_monitor})
+    def load(name,path,check_source,dependencies=None):
+        check_source(path)
+        value=stage if name=='hash_stage' else SimpleNamespace(__file__=str(path))
+        if name=='source_qualification':value.runtime=dependencies['runtime_compiler']
+        calls.append((name,path,dict(dependencies or {})));objects[name]=value
+        return value
+    with patch.object(factory,'load',side_effect=load),patch.object(Path,'resolve',lambda self,**kwargs:self):
+        modules=factory.definitions(hash_source,checks.append)
+    return modules,calls,checks,objects
+
+
+class Factory(unittest.TestCase):
+    def test_native_runtime_and_recipe_selected_before_qualification_capture(self):
+        modules,calls,checks,objects=fixture();names=[name for name,_,_ in calls]
+        runtime=objects['r_runtime_compiler']
+        self.assertEqual(runtime.__file__,str(factory.NATIVE/'runtime_compiler.py'))
+        self.assertIs(modules.q.runtime,runtime)
+        self.assertIs(modules.public_aliases['runtime_compiler'],runtime)
+        self.assertLess(names.index('r_runtime_compiler'),names.index('source_qualification'))
+        self.assertEqual(modules.recipe.__file__,str(factory.NATIVE/'producer_recipe.py'))
+        self.assertTrue(all(path in checks for _,path,_ in calls))
+        captured=next(deps for name,_,deps in calls if name=='source_qualification')
+        self.assertIs(captured['runtime_compiler'],runtime)
+
+    def test_historical_discovery_reader_and_private_monitor_stay_separate(self):
+        modules,calls,checks,objects=fixture()
+        self.assertEqual(modules.discovery.__file__,str(factory.QUALIFIED/'discovery.py'))
+        self.assertEqual(modules.prerequisites.__file__,str(factory.HERE/'prerequisites.py'))
+        self.assertEqual(modules.preflight_history.__file__,str(factory.HERE/'preflight_history.py'))
+        self.assertIsNot(modules.monitor,modules.hash_modules['monitor'])
+        deps=next(deps for name,_,deps in calls if name=='private_monitor')
+        self.assertIs(deps['owned_stage'],modules.hash_modules['monitor'].owned)
+
+    def test_source_authentication_precedes_module_construction(self):
+        checked=Mock(side_effect=RuntimeError('refused source'))
+        with patch.object(factory.importlib.util,'spec_from_file_location') as construct:
+            with self.assertRaisesRegex(RuntimeError,'refused source'):
+                factory.load('refused',Path('/fixture/untrusted.py'),checked)
+            construct.assert_not_called()
+        checked.assert_called_once_with(Path('/fixture/untrusted.py'))
+        # Execute the exact new pure source-limit body, without importing its
+        # preparation/launcher module or opening any declared fixture row.
+        path=Path(__file__).with_name('prepare_once.py')
+        tree=ast.parse(path.read_text())
+        body=[node for node in tree.body if isinstance(node,ast.FunctionDef)
+              and node.name in {'require','source_admission'}]
+        self.assertEqual(len(body),2)
+        namespace={};exec(compile(ast.Module(body=body,type_ignores=[]),str(path),'exec'),namespace)
+        admit=namespace['source_admission']
+        admit({str(i):{'size':0} for i in range(520)})
+        admit({'maximum':{'size':8*2**20}})
+        for rows in [{}, {str(i):{'size':0} for i in range(521)}, {'over':{'size':8*2**20+1}},
+                     {'boolean':{'size':True}}, {'negative':{'size':-1}}]:
+            with self.subTest(rows=len(rows)),self.assertRaises(RuntimeError):admit(rows)
+
+    def test_private_cache_cannot_reuse_old_or_wrong_source_route(self):
+        name='_runtime_options_installation07_cached'
+        previous=sys.modules.get(name)
+        try:
+            sys.modules[name]=SimpleNamespace(__file__=__file__)
+            checked=Mock()
+            with self.assertRaisesRegex(RuntimeError,'private runtime import route changed'):
+                factory.load('cached',Path(factory.__file__),checked)
+            checked.assert_called_once_with(Path(factory.__file__))
+            self.assertIs(factory.load('cached',Path(__file__),checked),sys.modules[name])
+            self.assertNotEqual(name,'_runtime_options_04_cached')
+        finally:
+            if previous is None:sys.modules.pop(name,None)
+            else:sys.modules[name]=previous
+
+    def test_public_aliases_are_scoped_and_restored_on_error(self):
+        name='installation07_alias_fixture';before=dict(sys.modules);paths=list(sys.path)
+        marker=object()
+        with self.assertRaisesRegex(RuntimeError,'fixture stop'):
+            with factory.aliases({name:marker}):
+                self.assertIs(sys.modules[name],marker);sys.path.append('/fixture/temporary')
+                raise RuntimeError('fixture stop')
+        self.assertEqual(sys.path,paths)
+        self.assertEqual(sys.modules.get(name),before.get(name))
+
+
+if __name__=='__main__':unittest.main(verbosity=2)

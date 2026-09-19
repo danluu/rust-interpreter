@@ -1,0 +1,136 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-11/bootstrap.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-12/bootstrap.py
+@@ -21,12 +21,12 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-HERE = ROOT/'experiments/hir-options-hash-runtime-audit-11'
++HERE = ROOT/'experiments/hir-options-hash-runtime-audit-12'
+ QUALIFIED_AUDIT = ROOT/'experiments/hir-options-hash-runtime-audit-05'
+-ATTEMPT = ROOT/'experiments/runtime-installation-after-preflight05-02'
++ATTEMPT = ROOT/'experiments/runtime-installation-after-preflight05-03'
+ PREFLIGHT_SOURCE = ROOT/'experiments/runtime-preflight-retry-05'
+ ROUTES_PATH = ATTEMPT/'routes.json'
+-ROUTES_SHA = 'ef75ddf2057ebd395a159623d387b01051ee1479363bf9c878f7641b99ec0dd2'
++ROUTES_SHA = 'd339e74a11edb948f3cf4bcc0afbbba76887cc61aed125c8bb8bf62b1633723a'
+ SOURCE_PREFLIGHT_SHA = 'e2ec858a1e52e6b7573807d8834673699efcdf29ccdd801a84a973322cd9179a'
+ OLD = ROOT/'experiments/hir-options-hash-runtime-audit-04'
+ SOURCE = X/'experiments/hir-options-hash/runtime-installation-04'
+@@ -48,6 +48,14 @@
+ INSTALLATION_WORK = ROOT/'.work/runtime-installation-controls-07'
+ INSTALLATION_AUDIT = ROOT/'.work/runtime-installation-controls-independent-verification-07.json'
+ INSTALLATION_COUNT = 25  # Source-derived; separate completed actual proof required.
++HISTORICAL_INSTALLATION_SOURCE = ROOT/'experiments/runtime-installation-after-preflight05-02'
++LOADER_SOURCE = ROOT/'experiments/runtime-native-loader-probes-01'
++NATIVE_CONTROL = ROOT/'experiments/runtime-installation-controls-08'
++NATIVE_WORK = ROOT/'.work/runtime-installation-controls-08'
++NATIVE_AUDIT = ROOT/'.work/runtime-installation-controls-independent-verification-08.json'
++NATIVE_COUNT = 48  # Final source-derived suite; actual controls08 proof remains unbound.
++NATIVE_FILES = (*RETRY_FILES, 'imports.py')
++NATIVE_LOADER_FILES = ('runtime_compiler.py', 'producer_recipe.py', 'audit_recipe.py')
+ LINK_SOURCE = ROOT/'experiments/runtime-frozen-link-reader-01'
+ LINK_CONTROL = ROOT/'experiments/runtime-frozen-link-controls-01'
+ LINK_RESULT = ROOT/'results/runtime-frozen-link-controls-01/result.json'
+@@ -154,7 +162,7 @@
+ def load(name, p, rows, dependencies=None):
+     p=Path(p);require(str(p) in rows,'explicit authenticated source row required')
+     raw(p,rows[str(p)]['sha256']);require(same(OBSERVED[str(p)],rows[str(p)]),'source identity changed before import')
+-    spec=importlib.util.spec_from_file_location('_runtime11_audit_'+name,p)
++    spec=importlib.util.spec_from_file_location('_runtime12_audit_'+name,p)
+     module=importlib.util.module_from_spec(spec);sys.modules[spec.name]=module
+     with aliases(dependencies or {}):spec.loader.exec_module(module)
+     return module
+@@ -188,6 +196,8 @@
+     for name in ['launch','inputs','snapshot-plan','receipt','result','outer','launcher-record']:
+         parser.add_argument('--'+name+'-sha256',required=True)
+     args=parser.parse_args()
++    require(type(ROUTES_SHA) is str and re.fullmatch('[a-f0-9]{64}',ROUTES_SHA), 'current route binding remains unbound')
++    require(type(NATIVE_COUNT) is int and NATIVE_COUNT > 0, 'current native-loader count remains unbound')
+     require(type(RETRY_COUNT) is int and RETRY_COUNT > 0, 'retry control count remains unbound')
+     require(type(LINK_COUNT) is int and LINK_COUNT > 0, 'frozen-link control count remains unbound')
+     require(Path.cwd()==R and sys.dont_write_bytecode and not sys.flags.optimize,'fixed owner/unoptimized Python-B')
+@@ -198,9 +208,9 @@
+     for key,value in vars(args).items():
+         if key.endswith('_sha256'):require(re.fullmatch('[a-f0-9]{64}',value),'concrete reviewed SHA required')
+     manifest=read(args.source_manifest,args.source_manifest_sha256)
+-    require(set(manifest)=={'policy','files','actual53','phase45','preparation','preparation_launcher','startup_controls','retry_controls','frozen_links_controls','installation_controls','source_preflight_audit'}
+-        and manifest['policy']=='runtime06-installation-complete-saved-audit-source-manifest-v1'
+-        and type(manifest['files']) is dict and len(manifest['files'])<=320
++    require(set(manifest)=={'policy','files','actual53','phase45','preparation','preparation_launcher','startup_controls','retry_controls','frozen_links_controls','installation_controls','native_loader_controls','source_preflight_audit'}
++        and manifest['policy']=='runtime07-installation-native-loader-saved-audit-source-manifest-v1'
++        and type(manifest['files']) is dict and len(manifest['files'])<=352
+         and sum(row['size'] for row in manifest['files'].values())<=8*2**20,
+         'bounded separately reviewed audit source manifest required')
+     rows=manifest['files']
+@@ -209,7 +219,7 @@
+     require(routes['phase']==args.phase and routes['qualified_source']==str(SOURCE)
+         and routes['attempt_source']==str(ATTEMPT), 'attempt and qualified source routes differ')
+     preparation_root=Path(routes['preparation_execution'])
+-    for key in ['preparation','preparation_launcher','startup_controls','retry_controls','frozen_links_controls','installation_controls','source_preflight_audit']:
++    for key in ['preparation','preparation_launcher','startup_controls','retry_controls','frozen_links_controls','installation_controls','native_loader_controls','source_preflight_audit']:
+         ref=manifest[key]
+         require(type(ref) is dict and set(ref)=={'path','sha256'} and str(ref['path']) in rows
+             and rows[ref['path']]['sha256']==ref['sha256'], 'complete explicit actual preparation/startup reference required')
+@@ -218,7 +228,8 @@
+         and manifest['startup_controls']['path']==str(STARTUP_AUDIT)
+         and manifest['retry_controls']['path']==str(RETRY_AUDIT)
+         and manifest['frozen_links_controls']['path']==str(LINK_RESULT)
+-        and manifest['installation_controls']['path']==str(INSTALLATION_AUDIT), 'exact phase-specific preparation/startup routes')
++        and manifest['installation_controls']['path']==str(INSTALLATION_AUDIT)
++        and manifest['native_loader_controls']['path']==str(NATIVE_AUDIT), 'exact phase-specific preparation/startup routes')
+     prior=routes['preflight']
+     require(same(manifest['source_preflight_audit'],dict(path=prior['report'],sha256=args.source_preflight_audit_sha256)),
+         'externally pinned completed preflight05 reference differs')
+@@ -251,7 +262,10 @@
+     qualification(manifest['retry_controls'],RETRY_CONTROL,RETRY_WORK,RETRY_COUNT,
+         [PREFLIGHT_SOURCE/name for name in [*RETRY_FILES,'test_retry.py']],rows)
+     qualification(manifest['installation_controls'],INSTALLATION_CONTROL,INSTALLATION_WORK,INSTALLATION_COUNT,
+-        [ATTEMPT/name for name in [*RETRY_FILES,'test_installation.py']],rows)
++        [HISTORICAL_INSTALLATION_SOURCE/name for name in [*RETRY_FILES,'test_installation.py']],rows)
++    qualification(manifest['native_loader_controls'],NATIVE_CONTROL,NATIVE_WORK,NATIVE_COUNT,
++        [ATTEMPT/name for name in [*NATIVE_FILES,'test_installation.py','test_imports.py']] +
++        [LOADER_SOURCE/name for name in [*NATIVE_LOADER_FILES,'test_native_loader.py']],rows)
+     for name,row in rows.items():raw(name,row['sha256']);require(same(OBSERVED[name],row),'complete supplemental source closure changed')
+     io_module=load('io',QUALIFIED_AUDIT/'audit_io.py',rows)
+     io_module.table(rows)
+@@ -347,10 +361,17 @@
+         and same(retry_proof['audit'],manifest['retry_controls']), 'actual separate retry controls differ before import')
+     installation_proof=reader.controls(source=INSTALLATION_CONTROL,work=INSTALLATION_WORK,
+         audit_path=manifest['installation_controls']['path'],
+-        source_paths=[ATTEMPT/name for name in RETRY_FILES],test_paths=[ATTEMPT/'test_installation.py'],
++        source_paths=[HISTORICAL_INSTALLATION_SOURCE/name for name in RETRY_FILES],test_paths=[HISTORICAL_INSTALLATION_SOURCE/'test_installation.py'],
+         read_json=io.read_json,read_bytes=io.read_bytes,sha=io.sha,identity=io.identity)
+     require(type(installation_proof['controls']) is int and installation_proof['controls']==INSTALLATION_COUNT
+         and same(installation_proof['audit'],manifest['installation_controls']), 'actual separate installation controls differ before import')
++    native_proof=reader.controls(source=NATIVE_CONTROL,work=NATIVE_WORK,
++        audit_path=manifest['native_loader_controls']['path'],
++        source_paths=[ATTEMPT/name for name in NATIVE_FILES] + [LOADER_SOURCE/name for name in NATIVE_LOADER_FILES],
++        test_paths=[ATTEMPT/'test_installation.py',ATTEMPT/'test_imports.py',LOADER_SOURCE/'test_native_loader.py'],
++        read_json=io.read_json,read_bytes=io.read_bytes,sha=io.sha,identity=io.identity)
++    require(type(native_proof['controls']) is int and native_proof['controls']==NATIVE_COUNT
++        and same(native_proof['audit'],manifest['native_loader_controls']), 'actual current native-loader controls differ before import')
+     link_proof=audit.frozen_link_controls(manifest['frozen_links_controls'],read_json=io.read_json,
+         read_bytes=io.read_bytes,sha=io.sha,identity=io.identity)
+     require(type(link_proof['tests']) is int and link_proof['tests']==LINK_COUNT,
+@@ -359,8 +380,10 @@
+     environment=load('startup_environment',STARTUP/'environment.py',io.files)
+     startup_owner=load('startup_owner',ATTEMPT/'audit_owner.py',io.files,{'environment':environment})
+     resource_module=load('installation_resources',ATTEMPT/'controller.py',io.files)
+-    phase_modules={name:load(name,OLD/(name+'.py'),io.files) for name in ['recipe','preflight','final_runtime']}
+-    factory=load('factory',SOURCE/'imports.py',io.files);entry=load('entry',ATTEMPT/'entry.py',io.files)
++    # Current recipe is separately qualified before importing unchanged phase validators.
++    phase_modules={'recipe':load('native_recipe',LOADER_SOURCE/'audit_recipe.py',io.files)}
++    phase_modules.update({name:load(name,OLD/(name+'.py'),io.files) for name in ['preflight','final_runtime']})
++    factory=load('factory',ATTEMPT/'imports.py',io.files);entry=load('entry',ATTEMPT/'entry.py',io.files)
+     expected=dict(launch=args.launch_sha256,inputs=args.inputs_sha256,snapshot_plan=args.snapshot_plan_sha256,
+         receipt=args.receipt_sha256,result=args.result_sha256,outer=args.outer_sha256,
+         launcher_record=str(launcher/'record.json'),launcher_record_sha256=args.launcher_record_sha256,
+@@ -370,7 +393,7 @@
+     result=audit.verify(phase=args.phase,expected=expected,prepared=prepared,inspection=inspection,io=io,
+         reader=reader,factory=factory,entry=entry,actual53=manifest['actual53'],
+         startup_owner=startup_owner,actual39=manifest['startup_controls'],actual_retry=manifest['retry_controls'],
+-        actual_installation=manifest['installation_controls'],resource_module=resource_module,
++        actual_installation=manifest['installation_controls'],actual_native=manifest['native_loader_controls'],resource_module=resource_module,
+         link_reader=link_reader,actual_links=manifest['frozen_links_controls'],
+         completed_evidence=completed_evidence,guard=guard,**phase_modules)
+     result.update(pid=os.getpid(),parent_pid=os.getppid(),source_manifest=dict(path=str(args.source_manifest),

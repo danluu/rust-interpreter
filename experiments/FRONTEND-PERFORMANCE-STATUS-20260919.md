@@ -6,7 +6,7 @@ installation work are separate from application build timings.
 
 | Candidate | Completed checks | Remaining performance evidence |
 | --- | --- | --- |
-| Cache the immutable incremental option hash once per compiler context | Compiler build; serial and parallel hash controls; compiler behavior controls; runtime preflight and its independent saved-result audit | Complete runtime installation and composition, then real edited Ruff builds with HIR caching off/on and independent holdouts |
+| Cache the immutable incremental option hash once per compiler context | Compiler build; serial and parallel hash controls; compiler behavior controls; runtime preflight and its independent saved-result audit; runtime installation07 passed all 15 probes | Independently audit installation, prepare the standard library and exporter, then real edited Ruff builds with HIR caching off/on and independent holdouts |
 | Retain the first ordinary procedural-macro arena page across reset | Corrected native and Miri checks; real macro callers against both N client libraries; default sysroot discovery; all 36 native frontend timings and restoration checks independently verified | Parked: median improvement 0.5894% did not exceed 3.4410% stock/stock variation |
 
 The hash candidate retains the complete original hash and its wire encoding.
@@ -47,8 +47,12 @@ host architecture and binds that policy into a distinct runtime identity.
 Eighteen focused policy, identity and recipe checks passed, followed by two
 ordinary runs of 30 installation and factory checks. Integration source and both
 development runs passed independent review. All 48 controlled checks and their
-independent audit also passed. Production installation remains pending. All
-libraries and ordered loader commands remain checked.
+independent audit also passed. Production installation07 passed all 15 probes:
+ten native loader checks, three compiler information checks and two expected
+source-probe errors. Its independent saved-output audit remains pending. All
+libraries and ordered loader commands remain checked. The audit's 29 focused
+regressions passed, and its actual 326-file source manifest was prepared after
+installation released the workload lock. Neither result measures build speed.
 
 Evidence entry points:
 
@@ -67,6 +71,7 @@ Evidence entry points:
 - [Native loader correction development checks](../results/runtime-native-loader-development-01/STATUS.md)
 - [Installation integration and both development runs](../results/runtime-installation07-source-development-review-01/STATUS.md)
 - [Passed current integration controls and independent audit](../results/runtime-installation-controls-08/STATUS.md)
+- [Installation auditor source and passed ordinary regressions](../results/runtime12-installation-audit-source-01/STATUS.md)
 
 Historical plans and source manifests retain their original status text. The
 linked actual-result records establish which work has since run; an old plan's
