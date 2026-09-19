@@ -98,3 +98,12 @@ shared-emission-templates focused/build stages, verifies archived source,
 captured logs, installed artifacts and the original supervisor terminal. A
 partial failure must still be preserved before correction; never rerun a
 successful workspace stage solely because later Python/bookkeeping failed.
+
+Focused05 failed controller syntax before admission. Focused06 preserved16
+passing Python controls and a Rust compilation failure from an existing test
+closure. Focused07 corrects the closure lifetime and passes20Rust controls per
+profile, retaining the16Python controls without rerunning them, plus a production
+VM build (SHA d071c9123c40cd9ee9ad4dd1bb13faed046373a7d743ebc85919b08c029e8ebd).
+It is CLOSED; build01 now requires focused07. The original-suite controller and
+its closer are prepared for the13-command contract in QUALIFICATION.md, after
+full workspace and121strict commands. No original workload has run yet.

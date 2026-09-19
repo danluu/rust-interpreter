@@ -184,6 +184,14 @@ closure argument. Closed83483/83595 before correction. The test now reads the
 same function through jit.program; assertions are unchanged. Focused07 retains
 the closed16Python result and starts only the two Rust profiles and VM build.
 
+Focused07 is CLOSED:2155/2173 ran20Rust controls/profile and retained VM
+d071c9123c40cd9ee9ad4dd1bb13faed046373a7d743ebc85919b08c029e8ebd;
+38245/38249 verified closure. The16Python controls are reused from closed06.
+Build01 now requires07 and will run full workspace/Python before installing
+that exact VM. suite.py/close_suite.py are prepared (not executed): six full
+parser runs covering original/wrong source and off/one/two workers, one private
+one-entry run, six CLI/partial rejections. Strict121 commands precede them.
+
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally
 its incremental parser history and the latest selective-repair primary's
