@@ -7,7 +7,7 @@ qualified work regularly. Do not stop at milestones.
 
 ## Current direction
 
-Branch experiment/cross-edit-emission-census-20260918. HEAD546029a7 before this
+Branch experiment/cross-edit-emission-census-20260918. HEADcef2214e before this
 state update. Adopted Rust/Cargo was restored exactly at4d06c3ed after parking the
 register-workspace candidate. Current Rust difference is a cfg(test)-only
 structural census, with no JIT construction, guest execution or native cache.
@@ -35,12 +35,32 @@ preparation before choosing a cache mechanism. Do not enable reuse from these
 counts. [Assessment](docs/CROSS-EDIT-EMISSION-CENSUS-20260918.md).
 
 Model02 at546029a7 adds typed/global difference classification and passes11tests
-per profile under13308/13311. Both ignored observers were excluded. Closer02
-is newly launched; verify terminal before differences01. Differences controller
-reads the same eight bound artifacts with no guest/JIT/native publication and
-retains all seven transitions. Do not change frozen Rust/controllers until closure.
-Current free space about22GiB, with rapid observed depletion; recheck each stage.
-No cache or performance candidate is enabled by the diagnostic.
+per profile under13308/13311, CLOSED21995/21998. Differences01 at32e106d2 passed
+under27405/27408, CLOSED35904/35946. Into edit1,2,648functions differ only in
+immediates; into edit5,2,769. Data/static bytes change. Edit4 changes names at682
+IDs and2,395positional direct-call IDs. Immediate changes are not proven pointer
+relocations. Both small edits2/3 change one function and no compared globals.
+
+Model03 at0de25c43 passed12controls/profile under89426/89430, CLOSED5273/5277.
+It adds direct-callee-layout candidates, original metadata and an original-anchor
+observer. Anchors01 atb8e498b1 under22575/22661 failed the64MiB report bound before
+publication (diagnostic child22882 returns101); CLOSED42993/42996. No guest ran.
+Failure, inputs and successful earlier controls are preserved.
+
+Model04 atcef2214e is running under63343 (child in terminal):13controls/profile,
+including deduplicated schema2 metadata. Report cap stays64MiB; each original
+function's ID/name/opcount/hash is stored once, masks stay per-state. Verify its
+terminal and close with model.py --close before running anchors02. New anchor
+controller is anchors.py; close_anchors.py takes run and supervisor names.
+After anchor closure, weight.py (weight01) associates original diagnostic phases
+using associate.py, four Python controls and the unchanged refined trace validator.
+It verifies exact original artifact, function names/op counts and complete trace;
+keeps workers/phases separate and excludes no-entry functions from native-template
+potential. Weight stage unstarted. No new original guest or timing campaign.
+
+Do not change frozen Rust/controllers until closure. Current free about22GiB,
+with rapid observed depletion; recheck each stage. No cache or performance
+candidate is enabled by the diagnostic.
 
 The census hashes complete functions at identical numeric IDs, then checks direct
 callees and an iteratively propagated closed direct-call graph. It excludes
