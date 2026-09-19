@@ -1,0 +1,63 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-12/bootstrap.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-13/bootstrap.py
+@@ -21,7 +21,7 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-HERE = ROOT/'experiments/hir-options-hash-runtime-audit-12'
++HERE = ROOT/'experiments/hir-options-hash-runtime-audit-13'
+ QUALIFIED_AUDIT = ROOT/'experiments/hir-options-hash-runtime-audit-05'
+ ATTEMPT = ROOT/'experiments/runtime-installation-after-preflight05-03'
+ PREFLIGHT_SOURCE = ROOT/'experiments/runtime-preflight-retry-05'
+@@ -312,20 +312,27 @@
+     entries={name:dict(zip(['dev','ino','mode','size','mtime_ns','ctime_ns','nlink'],row['stamp'],strict=True))
+         for name,row in prepared['links'].items()}
+     entries.update(plan['snapshot_reuse']['evidence_roots'])
+-    # Source provider directory observations are metadata only. All payloads
+-    # remain exact frozen file rows; final_runtime compares these observations
+-    # to the saved admission stamps after the complete provider Reader guard.
++    # Complete provider directory scope comes from the passed keyed admission,
++    # including empty directories absent from payload/link ancestor inference.
++    # These exact closed-output reads retain first bytes/identities in OBSERVED;
++    # the bootstrap rechecks them at the end and final_runtime checks every stamp.
+     specification=read(plan['specification']['path'],plan['specification']['sha256'])
+-    for component in specification['components']:
+-        root=io_module.path(component['root']);directories={root}
+-        for name in [*component['files'],*component['links']]:
+-            p=root/name;require(root in p.parents,'provider member escapes component')
+-            directories.update(parent for parent in p.parents if parent==root or root in parent.parents)
+-        for p in directories:
+-            with io_module.parent_descriptor(p) as (parent,leaf):
+-                row=stamp(os.stat(leaf,dir_fd=parent,follow_symlinks=False));io_module.typed_identity(row,'directory')
+-            require(str(p) not in entries or same(entries[str(p)],row),'metadata entry identity conflict')
+-            entries[str(p)]=row
++    runtime_prefix=R/'.work/runtime-compilers'/plan['runtime_key']
++    admission=read(runtime_prefix/'admission.json')
++    ready=read(runtime_prefix/'ready.json')
++    terminal=read(work/'receipt.json',args.receipt_sha256)
++    def provider_identity(name):
++        guard();p=io_module.path(name)
++        with io_module.parent_descriptor(p) as (parent,leaf):
++            row=stamp(os.stat(leaf,dir_fd=parent,follow_symlinks=False))
++            io_module.typed_identity(row,'directory')
++        return row
++    provider_scope=audit.admitted_provider_directories(plan,specification,terminal,ready,admission,
++        files=inspection['value']['files'],links=prepared['links'],identity=provider_identity,
++        path_check=io_module.path,typed_identity=io_module.typed_identity)
++    for name,row in provider_scope['entries'].items():
++        require(name not in entries or same(entries[name],row),'metadata entry identity conflict')
++        entries[name]=row
+     for name in declared['directories']:
+         p=io_module.path(name)
+         require(name not in inspection['value']['files'] and name not in historical
+@@ -396,6 +403,10 @@
+         actual_installation=manifest['installation_controls'],actual_native=manifest['native_loader_controls'],resource_module=resource_module,
+         link_reader=link_reader,actual_links=manifest['frozen_links_controls'],
+         completed_evidence=completed_evidence,guard=guard,**phase_modules)
++    result['provider_directory_scope']=dict(components=provider_scope['components'],
++        directories=len(provider_scope['entries']),declaration_sha256=provider_scope['declaration_sha256'],
++        admission=dict(path=str(runtime_prefix/'admission.json'),sha256=OBSERVED[str(runtime_prefix/'admission.json')]['sha256']),
++        readiness=dict(path=str(runtime_prefix/'ready.json'),sha256=OBSERVED[str(runtime_prefix/'ready.json')]['sha256']))
+     result.update(pid=os.getpid(),parent_pid=os.getppid(),source_manifest=dict(path=str(args.source_manifest),
+         sha256=args.source_manifest_sha256),source_rows=rows,samples=SAMPLES)
+     # Every initial source/packet observation is checked once more; no current

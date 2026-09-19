@@ -1,0 +1,29 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-12/prepare_manifest.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-13/prepare_manifest.py
+@@ -20,7 +20,7 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-HERE = ROOT/'experiments/hir-options-hash-runtime-audit-12'
++HERE = ROOT/'experiments/hir-options-hash-runtime-audit-13'
+ QUALIFIED_AUDIT = ROOT/'experiments/hir-options-hash-runtime-audit-05'
+ ATTEMPT = ROOT/'experiments/runtime-installation-after-preflight05-03'
+ ROUTES_PATH = ATTEMPT/'routes.json'
+@@ -205,7 +205,7 @@
+ 
+ def output_root(phase):
+     require(phase in ['installation'], 'exact runtime phase')
+-    return ROOT/('.work/runtime12-saved-audit-'+phase+'-manifest-01')
++    return ROOT/('.work/runtime13-saved-audit-'+phase+'-manifest-01')
+ 
+ 
+ def require(value, message):
+@@ -678,7 +678,7 @@
+     resource.setrlimit(resource.RLIMIT_CPU, (900, 900)); resource.setrlimit(resource.RLIMIT_FSIZE, (4*2**20, 4*2**20))
+     require(not os.path.lexists(output), 'fresh phase-specific manifest output required')
+     inventory = read(args.source_inventory, sha_value(args.source_inventory_sha256))
+-    require(set(inventory) == {'policy', 'sources'} and inventory['policy'] == 'runtime12-reviewed-sources-v1'
++    require(set(inventory) == {'policy', 'sources'} and inventory['policy'] == 'runtime13-reviewed-sources-v1'
+             and type(inventory['sources']) is dict
+             and set(inventory['sources']) == ({str(path) for path in CORE_PATHS} | set(INTEGRATION_SOURCE_PATHS)),
+             'exact separately reviewed enclosing source inventory required')

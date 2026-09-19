@@ -1,0 +1,96 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-12/audit.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-13/audit.py
+@@ -21,7 +21,7 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+-HERE = ROOT/'experiments/hir-options-hash-runtime-audit-12'
++HERE = ROOT/'experiments/hir-options-hash-runtime-audit-13'
+ QUALIFIED_AUDIT = ROOT/'experiments/hir-options-hash-runtime-audit-05'
+ ATTEMPT = ROOT/'experiments/runtime-installation-after-preflight05-03'
+ PREFLIGHT_SOURCE = ROOT/'experiments/runtime-preflight-retry-05'
+@@ -85,6 +85,84 @@
+ 
+ def same(left, right):
+     return encoded(left) == encoded(right)
++
++
++def admitted_provider_directories(plan, specification, terminal, ready, admission, *,
++                                  files, links, identity, path_check, typed_identity):
++    """Exact admitted directory identities, including empty provider directories.
++
++    Authority is the held closed-output admission/ready pair, its identity keyed
++    by the frozen plan, and the frozen specification/file/link membership. The
++    caller supplies the existing no-follow metadata reader; no byte scope or
++    provider output root is added. All declarations are checked before the first
++    directory observation. The unchanged final validator rechecks every stamp.
++    """
++    fields = ('dev','ino','mode','size','mtime_ns','ctime_ns','nlink')
++    require(type(admission) is dict and set(admission) == {'identity','snapshots'}
++        and type(admission['identity']) is dict and type(admission['snapshots']) is list
++        and same(admission['identity'].get('admission'), specification)
++        and same(ready['identity'], admission['identity']), 'provider admission identity binding differs')
++    key = hashlib.sha256(encoded(admission['identity'])[:-1]).hexdigest()
++    owner = path_check(plan['owner']); prefix = owner/'.work/runtime-compilers'/key
++    require(plan['phase'] == terminal['phase'] == 'installation' and terminal['status'] == 'passed'
++        and plan['runtime_key'] == terminal['runtime_key'] == terminal['installed_runtime_key'] == key
++        and ready['key'] == key and ready['owner'] == str(owner) and ready['status'] == 'installed'
++        and plan['sysroot'] == terminal['sysroot'] == ready['sysroot'] == str(prefix/'sysroot'),
++        'provider directory authority requires the exact passed keyed installation')
++    components = specification['components']
++    require(type(components) is list and components and len(components) == len(admission['snapshots']),
++        'complete component directory admission required')
++    declared = {}; summaries = []
++    def member(root, name, *, directory=False):
++        require(type(name) is str and name and '\\' not in name and '\x00' not in name
++            and not PurePosixPath(name).is_absolute()
++            and ((directory and name == '.') or
++                 (str(PurePosixPath(name)) == name and all(p not in ('','.','..') for p in name.split('/')))),
++            'canonical relative admitted provider member required')
++        value = path_check(str(root/name))
++        require(value == root or root in value.parents, 'admitted provider member escapes root')
++        return value
++    def named_stamp(saved, kind):
++        require(type(saved) is list and len(saved) == 7 and all(type(v) is int for v in saved),
++            'strict seven-integer admitted provider stamp required')
++        row = dict(zip(fields, saved, strict=True)); typed_identity(row, kind)
++        return row
++    for component, snapshot in zip(components, admission['snapshots'], strict=True):
++        root = path_check(component['root'])
++        require(type(snapshot) is dict and set(snapshot) == {'files','links','directories'}
++            and all(type(snapshot[k]) is dict for k in snapshot)
++            and set(snapshot['files']) == set(component['files'])
++            and set(snapshot['links']) == set(component['links']),
++            'admitted provider file/link membership differs')
++        required = {str(root)}
++        for role, kind in [('files','file'),('links','link')]:
++            for name, saved in snapshot[role].items():
++                target = member(root,name); observed = named_stamp(saved,kind)
++                if role == 'files':
++                    require(str(target) in files and same(observed,files[str(target)]['identity']),
++                        'provider file is outside its exact frozen identity')
++                else:
++                    require(str(target) in links and same(saved,links[str(target)]['stamp']),
++                        'provider link is outside its exact frozen identity')
++                required.update(str(parent) for parent in target.parents if parent == root or root in parent.parents)
++        directories = {}
++        for name, saved in snapshot['directories'].items():
++            target = member(root,name,directory=True); row = named_stamp(saved,'directory')
++            require(str(target) not in files and str(target) not in links,
++                'provider directory collides with frozen payload/link')
++            directories[str(target)] = row
++        require(required <= set(directories), 'admitted provider directories omit root or payload/link ancestor')
++        for name, row in directories.items():
++            require(name not in declared or same(declared[name],row), 'conflicting admitted provider directory')
++            declared[name] = row
++        summaries.append(dict(root=str(root),directories=len(directories),
++            required_ancestors=len(required),additional_declared_directories=len(set(directories)-required)))
++    # This loops over a finite saved map; there is no provider scan or descendant grant.
++    for name, saved in declared.items():
++        actual = identity(name); typed_identity(actual,'directory')
++        require(same(actual,saved), 'admitted provider directory changed')
++    return dict(entries=copy.deepcopy(declared),components=summaries,
++        declaration_sha256=hashlib.sha256(encoded(declared)).hexdigest())
+ 
+ 
+ def installation_resource_readback(plan, *, runtime, copy_budget, read_json, sha):

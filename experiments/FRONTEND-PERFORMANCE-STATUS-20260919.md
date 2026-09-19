@@ -6,7 +6,7 @@ installation work are separate from application build timings.
 
 | Candidate | Completed checks | Remaining performance evidence |
 | --- | --- | --- |
-| Cache the immutable incremental option hash once per compiler context | Compiler build; serial and parallel hash controls; compiler behavior controls; runtime preflight and its independent saved-result audit; runtime installation07 passed all 15 probes | Independently audit installation, prepare the standard library and exporter, then real edited Ruff builds with HIR caching off/on and independent holdouts |
+| Cache the immutable incremental option hash once per compiler context | Compiler build; serial and parallel hash controls; compiler behavior controls; runtime preflight and its independent saved-result audit; runtime installation07 passed all 15 probes and audit13 passed | Prepare the standard library and exporter, then real edited Ruff builds with HIR caching off/on and independent holdouts |
 | Retain the first ordinary procedural-macro arena page across reset | Corrected native and Miri checks; real macro callers against both N client libraries; default sysroot discovery; all 36 native frontend timings and restoration checks independently verified | Parked: median improvement 0.5894% did not exceed 3.4410% stock/stock variation |
 
 The hash candidate retains the complete original hash and its wire encoding.
@@ -52,11 +52,13 @@ ten native loader checks, three compiler information checks and two expected
 source-probe errors. Its independent saved-output audit12 failed because the
 reader declared provider directories from file and symlink ancestors, omitting
 two empty directories correctly retained by the installer. All file and symlink
-paths were covered. A successor reader is being prepared to declare the complete
-directory metadata from the saved admission record. The same installation will
-be audited again; the original failure stays retained. The audit's 29 focused
-regressions and its actual 326-file source-manifest preparation had passed.
-Neither result measures build speed.
+paths were covered. Successor audit13 declares complete directory metadata from
+the saved admission record and passed against the unchanged installation. It
+verified all 944 provider directories, all 3,708 installed files and their
+636,631,680 bytes, and the original 15 child results. Its nine new regressions
+and 326-file source-manifest preparation also passed. The earlier 29 regressions
+were not rerun; the original failure stays retained. These results establish
+installation correctness, not application behavior or build speed.
 
 Evidence entry points:
 
@@ -77,6 +79,7 @@ Evidence entry points:
 - [Passed current integration controls and independent audit](../results/runtime-installation-controls-08/STATUS.md)
 - [Installation auditor source and passed ordinary regressions](../results/runtime12-installation-audit-source-01/STATUS.md)
 - [Passed installation07 and retained audit12 failure](../results/runtime-installation07-success-01/STATUS.md)
+- [Corrected directory reader and nine new regressions](../results/runtime13-provider-directory-source-01/STATUS.md)
 - [Standard-library adapter source and 12 focused tests](../results/runtime-std07-source-development-01/STATUS.md)
 
 Historical plans and source manifests retain their original status text. The

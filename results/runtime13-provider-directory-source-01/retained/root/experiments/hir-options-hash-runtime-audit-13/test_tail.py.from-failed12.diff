@@ -1,0 +1,152 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-12/test_tail.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-13/test_tail.py
+@@ -264,5 +264,149 @@
+             with self.subTest(forged=forged),self.assertRaisesRegex(RuntimeError,'recomputed'):self.check()
+ 
+ 
++class ProviderDirectoryTests(unittest.TestCase):
++    """Actual helper/Access with owned empty directories, never provider inputs."""
++    def setUp(self):
++        import os
++        self.os = os
++        self.tmp = tempfile.TemporaryDirectory(prefix='saved-provider-directories-')
++        self.addCleanup(self.tmp.cleanup)
++        self.owner = Path(self.tmp.name).resolve()
++        self.root = self.owner/'provider'; self.root.mkdir()
++        self.lib = self.root/'lib'; self.lib.mkdir()
++        self.nested = self.lib/'nested'; self.nested.mkdir()
++        self.empty = self.lib/'empty'; self.empty.mkdir()
++        self.payload = self.nested/'payload'; self.payload.write_bytes(b'owned payload\n')
++        self.link = self.lib/'alias'; self.link.symlink_to('nested/payload')
++        self.fields = ('dev','ino','mode','size','mtime_ns','ctime_ns','nlink')
++        def saved(path):
++            row = access.stamp(path.lstat())
++            return [row[key] for key in self.fields]
++        self.saved = saved
++        self.component = dict(root=str(self.root),files={'lib/nested/payload':{}},links={'lib/alias':{}})
++        self.spec = dict(components=[self.component])
++        self.snapshot = dict(files={'lib/nested/payload':saved(self.payload)},links={'lib/alias':saved(self.link)},
++            directories={'.':saved(self.root),'lib':saved(self.lib),'lib/nested':saved(self.nested),
++                         'lib/empty':saved(self.empty)})
++        self.admission = dict(identity=dict(admission=copy.deepcopy(self.spec),fixture=True),
++                              snapshots=[self.snapshot])
++        key = hashlib.sha256(audit.encoded(self.admission['identity'])[:-1]).hexdigest()
++        sysroot = str(self.owner/'.work/runtime-compilers'/key/'sysroot')
++        self.plan = dict(owner=str(self.owner),phase='installation',runtime_key=key,sysroot=sysroot)
++        self.terminal = dict(phase='installation',status='passed',runtime_key=key,installed_runtime_key=key,sysroot=sysroot)
++        self.ready = dict(status='installed',owner=str(self.owner),key=key,sysroot=sysroot,
++                          identity=copy.deepcopy(self.admission['identity']))
++        self.files = {str(self.payload):dict(size=self.payload.stat().st_size,
++            sha256=hashlib.sha256(self.payload.read_bytes()).hexdigest(),identity=access.stamp(self.payload.lstat()))}
++        self.links = {str(self.link):dict(stamp=saved(self.link),target='nested/payload',resolved=str(self.payload))}
++        self.observed = []
++
++    def identity(self, name):
++        self.observed.append(name)
++        with access.parent_descriptor(name) as (parent,leaf):
++            return access.stamp(self.os.stat(leaf,dir_fd=parent,follow_symlinks=False))
++
++    def derive(self):
++        return audit.admitted_provider_directories(self.plan,self.spec,self.terminal,self.ready,self.admission,
++            files=self.files,links=self.links,identity=self.identity,path_check=access.path,
++            typed_identity=access.typed_identity)
++
++    def test_empty_directory_declared_without_byte_or_descendant_scope(self):
++        old = access.Access(self.files,entries={str(p):access.stamp(p.lstat()) for p in [self.root,self.lib,self.nested]})
++        with self.assertRaisesRegex(RuntimeError,'undeclared saved-evidence'):
++            old.identity(self.empty)
++        before = copy.deepcopy((self.plan,self.spec,self.terminal,self.ready,self.admission,self.files,self.links))
++        proof = self.derive(); io = access.Access(self.files,entries=proof['entries'])
++        self.assertEqual(io.identity(self.empty),access.stamp(self.empty.lstat()))
++        self.assertEqual(proof['components'],[dict(root=str(self.root),directories=4,
++            required_ancestors=3,additional_declared_directories=1)])
++        self.assertEqual(set(self.observed),set(proof['entries']))
++        self.assertEqual(before,(self.plan,self.spec,self.terminal,self.ready,self.admission,self.files,self.links))
++        for path in [self.empty,self.root/'unlisted',self.empty/'child']:
++            with self.subTest(path=path),self.assertRaisesRegex(RuntimeError,'undeclared saved-evidence'):
++                io.read_bytes(path)
++        with self.assertRaisesRegex(RuntimeError,'undeclared saved-evidence'):
++            io.identity(self.root/'unlisted')
++
++    def test_missing_root_or_payload_link_ancestor_rejected_before_observation(self):
++        original = copy.deepcopy(self.snapshot['directories'])
++        for name in ['.','lib','lib/nested']:
++            self.snapshot['directories'] = copy.deepcopy(original);del self.snapshot['directories'][name]
++            with self.subTest(name=name),self.assertRaisesRegex(RuntimeError,'omit root or payload/link ancestor'):
++                self.derive()
++            self.assertEqual(self.observed,[])
++
++    def test_unsafe_relative_names_and_component_roots_rejected(self):
++        original = copy.deepcopy(self.snapshot['directories'])
++        for name in ['../escape','/outside','lib//empty','lib/./empty','lib/../empty','lib\\empty','lib/\x00empty']:
++            self.snapshot['directories'] = copy.deepcopy(original)
++            self.snapshot['directories'][name] = self.saved(self.empty)
++            with self.subTest(name=name),self.assertRaisesRegex(RuntimeError,'canonical relative'):
++                self.derive()
++            self.assertEqual(self.observed,[])
++        self.snapshot['directories'] = original
++        self.component['root'] = str(self.root)+'/../provider'
++        # Rebind only the synthetic fixture identity so canonical-root validation is reached.
++        self.admission['identity']['admission'] = copy.deepcopy(self.spec)
++        self.ready['identity'] = copy.deepcopy(self.admission['identity'])
++        key = hashlib.sha256(audit.encoded(self.admission['identity'])[:-1]).hexdigest()
++        for doc in [self.plan,self.terminal]:doc['runtime_key'] = key;doc['sysroot'] = str(self.owner/'.work/runtime-compilers'/key/'sysroot')
++        self.terminal['installed_runtime_key'] = self.ready['key'] = key;self.ready['sysroot'] = self.plan['sysroot']
++        with self.assertRaisesRegex(RuntimeError,'canonical absolute'):
++            self.derive()
++
++    def test_malformed_or_non_directory_saved_stamp_rejected(self):
++        saved = self.saved(self.empty)
++        variants = [saved[:-1], [True,*saved[1:]], [*saved[:1],0,*saved[2:]],
++                    [*saved[:2],self.files[str(self.payload)]['identity']['mode'],*saved[3:]],
++                    [*saved[:3],-1,*saved[4:]]]
++        for row in variants:
++            self.snapshot['directories']['lib/empty'] = row
++            with self.subTest(row=row),self.assertRaises(RuntimeError):self.derive()
++            self.assertEqual(self.observed,[])
++
++    def test_unbacked_file_link_and_payload_directory_collision_rejected(self):
++        original_files = copy.deepcopy(self.files);original_links = copy.deepcopy(self.links)
++        self.files = {}
++        with self.assertRaisesRegex(RuntimeError,'file is outside'):self.derive()
++        self.files = original_files;self.links = {}
++        with self.assertRaisesRegex(RuntimeError,'link is outside'):self.derive()
++        self.links = original_links
++        self.snapshot['directories']['lib/nested/payload'] = self.saved(self.empty)
++        with self.assertRaisesRegex(RuntimeError,'collides with frozen payload/link'):self.derive()
++        self.assertEqual(self.observed,[])
++
++    def test_directory_changed_before_observation_rejected(self):
++        self.empty.chmod((self.empty.lstat().st_mode & 0o7777) ^ 0o100)
++        with self.assertRaisesRegex(RuntimeError,'admitted provider directory changed'):self.derive()
++
++    def test_directory_changed_after_scope_rejected_by_unchanged_access(self):
++        proof = self.derive();io = access.Access(self.files,entries=proof['entries'])
++        io.identity(self.empty)
++        self.empty.chmod((self.empty.lstat().st_mode & 0o7777) ^ 0o100)
++        with self.assertRaisesRegex(RuntimeError,'declared entry identity differs'):io.identity(self.empty)
++
++    def test_passed_keyed_authority_and_complete_snapshot_required(self):
++        original = copy.deepcopy((self.plan,self.spec,self.terminal,self.ready,self.admission))
++        for defect in ['failed','key','spec','ready','snapshot','file-membership']:
++            self.plan,self.spec,self.terminal,self.ready,self.admission = copy.deepcopy(original)
++            if defect == 'failed':self.terminal['status']='failed'
++            elif defect == 'key':self.plan['runtime_key']='0'*64
++            elif defect == 'spec':self.spec['unexpected']=True
++            elif defect == 'ready':self.ready['identity']['fixture']=False
++            elif defect == 'snapshot':self.admission['snapshots']=[]
++            else:self.admission['snapshots'][0]['files']={}
++            with self.subTest(defect=defect),self.assertRaises(RuntimeError):self.derive()
++            self.assertEqual(self.observed,[])
++
++    def test_directory_replaced_by_symlink_is_not_followed(self):
++        target = self.owner/'other';target.mkdir()
++        self.empty.rmdir();self.empty.symlink_to(target,target_is_directory=True)
++        # The owned replacement changes its parent too; retain that new parent
++        # stamp so this fixture reaches the forbidden symlink leaf itself.
++        self.snapshot['directories']['lib'] = self.saved(self.lib)
++        with self.assertRaisesRegex(RuntimeError,'entry kind differs'):self.derive()
++
++
+ if __name__ == '__main__':
+     unittest.main()

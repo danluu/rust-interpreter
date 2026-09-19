@@ -1,0 +1,91 @@
+--- /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/verify_runtime12_manifest_preparation_01.py
++++ /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/verify_runtime13_manifest_preparation_01.py
+@@ -11,12 +11,12 @@
+ ROOT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ O=Path('/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918')
+ R=Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+-H=ROOT/'experiments/hir-options-hash-runtime-audit-12'
++H=ROOT/'experiments/hir-options-hash-runtime-audit-13'
+ S=ROOT/'experiments/runtime-installation-after-preflight05-03'
+-M=ROOT/'.work/runtime12-saved-audit-installation-manifest-01'
+-E=ROOT/'.work/runtime12-saved-audit-installation-manifest-preparation-execution-01'
+-INV=ROOT/'.work/runtime12-saved-audit-source-inventory-05.json'
+-CENSUS=O/'.work/runtime12-final-supplemental-census-03.json'
++M=ROOT/'.work/runtime13-saved-audit-installation-manifest-01'
++E=ROOT/'.work/runtime13-saved-audit-installation-manifest-preparation-execution-01'
++INV=ROOT/'.work/runtime13-saved-audit-source-inventory-01.json'
++CENSUS=O/'.work/runtime13-prospective-supplemental-census-01.json'
+ FIELDS=('dev','ino','mode','nlink','size','mtime_ns','ctime_ns')
+ OBSERVED={}
+ 
+@@ -65,11 +65,11 @@
+     resource.setrlimit(resource.RLIMIT_CPU,(60,60))
+     resource.setrlimit(resource.RLIMIT_FSIZE,(4*2**20,4*2**20))
+     started=time.time()
+-    rec=read(E/'record.json','96d78cc0897d6660444e2a5b99d7ef609ace59c66fac8141e200fb3f73c4e714')
+-    prep=read(M/'preparation.json','2d1214999a6812e9ea5b747ba884c93041393a6201f69cab7dcb99c15c06fcff')
+-    manifest=read(M/'manifest.json','6dd0f1e3142b6f08814c1792f751de4e8cc9f0f844cbea205fcb01d283a6159b')
+-    inv=read(INV,'a4292e84ac50047e6756a82038520f25d45bfebf40f3283d0d390ede3531db58')
+-    census=read(CENSUS,'2e533df21ee8ca7a6cc909d6cae07db3368a83a2e48cee7726f1d1807c7c2d8c')
++    rec=read(E/'record.json','0b73ce43a4e9f2fab103ff9cf2e124380daa00a5a219103002de3847e6828bc2')
++    prep=read(M/'preparation.json','e23f5df3dd4f962b96b127d2bc9293befd0732fd9d67aebbd4d6bc6a4d65a495')
++    manifest=read(M/'manifest.json','22b62cf3de500e0bd6d5ad4b6d465c3b803eda25889df8d3da3b7366593bb2e4')
++    inv=read(INV,'2286f48fcb8e41c8f50138a592a1500f73095c8b9abaa67aed5c47a2abbe1cbd')
++    census=read(CENSUS,'a7bd8f89311f02051b59763d128e1449855087484c10d4f7832dafb199bd7b8a')
+     assert set(p.name for p in E.iterdir())=={'record.json','stdout','stderr','source.py','execution.py','owned_stage.py','source-inventory.json','invocation.json'}
+     assert set(p.name for p in M.iterdir())=={'manifest.json','preparation.json'}
+     trees={str(d):{p.name:identity(p.lstat()) for p in d.iterdir()} for d in [E,M]}
+@@ -77,11 +77,11 @@
+     assert manifest['policy']=='runtime07-installation-native-loader-saved-audit-source-manifest-v1'
+     assert same(manifest['files'],census['files'])
+     assert len(manifest['files'])==prep['files']==326
+-    assert sum(v['size'] for v in manifest['files'].values())==prep['logical_bytes']==7169836<=8*2**20
++    assert sum(v['size'] for v in manifest['files'].values())==prep['logical_bytes']==7185333<=8*2**20
+     for name,row in manifest['files'].items():
+         raw(name,row['sha256'])
+         assert same(OBSERVED[name],row),name
+-    assert inv['policy']=='runtime12-reviewed-sources-v1' and len(inv['sources'])==30
++    assert inv['policy']=='runtime13-reviewed-sources-v1' and len(inv['sources'])==30
+     for name,expected in inv['sources'].items():
+         assert manifest['files'][name]['sha256']==expected
+     assert same(read(E/'source-inventory.json'),inv)
+@@ -97,7 +97,7 @@
+     assert rec['may_be_live'] is False and rec['observation_errors']==[]
+     assert not any(key in rec for key in ['execution_error','publication_error','initial_publication_error'])
+     assert rec['mode']=='prepare' and rec['phase']=='installation' and rec['cwd']==str(R)
+-    assert rec['pid']==prep['pid']==25782 and rec['parent_pid']==prep['parent_pid']==43056
++    assert rec['pid']==prep['pid']==74072 and rec['parent_pid']==prep['parent_pid']==73356
+     assert rec['started_at']<=rec['admitted_at']<=rec['child_started_at']<=prep['finished_at']<=rec['finished_at']<=rec['canonical_released_at']<=time.time()
+     assert rec['admitted_at']-rec['started_at']<=rec['wait_seconds']==600
+     assert rec['finished_at']-rec['child_started_at']<=1250
+@@ -153,7 +153,7 @@
+           '--preparation-sha256',OBSERVED[str(M/'preparation.json')]['sha256'],
+           '--preparation-record-sha256',OBSERVED[str(E/'record.json')]['sha256']]
+     for name,path in paths.items():argv.extend(['--'+name+'-sha256',OBSERVED[str(path)]['sha256']])
+-    future_execution=ROOT/'.work/runtime12-saved-audit-installation-execution-01'
++    future_execution=ROOT/'.work/runtime13-saved-audit-installation-execution-01'
+     # Root may have launched the reviewed command concurrently; do not read its active outputs.
+     for name,row in OBSERVED.items():assert identity(Path(name).lstat())==row['identity'],name
+     assert {str(d):{p.name:identity(p.lstat()) for p in d.iterdir()} for d in [E,M]}==trees
+@@ -161,9 +161,9 @@
+         pid=os.getpid(),parent_pid=os.getppid(),started_at=started,finished_at=time.time(),
+         manifest=ref(M/'manifest.json'),preparation=ref(M/'preparation.json'),execution=ref(E/'record.json'),
+         source_inventory=ref(INV),source_inventory_files=30,actual326_rows_equal_independent_census=True,
+-        actual326_payloads_rehashed=True,logical_bytes=7169836,source_rows=manifest['files'],
+-        independent_census=ref(CENSUS),historical_census_correction=census['historical_census_route_correction'],
+-        preparation_parent=43056,preparation_child=25782,preparation_closed_returncode=0,
++        actual326_payloads_rehashed=True,logical_bytes=7185333,source_rows=manifest['files'],
++        independent_census=ref(CENSUS),source_route_replacements=census['replacement_routes'],
++        preparation_parent=73356,preparation_child=74072,preparation_closed_returncode=0,
+         preparation_outputs=trees,source_and_raw_associations_verified=True,
+         named_nonworkspace_source_dependencies=[name for name in manifest['files'] if not name.startswith('/Users/danluu/dev/rust-interp')],
+         binary_execution=False,provider_payload_walk=False,phase_dependencies={name:ref(path) for name,path in paths.items()},
+@@ -172,7 +172,7 @@
+         command=argv,shell_command=shlex.join(argv),cwd=str(R),future_execution=str(future_execution),future_report=routes['report'],
+         future_report_sha256=None,executed_audit=False,source_mutations=False,
+         observed_files=len(OBSERVED),compiler_calls=0,provider_calls=0,target_imports=0)
+-    dest=O/'.work/runtime12-manifest-preparation-independent-readback-01.json'
++    dest=O/'.work/runtime13-manifest-preparation-independent-readback-01.json'
+     data=(json.dumps(report,sort_keys=True,indent=2)+'\n').encode()
+     with dest.open('xb') as f:f.write(data)
+     print(json.dumps(dict(path=str(dest),sha256=hashlib.sha256(data).hexdigest(),bytes=len(data),command=argv)))

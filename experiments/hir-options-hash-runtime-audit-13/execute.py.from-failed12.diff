@@ -1,0 +1,44 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-12/execute.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-13/execute.py
+@@ -22,7 +22,7 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-HERE = ROOT/'experiments/hir-options-hash-runtime-audit-12'
++HERE = ROOT/'experiments/hir-options-hash-runtime-audit-13'
+ QUALIFIED_AUDIT = ROOT/'experiments/hir-options-hash-runtime-audit-05'
+ ATTEMPT = ROOT/'experiments/runtime-installation-after-preflight05-03'
+ ROUTES_PATH = ATTEMPT/'routes.json'
+@@ -122,7 +122,7 @@
+ def inventory(args):
+     digest(ROUTES_SHA)  # Future current route must be reviewed before evidence or Popen.
+     value = read(args.source_inventory, args.source_inventory_sha256, 2**20)
+-    require(set(value) == {'policy', 'sources'} and value['policy'] == 'runtime12-reviewed-sources-v1'
++    require(set(value) == {'policy', 'sources'} and value['policy'] == 'runtime13-reviewed-sources-v1'
+             and type(value['sources']) is dict and len(value['sources']) == 30,
+             'bounded reviewed final source inventory required')
+     required = {str(HERE/name) for name in ['bootstrap.py','audit.py','prepare_manifest.py','execute.py','test_completed_directories.py','test_tail.py']} | {
+@@ -244,12 +244,12 @@
+ 
+ def manifest_root(phase):
+     require(phase in ['installation'], 'exact runtime phase')
+-    return ROOT/('.work/runtime12-saved-audit-'+phase+'-manifest-01')
++    return ROOT/('.work/runtime13-saved-audit-'+phase+'-manifest-01')
+ 
+ 
+ def preparation_execution(phase):
+     require(phase in ['installation'], 'exact runtime phase')
+-    return ROOT/('.work/runtime12-saved-audit-'+phase+'-manifest-preparation-execution-01')
++    return ROOT/('.work/runtime13-saved-audit-'+phase+'-manifest-preparation-execution-01')
+ 
+ 
+ def attempt_routes():
+@@ -406,7 +406,7 @@
+     output = manifest_root(args.phase); preparation_evidence = preparation_execution(args.phase)
+     sources = inventory(args)
+     source = HERE/('prepare_manifest.py' if args.mode == 'prepare' else 'bootstrap.py')
+-    evidence = preparation_evidence if args.mode == 'prepare' else ROOT/('.work/runtime12-saved-audit-'+args.phase+'-execution-01')
++    evidence = preparation_evidence if args.mode == 'prepare' else ROOT/('.work/runtime13-saved-audit-'+args.phase+'-execution-01')
+     report = output/'preparation.json' if args.mode == 'prepare' else Path(attempt_routes()['report'])
+     require(not os.path.lexists(evidence) and not os.path.lexists(report)
+             and (args.mode != 'prepare' or not os.path.lexists(output)), 'fresh execution and publication routes')
