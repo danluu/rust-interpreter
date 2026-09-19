@@ -1,0 +1,85 @@
+diff --git a/compiler/rustc_ast_lowering/src/body_cache/input.rs b/compiler/rustc_ast_lowering/src/body_cache/input.rs
+--- a/compiler/rustc_ast_lowering/src/body_cache/input.rs
++++ b/compiler/rustc_ast_lowering/src/body_cache/input.rs
+@@ -284,10 +284,47 @@
+         if p.is_placeholder {return Err("placeholder-parameter");}
+         w.node(p.id,false)?;w.span(p.span)?;w.span(p.ty.span)?;w.pattern(&p.pat,false)?;
+     }
+     let parameter_nodes=w.ordered.len();w.block(body)?;w.resolved()?;
+     let body_nodes=w.ordered.len()-parameter_nodes;
+-    Ok(ProbedInput { probe: Probe{input:Input{owner:tcx.def_path_hash(current.def_id.to_def_id()),file:file.stable_id,
++    let probed = ProbedInput { probe: Probe{input:Input{owner:tcx.def_path_hash(current.def_id.to_def_id()),file:file.stable_id,
+         role,owner_source:source,atoms:w.atoms},body_bytes:body_source.len(),body_nodes,parameter_nodes,
+         trait_entries:w.trait_entries,trait_candidates:w.trait_candidates,external_resolutions:w.external_resolutions},
+-        ordered: w.ordered })
+-}
++        ordered: w.ordered };
++    // QUALIFICATION ONLY: this distinct compiler is forbidden for timings.
++    // There is no environment switch or option that disables these checks.
++    // The exact previous function compares both actual normalized Input byte
++    // streams before returning its independently collected node order.
++    let repeated = current_nodes(tcx, resolver, owner, span, f, &probed.probe)
++        .unwrap_or_else(|reason| panic!("HIR input-walk audit rejected repeated traversal: {reason}"));
++    assert_eq!(&probed.ordered, &repeated, "HIR input-walk audit node ordering differs");
++    // Existing info reporting controls observation only; the audit above is
++    // unconditional, including compilations comparing raw JSON diagnostics.
++    if tcx.sess.opts.unstable_opts.incremental_info {
++        eprintln!("[hir-input-walk-audit] accepted owner={} nodes={} params={} body={} traits={} candidates={} externals={}",
++            f.ident.name, probed.ordered.len(), probed.probe.parameter_nodes,
++            probed.probe.body_nodes, probed.probe.trait_entries,
++            probed.probe.trait_candidates, probed.probe.external_resolutions);
++    }
++    Ok(probed)
++}
++
++// Exact baseline function retained only in this audit compiler.
++pub(super) fn current_nodes<'tcx>(tcx: TyCtxt<'tcx>, resolver: &ResolverAstLowering<'tcx>,
++    owner: ast::NodeId, span: Span, f: &ast::Fn, probe: &Probe)
++    -> Outcome<Vec<(ast::NodeId, bool)>> {
++    let mut w = Walk { tcx, resolver, owner, base: span, atoms: Vec::new(),
++        nodes: NodeMap::default(), ordered: Vec::new(), trait_entries: 0,
++        trait_candidates: 0, external_resolutions: 0, depth: 0 };
++    w.tag(POLICY); w.count(f.sig.decl.inputs.len());
++    for p in &f.sig.decl.inputs {
++        if p.is_placeholder { return Err("placeholder-parameter"); }
++        w.node(p.id, false)?; w.span(p.span)?; w.span(p.ty.span)?; w.pattern(&p.pat, false)?;
++    }
++    w.block(f.body.as_deref().ok_or("no-body")?)?; w.resolved()?;
++    let repeated = Input { owner: probe.input.owner, file: probe.input.file,
++        role: probe.input.role, owner_source: probe.input.owner_source.clone(), atoms: w.atoms };
++    let mut first = MemEncoder::new(); probe.input.encode(&mut first);
++    let mut second = MemEncoder::new(); repeated.encode(&mut second);
++    if first.finish() != second.finish() { return Err("qualified-walker-disagreement"); }
++    Ok(w.ordered)
++}
+diff --git a/compiler/rustc_ast_lowering/src/body_cache/mod.rs b/compiler/rustc_ast_lowering/src/body_cache/mod.rs
+--- a/compiler/rustc_ast_lowering/src/body_cache/mod.rs
++++ b/compiler/rustc_ast_lowering/src/body_cache/mod.rs
+@@ -60,11 +60,20 @@
+ pub(super) fn prepare<'tcx>(tcx: TyCtxt<'tcx>, resolver: &ResolverAstLowering<'tcx>,
+     owner: ast::NodeId, span: Span, function: &ast::Fn, role: &'static str) -> Option<Candidate> {
+     if !(tcx.sess.opts.unstable_opts.hir_body_cache_capture || tcx.sess.opts.unstable_opts.hir_body_cache_reuse)
+         || std::env::var_os("RUSTC_FORCE_RUSTC_VERSION").is_some() { return None; }
+     let session = tcx.incr_comp_session?;
+-    let (probe, ast_nodes) = input::probe(tcx, resolver, owner, span, function, role).ok()?.into_parts();
++    let probed = match input::probe(tcx, resolver, owner, span, function, role) {
++        Ok(value) => value,
++        Err(reason) => {
++            if tcx.sess.opts.unstable_opts.incremental_info {
++                eprintln!("[hir-input-walk-audit] rejected owner={} reason={reason}", function.ident.name);
++            }
++            return None;
++        }
++    };
++    let (probe, ast_nodes) = probed.into_parts();
+     let mut ordinals = NodeMap::default();
+     let mut nodes = Vec::with_capacity(ast_nodes.len());
+     for (ordinal, &(id, body)) in ast_nodes.iter().enumerate() {
+         ordinals.insert(id, ordinal as u32);
+         let binding = resolver.partial_res_map.get(&id).and_then(|res| res.full_res())
+diff --git a/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs b/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
+--- a/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
++++ b/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
+@@ -1 +1 @@
+-pub(super) const SOURCE_IDENTITY: &str = "4ae2790b6283fd3569035c15b7b031603781f96a2dc2eca7b8631525cff55680";
++pub(super) const SOURCE_IDENTITY: &str = "65c516a68f274516659aa384bd9ea4e9a0df4536a2943327750156ca5953d6b7";

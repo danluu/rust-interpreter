@@ -1,0 +1,63 @@
+{
+  "candidate_manifest": {
+    "bytes": 4598,
+    "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-probe-single-walk-01/manifest.json",
+    "sha256": "6c7652e7353b9829f3c6e832a85b3162643a3b7cfc572956cd36e6d08e13ed12"
+  },
+  "candidate_patch": {
+    "bytes": 6469,
+    "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-probe-single-walk-01/candidate.patch",
+    "sha256": "1e4e47585965731581cfcb788c2a100e2bb7eb417a12131c81d0d85562b777ee"
+  },
+  "edits": 0,
+  "executions": 0,
+  "extra_sources": [
+    {
+      "bytes": 118577,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_middle/src/ty/context.rs",
+      "sha256": "ea9494306f859cfb9e579d8f3131fe2fd5d4b3b451ccdae480edecd7d1564fa1"
+    },
+    {
+      "bytes": 19124,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_hir_id/src/definitions.rs",
+      "sha256": "cdd06895f392d4b5eeb819d5e8d0c1c1e990bd747aa91e3310a968684261f41e"
+    },
+    {
+      "bytes": 31913,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_metadata/src/rmeta/decoder/cstore_impl.rs",
+      "sha256": "4ee4d7564890edeaab79fc431fcb5c0c81ec9eb23a6661635b4df7f3449300c5"
+    },
+    {
+      "bytes": 81131,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_metadata/src/rmeta/decoder.rs",
+      "sha256": "fd8f2d273d8af43289c43c699bb70557c0f2355587b5156fde7f94869ea4dad8"
+    },
+    {
+      "bytes": 56249,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_metadata/src/creader.rs",
+      "sha256": "3ba58b929070fbd422f210274db47bf4741bf408b7a92192434b5508a5275be1"
+    },
+    {
+      "bytes": 14836,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_ast/src/util/literal.rs",
+      "sha256": "26902ad2a9bce1561738d4be23e908793114efc14afdce0feec47c3bee67477b"
+    },
+    {
+      "bytes": 19024,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_span/src/span_encoding.rs",
+      "sha256": "e6d2affb50b5ed90b890ed42cb9689631f875e49f414545d444b5654d6e73cda"
+    }
+  ],
+  "findings": [
+    "Only tcx use inside repeated Walk is def_path_hash. TyCtxt dispatches through untracked definitions or cstore. Local implementation reads indexed stored hash; external implementation reads already-present crate metadata/table. No tracked query or load_crate path in these call chains. First traversal remains.",
+    "Local def_path_hash has trace instrumentation: removing duplicate traversal removes repeated trace records. Literal conversion can intern strings/bytes and emit numeric debug logs; first conversion remains, so do not describe old Walk as effect-free or promise internal log multiplicity.",
+    "Original current_nodes duplicated the same parameter/body/resolution traversal with no intervening resolver mutation, then compared encoded normalized Input. New private constructor returns exact ordered IDs and normalized Input from one completed Walk; all original gate checks and resolver read branches remain.",
+    "All after-probe candidate preparation, incremental_options_hash query, entry/features binding and later hit/cold verification remain. New SOURCE_IDENTITY intentionally changes persistent key namespace.",
+    "No source-level dependency blocker found. This is not a compiler build or real-AST oracle qualification; the declared separate original current_nodes oracle and inherited correctness controls remain unrun."
+  ],
+  "limits": [
+    "Narrow dependency/effect review, not a repeated full hashbrown interner proof or full qualification-plan audit."
+  ],
+  "status": "clear-bounded-source-dependency-seam",
+  "target_imports": 0
+}

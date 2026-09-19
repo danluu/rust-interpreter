@@ -1,0 +1,107 @@
+diff --git a/compiler/rustc_ast_lowering/src/body_cache/input.rs b/compiler/rustc_ast_lowering/src/body_cache/input.rs
+--- a/compiler/rustc_ast_lowering/src/body_cache/input.rs
++++ b/compiler/rustc_ast_lowering/src/body_cache/input.rs
+@@ -1,6 +1,7 @@
+-//! Closed structural/resolved body gate. No lowering, queries, arena writes or cache.
++//! Closed structural/resolved body gate. No lowering or persistent-cache access.
++//! Literal validation can intern decoded strings in the current session.
+ use rustc_ast as ast;
+ use rustc_ast::node_id::NodeMap;
+ use rustc_hir::def::{DefKind, Res};
+ use rustc_macros::Encodable;
+ use rustc_middle::middle::resolve::ResolverAstLowering;
+@@ -30,10 +31,21 @@
+     pub body_nodes: usize,
+     pub parameter_nodes: usize,
+     pub trait_entries: usize,
+     pub trait_candidates: usize,
+     pub external_resolutions: usize,
++}
++/// The normalized input and node order originate in the same completed Walk.
++/// Private fields prevent callers from pairing independently generated values.
++pub(super) struct ProbedInput {
++    probe: Probe,
++    ordered: Vec<(ast::NodeId, bool)>,
++}
++impl ProbedInput {
++    pub(super) fn into_parts(self) -> (Probe, Vec<(ast::NodeId, bool)>) {
++        (self.probe, self.ordered)
++    }
+ }
+ struct Walk<'a,'tcx> {
+     tcx: TyCtxt<'tcx>, resolver: &'a ResolverAstLowering<'tcx>, owner: ast::NodeId,
+     base: Span, atoms: Vec<Atom>, nodes: NodeMap<u32>, ordered: Vec<(ast::NodeId,bool)>,
+     trait_entries: usize, trait_candidates: usize, external_resolutions: usize, depth: usize,
+@@ -250,11 +262,11 @@
+ }
+ 
+ /// Caller enumerates Fn owners directly from expanded AST; no HIR query needed.
+ /// Accepted means structural input only, never an S/E or replay qualification.
+ pub(super) fn probe<'tcx>(tcx:TyCtxt<'tcx>,resolver:&ResolverAstLowering<'tcx>,owner:ast::NodeId,
+-    span:Span,f:&ast::Fn,role:&'static str)->Outcome<Probe> {
++    span:Span,f:&ast::Fn,role:&'static str)->Outcome<ProbedInput> {
+     if tcx.incr_comp_session.is_none() {return Err("no-incremental-session");}
+     if tcx.dcx().has_errors().is_some() {return Err("prior-errors");}
+     if span==DUMMY_SP||span.ctxt()!=SyntaxContext::root()||span.parent().is_some() {return Err("owner-span-or-hygiene");}
+     if f.sig.header.coroutine_marker.is_some() {return Err("coroutine-body");}
+     if f.contract.is_some() {return Err("contract-body");}
+@@ -272,32 +284,10 @@
+         if p.is_placeholder {return Err("placeholder-parameter");}
+         w.node(p.id,false)?;w.span(p.span)?;w.span(p.ty.span)?;w.pattern(&p.pat,false)?;
+     }
+     let parameter_nodes=w.ordered.len();w.block(body)?;w.resolved()?;
+     let body_nodes=w.ordered.len()-parameter_nodes;
+-    Ok(Probe{input:Input{owner:tcx.def_path_hash(current.def_id.to_def_id()),file:file.stable_id,
++    Ok(ProbedInput { probe: Probe{input:Input{owner:tcx.def_path_hash(current.def_id.to_def_id()),file:file.stable_id,
+         role,owner_source:source,atoms:w.atoms},body_bytes:body_source.len(),body_nodes,parameter_nodes,
+-        trait_entries:w.trait_entries,trait_candidates:w.trait_candidates,external_resolutions:w.external_resolutions})
+-}
+-
+-// Appended after the exact qualified gate bytes by prepare_patch.py. Reuses
+-// its actual Walk, and byte-compares the rebuilt Input before exposing IDs.
+-// No alternative approximate AST traversal is involved.
+-pub(super) fn current_nodes<'tcx>(tcx: TyCtxt<'tcx>, resolver: &ResolverAstLowering<'tcx>,
+-    owner: ast::NodeId, span: Span, f: &ast::Fn, probe: &Probe)
+-    -> Outcome<Vec<(ast::NodeId, bool)>> {
+-    let mut w = Walk { tcx, resolver, owner, base: span, atoms: Vec::new(),
+-        nodes: NodeMap::default(), ordered: Vec::new(), trait_entries: 0,
+-        trait_candidates: 0, external_resolutions: 0, depth: 0 };
+-    w.tag(POLICY); w.count(f.sig.decl.inputs.len());
+-    for p in &f.sig.decl.inputs {
+-        if p.is_placeholder { return Err("placeholder-parameter"); }
+-        w.node(p.id, false)?; w.span(p.span)?; w.span(p.ty.span)?; w.pattern(&p.pat, false)?;
+-    }
+-    w.block(f.body.as_deref().ok_or("no-body")?)?; w.resolved()?;
+-    let repeated = Input { owner: probe.input.owner, file: probe.input.file,
+-        role: probe.input.role, owner_source: probe.input.owner_source.clone(), atoms: w.atoms };
+-    let mut first = MemEncoder::new(); probe.input.encode(&mut first);
+-    let mut second = MemEncoder::new(); repeated.encode(&mut second);
+-    if first.finish() != second.finish() { return Err("qualified-walker-disagreement"); }
+-    Ok(w.ordered)
+-}
++        trait_entries:w.trait_entries,trait_candidates:w.trait_candidates,external_resolutions:w.external_resolutions},
++        ordered: w.ordered })
++}
+diff --git a/compiler/rustc_ast_lowering/src/body_cache/mod.rs b/compiler/rustc_ast_lowering/src/body_cache/mod.rs
+--- a/compiler/rustc_ast_lowering/src/body_cache/mod.rs
++++ b/compiler/rustc_ast_lowering/src/body_cache/mod.rs
+@@ -60,12 +60,11 @@
+ pub(super) fn prepare<'tcx>(tcx: TyCtxt<'tcx>, resolver: &ResolverAstLowering<'tcx>,
+     owner: ast::NodeId, span: Span, function: &ast::Fn, role: &'static str) -> Option<Candidate> {
+     if !(tcx.sess.opts.unstable_opts.hir_body_cache_capture || tcx.sess.opts.unstable_opts.hir_body_cache_reuse)
+         || std::env::var_os("RUSTC_FORCE_RUSTC_VERSION").is_some() { return None; }
+     let session = tcx.incr_comp_session?;
+-    let probe = input::probe(tcx, resolver, owner, span, function, role).ok()?;
+-    let ast_nodes = input::current_nodes(tcx, resolver, owner, span, function, &probe).ok()?;
++    let (probe, ast_nodes) = input::probe(tcx, resolver, owner, span, function, role).ok()?.into_parts();
+     let mut ordinals = NodeMap::default();
+     let mut nodes = Vec::with_capacity(ast_nodes.len());
+     for (ordinal, &(id, body)) in ast_nodes.iter().enumerate() {
+         ordinals.insert(id, ordinal as u32);
+         let binding = resolver.partial_res_map.get(&id).and_then(|res| res.full_res())
+diff --git a/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs b/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
+--- a/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
++++ b/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
+@@ -1 +1 @@
+-pub(super) const SOURCE_IDENTITY: &str = "7c6bc02810f5c3ed7cf09d4566253611a890ce51dd8e534a908862da382c39ea";
++pub(super) const SOURCE_IDENTITY: &str = "4ae2790b6283fd3569035c15b7b031603781f96a2dc2eca7b8631525cff55680";

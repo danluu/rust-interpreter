@@ -1,0 +1,51 @@
+--- historical/compiler_test_source.py
++++ current_compiler_test_source.py
+@@ -1,6 +1,6 @@
+-"""Read-only, exact-source test/module derivation for candidate 4de35bda.
++"""Read-only test/module derivation for a separately bound single-walk compiler.
+ 
+ This is a validator for the reviewed pinned Rust source shape, not a general Rust
+ parser. Whole-file hashes are checked before interpreting exact cfg/module/test
+ lines. The returned catalog differs only in the three effects module names.
+ No compiler, test, subprocess, network or source mutation is performed.
+@@ -13,11 +13,10 @@
+ 
+ ROOT_LIBS = {
+     'compiler/rustc_ast_lowering/src/lib.rs': '218226f84b3b7acc3474be6213740fc4a4f3c13557ae4d4b96b2e0754c3e1970',
+     'compiler/rustc_interface/src/lib.rs': '1c22a5920a528d52c4e8a8ffab0cab72f0bc3d4a4d24a6d7ae32350db144ffeb',
+ }
+-REVISION = '4de35bdacef0e3cd18a66bc30b5459c19e09b118'
+ BASE = 'compiler/rustc_ast_lowering/src/'
+ 
+ 
+ def require(condition, message):
+     if not condition:
+@@ -28,15 +27,16 @@
+     s = path.lstat()
+     require(stat.S_ISREG(s.st_mode), f'nonordinary source: {path}')
+     return {k: getattr(s, 'st_' + k) for k in ('dev', 'ino', 'mode', 'size', 'mtime_ns', 'ctime_ns', 'nlink')}
+ 
+ 
+-def derive(source_root, original_expectations):
++def derive(source_root, original_expectations, source_revision):
+     source = Path(source_root)
+     require(source.is_absolute() and source.resolve() == source, 'source must be absolute ordinary resolved route')
+     original = copy.deepcopy(original_expectations)
+-    require(original['source_revision'] == REVISION, 'unexpected source revision')
++    require(isinstance(source_revision, str) and re.fullmatch(r'[0-9a-f]{40}', source_revision), 'actual built source revision required')
++    require(original['source_revision'] == source_revision, 'unexpected source revision')
+     expected = dict(original['source_files'])
+     for relative, digest in ROOT_LIBS.items():
+         path = str(source / relative)
+         require(path not in expected or expected[path] == digest, 'root library hash conflict')
+         expected[path] = digest
+@@ -115,8 +115,8 @@
+     require(len(changes) == 3 and sorted(names) == corrected, 'change is not exact three effects module corrections')
+     result = copy.deepcopy(original)
+     result['lowering']['names'] = corrected
+     for path, (before, digest) in snapshots.items():
+         require(stamp(path) == before and hashlib.sha256(path.read_bytes()).hexdigest() == digest and stamp(path) == before, 'source changed after derivation')
+-    return dict(tests=result, proof=dict(kind='pinned-source-cfg-module-test-names-v1', source_root=str(source), source_revision=REVISION,
++    return dict(tests=result, proof=dict(kind='pinned-source-cfg-module-test-names-v1', source_root=str(source), source_revision=source_revision,
+                                         files=files, routes=routes, definitions=sorted(definitions, key=lambda row: row['name']), changes=changes,
+                                         note='Whole-file source hashes and exact module routes; not a substitute for actual named successful test output.'))
