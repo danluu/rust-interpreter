@@ -76,3 +76,10 @@ sourcee2ac242a ran40692/40695:16commands/1,824actualtests, alloutcomes andverifi
 hits match; kernelCPUreconciled. Closure45128 pending/check. Nextcompose closed
 VM200148cd93a412b9b323121d67632e335b94f1a5917763e1a1d3dee489baad4c andserver
 e39cda827ba050869370e93500a281c543d248778c0128efd7fb4422931920a0 withadoptedtools.
+
+Parser replay CLOSED45128/45132,16,322 verifiedhits. Install78737879 completed
+54928/54931; closure56368 pending/check. Same adoptedcompiler/exporter; noadoption.
+Primary02 reuses unchangedaccounting/schedule/controller/gates with only new
+closedcandidate prerequisites. Need24GiB initial and8GiB perchild. Optional
+cache-retirement remainsUNSTARTED; currentfree~26GiB. Freeze candidate source,
+controllers and plans through complete primary closure.
