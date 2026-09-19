@@ -1,3 +1,10 @@
+LATEST: short-tail profile01 all10guests passed, supervisor34937/controller34940,
+source2bc19013. Five paired originalES8/token/folded tests match exactPCcounts,
+non-timingcounters/memory/entropy and20bytes/helper growth, zero declines. Independent closure75399 passed. New short-clear-tail-install
+composes qualifiedVM and unchangeddf4006frontend, reuses121closedstrict/cachechecks.
+Main855785f8 pushed closed scope/focused/workspace evidence preservingpeercf81dfc2.
+Nextinstall explicitcandidate, new40-command ES8protocol+screen, no defaultchange.
+
 LATEST: workspace02 CLOSED success (supervisor1653/controller1657, source782b628d).
 All609debug/release plusPython446/22 qualified; two passed prefix commands reused,
 only release/VM newly executed. Independentclose completed0. New five-case paired
