@@ -57,7 +57,7 @@ profile/persistent/heap options and six code capacities. No native/guest executi
 Reconstruction01 subsequently reproduced both exact adopted unprofiled fre
 block/exhaustive arenas, scalar targets, assertions and operation maps. Full
 workspace/Python/strict qualification also passed and is closed; see below.
-The next remaining gate is the new real-edit parser primary.
+The real-edit parser primary subsequently FAILED; see the current result below.
 
 Shared templates remain PARKED: completed32-command parser primary under71290/
 71293 passed114 outcomes but wallratio0.999311805 + A/A0.044733804 fails. CPU
@@ -141,6 +141,11 @@ cleanup both timed out before lock admission; terminals are preserved and
 admission-only closures succeeded under69900/69940. No successful command was
 repeated. Protocol closer02 is75915/75918; cleanup attempt02 is77691/77718,
 sourceafa80866. Protocol closer02 completed successfully; cleanup02 also passed.
-Recheck cleanup closer87209/87213 before proceeding. The genuine-edit
-primary is unstarted and still requires24GiB initially. Candidate/runtime remains
-unadopted; no performance measurement yet. Saved pause/ownership boundaries hold.
+Cleanup closer87209/87213 passed. The genuine-edit primary at16da7dde completed
+all32commands under3736/3739, retaining114tests, all original outcomes/assertions,
+matching artifact/catalog identities and source restoration. CLOSED33627/33631:
+5,311frozeninputs112evidence. Wallratio1.058595656+A/A0.060960002 gives1.119555658;
+CPUratio1.046235056+A/A0.054013185 gives1.100248241. Both gates fail; verdictfailed.
+Candidate/nativewall1.352372254. PARK candidate78176777, cancel larger histories,
+no unchanged retry or adoption. Next inspect15saved edited preparation receipts.
+Saved pause/ownership boundaries hold.

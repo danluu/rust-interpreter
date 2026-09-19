@@ -2,8 +2,16 @@
 
 The candidate replaces temporary tree maps and sets during ordinary region
 generation with reusable dense storage, where a function's register count and
-storage budget permit it. It has passed correctness qualification. Its effect
-on changed-source end-to-end latency remains unmeasured; it is not adopted.
+storage budget permit it. It passed correctness qualification but failed its
+changed-source end-to-end gate. It is parked and is not adopted.
+
+All32 parser commands completed with exact native outcomes and artifact/catalog
+agreement, unchanged assertions and restored source. Five valid edited pairs
+give candidate/adopted wall ratio1.058596 with A/A envelope0.060960 and margin
+1.119556. CPU ratio1.046235 and margin1.100248 also fail. The wall result is
+5.86% higher amid6.10% control variation, not a precise estimate of a regression.
+Candidate/native wall ratio is1.352372. Larger comparisons are cancelled, with
+no unchanged retry. [Closed primary](../results/emitter-register-workspace-parser-screen-incremental-01/summary.json).
 
 The preparation census found ordinary region generation taking about74/56ms
 per pgrust worker and92/66ms per fre worker. These are nested diagnostic elapsed
@@ -35,7 +43,7 @@ Candidate VM:
 It uses the exact adopted exporter and wrapper. No preparation observer is
 included. The selected-function/test-body execution scope remains unchanged.
 
-The prospective primary compares ordinary native, adopted, duplicate adopted
+The completed primary compares ordinary native, adopted, duplicate adopted
 and candidate commands across five real parser edits plus original, wrong and
 restored controls. All114 original pgrust parser tests and assertions remain.
 Only the five valid edits enter timing. Wall ratio plus A/A variation must be
@@ -50,4 +58,8 @@ Qualification receipts are in
 [reconstruction](../results/emitter-register-workspace-reconstruction-01/summary.json)
 and [protocol](../results/emitter-register-workspace-parser-protocol-01/summary.json).
 The [prospective protocol](../benchmarks/experiments/emitter-register-workspace-screen/PLAN.md)
-reserves24GiB initially and checks an8GiB floor before every child command.
+reserved24GiB initially and checked an8GiB floor before every child command.
+
+Next audit the15 already-recorded valid edited custom receipts for constructor
+and compilation intervals. No new guest runs are needed. The descriptive stage
+audit cannot change the failed gate or establish recoverable command savings.
