@@ -20,7 +20,7 @@ builds as a diagnostic; timing must disable it. Ordinary builds contain no histo
 fields or relocation ledger. Feature builds with no explicit history still use
 ordinary emission and are a required mechanism control.
 
-Qualification01 runs full workspace debug/release with feature off/on and builds
+Qualification02 runs full workspace debug/release with feature off/on and builds
 the actual release VM with the feature. Expect629 tests/profile without the
 feature and633 with it, plus15 ignored in each. This includes21 internal controls
 and four public-API integration controls compiled against the non-test library:
@@ -52,3 +52,7 @@ floor is max(14GiB,8GiB+2*allocated target); recheck before each command, with8G
 minimum for closure. Preserve every completed command on later failure, freeze
 source before execution, and close each attempt before correction. No subagents,
 goal-state changes, AWS activation, browser, or control of peer processes.
+
+API01 did not start a controller/build/test: controller generation failed and the
+supervisor attempted the missing file. Its terminal is closed and retained. API02
+is the first actual qualification; source and intended tests are unchanged.
