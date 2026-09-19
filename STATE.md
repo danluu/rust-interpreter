@@ -1,182 +1,127 @@
-# Runtime continuation, September19
+# Runtime continuation, September19: current composition parked
 
-Continue indefinite manual optimization using genuine changed-source end-to-end
-benchmarks. No subagents, independent model calls, goal tools, peer process
-control, AWS activation or browser work. Goal stays PAUSED. Only this checkout
-and .work/publication-main are ours. Preserve the independent compiler session.
-No unchanged timing retries; do not adopt a failed composition.
+Continue indefinite manual optimization with genuine changed-source benchmarks.
+No final at milestones. No subagents/independent models, goal tools, AWS/browser
+work, peer process control or broad cleanup. Saved goal stays PAUSED. Only this
+checkout and .work/publication-main are ours; preserve compiler-session ownership.
 
-## Current experiment
+## Decision and next work
 
-Branch experiment/session-runtime-composition-20260919; runtime b34b6f10,
-launcher test contract fix d293d909. Compose earlier2599a193 native indirect
-transitions, checked readonly scalar leaves and successor spilling with current
-parameterized-template history/duration scheduling. Compiler/exporter/wrapper
-remain adopted df4006e0 bytes. This is a NEW composition; its primary passed, and full guards are pending.
+Session/indirect/readonly/spill composition (runtimeb34b6f10, launcherfixd293d909)
+passed its40-command primary and four full176-command project guards. Its
+110-command incremental parser gate is independently CLOSED40244: correctness
+and all114 original tests pass, but wall ratio.9191148450 + maxindividual
+A/A.1141285168 =1.0332433618 fails the strict improvement gate. CPU ratio
+.8975027572 + A/A.1086873477 =1.0061901048 passes. Verdict UNMEASURABLE.
+Repository-default parser and Nushell are CANCELLED/UNSTARTED. No unchanged
+retiming, gate change or adoption. Main remains scratch/scalar df4006e0.
 
-Both parents remain failed: runtime composition passed726 project commands but
-parser CPU margin1.0502179853 exceeded1.05; duration/session composition passed
-both parser gates but failed fre wall.970558296+A/A.055748790=1.026307086.
-The latter's prepared folded replay is CANCELLED/UNSTARTED. No parent is adopted.
-Current normal-PC/memory diagnostics are independently closed. Address selection
-and data loads dominate; frame-base10/4 of1716/1294 samples is below1%, parked.
-Do not repeat failed checked-address/bias/budget or range-threshold candidates.
+Saved parser A/A audit01 is independently CLOSED68081:15pairs/60reports; no
+new timings. Largest wall control difference234ms includes226ms in the recorded
+build-to-ready interval. All pairs and the original gate are retained; no host
+cause is inferred. Candidate parser medians: command1.6260s, build1.2821s,
+execution.272664s, longest test.214753s, compile work.052302s, preparation
+work.033261s,3609template hits. Separate intervals/work medians are not additive.
 
-New template domain cross-program-staging-literals-v3 includes exact current
-indirect signature ordinals, metadata state and test spill flag. Dynamic target
-layouts/pointers remain current-owner data. Preserve existing callee-zero,
-scalar/assertion/literal relocation checks. Session indirect is explicit and
-reported; old request means disabled, enabled request rejects unsupported server
-before sending. No source-check relaxation. Scalar external reads preserve ordered
-fault/replay and private memory; call/branch/resource controls retained.
+Next: fresh normal-VM native-PC diagnostics of current composition on the two
+original fre token block/exhaustive tests, prioritizing the longest block test.
+Existing samples are from the older duration-only parent, not this composition.
+First extend/qualify scripts/sample_owned_vm.py and summarize_owned_sample.py to
+accept, record, forward and validate --jit-indirect-calls (requires resumable).
+Preserve old summary option shapes when the field is absent; reject an unrecorded
+indirect flag. Extend attribution controls and validate CLI rejects bad options
+before launching a child. No Rust/runtime implementation change yet.
+Then prepare exact frozen artifact/catalog/source/tool identities and same-process
+code reconstruction before any new sample. One fresh3s window/test, ordinary
+entropy/assertions/limits, exact owned PID/parent/cwd checks; let guest exit normally.
+Diagnostic samples are perturbed and must not be used as latency or speedup claims.
+Do not repeat old general-address/bias/budget/frame-base/threshold candidates.
+Single-digit-ms parser validation does not justify a speculative validation cache.
 
-## Qualification and live processes
+## Qualified candidate identities
 
-- Focused01 b34b6f10: supervisor51790/controller51793;8 Python and6 interaction
-  controls in each Rust profile,2 owned servers/8 clients; independently CLOSED61721.
-- Workspace01 43096a51:96661/96664 stopped after Python failure in an outdated
-  mocked receipt-call expectation; zero Rust/workload commands. CLOSED6794.
-  Fixed that expectation and added actual enabled-option forwarding coverage.
-- Workspace02 d293d909:9596/9599; ALL7 fresh commands pass.720 Rust/profile,
-  19 ignored;468 Python discovered,446 passed/22 declared skips;41 diagnostic,
-  11 scheduler-feature-off session,34 ordinary-model and default VM.52 owned
-  servers/108 clients. CLOSED61016:479 frozen inputs,1546 evidence files.
-  Setup162.803s. Normal VM78378e47c23ea937598285e2e0c4a73a2bd10787e4afa1cf21d9c0189152182a;
-  normal server18fba6dc5673d5f0c95291b2535efcd635689194af7813eedca0d0c279f7a408.
-  Both saved under .work/session-runtime-composition-qualification-02/release-*.
-- Primary protocol01:73951,16 fresh controls(7 accounting,5 commands,4 source/
-  native outcome); CLOSED78349. Prospective40-command fre, five arms including
-  historical anchor, full session kernel/setup/tail cost. Maxindividual A/A gates
-  unchanged. Controller benchmarks/experiments/session-runtime-composition-screen.
-- Parser verified replay01 c411265e:85874; all16 suites/1824 invocations pass,
-  19815 independently regenerated hits, original errors/limits/CPU correct.
-  CLOSED91007:507 frozen inputs/116 evidence files. No timing claim.
-- Fre verified replay01 b318df6d:2863/controller2908; all16 suites/192 invocations,
-  14548 independently regenerated hits, original errors/limits/CPU; CLOSED12775.
-  Immutable install01 source28c4c6a2:19116 CLOSED25894. Tool key
-  3ebea1cdc1a521169df8bba1ca139df97759aaf200798c2bcb91bef4cba3c5ad.
-- Primary session-runtime-composition-screen-token-01 source15261907:29647/29683,
-  40 changed-source commands plus2 strict controls, independently CLOSED84442.
-  Wall/adopted.9537077504 + maxindividual A/A.0373937777 = .9911015281 PASS;
-  CPU/adopted.9303316367 + A/A.0284700056 = .9588016423 PASS.
-  Native wall1.5416394568, CPU1.9224508795. No adoption from this screen.
-- Full public protocol01 sourcef36e8c8d:5058/5061,10 fresh controls plus12
-  exact unchanged accounting controls, CLOSED42265:529 inputs/54 evidence.
-- Full fre token01 sourcef43a950e:43562/43565, all176 changed-source commands
-  across3cycles/8arms plus2 strict controls pass, independently CLOSED35515.
-  Wall/adopted.9414513615 + A/A.0268743944 = .9683257559 PASS;
-  CPU/adopted.9390737150 + A/A.0239171867 = .9629909017 PASS.
-  Native wall1.5806520070, CPU1.9441990829. All12 outcomes and restoration pass.
-- Exact closed-primary cache retirement source73b34df0:42462/42465, CLOSED60900.
-  Six completed primary namespaces,3191 compiler files/2047542482 logical bytes,
-  2792 protected hashes unchanged; about1.59GiB actual headroom. NEVER REPEAT.
-- Parser protocol01 source3d0acbd8:62584,14 controls (6 fresh/8 exact reused),
-  CLOSED68461. Controllers session-runtime-composition-parser-guards qualified.
-- Large protocol01 source97ddb268:73784,all23 fresh controls pass. Independent
-  CLOSED84235; controller session-runtime-composition-large-guards.
+Installed tool3ebea1cdc1a521169df8bba1ca139df97759aaf200798c2bcb91bef4cba3c5ad
+Normal VM78378e47c23ea937598285e2e0c4a73a2bd10787e4afa1cf21d9c0189152182a
+Server18fba6dc5673d5f0c95291b2535efcd635689194af7813eedca0d0c279f7a408
+Retained .work/session-runtime-composition-qualification-02/release-rust-interp-template-session
+Server feature jit-session-duration-order;64MiB history/worker,two workers,
+16MiB native arena,threshold65536,shared/bufferedkeysOFF,digestON.
+Template domain cross-program-staging-literals-v3 binds indirect signature
+ordinals, metadata state and spill flag. Dynamic pointers/layouts are current-owner
+values. Full Rust checking precedes every guest. Compiler/exporter/wrapper match
+adopted df4006e0. Selected test-body engine; not full applications/general threads.
 
-- Full folded01 source07f614bf:91338/91341, all176 commands+2strict passed,
-  independently CLOSED95676. Wall/adopted.9863968592+A/A.0197796103=1.0061764695;
-  CPU/adopted.9649114604+A/A.0221465280=.9870579884. Regression gate PASS;
-  no wall-gain claim beyond noise. Candidate/nativewall1.0105716567.
-- Full token cache retirement sourcebb657235:6128/6131, independently CLOSED33463.
-  Nine exact completed token namespaces,13399files/3949807963logical bytes;
-  3759 protected hashes unchanged, about2.39GiB reclaimed. NEVER REPEAT.
-- Pgrust01 sourced6ef6474:39230/39298 FAILED its second strict control before
-  any timed/guest command. The hashfn crate is no_std; std::hint::black_box caused
-  E0433, not the required E0499. Two compiler errors,2ownedservers/0requests;
-  source restored. Independently CLOSED97727 by session-runtime-pgrust-probe-failure.
-- Dedicated pgrust02 controller prepared in session-runtime-composition-pgrust-guard:
-  same176-state/arm/gate protocol, only borrow probe now core::hint::black_box.
-  Original public controller and all old results remain unchanged. Fresh namespaces.
-- Portable pgrust protocol01 sourcead446618:24770 passed26controls (18 exact
-  retained accounting/command controls,4 fresh source/outcome controls and4 real
-  pinned-rustc std/no_std type/borrow rejections). Independently CLOSED40059.
-  No metadata/code emitted; no shared target used (tiny probe admission14GiB).
-- Pgrust02 source34dd8e57:53869/53872, all176 commands+2strict pass. Initial
-  audit90875 failed before mutation because source tuples differ from JSON lists;
-  values match exactly. Separate auditor2ea7a85c normalizes only this comparison,
-  preserves that failure, and independently CLOSED4260. No benchmark was rerun.
-  Wall/adopted1.0031383653+A/A.0120627776=1.0152011429;
-  CPU/adopted1.0005123570+A/A.0131577991=1.0136701561; regression PASS.
-  Four original hashfn tests, nativewall1.1193991052. No clear speed claim.
-- Parser protocol02 source14f59b70:14413 passed14 controls plus exact portable
-  probe binding; CLOSED23181.
-- Large protocol02 source2b8add9c:31950 passed23 controls, independently CLOSED43657.
-  First audit44308 and premature rg outer86482/86485 timed out at shared-lock
-  admission before any workload. Both are preserved; no peer was controlled.
-- First actual private rg-aot history sourcef799aa49:52568/52579 under outer
-  session-runtime-composition-edit-rg-aot-01-admitted-02; all176 commands+2strict
-  pass. Dedicated admission-recovery/close_rg.py independently CLOSED94315.
-  Raw/result run remains session-runtime-composition-edit-rg-aot-01. The initial
-  empty admission is separately CLOSED in session-runtime-composition-rg-aot-admission-01.
-  Wall/adopted1.0004170757+A/A.0304443108=1.0308613865;
-  CPU/adopted1.0101769480+A/A.0273294777=1.0375064256; regression PASS.
-  One original private test, two persistent slots fully charged; nativewall.5910980861.
-- Disposable compression compatibility probe02 sourceb55b6d52:67506, CLOSED4233.
-  Two synthetic fixtures preserve plaintext, ordinary reads/seek/mmap, mode,
-  owner, mtime and a synthetic xattr through transparent compression/restoration.
-  Existing evidence modified0. Probe01 setup failure is independently preserved.
-  Repetitive fixture blocks2850816->28672 is synthetic, not real savings.
+Qualification02 CLOSED61016:720Rust/profile19ignored;446Python passes22skips;
+52servers108clients. Failed qualification01 is preserved. Parser verified replay
+CLOSED91007:1824invocations/19815hits;fre replay CLOSED12775:192/14548.
+Install CLOSED25894. See archived detailed state for all protocol/source bindings.
 
-## Next actions
+## Completed performance guards
 
-All four full project guards are CLOSED. Parser incremental and repository
-profiles then Nushell remain required before current-main integration/adoption.
-Both parser and large protocol02 qualifications are CLOSED. Parser needs24GiB;
-Nushell needs66.54872655GiB for nine namespaces. Transparent compression of373
-exact completed public artifact copies is CLOSED52338 in
-results/closed-public-artifact-compression-02. Allocated bytes10960859136->3113185280
-(about7.31GiB less); all plaintext hashes, paths, mode, owner, mtime and creation
-time preserved. Inode/ctime/compression flags intentionally change. No source,
-compiler cache, installed tool, private or peer data changed. NEVER rerun the
-mutating compression01/02 or their consumed inventories.
-Compression01 stopped after132 replacements on a creation-time mismatch before
-replacement133; original intact. That partial result and a disposable write-open
-failure are CLOSED in the recovery02 proof. Native creation metadata copying
-using a read-only descriptor passed and CLOSED66894 before completing241 entries.
-Inventory01/02, both probes and every original failure remain preserved.
-Current free24.7GiB; recheck before admitting parser incremental. Descriptive
-saved-history costs62497 are independently CLOSED70818:240 reports, four original
-verdicts reproduced, no new timings. See docs/SESSION-RUNTIME-COSTS-20260919.md.
-New folded compiler caches could also be retired after exact proof verification;
-primary/token and older Nushell caches are already retired: NEVER repeat.
-No unchanged timing retry. A failed gate stops later guards. Preserve strict
-checks, original assertions, source restoration and full server CPU accounting.
-Gate every dependent shell command on verified success explicitly.
+- Primary40 source15261907 CLOSED84442: wall.9537077504+AA.0373937777=.9911015281;
+  CPU margin.9588016423. Nativewall1.5416394568.
+- Token176 sourcef43a950e CLOSED35515: wall.9414513615+AA.0268743944=.9683257559;
+  CPU margin.9629909017. Nativewall1.5806520070;12 original tests.
+- Folded176 source07f614bf CLOSED95676: wallmargin1.0061764695,CPU.9870579884,
+  nativewall1.0105716567;18tests. Wall difference inside noise.
+- Pgrust02 source34dd8e57 CLOSED4260: wallmargin1.0152011429,CPU1.0136701561,
+  nativewall1.1193991052;4tests,neutral. Pgrust01 failed before timings because
+  std::hint in no_std; failure CLOSED97727. Portable core probe26controls CLOSED40059.
+  Separate pgrust auditor preserves a tuple/list comparison failure without timings.
+- Private rg01 sourcef799aa49 CLOSED94315: wallmargin1.0308613865,
+  CPU1.0375064256,nativewall.5910980861;one test,two persistent slots fully charged.
+  Actual outer run has suffix-admitted-02; raw/result suffix01. Initial lock
+  admission with no workload is separately closed; do not overwrite either attempt.
+- Parser incremental01 sourceb77d3754,87651/87654 CLOSED40244:110+2strict,
+  UNMEASURABLE as above; nativewall1.2528526703. No later guards start.
 
-## Resources and ownership
+Four-history cost audit01 CLOSED70818:240reports/four original verdicts reproduced.
+Token candidate execution2.2007s, longesttest2.1334s,compile work.1981s;
+history-off2.2714s/.2645s;adopted2.4233s/.2592s. Pgrust/rg guest execution
+.0179s/.0055s. No additive gains or guest attribution of compiler improvements.
+Docs: SESSION-RUNTIME-COMPOSITION-20260919.md, SESSION-RUNTIME-COSTS-20260919.md.
 
-Shared .work/benchmark.lock,45s admission; two Cargo/test workers. Shared target
-.work/fixed-frame-clear-combined-build-01/target MUST NEVER be cleaned. Builds
-require max(14GiB,8GiB+2*current allocated target), re-evaluated before each child.
-Replay/analysis12GiB, closure/children8GiB; fre16GiB, parser24GiB plus namespace
-allowance, pgrust12GiB, Nushell66.54872655GiB. Last free~24.7GiB; recheck continuously.
+## Storage: completed exact operations, NEVER repeat
+
+Transparent compression01 stopped after132 verified replacements; its next
+original remained intact on a creation-time mismatch. Recovery01's disposable
+write-open decompressed the fixture/changed mtime. Recovery02 qualified exact
+native creation-time copying via READ-ONLY descriptor, CLOSED66894. Continuation02
+completed only241 remaining entries, including the preserved pending copy.
+All373 original public .rbc hashes/paths/required metadata preserved; allocated
+bytes10960859136->3113185280 (7.31GiB less), independently CLOSED52338. Inode/ctime/
+compression flags intentionally change. Sources/caches/tools/private/peer data
+untouched. Both historical stat inventories and every failed prefix are preserved;
+they MUST NOT be rerun as current-inode inventories. See PUBLIC-EVIDENCE-STORAGE-20260919.md.
+
+New folded cache retirement01 source4e85c8fd,81859, CLOSED30514: nine exact
+completed folded compiler namespaces,13399nonexecutable intermediates,
+3528406775logical bytes;all3750protected hashes unchanged. Actual free rose
+23087607808->25243975680 (about2.01GiB). Never repeat. Current parser caches retained.
+Primary retirement CLOSED60900 (3191files/2792protected),token CLOSED33463
+(13399/3759),old failed-parser CLOSED96652 (14333/11256) are also complete.
+Older Nushell native/custom/check caches already retired. No hoped-for repeats.
+
+## Resources and publication
+
+Shared .work/benchmark.lock,45s admission; two Cargo/native/test workers.
+Shared .work/fixed-frame-clear-combined-build-01/target MUST NEVER be cleaned.
+Build floor max(14GiB,8GiB+2*current allocated shared target), recalculate.
+Analysis/replay12GiB;close/children8GiB;fre16GiB;parser24GiB;Nushell66.54872655GiB.
+Last free23.5GiB. Memory check before parser:48GiB host,46% free. Recheck.
 Cleaner read-only: /usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status.
-Never compete with it, repair it, signal peers or use broad cleanup.
+No competing cleanup/guard, signaling, or peer session manipulation.
 
-NEW exact retirement closed: closed-composition-parser-cache-retirement-01,
-sourcef6bd8e77,85338/85341 CLOSED96652. Four terminal failed-composition parser
-namespaces,14333 nonexecutable compiler files/2280402421 logical bytes removed;
-11256 protected hashes unchanged; about1.86GiB reclaimed. NEVER REPEAT.
-Previous exact retirements are listed in the archived state; all remain terminal,
-including the empty composition-token audit. No shared targets/private/peer files.
+Current root branch experiment/session-runtime-composition-20260919; last commit
+d71152ec closes parser-variance audit. No commands remain active after68081.
+Main last pushedf8253368 preserves peerdfc0b83e and closed storage/four-history
+costs. Parser decision/variance/folded-retirement proof publication is pending.
+Root remote lastb77d3754. Fetch/ff publication-main, copy exact qualified paths,
+never overwrite compiler work or merge experimental runtime. Push root regularly.
+Create a new experimental branch for the diagnostic helper changes after committing
+this checkpoint. All old qualified source files stay available in Git.
 
-suggestions.txt remains user-owned/untracked, SHA256
-4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f;
-reread this turn. Detailed dispositions docs/SUGGESTIONS-REVIEW-20260913-1245.md.
-
-Main publicationc08fb7ce includes closed pgrust02/private guards and corrected
-parser/large protocol02. Publication worktree is now fast-forwarded to peer
-dfc0b83e; storage/cost proof publication is pending. Runtime stays df4006e0.
-Experimental remote72fa82b0; push newer commits regularly.
-Publish exact proof/docs paths on main, fetch/ff first; do not copy experimental
-runtime or overwrite compiler work. Prior detail archived at
- docs/history/STATE-20260919-before-session-runtime-composition.md.
-
-New CLOSED exact full-token retirement:
-benchmarks/experiments/session-runtime-token-cache-retirement. Only nine completed
-full-token namespaces, no folded/later cache. Completed after independently closed folded; every protected hash is unchanged.
-Never repeat it. Older
-Nushell/custom/native/native-lines/check retirement receipts already exist; do
-not revisit those caches blindly or repeat them for a hoped-for larger result.
+suggestions.txt is unchanged,user-owned/untracked,SHA256
+4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f.
+Full review docs/SUGGESTIONS-REVIEW-20260913-1245.md. Earlier detailed state archived
+in docs/history/STATE-20260919-before-parser-noise-audit.md and older archives.
