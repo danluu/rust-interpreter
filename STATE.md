@@ -239,3 +239,5 @@ Literal parser579dbe4b complete12608/12686 CLOSED19542:1824invocations19531verif
 Literal installedtool734fa9b5945951d42c37caa2c3906ba9a6825bd147e9f85c018afb81055d9c32 complete33964/33967 CLOSED40733. Fullparser01 cleanup77176041 complete44387 CLOSED53355/53358:16734files3,112,062,449logicalbytes11667protectedhashesunchanged. NEVERrepeat. Free26.6GiB. Primary05 bound, ready; sourcecrates/scripts/tests/screenfolder frozen through closure.
 
 Primary05 sourcee21ad564 ACTIVE71416/controller71419;20/40completed01:36;2strict101/nextrequest1. Freeze source/screenfolder throughclosure, no restart. Mainf0444533 pushed full literal proofs (no runtimeadoption), branchpushed e21ad564.
+
+Primary05 e21ad564 complete71416/71419 CLOSED27791:40+2strictallcorrect/restored. Wall.9696848094+.0320016632=1.0016864726FAIL; CPU.9157322051+.0271723127=.9429045178PASS. Nativewall1.296276; noadoption/unchangedretry/fullguard. Next read-only recordedcost analysis prepared.

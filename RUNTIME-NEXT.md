@@ -20,10 +20,11 @@ servere03b911d570c81453a224e1b6bef08aee3003591a6dfa5a976d1c8fc5c49d7a1.
 ParameterizationON,observerOFF,bufferingOFF,strictchecking andadoptedcompiler tools.
 Primary05 prerequisites nowbound tothiscandidate; prospectiveunchanged40command
 protocol+2strict, noadoption unlessprimaryandlaterguards pass.
-Primary05 ACTIVE71416/controller71419 sourcee21ad564;20/40completed at01:36,
-bothstrict101/nextrequest1 passed. Current receipts under .work/experiments/
-cross-program-template-parser-screen-incremental-05. Do not restart or retime.
-Freeze crates/scripts/tests andcross-program-template-screen throughprimaryclosure.
+Primary05 e21ad564 completed71416/71419 CLOSED27791:40commands+2strict,
+all114outcomes/artifactequality/restoration correct. Wall.9696848094+A/A.0320016632
+=1.0016864726 FAIL;CPU.9157322051+.0271723127=.9429045178 PASS. Nativewall1.296276.
+No adoption/fullcomparison/unchangedretry. Next prepared read-only primary-costs01;
+review recorded remaining costs before choosing another implementation.
 
 Motivation: closed actual miss trace/join shows3462changed-key misses/214.939ms;
 2563bodies differ only in immediate values/152.106ms. Eviction only22/1.421ms.

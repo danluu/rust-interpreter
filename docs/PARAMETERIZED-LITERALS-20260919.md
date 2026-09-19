@@ -64,3 +64,17 @@ key construction, manifests and restoration also cost time and retained memory.
 Only a newly qualified, changed-source end-to-end comparison can justify adoption.
 Strict Rust checking remains required, the default runtime is unchanged, and
 this is not yet evidence that the design improves development of large projects.
+
+
+Primary05 completed all40changed-source commands and both strict rejections.
+All114original outcomes, artifact equality and source restoration pass. The
+candidate/adopted wall ratio is0.9696848094, but the A/A envelope is0.0320016632:
+the required sum is1.0016864726, so the wall gate FAILS. This is a measurable
+failure, not the >8%noise category. CPU ratio0.9157322051 plus0.0271723127 A/A
+passes. Candidate/native is1.296276wall and1.212481CPU; candidate/session-off
+is0.972665wall and0.947334CPU. No adoption, full comparison, or unchanged retry.
+[Primary result](../results/cross-program-template-parser-screen-incremental-05/summary.json).
+
+The diagnostic reduction in miss emission did not establish an end-to-end wall
+gain beyond control variation. Inspect the recorded build/execution/request costs
+before selecting a further change; preserve the same future acceptance gates.
