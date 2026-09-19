@@ -1,0 +1,143 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-09/audit.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-10/audit.py
+@@ -21,7 +21,7 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+-HERE = ROOT/'experiments/hir-options-hash-runtime-audit-09'
++HERE = ROOT/'experiments/hir-options-hash-runtime-audit-10'
+ QUALIFIED_AUDIT = ROOT/'experiments/hir-options-hash-runtime-audit-05'
+ ATTEMPT = ROOT/'experiments/runtime-preflight-retry-05'
+ ROUTES_PATH = ATTEMPT/'routes.json'
+@@ -52,8 +52,10 @@
+ LINK_PROOF = {'result_sha256': 'cfb7577f2345147a9c5f4d44b7c562d7e92e61bdcc91e7b95fbba48c8ac22497', 'record_sha256': 'a2acb45bb98cb6c3b44bddbb7b2f43331281f38aa219a14aa56ac7bddf06441c', 'manifest_sha256': 'a4380c58427d256f7e7c450752e6d724d20d528f45a6d9766f876cc6d1ebab80'}
+ FAILED_LINK_AUDIT = dict(path=str(ROOT/'.work/runtime06-saved-audit-preflight-execution-01/record.json'),
+     sha256='4b7e57aa4a1aa0bf09a6725dd47056497cd7a5ef56b0f3a36f2a77fce60fdb2b')
+-FAILED_AUDIT = dict(path=str(ROOT/'.work/runtime08-saved-audit-preflight-execution-01/record.json'),
++FAILED_COMPLETED_AUDIT = dict(path=str(ROOT/'.work/runtime08-saved-audit-preflight-execution-01/record.json'),
+     sha256='71c59ba889fa71da8ea326b1f04723a472db7e1f580b545a13071dcbee12975c')
++FAILED_AUDIT = dict(path=str(ROOT/'.work/runtime09-saved-audit-preflight-execution-01/record.json'),
++    sha256='23786949ac2f542f28aefc95f1a8d03a0ba680322cbf8dd765530c8f57ee1b42')
+ FAILED_REVIEW = dict(path=str(ROOT/'results/runtime04-preflight-capacity-failure-01/review.json'),
+     sha256='3d29955a0512ba66dd86da9f50c18c93a013cbb0e648f5a25ae378eaaf1afaa3')
+ HASH_PLAN = dict(path=str(HASH/'plan.json'),
+@@ -283,6 +285,53 @@
+         inventory_sha256=hashlib.sha256(encoded(observed)).hexdigest())
+ 
+ 
++def supervisor_output_readback(io, outer, launch, supervisor, *, source):
++    """Retain both owned streams without relabeling the command-log digest."""
++    outer, source = Path(outer), Path(source)
++    plan = io.read_json(outer/'plan.json')
++    require(set(plan) == {'owner','command','supervisor_sha256'}
++        and plan['owner'] == supervisor['cwd']
++        and launch['command'][1:6] == ['-B',str(source),'--run-id',outer.name,'--']
++        and same(plan['command'], launch['command'][6:])
++        and same(plan['command'], supervisor['command'])
++        and io.sha(outer/'plan.json') == supervisor['plan_sha256']
++        and io.sha(source) == plan['supervisor_sha256'],
++        'actual supervisor writer/owner/command source association differs')
++    membership = exact_output_tree(io, outer, [outer/name for name in
++        ['plan.json','status.json','command.log','supervisor.log']])
++    command = io.record(outer/'command.log')
++    raw = io.record(outer/'supervisor.log')
++    require(command['sha256'] == supervisor['log_sha256'],
++        'saved child-command stream digest differs')
++    return dict(membership=membership, writer=dict(path=str(source),sha256=io.sha(source)),
++        command_stream=command, supervisor_stream=raw,
++        supervisor_stream_observation='current full raw readback; no historical stream hash was recorded')
++
++
++def preparation_source_equality(source_rows, files):
++    """Check the whole retained preparation table, including nonpacket sources."""
++    require(type(source_rows) is dict and 0 < len(source_rows) <= 512
++        and sum(row['size'] for row in source_rows.values()) <= 8*2**20,
++        'bounded actual preparation source union required')
++    for name, row in source_rows.items():
++        require(name in files and same(row, files[name]),
++            'actual preparation source omitted or relabeled')
++    return dict(files=len(source_rows), logical_bytes=sum(row['size'] for row in source_rows.values()),
++        table_sha256=hashlib.sha256(encoded(source_rows)).hexdigest(), complete_typed_equality=True)
++
++
++def preparation_invocation_readback(io, root, reference):
++    """The retained file reserializes the pinned original JSON document."""
++    require(type(reference) is dict and set(reference) == {'path','sha256'}
++        and io.sha(reference['path']) == reference['sha256'],
++        'exact original preparation invocation differs')
++    retained = Path(root)/'invocation.json'
++    require(same(io.read_json(reference['path']), io.read_json(retained)),
++        'retained preparation invocation changed typed JSON values')
++    return dict(original=copy.deepcopy(reference), retained=io.record(retained),
++        complete_typed_equality=True, same_raw_bytes=io.sha(retained) == reference['sha256'])
++
++
+ def failed_predecessor(plan, routes, io):
+     """Retain the exact published failed04 history without a success owner."""
+     require(io.sha(FAILED_REVIEW['path']) == FAILED_REVIEW['sha256'], 'published failed04 review differs')
+@@ -467,14 +516,16 @@
+     link_controls = frozen_link_controls(actual_links, read_json=io.read_json,read_bytes=io.read_bytes,
+         sha=io.sha,identity=io.identity)
+     require(same(failed_audit, FAILED_AUDIT) and io.sha(failed_audit['path']) == failed_audit['sha256'],
+-        'exact closed failed08 audit provenance differs')
++        'exact closed failed09 audit provenance differs')
+     prior_audit = io.read_json(failed_audit['path'])
+     require(prior_audit['status'] == 'finished' and type(prior_audit['returncode']) is int
+         and prior_audit['returncode'] == 1 and prior_audit['may_be_live'] is False
+         and prior_audit['observation_errors'] == [] and prior_audit['mode'] == 'audit'
+-        and prior_audit['phase'] == phase, 'original failed08 must remain a closed failed audit')
++        and prior_audit['phase'] == phase, 'original failed09 must remain a closed failed audit')
+     require(io.sha(FAILED_LINK_AUDIT['path']) == FAILED_LINK_AUDIT['sha256'],
+         'original failed06 link audit must remain separately retained')
++    require(io.sha(FAILED_COMPLETED_AUDIT['path']) == FAILED_COMPLETED_AUDIT['sha256'],
++        'original failed08 completed-directory audit must remain separately retained')
+     def strict_target_file(name):
+         io.file(name)
+         return copy.deepcopy(io.files[name])
+@@ -592,8 +643,8 @@
+     packet_proof = exact_output_tree(io, packet, [packet/name for name in
+         ['source-policy-proof.json','specification.json','plan.json','inputs.json',
+          'snapshot-plan.json','metadata-preflight.json','launch.json']])
+-    outer_proof = exact_output_tree(io, outer,
+-        [outer/name for name in ['plan.json','status.json','command.log']])
++    outer_proof = supervisor_output_readback(io, outer, launch, supervisor,
++        source=R/'scripts/supervise_experiment.py')
+     launcher_proof = exact_output_tree(io, launcher_root,
+         [launcher_root/name for name in ['record.json','stdout','stderr','launcher.py']])
+     require(launcher['retained_launcher_source'] == str(launcher_root/'launcher.py')
+@@ -603,18 +654,13 @@
+     preparation_proof = exact_output_tree(io, preparation_root, [preparation_root/name for name in
+         ['record.json','stdout','stderr','launcher.py','invocation.json','source-rows.json','child-observation.json']])
+     preparation_record = io.read_json(expected['preparation']['path'])
+-    require(io.sha(preparation_root/'invocation.json') == preparation_record['invocation']['sha256'],
+-            'retained actual preparation invocation differs')
++    invocation_proof = preparation_invocation_readback(io, preparation_root, preparation_record['invocation'])
+     for name in ['stdout','stderr']:
+         require(io.sha(preparation_root/name) == preparation_record[name+'_sha256'],
+                 'actual preparation raw differs')
+     require(not io.read_bytes(preparation_root/'stderr'), 'successful preparation emitted stderr')
+     source_rows = io.read_json(preparation_root/'source-rows.json')
+-    require(type(source_rows) is dict and 0 < len(source_rows) <= 512
+-        and sum(row['size'] for row in source_rows.values()) <= 8*2**20,
+-        'bounded actual preparation source union required')
+-    for name,row in source_rows.items():
+-        require(name in io.files and same(row,io.files[name]), 'actual preparation source omitted or relabeled')
++    preparation_source_proof = preparation_source_equality(source_rows, io.files)
+     current_guard(inspection['value'], io, guard, frozen_links, full=True)
+     link_observations_after = frozen_link_observations(frozen_links)
+     require(same(link_observations_before, link_observations_after), 'complete frozen-link routes changed during audit')
+@@ -633,12 +679,14 @@
+         startup39=controls39, retry_controls=retry_controls, attempt=copy.deepcopy(plan['attempt']),
+         failed_predecessor=prior_failure, failed_saved_audit=copy.deepcopy(failed_audit),
+         saved_audit_source=str(HERE), prior_failed_saved_audit=dict(FAILED_LINK_AUDIT),
++        prior_failed_completed_directory_audit=dict(FAILED_COMPLETED_AUDIT),
+         completed_evidence_directories=dict(declaration=declared, observed=completed_after, before_after_equal=True),
+         frozen_links_controls=link_controls,
+         frozen_links=link_observations_after, frozen_links_before_after_equal=True,
+         startup_environment=copy.deepcopy(plan['startup_environment']),
+         preparation=copy.deepcopy(expected['preparation']), preparation_launcher=copy.deepcopy(expected['preparation_launcher']),
+         preparation_membership=preparation_proof,
++        preparation_source_table=preparation_source_proof, preparation_invocation=invocation_proof,
+         qualified_prerequisites=qualified, full_current_input_rehash=True,
+         snapshots=snapshot_proof, phase_result=phase_proof, output_membership=output_proof,
+         packet_membership=packet_proof, outer_membership=outer_proof,

@@ -1,0 +1,70 @@
+--- /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/run_runtime09_completed_directory_regressions_01.py
++++ /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/run_runtime10_tail_regressions_01.py
+@@ -1,4 +1,4 @@
+-"""Run the nine reviewed temp/in-memory regressions once; no runtime audit."""
++"""Run the twenty reviewed temp/in-memory regressions once; no runtime audit."""
+ import ast
+ import hashlib
+ import json
+@@ -12,10 +12,10 @@
+ import time
+ 
+ ROOT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+-SOURCE=ROOT/'experiments/hir-options-hash-runtime-audit-09'
+-OUT=ROOT/'results/runtime09-completed-directory-regressions-01'
+-INVENTORY=ROOT/'.work/runtime09-saved-audit-source-inventory-01.json'
+-INVENTORY_SHA='9955e759eee2e6b8898f874b75c95d4d643b0e83440630a6253b9a5fc45eadc8'
++SOURCE=ROOT/'experiments/hir-options-hash-runtime-audit-10'
++OUT=ROOT/'results/runtime10-tail-regressions-01'
++INVENTORY=ROOT/'.work/runtime10-saved-audit-source-inventory-01.json'
++INVENTORY_SHA='23e1317e0ce5cd61e1dbfc57faebf6fd57b8c7452321dee5e10e61528091d39f'
+ PYTHON=Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14')
+ FIELDS=('dev','ino','mode','size','mtime_ns','ctime_ns','nlink')
+ 
+@@ -45,20 +45,22 @@
+ require(not os.path.lexists(OUT),'fresh regression namespace')
+ require(shutil.disk_usage(ROOT).free>=256*1024*1024,'small temp-fixture entry bound')
+ require(row(INVENTORY)['sha256']==INVENTORY_SHA,'reviewed source inventory changed')
+-inventory=json.loads(INVENTORY.read_text());require(len(inventory['sources'])==23,'exact23 reviewed sources')
++inventory=json.loads(INVENTORY.read_text());require(len(inventory['sources'])==24,'exact24 reviewed sources')
+ before={n:row(n) for n in inventory['sources']}
+ require(all(before[n]['sha256']==d for n,d in inventory['sources'].items()),'reviewed source bytes changed')
+-tree=ast.parse((SOURCE/'test_completed_directories.py').read_text())
+-names=sorted('test_completed_directories.'+c.name+'.'+f.name for c in tree.body if isinstance(c,ast.ClassDef)
+-    for f in c.body if isinstance(f,ast.FunctionDef) and f.name.startswith('test_'))
+-require(len(names)==9,'nine reviewed regressions')
++names=[]
++for module in ['test_completed_directories','test_tail']:
++    tree=ast.parse((SOURCE/(module+'.py')).read_text())
++    names.extend(module+'.'+c.name+'.'+f.name for c in tree.body if isinstance(c,ast.ClassDef)
++        for f in c.body if isinstance(f,ast.FunctionDef) and f.name.startswith('test_'))
++names=sorted(names);require(len(names)==len(set(names))==20,'twenty reviewed regressions')
+ OUT.mkdir(mode=0o700);(OUT/'tmp').mkdir(mode=0o700)
+ (OUT/'source.py').write_bytes(Path(__file__).read_bytes())
+ resource.setrlimit(resource.RLIMIT_CPU,(60,60));resource.setrlimit(resource.RLIMIT_FSIZE,(1024*1024,1024*1024))
+ save('sources-before.json',before)
+ env=dict(PATH='/usr/bin:/bin:/opt/homebrew/bin',LANG='C',LC_ALL='C',TMPDIR=str(OUT/'tmp'),
+     PYTHONDONTWRITEBYTECODE='1',PYTHONNOUSERSITE='1')
+-argv=[str(PYTHON),'-B','-m','unittest','-v','test_completed_directories']
++argv=[str(PYTHON),'-B','-m','unittest','-v','test_completed_directories','test_tail']
+ record=dict(status='prepared',parent_pid=os.getpid(),parent_parent_pid=os.getppid(),started_at=time.time(),
+     command=argv,cwd=str(SOURCE),passed_environment=env,tests=names,may_be_live=False,
+     limits=dict(child_cpu_seconds=30,child_wall_seconds=60,child_file_bytes=1024*1024,
+@@ -95,13 +97,13 @@
+ observed_save('raw-readback')
+ require(rc==0 and not record['observation_errors'],'regressions failed or observations incomplete')
+ raw=(OUT/'stderr').read_text();require((OUT/'stdout').read_bytes()==b'','unexpected stdout')
+-actual=re.findall(r'^test_\w+ \((test_completed_directories\.[^)]+)\) \.\.\. ok$',raw,re.M)
+-require(sorted(actual)==names and len(actual)==9 and re.search(r'\nRan 9 tests in [0-9.]+s\n\nOK\n\Z',raw),
+-    'exact actual nine successful unittest names and summary')
++actual=re.findall(r'^test_\w+ \(((?:test_completed_directories|test_tail)\.[^)]+)\) \.\.\. ok$',raw,re.M)
++require(sorted(actual)==names and len(actual)==20 and re.search(r'\nRan 20 tests in [0-9.]+s\n\nOK\n\Z',raw),
++    'exact actual twenty successful unittest names and summary')
+ require(not list((OUT/'tmp').iterdir()),'temporary fixtures not cleaned')
+ after={n:row(n) for n in before};save('sources-after.json',after)
+ require(after==before and row(INVENTORY)['sha256']==INVENTORY_SHA,'reviewed sources changed')
+-result=dict(status='passed',tests=9,test_names=names,record=row(OUT/'record.json'),
++result=dict(status='passed',tests=20,test_names=names,record=row(OUT/'record.json'),
+     source_inventory=dict(path=str(INVENTORY),sha256=INVENTORY_SHA),sources_unchanged=True,
+     temporary_empty=True,compiler_calls=0,provider_calls=0,production_qualification=False)
+ save('result.json',result)

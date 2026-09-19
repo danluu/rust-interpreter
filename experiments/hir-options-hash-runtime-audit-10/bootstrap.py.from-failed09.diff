@@ -1,0 +1,49 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-09/bootstrap.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-10/bootstrap.py
+@@ -21,7 +21,7 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-HERE = ROOT/'experiments/hir-options-hash-runtime-audit-09'
++HERE = ROOT/'experiments/hir-options-hash-runtime-audit-10'
+ QUALIFIED_AUDIT = ROOT/'experiments/hir-options-hash-runtime-audit-05'
+ ATTEMPT = ROOT/'experiments/runtime-preflight-retry-05'
+ ROUTES_PATH = ATTEMPT/'routes.json'
+@@ -48,8 +48,10 @@
+ LINK_COUNT = 24  # Separate direct control proof; no actual53 relabeling.
+ FAILED_LINK_AUDIT = dict(path=str(ROOT/'.work/runtime06-saved-audit-preflight-execution-01/record.json'),
+     sha256='4b7e57aa4a1aa0bf09a6725dd47056497cd7a5ef56b0f3a36f2a77fce60fdb2b')
+-FAILED_AUDIT = dict(path=str(ROOT/'.work/runtime08-saved-audit-preflight-execution-01/record.json'),
++FAILED_COMPLETED_AUDIT = dict(path=str(ROOT/'.work/runtime08-saved-audit-preflight-execution-01/record.json'),
+     sha256='71c59ba889fa71da8ea326b1f04723a472db7e1f580b545a13071dcbee12975c')
++FAILED_AUDIT = dict(path=str(ROOT/'.work/runtime09-saved-audit-preflight-execution-01/record.json'),
++    sha256='23786949ac2f542f28aefc95f1a8d03a0ba680322cbf8dd765530c8f57ee1b42')
+ BASE = dict(path='/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-native-controls-03/inputs.json',
+             sha256='8569abb81a61e34b6b5a892116af5218557ceb0436ab8dbf8a31f2aec55b1b1d')
+ CANONICAL = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+@@ -195,8 +197,8 @@
+         if key.endswith('_sha256'):require(re.fullmatch('[a-f0-9]{64}',value),'concrete reviewed SHA required')
+     manifest=read(args.source_manifest,args.source_manifest_sha256)
+     require(set(manifest)=={'policy','files','actual53','phase45','preparation','preparation_launcher','startup_controls','retry_controls','frozen_links_controls','failed_audit'}
+-        and manifest['policy']=='runtime05-completed-directories-saved-audit-source-manifest-v1'
+-        and type(manifest['files']) is dict and len(manifest['files'])<=256
++        and manifest['policy']=='runtime05-complete-preparation-saved-audit-source-manifest-v1'
++        and type(manifest['files']) is dict and len(manifest['files'])<=320
+         and sum(row['size'] for row in manifest['files'].values())<=8*2**20,
+         'bounded separately reviewed audit source manifest required')
+     rows=manifest['files']
+@@ -255,6 +257,14 @@
+     # The orchestration module imports stdlib definitions only. Its bytes are
+     # authenticated before deriving metadata authorization; no producer import.
+     audit=load('orchestration',HERE/'audit.py',inspection['value']['files'])
++    # Fail on an incomplete preparation closure before producer imports or
++    # expensive current-provider guards; repeat this exact check at the tail.
++    preparation_rows_path=preparation_root/'source-rows.json'
++    require(str(preparation_rows_path) in rows, 'retained preparation source table must be authenticated')
++    preparation_rows=read(preparation_rows_path,rows[str(preparation_rows_path)]['sha256'])
++    require(same(OBSERVED[str(preparation_rows_path)],rows[str(preparation_rows_path)]),
++        'retained preparation source table identity differs')
++    audit.preparation_source_equality(preparation_rows,inspection['value']['files'])
+     def completed_bytes(value):
+         name=str(value);table=inspection['value']['files']
+         require(name in table,'completed-owner authority is outside frozen ordinary rows')
