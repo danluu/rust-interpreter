@@ -44,3 +44,8 @@ rederives/reuses3passingcommands, buildsVM only. Newclosed-register-census-
 compression01 selects9publicfreJSONs/sixclosedruns421093376allocatedbytes;
 qualifiedhelpersunchanged. Commit, compress, close, freshadmission thenworkspace02.
 Profile/installnowrequireworkspace02. No guest/timing; two new gatesUNRUN.
+
+Closedregistercensuscompression01 sourceb9706ad7 supervisor54867 finished0;
+independentclosepassed9JSONs421093376→30937088allocated,390156288bytes recovered.
+Allplaintext/metadata/nativebirthtimespreserved. NEVER replay. Freshbuildfloor
+26629357568,free~2669M? usefreshbytesbeforeworkspace02 (onlyVMbuild).
