@@ -1,3 +1,13 @@
+LATEST: main3972406b pushed closedshort-tail ES8 negative. Newrootbranch
+experiment/adopted-es8-protocol-scope-20260919 restoresEXACTadoptedfca runtime;
+no runtime crate diff remains. Candidate63578118 retained onpreviousbranch.
+Nexttest-only currentCall/Returnpartition: extendexisting protocol labels for
+scalarfastpath andsavedobserver toschema2; reconstructall4closedES8/tokencaptures
+byte-for-byte. No new guest or runtimecandidate untilcurrentcoveragewarrantsit.
+Reuse ownedboundedruntime target(cap3GiB/max14GiB,8+2allocation floor) ONLYwith
+newexplicit observer plan and exactsource/input bindings. Oldprotectedtarget
+neverclean. Prefix/history frozenevidence remainsimmutable. SavedgoalPAUSED.
+
 LATEST: ES8 primary CLOSED, sourcef3c9e34c, supervisor3654/controller3730,
 40commands+2strictpassed, independentclose61860passed. GateNOTpassed:
 pairedwall.983240312 +AA.114544192=1.097784504, CPU.976997780+envelope.071178866.
