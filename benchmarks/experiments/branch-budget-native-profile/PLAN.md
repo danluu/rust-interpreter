@@ -1,6 +1,6 @@
 # Original-suite semantic and native-map gate
 
-After workspace01 independently closes, run the two pinned fre token tests and
+After workspace02 closes its VM build and retained passing test prefix, run the two pinned fre token tests and
 the pinned fre folded-literal test with their original assertions, artifacts, catalogs,
 limits and recorded entropy tapes. Use only the retained feature-enabled VM.
 Compare exact per-PC logical counts, total instructions, peak guest memory and
