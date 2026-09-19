@@ -31,6 +31,10 @@ fn compare(previous: &Program, current: &Program) -> Result<serde_json::Value, S
     let after = current.functions.iter().map(digest).collect::<Result<Vec<_>,_>>()?;
     let same: Vec<_> = after.iter().enumerate().map(|(id, hash)| before.get(id) == Some(hash)).collect();
     let mut direct = same.clone();
+    let mut layouts = same.clone();
+    let layout = |f:&Function| digest(&(f.frame_size,f.frame_align,f.registers,&f.args,&f.result));
+    let old_layouts = previous.functions.iter().map(layout).collect::<Result<Vec<_>,_>>()?;
+    let new_layouts = current.functions.iter().map(layout).collect::<Result<Vec<_>,_>>()?;
     let mut graph = same.clone();
     let mut callers = vec![vec![]; current.functions.len()];
     for (id, f) in current.functions.iter().enumerate() {
@@ -38,11 +42,12 @@ fn compare(previous: &Program, current: &Program) -> Result<serde_json::Value, S
             match op {
                 Op::Call { function, .. } => {
                     direct[id] &= same[*function];
+                    layouts[id] &= old_layouts.get(*function)==new_layouts.get(*function);
                     callers[*function].push(id);
                 }
                 // This stricter graph count declines unknown indirect callees;
                 // it is not a claim that ordinary code needs their bodies.
-                Op::CallIndirect { .. } => { direct[id] = false; graph[id] = false; }
+                Op::CallIndirect { .. } => { direct[id] = false; graph[id] = false; layouts[id] = false; }
                 _ => {}
             }
         }
@@ -60,7 +65,11 @@ fn compare(previous: &Program, current: &Program) -> Result<serde_json::Value, S
     });
     let rows: Vec<_> = current.functions.iter().enumerate().map(|(id,f)| serde_json::json!({
         "function":id, "name":f.name, "operations":f.code.len(), "sha256":after[id],
+        "previous_name":previous.functions.get(id).map(|f|&f.name),
+        "previous_operations":previous.functions.get(id).map(|f|f.code.len()),
+        "previous_sha256":before.get(id),
         "same_function_at_same_id":same[id], "same_function_and_direct_callees":direct[id],
+        "same_function_and_direct_layouts":layouts[id],
         "same_closed_direct_call_graph":graph[id],
         "global_context_and_graph_equal":globals_equal && graph[id]
     })).collect();
@@ -69,6 +78,7 @@ fn compare(previous: &Program, current: &Program) -> Result<serde_json::Value, S
         "current_operations":current.functions.iter().map(|f|f.code.len()).sum::<usize>(),
         "global_context_equal":globals_equal,
         "same_function_at_same_id":count(&same), "same_function_and_direct_callees":count(&direct),
+        "same_function_and_direct_layouts":count(&layouts),
         "same_closed_direct_call_graph":count(&graph),
         "global_context_and_graph_equal":count(&graph.iter().map(|&v|v && globals_equal).collect::<Vec<_>>()),
         "functions":rows,
@@ -109,6 +119,19 @@ fn cross_edit_body_and_layout_changes_propagate_beyond_direct_callees() {
         assert_eq!(r["same_closed_direct_call_graph"]["functions"],1);
         assert_eq!(r["functions"][3]["same_closed_direct_call_graph"],true);
     }
+}
+
+#[test]
+fn cross_edit_layout_candidates_are_separate_from_body_and_scalar_admission() {
+    let p=fixture();let mut q=p.clone();q.functions[2].code[0]=Op::Imm{dst:0,value:8};
+    let r=compare(&p,&q).unwrap();
+    assert_eq!(r["same_function_and_direct_layouts"]["functions"],3);
+    assert_eq!(r["same_function_and_direct_callees"]["functions"],2);
+    assert_eq!(r["functions"][2]["previous_name"],"leaf");
+    assert_eq!(r["functions"][2]["previous_operations"],2);
+    q.functions[2].frame_size=32;
+    assert_eq!(compare(&p,&q).unwrap()["same_function_and_direct_layouts"]["functions"],2);
+    assert_eq!(compare(&p,&q).unwrap()["cache_admission"],false);
 }
 
 #[test]
@@ -195,4 +218,23 @@ fn cross_edit_observe_saved_artifact_sequence() {
         "guest_commands":0,"executable_code_publications":0,"cache_admission":false})).unwrap();
     assert!(bytes.len()<=64*1024*1024);
     std::fs::OpenOptions::new().write(true).create_new(true).open(output).unwrap().write_all(&bytes).unwrap();
+}
+
+#[test]
+#[ignore = "explicit original-anchor manifest; no guest execution"]
+fn cross_edit_observe_saved_original_anchors() {
+    use std::io::Write;
+    let inputs:Vec<Input>=serde_json::from_slice(&std::fs::read(std::env::var_os("RUST_INTERP_CROSS_EDIT_INPUTS").unwrap()).unwrap()).unwrap();
+    assert_eq!(inputs.iter().map(|i|i.state).collect::<Vec<_>>(),vec![0,-1,1,2,3,4,5,0]);
+    let original=read(&inputs[0]).unwrap();let mut comparisons=vec![];
+    for input in &inputs[1..] {
+        let current=read(input).unwrap();let mut row=compare(&original,&current).unwrap();
+        row["previous_state"]=0.into();row["state"]=input.state.into();
+        row["previous_artifact_sha256"]=inputs[0].sha256.clone().into();row["artifact_sha256"]=input.sha256.clone().into();
+        comparisons.push(row);
+    }
+    let bytes=serde_json::to_vec_pretty(&serde_json::json!({"comparisons":comparisons,
+        "guest_commands":0,"executable_code_publications":0,"cache_admission":false,"original_anchor":true})).unwrap();
+    assert!(bytes.len()<=64*1024*1024);
+    std::fs::OpenOptions::new().write(true).create_new(true).open(std::env::var_os("RUST_INTERP_CROSS_EDIT_OUTPUT").unwrap()).unwrap().write_all(&bytes).unwrap();
 }

@@ -34,3 +34,17 @@ No type/borrow checks may be deferred; no persistent native cache is enabled.
 The original [model and census plan](../benchmarks/experiments/cross-edit-emission-census/PLAN.md)
 and [closed result](../results/cross-edit-emission-census-02/summary.json) retain
 all transitions and their exact artifact identities.
+
+The closed typed-difference follow-up passes11controls/profile. On the valid
+transition into edit1,2,648 functions change only immediate values; into edit5,
+2,769 do. Data and static bytes also change. Edit4 changes names at682 numeric
+function IDs and includes2,395 positional direct-call-ID changes. Immediate-only
+is a syntactic classification: it does not prove a pointer relocation. Edits2/3
+each change one function while all compared global fields remain identical.
+[Typed differences](../results/cross-edit-emission-differences-01/summary.json).
+
+Next compare each state against the original artifact and join actual original
+per-function preparation observations by exact artifact/function metadata. This
+will describe how much observed preparation is associated with unchanged bodies
+and layouts, excluding no-entry functions from native-template potential. It
+will not predict elapsed savings, authorize reuse or rerun the original guests.

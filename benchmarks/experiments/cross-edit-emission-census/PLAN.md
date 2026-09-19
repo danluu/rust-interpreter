@@ -56,3 +56,14 @@ the seven original controls and four additional typed-difference controls in
 debug/release, excluding both explicitly ignored saved observers. Differences01
 then reads the same eight exact retained artifacts with no new guest/build of the
 project. All existing resource, strict-checking and publication boundaries apply.
+
+Differences01 is closed: data/static bytes, immediate values and sometimes
+function/call IDs change substantially. The next original-anchor census compares
+the exact initial artifact with each retained later state, so a later saved-trace
+join can bind actual original function names and operation counts. It additionally
+reports a weaker necessary candidate condition: unchanged caller bytes and direct
+callee frame/register/argument/result layouts. This is distinct from unchanged
+callee bodies and does not prove scalar admission or emitted-code equality.
+Model03 runs12controls/profile before anchors01. No new original guest capture,
+benchmark or code cache is involved; overlapping diagnostic timing weights will
+remain descriptive and must exclude functions with no published ordinary entries.
