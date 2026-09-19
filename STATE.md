@@ -98,9 +98,11 @@ match fresh emission after assertion/scalar rebinding. Next add bounded shared
 storage and concurrency/lifetime controls before connecting guest execution.
 Stage2 is now prepared: a64MiB bounded per-Program store, one immutable Arc per
 numeric ID, short locked snapshot/publication, capacity/poison misses and6new
-controls. Focused02 expects12controls/profile. All code remains cfg(test), with
-no guest execution, disk cache or production option. Run then close before any
-correction or integration.
+controls. Focused02 passes12controls/profile under84646/84649, sourcecee78bed,
+and is CLOSED by94278/94292 (225inputs,221sources,13evidence). All code remains
+cfg(test), with no guest execution, disk cache or production option so far.
+Next add explicit native fixture execution and compare restored templates with
+ordinary JIT errors, limits and fresh guest state; production wiring remains off.
 
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally
