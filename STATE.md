@@ -132,3 +132,11 @@ Focused03 sourcec4fae859 supervisor98245/controller98250 finished0; independent
 close73158 passed. Newbudget3debug+all6release, retainedheap16/profile andC3debug.
 Combined16heap+6C/profile complete, originalfailure andadmissiontimeout preserved.
 Next workspace01 (4commands), independent--close; freeze allcrates/scripts/tests.
+
+Workspace01 sourcebe946738 supervisor9423/controller9466 CLOSED3888terminal1.
+Python446pass22skip, Rust618pass13ignored eachprofile ALLpass. BeforeVM build,
+free26305503232<floor26629357568. NoVM buildran. Newworkspace02 resumequalify
+rederives/reuses3passingcommands, buildsVM only. Newclosed-register-census-
+compression01 selects9publicfreJSONs/sixclosedruns421093376allocatedbytes;
+qualifiedhelpersunchanged. Commit, compress, close, freshadmission thenworkspace02.
+Profile/installnowrequireworkspace02. No guest/timing; two new gatesUNRUN.

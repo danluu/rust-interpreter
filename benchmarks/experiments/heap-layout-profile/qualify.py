@@ -59,7 +59,7 @@ def main():
             s=bind(out/'summary.json',c['summary_sha256']);t=bind(out/'terminal.json',c['terminal_sha256'])
             assert s['status']=='passed' and t['status']=='finished' and t['returncode']==0 and t['owner']==t['cwd']==str(ROOT)
             return s
-        build=closed('heap-layout-workspace-01')
+        build=closed('heap-layout-workspace-02')
         assert build['tests']['debug']==build['tests']['release']==dict(passed=618,ignored=13)
         assert build['tests']['python']==dict(discovered=468,passed=446,skipped=22)
         build_plan=bind(ROOT/build['raw']/'plan.json',build['plan_sha256'])

@@ -1,6 +1,6 @@
 # Original guest qualification for exact heap metadata
 
-UNRUN. Require closed heap-layout-workspace01 (618Rust pass13ignored/profile,
+UNRUN. Require closed heap-layout-workspace02 (618Rust pass13ignored/profile,
 Python446pass22skip) and exact retained feature VM. Reuse the qualified3-control
 native observer from scratch-memory-values; its source hash must match the closed
 original controls. No new observer or relaxed comparison.
