@@ -92,3 +92,10 @@ blockreused, no guest. Independentclose68632passed. Profile03 continuationregist
 heap-layout-profile-resume/qualify.py: retainblock, executeONLYmissing2guests.
 Install/screenrequire03, explicitrelocationequalityflag; performancegatesunchanged.
 No runtime/buildchanges. Nextcommit/push thenlaunch03andindependentclose.
+
+Profile03 sourced5ebdf1a supervisor95827/controller95839 finished0; independent
+close31185passed afterpeerlockreleased naturally (earlierclose16705timeout only).
+All3originalguests qualified:427/532/21scalarrelocations exact, allothernativebits
+identical. Two newguests+retainedblock, no rerun. Next heap-layout-install01
+install.py (explicittoolonly), --close; then heap-layout-screen-protocol01 and
+--close; original40source-editprimary. All registered, no timing yet.
