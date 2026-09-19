@@ -1,0 +1,61 @@
+"""One authorized bounded read-only packet preparation; no test or provider calls."""
+import hashlib, importlib.util, json, os, resource, shutil, subprocess, sys, time
+from pathlib import Path
+O = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+H = O/'experiments/hash-file-table-reader-controls-01'
+E = O/'.work/hash-file-table-reader-controls-preparation-execution-01'
+P = Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14')
+EXPECTED = {'run.py': '28f0267a90652e5df1627ce341a4fd6ddf6f06ba38b6722b764ef25be60abc64', 'child.py': '22965aeae03168b307a0ebab277e0d2bb1dedc04c16e3bd571ab3f149917da9a', 'prepare.py': '52751042214f3539706350738eae505890d2ec6d17f93e16d0d583c93c671fe4', 'README.md': '9d9c50428397aeec55a0f7673afdf6483adeea7c44315cc8ebdae43ff0842527', 'harness-from-file-table29.diff': 'a9ccccb66e9dc33c8fad9bdf6d76737add1e4c54f5a3101213e0a49c2d131d19'}
+sha = lambda p: hashlib.sha256(Path(p).read_bytes()).hexdigest()
+TESTED = {'/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage-02/verify.py': 'cbff690675b8697855bb87b0e09d9b77495fc0b8968855301e1a88612ec62a3f', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage-02/test_file_table_audit.py': '98a3857cbb6c3b7677a1db37ff11d9fee8570968223f009566373afc165150ca', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage-02/README.md': '3992bc379b6a05019ddde52087d75fdb89d6315a92e7826123b473f0fffc7ea5', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/frozen-file-table-delta-01/file_table.py': 'ce843e772cccb490edf6fd9c947b6308e5db0ba2f3fd63112a39a9bb94159437', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/frozen-file-table-delta-01/README.md': '25344fa8b58eed217994173929de62cd980efc0b5c6a23a5f9d1d93c086c12c7'}
+def validate_sources():
+ for name,digest in EXPECTED.items(): assert sha(H/name)==digest
+ for path,digest in TESTED.items(): assert sha(path)==digest
+
+assert Path.cwd() == O and sys.dont_write_bytecode and not sys.flags.optimize
+assert Path(sys.executable).resolve() == P
+assert not E.exists() and not E.is_symlink()
+assert not any((H/name).exists() for name in ['inputs.json','launch.json'])
+validate_sources()
+owned_path = X/'experiments/stable-cgu/owned_stage.py'
+old_freeze = json.loads((ROOT/'experiments/hir-options-hash-prerequisite-controls-05/inputs.json').read_bytes())
+assert sha(owned_path) == old_freeze['files'][str(owned_path)]['sha256']
+spec = importlib.util.spec_from_file_location('file_table_reader22_prepare_owned', owned_path)
+owned = importlib.util.module_from_spec(spec); spec.loader.exec_module(owned)
+E.mkdir(mode=0o700); (E/'source').mkdir(mode=0o700)
+for name in EXPECTED: (E/'source'/name).write_bytes((H/name).read_bytes())
+(E/'source'/'execution.py').write_bytes(Path(__file__).read_bytes())
+(E/'source'/'owned_stage.py').write_bytes(owned_path.read_bytes())
+env = dict(HOME='/Users/danluu',USER='danluu',LOGNAME='danluu',LANG='C',LC_ALL='C',TZ='UTC',PATH='/usr/bin:/bin:/usr/sbin:/sbin',PYTHONDONTWRITEBYTECODE='1',PYTHONNOUSERSITE='1',TMPDIR=str(O/'.work/hash-file-table-reader-controls-01/tmp'))
+command=[str(P),'-B',str(H/'prepare.py')]
+r=dict(status='waiting',started_at=time.time(),parent_pid=os.getpid(),supervisor_parent_pid=os.getppid(),command=command,cwd=str(O),environment=env,source_sha256=EXPECTED,execution_source_sha256=sha(__file__),owned_source_sha256=sha(owned_path),canonical_lock=str(owned.CANONICAL_LOCK),wait_seconds=600,capacity=dict(entry_gib=16,stop_gib=9,floor_gib=8),mode='authorized one-shot read-only proposal preparation; no test or compiler workload',identity_limitation='Popen PID and in-process parent identity retained; no independent ps/cwd probes and no signals.',disk_samples=[])
+def save(): owned.write(E/'record.json',r)
+save()
+try:
+ with owned.workload_lock(owned.CANONICAL_LOCK,600) as fd:
+  r.update(admitted_at=time.time(),free_bytes_before=owned.disk(O,16)); save()
+  validate_sources()
+  resource.setrlimit(resource.RLIMIT_CPU,(60,60)); resource.setrlimit(resource.RLIMIT_FSIZE,(256*1024,256*1024))
+  with (E/'stdout').open('xb') as stdout,(E/'stderr').open('xb') as stderr:
+   child=subprocess.Popen(command,cwd=O,env=env,stdin=subprocess.DEVNULL,stdout=stdout,stderr=stderr,pass_fds=(fd,))
+   r.update(status='running',pid=child.pid,child_started_at=time.time()); save()
+   deadline=time.monotonic()+120
+   while True:
+    try:
+     code=child.wait(timeout=min(1,max(.001,deadline-time.monotonic()))); break
+    except subprocess.TimeoutExpired:
+     free=shutil.disk_usage(O).free
+     r['disk_samples'].append(dict(time=time.time(),free_bytes=free)); save()
+     if time.monotonic()>=deadline:
+      r.update(status='unresolved-live-child-not-signaled',observation_finished_at=time.time()); save(); raise
+  r.update(status='finished',returncode=code,finished_at=time.time(),stdout_sha256=sha(E/'stdout'),stderr_sha256=sha(E/'stderr'),free_bytes_after=shutil.disk_usage(O).free); save()
+  assert code==0 and not (E/'stderr').read_bytes()
+  assert r['free_bytes_after']>=9*2**30 and all(row['free_bytes']>=9*2**30 for row in r['disk_samples'])
+  for name,digest in EXPECTED.items(): assert sha(H/name)==digest
+  r['prepared_packet']=json.loads((E/'stdout').read_bytes()); save()
+ r['canonical_released_at']=time.time(); save()
+ print(json.dumps(r,sort_keys=True))
+except BaseException as error:
+ r['execution_error']=repr(error); save(); raise
