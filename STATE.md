@@ -99,3 +99,10 @@ reused, debugfull654pending thenrelease654/diagnostic33/defaultVM. Freezecrates,
 scripts/tests andtemplate-callee-initialization folder untilclosure. No other
 benchmark/replay active. Newbugdocs describesconfirmedredcontrols andkeyv3fix;
 main08a88a3a publishedpreviousclosedunmeasurableprimary/costs, runtimeunchanged.
+
+Fixqualificationaffb4716 passed654Rust/profile+16ignored,33diagcontrols/defaultVM;
+Python442+22skip exactrecord. CLOSED91574/91577. Correctedparserreplayf09e41ad
+completed95866/95869:16suites1,824invocations16,299verifiedhits, exactoutcomes/kernelCPU.
+Closurecurrentlyrunning see template-callee-initialization-parser-client-01-close.
+Next corrected-session-input-phases/parser.py; previousuncorrected phase replay
+remainsUNSTARTED. Sourcefreezecrates/scripts/tests/bugfixfolder untilreplayclosure.
