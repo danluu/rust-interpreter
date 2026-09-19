@@ -71,7 +71,13 @@ fault/replay and private memory; call/branch/resource controls retained.
 
 Finish and independently close the active full fre history. A pass admits folded
 then pgrust public guards. The private/Nushell adapters and both parser guards
-remain required before integration. A failure stops later guards, with no
+remain required before integration. Their controllers are now PREPARED ONLY in
+session-runtime-composition-large-guards and session-runtime-composition-parser-guards;
+no protocol tests or timing commands have run. Order: public three, private rg-aot,
+parser incremental, parser repository defaults, Nushell last. Full parser retains
+its existing stronger session wall/CPU/noise gates. Private uses two persistent
+slots even for one test, with all idle-worker costs charged. Nushell requires
+max(47GiB,8GiB+120%*nine*saved namespace estimate), not the old six-arm reservation. A failure stops later guards, with no
 unchanged timing retry. Preserve every completed and partial attempt and strict
 checks, original assertions, source restoration and full server CPU accounting.
 No adoption before qualified current-main integration preserving peer changes.
@@ -97,9 +103,12 @@ suggestions.txt remains user-owned/untracked, SHA256
 4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f;
 reread this turn. Detailed dispositions docs/SUGGESTIONS-REVIEW-20260913-1245.md.
 
-Main publication1ba3d6da pushed closed qualification/parser/protocol and cache
-retirement evidence, preserving peerc8ebf5aa. Experimental branch committed
-throughf43a950e; publish newer fre/install/primary/full-protocol proofs regularly.
+Main publicationda279a9a pushed closed fre/install/primary/full-protocol evidence,
+preserving peerd8da0b18. Experimental branch pushed through97de6f71. Prepared
+closed-primary cache retirement (session-runtime-primary-cache-retirement) selects
+only six completed primary namespaces, UNSTARTED. May execute under lock if free
+is below max(24GiB,8GiB+2*shared target allocation); independently close after.
+Never touch the active full-history caches. Publish qualified evidence regularly.
 Publish exact proof/docs paths on main, fetch/ff first; do not copy experimental
 runtime or overwrite compiler work. Prior detail archived at
  docs/history/STATE-20260919-before-session-runtime-composition.md.
