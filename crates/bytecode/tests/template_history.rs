@@ -187,3 +187,28 @@ fn shared_validation_cannot_admit_invalid_programs_or_bypass_current_runtime_lim
     }
     assert_eq!(history.storage().entries,0);
 }
+
+#[test]
+#[cfg(feature = "jit-preparation-observer")]
+fn preparation_observer_reports_actual_budget_declines_without_changing_execution() {
+    let mut p=program(7,1);
+    // More declines than the64-row report bound, reached in one actual run.
+    let leaf=p.functions[1].clone();
+    p.functions=vec![p.functions[0].clone()];
+    p.functions.extend((0..70).map(|_|leaf.clone()));
+    p.functions[0].code=vec![Op::Local{dst:0,offset:0}];
+    for function in 1..=70 {p.functions[0].code.push(Op::Call{function,args:vec![],destination:0});}
+    p.functions[0].code.push(Op::Return);
+    let current=Limits{jit_code_bytes:0,..limits()};
+    let mut owner=PreparedJit::new(&p,&current).unwrap();
+    equal(owner.execute(&[],current.clone()),execute_with_engine(&p,&[],Limits::default(),Engine::Interpreter));
+    let observation=owner.preparation_observation();
+    assert_eq!(observation["preparations"],71);assert_eq!(observation["declined"],71);
+    assert_eq!(observation["declines_truncated"],7);
+    assert_eq!(observation["declines"].as_array().unwrap().len(),64);
+    for row in observation["declines"].as_array().unwrap() {
+        assert_eq!(row["outcome"],"no-staging");assert_eq!(row["word_budget"],0);
+        assert_eq!(row["site"]["kind"],"region-word-budget");
+        assert!(row["site"]["next_words"].as_u64().unwrap()>0);
+    }
+}

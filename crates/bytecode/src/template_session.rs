@@ -152,8 +152,12 @@ fn worker_run(job:&Job,history:Option<&TemplateHistory>)->Result<Value,String> {
         };
         outcome["seconds"]=started.elapsed().as_secs_f64().into();outcomes.push(outcome);
     }
-    Ok(json!({"status":"completed","tests":outcomes,"preparation_ns":preparation,
-        "templates":owner.template_statistics(),"storage":history.map(TemplateHistory::storage)}))
+    #[allow(unused_mut)]
+    let mut row=json!({"status":"completed","tests":outcomes,"preparation_ns":preparation,
+        "templates":owner.template_statistics(),"storage":history.map(TemplateHistory::storage)});
+    #[cfg(feature = "jit-preparation-observer")]
+    {row["preparation_observer"]=owner.preparation_observation();}
+    Ok(row)
 }
 
 // Darwin SDK sys/resource.h: two timevals followed by fourteen long fields.

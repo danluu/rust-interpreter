@@ -50,6 +50,8 @@ mod guarded_ranges;
 mod scratch_values;
 #[cfg(any(test, feature = "jit-template-session"))]
 pub(crate) mod cross_program_templates;
+#[cfg(feature = "jit-preparation-observer")]
+mod preparation_observer;
 
 #[cfg(test)]
 mod limit_tests;
@@ -347,6 +349,10 @@ struct CompiledFunction<'a> {
 }
 
 pub(crate) struct Jit<'a> {
+    #[cfg(feature = "jit-preparation-observer")]
+    preparation_observer: preparation_observer::Observation,
+    #[cfg(feature = "jit-preparation-observer")]
+    preparation_decline: std::cell::Cell<Option<preparation_observer::Site>>,
     #[cfg(any(test, feature = "jit-template-session"))]
     template_model_context: Option<std::rc::Rc<cross_program_templates::Context<'a>>>,
     // MAP_JIT write protection is per-thread. Make confinement intentional,
@@ -393,6 +399,10 @@ pub(crate) struct Jit<'a> {
     pub liveness_declines: usize,
 }
 impl<'a> Jit<'a> {
+    #[cfg(feature = "jit-preparation-observer")]
+    pub(crate) fn preparation_observation(&self) -> serde_json::Value {
+        serde_json::to_value(&self.preparation_observer).unwrap()
+    }
     #[cfg(feature = "jit-template-session")]
     pub(crate) fn attach_templates(&mut self, context: std::rc::Rc<cross_program_templates::Context<'a>>) {
         assert!(self.template_model_context.is_none() && self.bytes == 0);
@@ -421,6 +431,8 @@ impl<'a> Jit<'a> {
                 | Op::CurrentDirectory { .. })
         });
         Ok(Self { _thread_bound: std::marker::PhantomData, program, profiled, uses_heap, capacity, code: None,
+            #[cfg(feature = "jit-preparation-observer")] preparation_observer: Default::default(),
+            #[cfg(feature = "jit-preparation-observer")] preparation_decline: Default::default(),
             #[cfg(any(test, feature = "jit-template-session"))] template_model_context: None,
             prepared: vec![false; program.functions.len()],
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
@@ -468,15 +480,31 @@ impl<'a> Jit<'a> {
     }
     fn prepare_function(&mut self, id: usize) -> Result<bool, String> {
         if self.native_call_stubs { self.prepare_region_calls(id)?; }
+        #[cfg(feature = "jit-preparation-observer")]
+        let scalar_started = std::time::Instant::now();
         if self.scalar.is_some() { self.prepare_scalar_callees(id)?; }
+        #[cfg(feature = "jit-preparation-observer")]
+        let scalar_ns = scalar_started.elapsed().as_nanos();
         let remaining = (self.capacity - self.bytes) / 4;
+        #[cfg(feature = "jit-preparation-observer")]
+        let ordinary_started = {
+            self.preparation_decline.set(None);
+            std::time::Instant::now()
+        };
         #[cfg(any(test, feature = "jit-template-session"))]
         let staged = if let Some(context) = &self.template_model_context {
             context.stage(self, id, remaining)
         } else { self.emit_function(&self.program.functions[id], remaining) };
         #[cfg(not(any(test, feature = "jit-template-session")))]
         let staged = self.emit_function(&self.program.functions[id], remaining);
-        self.finish_preparation(id, staged)
+        #[cfg(feature = "jit-preparation-observer")]
+        let (ordinary_ns, outcome, publication_started) = (
+            ordinary_started.elapsed().as_nanos(), preparation_observer::outcome(&staged), std::time::Instant::now());
+        let result = self.finish_preparation(id, staged);
+        #[cfg(feature = "jit-preparation-observer")]
+        self.preparation_observer.record(id, self.program.functions[id].code.len(), remaining,
+            scalar_ns, ordinary_ns, publication_started.elapsed().as_nanos(), outcome, self.preparation_decline.get());
+        result
     }
 
     fn finish_preparation(&mut self, id: usize, staged: Result<Option<CompiledFunction<'a>>, EmitError>) -> Result<bool, String> {
@@ -531,7 +559,11 @@ impl<'a> Jit<'a> {
     }
 
     fn emit_function(&self, f: &'a Function, word_budget: usize) -> Result<Option<CompiledFunction<'a>>, EmitError> {
-        if self.resumable.as_ref().is_some_and(|tables| !tables.fits(f.code.len())) { return Ok(None); }
+        if self.resumable.as_ref().is_some_and(|tables| !tables.fits(f.code.len())) {
+            #[cfg(feature = "jit-preparation-observer")]
+            self.preparation_decline.set(Some(preparation_observer::Site{kind:"resume-table",pc:0,emitted_words:0,next_words:0}));
+            return Ok(None);
+        }
         self.emit_function_inner(f, word_budget, self.assertions.len(), None)
     }
 
@@ -747,6 +779,9 @@ impl<'a> Jit<'a> {
                 }
                 debug_assert_eq!(covered, a.words.len());
                 if a.words.len() > word_budget.saturating_sub(words.len()) {
+                    #[cfg(feature = "jit-preparation-observer")]
+                    self.preparation_decline.set(Some(preparation_observer::Site{kind:"region-word-budget",pc:start,
+                        emitted_words:words.len(),next_words:a.words.len()}));
                     return Ok(None);
                 }
                 #[cfg(test)]
@@ -779,7 +814,12 @@ impl<'a> Jit<'a> {
                     let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), slots.get(&pc).map(Vec::as_slice))?;
                     code_spans::record(&mut spans, words.len(), pc, Some(pc),
                         code_spans::Kind::Transition, 0, a.words.len())?;
-                    if a.words.len() > word_budget.saturating_sub(words.len()) { return Ok(None); }
+                    if a.words.len() > word_budget.saturating_sub(words.len()) {
+                        #[cfg(feature = "jit-preparation-observer")]
+                        self.preparation_decline.set(Some(preparation_observer::Site{kind:"transition-word-budget",pc,
+                            emitted_words:words.len(),next_words:a.words.len()}));
+                        return Ok(None);
+                    }
                     resumes[pc] = Some(words.len() + resume);
                     internal_entries[pc] = Some(words.len() + internal);
                     entries[pc] = Some(Block { offset, end: pc + 1 });

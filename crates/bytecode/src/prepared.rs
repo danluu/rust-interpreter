@@ -69,6 +69,13 @@ impl<'program> PreparedJit<'program> {
         self.jit.as_ref().unwrap().template_statistics()
     }
 
+    /// Diagnostic elapsed intervals and bounded exact decline sites. These
+    /// include observation overhead and must not be used as acceptance timings.
+    #[cfg(feature = "jit-preparation-observer")]
+    pub fn preparation_observation(&self) -> serde_json::Value {
+        self.jit.as_ref().unwrap().preparation_observation()
+    }
+
     /// Explicit per-request environment without changing host process globals.
     /// Raw names/values use the ordinary bounded guest snapshot contract. The
     /// input is copied into this owner and then into fresh readonly guest storage
