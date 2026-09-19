@@ -55,13 +55,14 @@ must occur on both parser states before timing; zero hits cancel timing, not
 trigger reruns. All114 original parser assertions/outcomes stay intact. Saved
 original artifacts are bound to prior closed native histories; ordinary entropy.
 
-The prospective primary is prepared (UNTESTED) in
+The primary protocol is CLOSED:82684/82688 (see terminal for exact child)
+passes19controls; closer89745/89793 binds492inputs. The primary is prepared in
 `benchmarks/experiments/shared-emission-templates-screen`:32commands,8states ×
 4rotating modes (native/adopted/adopted duplicate/candidate). Five valid edited
 pairs only enter the wall/CPU gates; anchors, wrong edit and restoration remain
 mandatory. Full native/custom workflows,2Cargo workers/2native test threads/
 2suite workers, ordinary entropy. Require24GiB initial/8GiB child disk admission.
-Run its19protocol controls and close them before timing. Primary choice was
+Its19protocol controls and original-source schedule have passed and closed. Primary choice was
 frozen before candidate timing; gate and qualification contract in
 `benchmarks/experiments/shared-emission-templates/QUALIFICATION.md`. A failed
 wall or CPU gate cancels larger comparisons; do not retime unchanged failures.
@@ -108,7 +109,7 @@ zero unassigned. Preserve every successful capture without reruns.
   `acquire_lock(lock,45)`. Two Cargo/test workers. Only root target is
   `.work/fixed-frame-clear-combined-build-01/target`; NEVER clean it.
 - Build floor max(14GiB,8GiB+2*allocated target); analysis12GiB; children8GiB;
-  primary14GiB; closures8–10GiB as declared. Current free space about18.5GiB;
+  primary14GiB; closures8–10GiB as declared. Current free space about27.5GiB;
   admit every stage freshly. Nushell real six-cache reservation is about47GiB.
 - Independent cleaner read-only status:
   `/usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status`.
@@ -137,5 +138,13 @@ Exact completed public cache retirements are closed: old scratch/scalar
 Nushell custom; runtime-composition token/folded custom+native; current
 composition Nushell custom. Old repository-parser retirement found zero files.
 Do not repeat these. Preserve all executables, tools, RBC/catalogs, proof data,
-private caches, shared target and peer work. Current Nu native/check caches
-remain, and require fresh exact ownership/protection audit before any retirement.
+private caches, shared target and peer work. Current composition Nu native_lines and native caches are now selectively
+retired (closed-composition-nushell-{native-lines,main-native}-retirement-01),
+71,976nonexecutable intermediates each; every8,659protected hash unchanged.
+The two runs recover about3.65/5.41GiB free respectively (not their logical
+8.0/17.3GB totals). Do not repeat them. Only the current Nu check cache remains
+for a future exact ownership/protection audit if needed.
+
+Next launch shared-emission-templates-parser-screen-incremental-01 with the
+closed32-command protocol after a fresh24GiB admission. All runtime/suite/
+protocol inputs are fixed; no successful command needs repeating.
