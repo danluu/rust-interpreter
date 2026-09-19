@@ -9,8 +9,9 @@ wall/adopted.9537077504 + A/A.0373937777 = .9911015281; CPU margin.9588016423.
 Candidate/native wall1.5416394568. Full176-command fre history also passed and
 is closed35515: wall/adopted.9414513615 + A/A.0268743944 = .9683257559;
 CPU margin.9629909017, nativewall1.5806520070. Exact closed-primary compiler-cache
-retirement is ACTIVE42462/42465. Finish/close it, qualify prepared parser/large
-protocols, then run the admitted folded history. See STATE.md for paths.
+retirement is CLOSED60900. Parser14 controls and large/private23 controls are
+closed. Full folded history is ACTIVE91338/91341. Finish and independently
+close it before admitting pgrust. See STATE.md for paths.
 
 Both parent experiments remain failed; no combined speedup is inferred. The new
 cache key binds indirect signature ordinals, and session options are explicitly

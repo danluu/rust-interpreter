@@ -56,8 +56,10 @@ pass across three cycles. Startup, shutdown and full server kernel CPU are charg
 The identical composed runtime without history has median wall/baseline0.9592759008;
 candidate/history-off is0.9773742242. These ratios describe distinct paired
 comparisons and are not additive component gains. Folded, pgrust, private rg-aot,
-both parser profiles and Nushell remain outstanding. Their controllers are
-prepared; later timing still requires each preceding gate to pass and close.
+both parser profiles and Nushell remain outstanding. Folded is now running.
+The remaining adapters passed14 parser controls (6 fresh/8 exact reused) and23
+fresh large/private controls, both independently closed. Later timing still
+requires each preceding gate to pass and close.
 A primary pass admits these guards; it does not establish adoption. Later project
 and both parser gates remain required. No timing retries or main runtime adoption
 follow a failed gate. Experimental sources remain on

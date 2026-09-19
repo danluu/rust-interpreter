@@ -75,10 +75,14 @@ fault/replay and private memory; call/branch/resource controls retained.
 - Large protocol01 source97ddb268:73784,all23 fresh controls pass. Independent
   CLOSED84235; controller session-runtime-composition-large-guards.
 
+- Full folded01 source07f614bf is ACTIVE:91338/91341, launched03:44:00.
+  176 changed-source commands plus2 strict controls, same qualified public controller.
+  Freeze all bound inputs/owned fre source until independent close.py.
+
 ## Next actions
 
-Run folded followed by pgrust
-under the closed fre gate and existing public protocol. The private/Nushell adapters and both parser guards
+Finish and independently close folded. If it passes, run pgrust under the same
+qualified public protocol. A failure stops every later guard. The private/Nushell adapters and both parser guards
 remain required before integration. Their controllers are prepared in
 session-runtime-composition-large-guards and session-runtime-composition-parser-guards;
 parser and large protocols are independently closed; timing is
