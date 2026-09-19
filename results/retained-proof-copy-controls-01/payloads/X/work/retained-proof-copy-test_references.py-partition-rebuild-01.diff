@@ -1,0 +1,84 @@
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/retained-proof-copy-test_references.py-before-partition-rebuild-01
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/retained-proof-copy-references-01/test_references.py
+@@ -53,6 +53,12 @@
+             copy_root='/closed/work/retained', owner=self.owner,
+             validate_owner=self.owner_callback, validate_catalog=self.catalog_callback)
+ 
++    def partition(self, proof):
++        return r.partition(proof, retention=self.retention, historical_files=self.original,
++            current_files=self.current, qualified_catalog=self.catalog, approved_copies=self.approved,
++            required_live=self.live, copy_root='/closed/work/retained', owner=self.owner,
++            validate_owner=self.owner_callback, validate_catalog=self.catalog_callback)
++
+     def second_witness(self):
+         witness = copy.deepcopy(self.witness)
+         witness['evidence_root'] = '/second/source-snapshots'
+@@ -67,7 +73,7 @@
+ 
+ class ReferencesTests(unittest.TestCase):
+     def test_complete_partition_keeps_historical_identity_separate(self):
+-        f = Fixture(); proof = f.build(); parts = r.partition(f.original, proof)
++        f = Fixture(); proof = f.build(); parts = f.partition(proof)
+         self.assertEqual(parts['current_files'], f.current)
+         self.assertEqual(parts['historical_files'], {f.copy: f.original[f.copy]})
+         self.assertEqual({**parts['current_files'], **parts['historical_files']}, f.original)
+@@ -225,21 +231,21 @@
+ 
+     def test_partition_requires_original_full_typed_table(self):
+         f = Fixture(); proof = f.build(); f.original[f.copy]['identity']['mtime_ns'] += 1
+-        with self.assertRaisesRegex(ValueError, 'logical file table changed'): r.partition(f.original, proof)
++        with self.assertRaisesRegex(ValueError, 'authenticated rebuild'): f.partition(proof)
+ 
+     def test_partition_refuses_fabricated_retirement_or_allocation_credit(self):
+         f = Fixture(); proof = f.build()
+         for key, value in [('retirement_authorized', True), ('allocation_credit_bytes', 1), ('allocation_credit_bytes', False)]:
+             with self.subTest(key=key, value=value):
+                 bad = copy.deepcopy(proof); bad[key] = value
+-                with self.assertRaises(ValueError): r.partition(f.original, bad)
++                with self.assertRaises(ValueError): f.partition(bad)
+ 
+     def test_partition_count_cannot_use_boolean_or_float(self):
+         f = Fixture(); proof = f.build()
+         for value in [True, 1.0]:
+             with self.subTest(value=value):
+                 bad = copy.deepcopy(proof); bad['historical_files'] = value
+-                with self.assertRaises(ValueError): r.partition(f.original, bad)
++                with self.assertRaises(ValueError): f.partition(bad)
+ 
+     def test_noncanonical_paths_and_non_json_aliases_are_rejected(self):
+         f = Fixture(); f.approved = ['/closed/work/retained/../0000-plan.json']
+@@ -247,6 +253,34 @@
+         f = Fixture(); f.owner['extra'] = object()
+         with self.assertRaises(ValueError): f.build()
+ 
++    def test_fabricated_compiler_retirement_cannot_bypass_live_requirement(self):
++        f = Fixture(); proof = f.build()
++        proof['records']['/live/compiler'] = dict(kind='historical-proof-copy', original_record=f.original['/live/compiler'])
++        with self.assertRaisesRegex(ValueError, 'authenticated rebuild'): f.partition(proof)
++
++    def test_fabricated_source_retirement_cannot_bypass_owner_and_scope(self):
++        f = Fixture(); proof = f.build()
++        proof['records'] = {f.source: dict(kind='historical-proof-copy', original_record=f.original[f.source])}
++        f.approved = [f.source]; del f.current[f.source]
++        with self.assertRaises(ValueError): f.partition(proof)
++
++    def test_partition_reauthenticates_both_callbacks_every_time(self):
++        f = Fixture(); proof = f.build(); calls = []
++        f.owner_callback = lambda *args: calls.append('owner') or True
++        f.catalog_callback = lambda *args: calls.append('catalog') or True
++        f.partition(proof)
++        self.assertEqual(calls, ['owner', 'catalog'])
++        f.catalog_callback = lambda *args: False
++        with self.assertRaisesRegex(ValueError, 'catalog not authenticated'): f.partition(proof)
++
++    def test_extra_new_sources_are_current_but_not_in_old_table_partition(self):
++        f = Fixture(); f.current['/new/helper.py'] = row(100, b'new source')
++        proof = f.build(); parts = f.partition(proof)
++        self.assertEqual(proof['current_physical_files'], len(f.current))
++        self.assertNotIn('/new/helper.py', parts['current_files'])
++        self.assertEqual({**parts['current_files'], **parts['historical_files']}, f.original)
++        self.assertEqual(set(f.current) - set(parts['current_files']), {'/new/helper.py'})
++
+ 
+ if __name__ == '__main__':
+     unittest.main(verbosity=2)

@@ -1,0 +1,24 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/verify_retained_proof_copy_controls_01.unbound-01.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/verify_retained_proof_copy_controls_01.py
+@@ -1,7 +1,11 @@
+ """Read-only actual40 audit. Execute only after passed terminal and outer release."""
+ import hashlib,json,re,time
+ from pathlib import Path
+-EXPECTED_LAUNCH=EXPECTED_INPUTS=EXPECTED_DISPATCHER=EXPECTED_INPUT_BYTES=None  # Actual future packet only.
++EXPECTED_LAUNCH='499e63c049b4819cdfb8288dd89ed79e6ebb7b1a365399b2dc4a7b6f14b16607'
++EXPECTED_INPUTS='4c6dd7f8f64d7a04161aca765fa457524e013f3cc42ebb895b9672d4b519092e'
++EXPECTED_DISPATCHER='c0bdb9e01ea892e63b1b7f09c6b0b56b618042c1b3e26accbe7e2b1ec0c32284'
++EXPECTED_INPUT_BYTES=833424
++EXPECTED_INPUT_FILES=11
+ A=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ D=A/'experiments/retained-proof-copy-controls-01'
+ W=A/'.work/retained-proof-copy-controls-01'
+@@ -58,7 +62,7 @@
+ assert t['status']=='passed' and t['tests_run']==40 and all(t[k]==0 for k in ['failures','errors','skipped','expected_failures','unexpected_successes','child_processes','compiler_calls'])
+ assert all(r[k]==0 for k in ['compiler_calls','provider_probes','B3_compositions']) and not list((W/'tmp').iterdir())
+ assert r['free_bytes_before']>=16*2**30 and r['free_bytes_after']>=9*2**30
+-assert len(f['files'])==13 and sum(v['stamp'][3] for v in f['files'].values())==EXPECTED_INPUT_BYTES
++assert len(f['files'])==EXPECTED_INPUT_FILES and sum(v['stamp'][3] for v in f['files'].values())==EXPECTED_INPUT_BYTES
+ assert read(S/'plan.json')['command']==launch['command'][6:] and read(S/'plan.json')['supervisor_sha256']==sha(A/'scripts/supervise_experiment.py')
+ for rawpath in [W/'command/stdout',W/'command/stderr',W/'result.json']:
+  assert rawpath.stat().st_size<=256*1024

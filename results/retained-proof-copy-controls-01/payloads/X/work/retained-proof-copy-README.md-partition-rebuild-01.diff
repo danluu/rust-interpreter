@@ -1,0 +1,23 @@
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/retained-proof-copy-README.md-before-partition-rebuild-01
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/retained-proof-copy-references-01/README.md
+@@ -21,11 +21,15 @@
+ Selection follows the already-qualified catalog order. Multiple logical copies
+ may share one physical witness without earning any additional physical credit.
+ 
+-`partition(original_table, rebuilt_references)` returns separate current and
+-historical portions. Their typed union equals the original complete table.
+-Callers must rebuild and compare the complete references with `build` before
+-using a persisted partition; `partition` is not a substitute for owner, catalog,
+-raw SHA, or EOF verification. Ordinary `file()`, `identity()` and `file_record()`
++`partition(saved_references, **complete_build_context)` reruns `build`, including
++both authentication callbacks, and demands complete typed equality before it
++returns separate current and historical portions of the ORIGINAL table. Their
++typed union equals that original table. Extra fresh current sources are already
++validated by `build` but are not returned as part of the old table's partition;
++its `current_physical_files` count includes them. The fixture tests this
++distinction. A fabricated proof cannot bypass owner, scope or required-live
++checks by calling `partition` alone. Raw SHA and full gzip EOF still remain
++caller obligations. Ordinary `file()`, `identity()` and `file_record()`
+ APIs continue to reject an absent historical copy. No virtual path is exposed.
+ 
+ The proposed first use is 21 copies under the closed run-make WORK's `retained`

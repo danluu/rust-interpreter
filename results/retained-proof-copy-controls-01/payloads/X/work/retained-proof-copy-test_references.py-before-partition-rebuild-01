@@ -1,0 +1,252 @@
+"""Small metadata-only fixtures. No files, providers, processes or gzip writers."""
+import copy
+import hashlib
+import unittest
+
+import references as r
+
+
+def sha(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def identity(ino, size, mode=0o100600):
+    return dict(dev=1, ino=ino, mode=mode, nlink=1, size=size, mtime_ns=10, ctime_ns=10)
+
+
+def row(ino, data):
+    return dict(sha256=sha(data), size=len(data), identity=identity(ino, len(data)))
+
+
+class Fixture:
+    def __init__(self):
+        self.copy = '/closed/work/retained/0000-plan.json'
+        self.source = '/closed/source/plan.json'
+        self.root = '/proof/source-snapshots'
+        logical = b'complete immutable plan\n'
+        compressed = b'opaque qualified compressed fixture'
+        self.digest = sha(logical)
+        self.physical = self.root + '/' + self.digest + '.gz'
+        self.original = {self.copy: row(1, logical), self.source: row(2, logical),
+                         self.physical: row(3, compressed), '/live/compiler': row(4, b'compiler')}
+        self.current = {k: copy.deepcopy(v) for k, v in self.original.items() if k != self.copy}
+        self.retention = dict(status='retained', files=[dict(source=self.source, retained=self.copy,
+            sha256=self.digest, bytes=len(logical))], logical_bytes=len(logical), before={'time': 1.5}, after={'time': 2.5})
+        self.witness = dict(path=self.physical, identity=identity(3, len(compressed)), evidence_root=self.root,
+            blob=dict(filename=self.digest + '.gz', logical_sha256=self.digest, logical_bytes=len(logical),
+                      sha256=sha(compressed), compressed_bytes=len(compressed)))
+        self.catalog = dict(policy='closed-failed-proof-snapshot-catalog-v2', priority=['completed'],
+            predecessors=[{'receipt': {'path': '/proof/receipt.json', 'sha256': sha(b'receipt')}}],
+            records=[copy.deepcopy(self.witness)], evidence_roots={self.root: identity(10, 0, 0o40700)})
+        self.owner = dict(source='/closed/source', evidence='/closed/work',
+            receipt=dict(path='/closed/work/receipt.json', sha256=sha(b'receipt')),
+            audit=dict(path='/audit/closed.json', sha256=sha(b'audit')),
+            retention=dict(path='/closed/work/retained-inputs.json', sha256=sha(b'retention')))
+        self.approved = [self.copy]
+        self.live = ['/live/compiler']
+        self.owner_callback = lambda owner, retention: True
+        self.catalog_callback = lambda catalog: True
+
+    def build(self):
+        return r.build(retention=self.retention, historical_files=self.original, current_files=self.current,
+            qualified_catalog=self.catalog, approved_copies=self.approved, required_live=self.live,
+            copy_root='/closed/work/retained', owner=self.owner,
+            validate_owner=self.owner_callback, validate_catalog=self.catalog_callback)
+
+    def second_witness(self):
+        witness = copy.deepcopy(self.witness)
+        witness['evidence_root'] = '/second/source-snapshots'
+        witness['path'] = witness['evidence_root'] + '/' + self.digest + '.gz'
+        witness['identity']['ino'] = 33
+        self.catalog['evidence_roots'][witness['evidence_root']] = identity(34, 0, 0o40700)
+        self.current[witness['path']] = dict(size=witness['blob']['compressed_bytes'],
+            sha256=witness['blob']['sha256'], identity=copy.deepcopy(witness['identity']))
+        self.catalog['records'].append(witness)
+        return witness
+
+
+class ReferencesTests(unittest.TestCase):
+    def test_complete_partition_keeps_historical_identity_separate(self):
+        f = Fixture(); proof = f.build(); parts = r.partition(f.original, proof)
+        self.assertEqual(parts['current_files'], f.current)
+        self.assertEqual(parts['historical_files'], {f.copy: f.original[f.copy]})
+        self.assertEqual({**parts['current_files'], **parts['historical_files']}, f.original)
+        self.assertIs(proof['retirement_authorized'], False)
+        self.assertEqual(proof['allocation_credit_bytes'], 0)
+
+    def test_ordinary_completed_catalog_policy_is_supported(self):
+        f = Fixture(); f.catalog['policy'] = 'completed-proof-snapshot-catalog-v1'
+        self.assertEqual(f.build()['historical_files'], 1)
+
+    def test_actual_owner_callback_is_required(self):
+        f = Fixture(); f.owner_callback = lambda *args: False
+        with self.assertRaisesRegex(ValueError, 'owner not authenticated'): f.build()
+
+    def test_actual_catalog_callback_is_required(self):
+        f = Fixture(); f.catalog_callback = lambda *args: False
+        with self.assertRaisesRegex(ValueError, 'catalog not authenticated'): f.build()
+
+    def test_callback_truthy_integer_is_not_qualification(self):
+        f = Fixture(); f.owner_callback = lambda *args: 1
+        with self.assertRaises(ValueError): f.build()
+
+    def test_copy_not_explicitly_in_original_table_is_rejected(self):
+        f = Fixture(); del f.original[f.copy]
+        with self.assertRaises(ValueError): f.build()
+
+    def test_extra_unapproved_missing_live_row_is_rejected(self):
+        f = Fixture(); del f.current['/live/compiler']
+        with self.assertRaises(ValueError): f.build()
+
+    def test_unselected_original_row_must_be_typed_identical(self):
+        f = Fixture(); f.current['/live/compiler']['identity']['mtime_ns'] += 1
+        with self.assertRaisesRegex(ValueError, 'unselected original'): f.build()
+
+    def test_historical_copy_cannot_also_be_current(self):
+        f = Fixture(); f.current[f.copy] = copy.deepcopy(f.original[f.copy])
+        with self.assertRaisesRegex(ValueError, 'must not be a live input'): f.build()
+
+    def test_snapshot_or_provider_required_live_path_cannot_retire(self):
+        f = Fixture(); f.live = sorted([f.copy, '/live/compiler'])
+        with self.assertRaisesRegex(ValueError, 'must not be a live input'): f.build()
+
+    def test_approved_copy_list_must_be_unique(self):
+        f = Fixture(); f.approved.append(f.copy)
+        with self.assertRaises(ValueError): f.build()
+
+    def test_copy_scope_is_exact_and_has_no_nested_escape(self):
+        f = Fixture(); f.retention['files'][0]['retained'] = '/closed/work/elsewhere/0000-plan.json'
+        with self.assertRaisesRegex(ValueError, 'retention path'): f.build()
+
+    def test_original_source_cannot_itself_be_a_retained_copy(self):
+        f = Fixture(); f.retention['files'][0]['source'] = f.copy
+        with self.assertRaisesRegex(ValueError, 'retention path'): f.build()
+
+    def test_executable_copy_is_not_eligible(self):
+        f = Fixture(); f.original[f.copy]['identity']['mode'] = 0o100700
+        with self.assertRaisesRegex(ValueError, 'non-executable'): f.build()
+
+    def test_hardlinked_copy_is_not_eligible(self):
+        f = Fixture(); f.original[f.copy]['identity']['nlink'] = 2
+        with self.assertRaisesRegex(ValueError, 'single-link'): f.build()
+
+    def test_historical_identity_rejects_negative_and_zero_inode(self):
+        for key, value in [('ctime_ns', -1), ('ino', 0), ('nlink', 0)]:
+            with self.subTest(key=key):
+                f = Fixture(); f.original[f.copy]['identity'][key] = value
+                with self.assertRaises(ValueError): f.build()
+
+    def test_typed_copy_size_rejects_bool_and_float(self):
+        for value in [True, 1.0]:
+            with self.subTest(value=value):
+                f = Fixture(); f.retention['files'][0]['bytes'] = value
+                with self.assertRaises(ValueError): f.build()
+
+    def test_retention_total_cannot_drop_other_members(self):
+        f = Fixture(); f.retention['logical_bytes'] += 1
+        with self.assertRaisesRegex(ValueError, 'complete retention'): f.build()
+
+    def test_duplicate_retention_path_is_rejected(self):
+        f = Fixture(); f.retention['files'].append(copy.deepcopy(f.retention['files'][0]))
+        with self.assertRaisesRegex(ValueError, 'duplicate'): f.build()
+
+    def test_retained_copy_hash_must_match_original_record(self):
+        f = Fixture(); f.retention['files'][0]['sha256'] = sha(b'other')
+        with self.assertRaisesRegex(ValueError, 'historical bytes'): f.build()
+
+    def test_equal_catalog_digest_does_not_replace_current_original(self):
+        f = Fixture(); f.retention['files'][0]['source'] = '/live/compiler'
+        with self.assertRaisesRegex(ValueError, 'original source bytes'): f.build()
+
+    def test_original_source_cannot_disappear(self):
+        f = Fixture(); del f.current[f.source]
+        with self.assertRaises(ValueError): f.build()
+
+    def test_missing_logical_gzip_witness_is_rejected(self):
+        f = Fixture(); f.catalog['records'] = []
+        with self.assertRaises(ValueError): f.build()
+
+    def test_witness_full_logical_size_must_match(self):
+        f = Fixture(); f.catalog['records'][0]['blob']['logical_bytes'] += 1
+        with self.assertRaisesRegex(ValueError, 'logical size'): f.build()
+
+    def test_unaccounted_catalog_root_is_rejected(self):
+        f = Fixture(); f.catalog['evidence_roots'] = {}
+        with self.assertRaisesRegex(ValueError, 'root not in'): f.build()
+
+    def test_gzip_current_stamp_or_byte_row_mismatch_rejects(self):
+        f = Fixture(); f.catalog['records'][0]['identity']['mtime_ns'] += 1
+        with self.assertRaisesRegex(ValueError, 'not a current physical'): f.build()
+
+    def test_duplicate_physical_path_and_inode_are_rejected(self):
+        f = Fixture(); f.catalog['records'].append(copy.deepcopy(f.witness))
+        with self.assertRaisesRegex(ValueError, 'duplicate physical'): f.build()
+        f = Fixture(); second = f.second_witness(); second['identity']['ino'] = 3
+        f.current[second['path']]['identity']['ino'] = 3
+        with self.assertRaisesRegex(ValueError, 'duplicate physical'): f.build()
+
+    def test_deterministic_first_qualified_witness_without_duplicate_credit(self):
+        f = Fixture(); f.second_witness(); proof = f.build()
+        self.assertEqual(proof['records'][f.copy]['witness'], f.witness)
+        self.assertEqual(list(proof['witnesses']), [f.physical])
+        self.assertEqual(proof['new_physical_payload_bytes'], 0)
+
+    def test_two_copy_aliases_share_one_existing_witness(self):
+        f = Fixture(); second = '/closed/work/retained/0001-plan.json'
+        f.original[second] = copy.deepcopy(f.original[f.copy]); f.original[second]['identity']['ino'] = 55
+        entry = copy.deepcopy(f.retention['files'][0]); entry['retained'] = second
+        f.retention['files'].append(entry); f.retention['logical_bytes'] *= 2; f.approved.append(second)
+        proof = f.build()
+        self.assertEqual(proof['historical_files'], 2)
+        self.assertEqual(len(proof['witnesses']), 1)
+        self.assertEqual(proof['allocation_credit_bytes'], 0)
+
+    def test_owner_reference_and_evidence_scope_are_explicit(self):
+        f = Fixture(); f.owner['retention']['path'] = '/other/retained-inputs.json'
+        with self.assertRaisesRegex(ValueError, 'outside evidence'): f.build()
+
+    def test_callback_alias_mutation_cannot_change_authenticated_input(self):
+        f = Fixture(); original = copy.deepcopy(f.retention)
+        def owner_callback(owner, retention):
+            owner['source'] = '/mutated'; retention['files'].clear(); return True
+        def catalog_callback(catalog):
+            catalog['records'].clear(); return True
+        f.owner_callback = owner_callback; f.catalog_callback = catalog_callback
+        proof = f.build()
+        self.assertEqual(f.retention, original)
+        self.assertEqual(proof['owner'], f.owner)
+        self.assertEqual(proof['historical_files'], 1)
+
+    def test_returned_records_do_not_alias_input_or_other_returned_records(self):
+        f = Fixture(); proof = f.build(); proof['records'][f.copy]['original_record']['size'] = 0
+        self.assertNotEqual(f.original[f.copy]['size'], 0)
+        proof['records'][f.copy]['witness']['blob']['logical_bytes'] = 0
+        self.assertNotEqual(proof['witnesses'][f.physical]['blob']['logical_bytes'], 0)
+
+    def test_partition_requires_original_full_typed_table(self):
+        f = Fixture(); proof = f.build(); f.original[f.copy]['identity']['mtime_ns'] += 1
+        with self.assertRaisesRegex(ValueError, 'logical file table changed'): r.partition(f.original, proof)
+
+    def test_partition_refuses_fabricated_retirement_or_allocation_credit(self):
+        f = Fixture(); proof = f.build()
+        for key, value in [('retirement_authorized', True), ('allocation_credit_bytes', 1), ('allocation_credit_bytes', False)]:
+            with self.subTest(key=key, value=value):
+                bad = copy.deepcopy(proof); bad[key] = value
+                with self.assertRaises(ValueError): r.partition(f.original, bad)
+
+    def test_partition_count_cannot_use_boolean_or_float(self):
+        f = Fixture(); proof = f.build()
+        for value in [True, 1.0]:
+            with self.subTest(value=value):
+                bad = copy.deepcopy(proof); bad['historical_files'] = value
+                with self.assertRaises(ValueError): r.partition(f.original, bad)
+
+    def test_noncanonical_paths_and_non_json_aliases_are_rejected(self):
+        f = Fixture(); f.approved = ['/closed/work/retained/../0000-plan.json']
+        with self.assertRaises(ValueError): f.build()
+        f = Fixture(); f.owner['extra'] = object()
+        with self.assertRaises(ValueError): f.build()
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

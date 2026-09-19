@@ -1,0 +1,42 @@
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/retained-proof-copy-references.py-before-partition-rebuild-01
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/retained-proof-copy-references-01/references.py
+@@ -205,24 +205,22 @@
+         retirement_authorized=False, allocation_credit_bytes=0))
+ 
+ 
+-def partition(historical_files, references):
+-    """Return physical rows plus separate original records, without inventing I/O."""
++def partition(references, *, retention, historical_files, current_files, qualified_catalog,
++              approved_copies, required_live, copy_root, owner, validate_owner, validate_catalog):
++    """Reauthenticate a saved representation before returning old-table subsets.
++
++    No caller can obtain a partition from a fabricated standalone proof: every
++    call rebuilds with all context and both authentication callbacks. Returned
++    current_files contains ONLY the original table's physical portion. Fresh
++    current rows supplied to build are not part of that historical partition.
++    """
+     old, proof = clone(historical_files), clone(references)
+-    table(old)
+-    require(proof.get('policy') == POLICY and proof.get('retirement_authorized') is False
+-            and type(proof.get('allocation_credit_bytes')) is int and proof['allocation_credit_bytes'] == 0,
+-            'validated no-credit historical representation required')
+-    require(proof['original_file_table_sha256'] == hashlib.sha256(encoded(old)).hexdigest(),
+-            'original logical file table changed')
+-    records = proof['records']
+-    require(type(records) is dict and 0 < len(records) <= MAXIMUM_COPIES, 'bounded historical subset required')
+-    for name, row in records.items():
+-        path(name)
+-        require(row['kind'] == 'historical-proof-copy' and name in old
+-                and same(row['original_record'], old[name]), 'historical partition row changed')
+-    require(type(proof['historical_files']) is int and proof['historical_files'] == len(records)
+-            and type(proof['historical_logical_bytes']) is int
+-            and proof['historical_logical_bytes'] == sum(old[n]['size'] for n in records), 'typed historical counts differ')
++    rebuilt = build(retention=retention, historical_files=old, current_files=current_files,
++        qualified_catalog=qualified_catalog, approved_copies=approved_copies,
++        required_live=required_live, copy_root=copy_root, owner=owner,
++        validate_owner=validate_owner, validate_catalog=validate_catalog)
++    require(same(proof, rebuilt), 'saved references differ from complete authenticated rebuild')
++    records = rebuilt['records']
+     physical = {name: row for name, row in old.items() if name not in records}
+     historical = {name: row for name, row in old.items() if name in records}
+     require(same(dict(sorted({**physical, **historical}.items())), old), 'complete logical union differs')
