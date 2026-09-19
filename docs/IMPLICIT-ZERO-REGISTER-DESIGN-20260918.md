@@ -1,7 +1,7 @@
 # Implicit-zero register storage: candidate contract
 
-Status: the closed narrow-register-storage census admits a bounded prototype.
-No production representation or emitted code has changed yet. This is a distinct
+Status: the experimental prototype passes9focused controls per profile.
+Full workspace, strict-cache, original-profile and timing qualification remain. This is a distinct
 proposal from packed native-register allocation and paired virtual-register
 spills, whose failed comparisons remain closed.
 

@@ -49,18 +49,28 @@ integer proof passes8 controls/profile and6 traffic controls, including3,800
 actual integer-semantic comparisons. It covers33/1,933 and13/1,429 upper-store
 samples. Defer a consumer-only emitter; both studies and sources are retained.
 
-Closed diagnostic: `benchmarks/experiments/narrow-register-storage`. It sized an
-implicit-zero backing representation using the unchanged whole-function width
-proof, exact native high-word traffic and a conservative repair cost from current
-interpreted-PC counts. Native high reads would need to synthesize zero and VM
-reads would need logical-value restoration; simply omitting stores is unsafe.
-No representation, native emission, interpreter or initialization change exists.
-Seven commands pass:7Rustcontrols/profile and6trafficcontrols. Exact native
-high-word traffic covers126/1,933 and119/1,429samples, against6.54M/8.51M
-conservative interpreted-read repairs. No guest was rerun. Initial admission
-failed45seconds waiting for peer8767; admission02 completed normally79763/79766.
-Next implement the bounded read/repair contract in
-`docs/IMPLICIT-ZERO-REGISTER-DESIGN-20260918.md`, then qualify before timing.
+The implicit-zero census is closed:7commands,7Rustcontrols/profile and6traffic
+controls;126/1,933 and119/1,429 eligible native samples;6.54M/8.51M conservative
+interpreter read repairs. This admitted a bounded runtime prototype.
+
+Current candidate: implicit-zero private register upper words. Only resumable
+functions use it; all initialization remains. Native high reads and persistent
+reloads synthesize zero, narrow raw high stores are omitted, and every
+interpreted read is repaired using the active function's published proof.
+Proof bytes are capped at8MiB; declines retain full representation. Ordinary
+native/tree modes allocate no proof table. Scalar bodies are unchanged.
+
+Focused01 retained6passes/1fixture failure (insufficient reads for persistent
+assignment);02 passed9tests/profile. Review strengthened03 to force a wide
+value into actual backing before frame reuse.03 passes9/profile, including
+poisoned slots/large offsets, host ABI, TLS and indirect handles, all budget
+prefixes, exact profiles and re-emission after metadata exhaustion. Closed
+source5d4b1c5c, supervisor63791/child63794. No timing result or adoption exists.
+Next `benchmarks/experiments/implicit-zero-storage/build.py` requires628tests per
+profile,15ignored,427Pythonpasses/22skips and isolated VM installation. Strict
+121-command workflows and3exact current-host profiles follow before the primary.
+[Contract](docs/IMPLICIT-ZERO-REGISTER-DESIGN-20260918.md),
+[focused](results/implicit-zero-storage-focused-03/ASSESSMENT.md).
 
 [Build](results/shared-cold-tail-build-01/ASSESSMENT.md),
 [strict/cache](results/shared-cold-tail-qualification-01/ASSESSMENT.md),
