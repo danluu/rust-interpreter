@@ -14,6 +14,8 @@ mod protocol_census;
 #[cfg(test)]
 mod scalar_entry_scope;
 #[cfg(test)]
+mod ordinary_padding_scope;
+#[cfg(test)]
 mod scratch_census;
 #[cfg(test)]
 mod flush_census;
