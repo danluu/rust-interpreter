@@ -16,7 +16,11 @@ mod replay;
 mod suites;
 
 #[derive(Clone,Copy,Debug,PartialEq,Eq)]
-pub(super) enum Kind { Assertion(usize), Scalar{function:usize,pc:usize} }
+pub(super) enum Kind {
+    Assertion(usize), Scalar{function:usize,pc:usize},
+    #[cfg(feature = "jit-parameterized-literals")]
+    Literal{pc:usize,high:bool,rd:u32},
+}
 #[derive(Clone,Debug,PartialEq,Eq)]
 pub(super) struct Relocation {pub word:usize,pub words:usize,pub value:u64,pub kind:Kind}
 pub(super) fn append(out:&mut Vec<Relocation>,relocations:Vec<Relocation>,base:usize) {
@@ -24,7 +28,10 @@ pub(super) fn append(out:&mut Vec<Relocation>,relocations:Vec<Relocation>,base:u
 }
 fn immediate(kind:Kind,value:u64)->Vec<u32> {
     let mut a=Assembler::default();
-    a.imm(match kind {Kind::Assertion(_)=>0,Kind::Scalar{..}=>16},value);a.words
+    a.imm(match kind {Kind::Assertion(_)=>0,Kind::Scalar{..}=>16,
+        #[cfg(feature = "jit-parameterized-literals")]
+        Kind::Literal{rd,..}=>rd,
+    },value);a.words
 }
 
 struct Checked<'p>(&'p Program);
@@ -144,7 +151,14 @@ fn identity_mode(checked:&Checked<'_>,jit:&Jit<'_>,id:usize,emitter:&[u8;32],lim
     let context=(cfg!(test),jit.program.version,&jit.program.target,jit.program.functions.len(),jit.uses_heap,
         jit.persistent_registers,jit.scalar.is_some(),test_flags,assertion_base);
     let mut sink=BoundedHash::new(limit);
+    #[cfg(not(feature = "jit-parameterized-literals"))]
     bincode::serialize_into(&mut sink,&("cross-program-staging-model-v3",rebind,emitter,context,id,f,calls)).ok()?;
+    #[cfg(feature = "jit-parameterized-literals")]
+    {
+        let literals=parameterized_literals::selected(f);
+        let input=parameterized_literals::FunctionInput::new(f,&literals);
+        bincode::serialize_into(&mut sink,&("cross-program-staging-literals-v1",rebind,emitter,context,id,&literals,input,calls)).ok()?;
+    }
     sink.finish()
 }
 
@@ -152,6 +166,8 @@ struct Template {
     key:[u8;32],emitter:[u8;32],words:Vec<u32>,entries:Vec<Option<Block>>,resumes:Vec<Option<usize>>,
     assertion_pcs:Vec<usize>,operations:usize,register_pairs:usize,liveness_declined:bool,
     relocations:Vec<Relocation>,assertion_base:usize,rebind:bool,
+    #[cfg(feature = "jit-parameterized-literals")]
+    literal_sites:Vec<(usize,usize,Kind)>,
 }
 
 // Private bounded in-memory history for the diagnostic model. The two ordered
@@ -359,6 +375,8 @@ impl History {
 }
 impl Template {
     fn valid_relocations(&self,f:&Function,jit:&Jit<'_>,capture:bool)->Option<()> {
+        #[cfg(feature = "jit-parameterized-literals")]
+        let (selected,mut literal_sites)=(parameterized_literals::selected(f),self.literal_sites.iter());
         // Expected sites come from the complete checked caller and current scalar
         // admission. Per-call PCs reject missing/duplicated/misassociated sites.
         let mut expected=f.code.iter().enumerate().filter_map(|(pc,op)|match op {
@@ -379,8 +397,17 @@ impl Template {
                     if expected.next()!=Some((pc,function)) || *self.words.get(end)?!=0xd63f0200 {return None;}
                     if capture && jit.scalar_entry(function)?.template_model_identity().3 as u64!=r.value {return None;}
                 },
+                #[cfg(feature = "jit-parameterized-literals")]
+                Kind::Literal{pc,high,rd}=>{
+                    if rd>=31 || !selected.contains(&pc) || literal_sites.next()!=Some(&(r.word,r.words,r.kind)) {return None;}
+                    let Op::Imm{value,..}=f.code.get(pc)? else {return None;};
+                    let value=if high {(*value>>64) as u64} else {*value as u64};
+                    if capture && value!=r.value {return None;}
+                },
             }
         }
+        #[cfg(feature = "jit-parameterized-literals")]
+        if literal_sites.next().is_some() {return None;}
         (assertion==self.assertion_pcs.len() && expected.next().is_none()).then_some(())
     }
     fn valid(&self,f:&Function)->bool {
@@ -392,11 +419,14 @@ impl Template {
         self.assertion_pcs.iter().copied().eq(f.code.iter().enumerate().filter_map(|(pc,op)|matches!(op,Op::Assert{..}).then_some(pc)))
     }
     fn charge(&self)->Option<usize> {
-        [self.words.capacity().checked_mul(4)?,self.entries.capacity().checked_mul(std::mem::size_of::<Option<Block>>())?,
+        let charge=[self.words.capacity().checked_mul(4)?,self.entries.capacity().checked_mul(std::mem::size_of::<Option<Block>>())?,
             self.resumes.capacity().checked_mul(std::mem::size_of::<Option<usize>>())?,
             self.assertion_pcs.capacity().checked_mul(std::mem::size_of::<usize>())?,
             self.relocations.capacity().checked_mul(std::mem::size_of::<Relocation>())?]
-            .into_iter().try_fold(std::mem::size_of::<Self>()+5*64,usize::checked_add)
+            .into_iter().try_fold(std::mem::size_of::<Self>()+5*64,usize::checked_add)?;
+        #[cfg(feature = "jit-parameterized-literals")]
+        let charge=charge.checked_add(64)?.checked_add(self.literal_sites.capacity().checked_mul(std::mem::size_of::<(usize,usize,Kind)>())?)?;
+        Some(charge)
     }
 #[cfg(test)]
     fn capture(checked:&Checked<'_>,jit:&Jit<'_>,id:usize,emitter:[u8;32],staged:&CompiledFunction<'_>,limit:usize)->Option<Self> {
@@ -420,6 +450,9 @@ impl Template {
             .checked_add(staged.assertions.len().checked_mul(std::mem::size_of::<usize>())?)?
             .checked_add(staged.model_relocations.len().checked_mul(std::mem::size_of::<Relocation>())?)?
             .checked_add(std::mem::size_of::<Self>()+5*64)?;
+        #[cfg(feature = "jit-parameterized-literals")]
+        let minimum=minimum.checked_add(64)?.checked_add(staged.model_relocations.iter().filter(|r|matches!(r.kind,Kind::Literal{..})).count()
+            .checked_mul(std::mem::size_of::<(usize,usize,Kind)>())?)?;
         if minimum>limit {return None;}
         let mut pcs=vec![];pcs.try_reserve_exact(staged.assertions.len()).ok()?;
         for (pc,op) in f.code.iter().enumerate() {
@@ -433,9 +466,16 @@ impl Template {
         fn copy<T:Clone>(items:&[T])->Option<Vec<T>> {
             let mut out=vec![];out.try_reserve_exact(items.len()).ok()?;out.extend_from_slice(items);Some(out)
         }
+        #[cfg(feature = "jit-parameterized-literals")]
+        let literal_sites={
+            let count=staged.model_relocations.iter().filter(|r|matches!(r.kind,Kind::Literal{..})).count();
+            let mut sites=vec![];sites.try_reserve_exact(count).ok()?;
+            sites.extend(staged.model_relocations.iter().filter(|r|matches!(r.kind,Kind::Literal{..})).map(|r|(r.word,r.words,r.kind)));sites
+        };
         let result=Self{key,emitter,words:copy(&staged.words)?,entries:copy(&staged.entries)?,resumes:copy(&staged.resumes)?,
             assertion_pcs:pcs,operations:staged.operations,register_pairs:staged.register_pairs,liveness_declined:staged.liveness_declined,
-            relocations:copy(&staged.model_relocations)?,assertion_base:jit.assertions.len(),rebind};
+            relocations:copy(&staged.model_relocations)?,assertion_base:jit.assertions.len(),rebind,
+            #[cfg(feature = "jit-parameterized-literals")] literal_sites};
         result.valid_relocations(f,jit,true)?;
         (result.valid(f) && result.charge()?<=limit).then_some(result)
     }
@@ -464,6 +504,11 @@ impl Template {
             let value=match r.kind {
                 Kind::Assertion(index)=>assertion_code(jit.assertions.len(),index).ok()?,
                 Kind::Scalar{function,..}=>jit.scalar_entry(function)?.template_model_identity().3 as u64,
+                #[cfg(feature = "jit-parameterized-literals")]
+                Kind::Literal{pc,high,..}=>{
+                    let Op::Imm{value,..}=f.code.get(pc)? else {return None;};
+                    if high {(*value>>64) as u64} else {*value as u64}
+                },
             };
             if !self.rebind && value!=r.value {return None;}
             let replacement=immediate(r.kind,value);
@@ -536,6 +581,87 @@ fn fixture()->Program {
 fn owner(p:&Program)->Jit<'_> {Checked::new(p).unwrap();Jit::new_resumable(p,false,MAX_CODE_BYTES,true).unwrap()}
 fn stage<'p>(j:&Jit<'p>,id:usize)->CompiledFunction<'p> {j.emit_function(&j.program.functions[id],MAX_CODE_BYTES/4).unwrap().unwrap()}
 fn template(c:&Checked<'_>,j:&Jit<'_>,id:usize)->Template {Template::capture(c,j,id,EMITTER,&stage(j,id),MAX_RETAINED).unwrap()}
+#[test]
+#[cfg(feature = "jit-parameterized-literals")]
+fn parameterized_literal_restoration_equals_fresh_words_and_current_sites() {
+    let mut p=fixture();p.functions[0].code[0]=Op::Imm{dst:0,value:(0x123456u128<<64)|0x234567};
+    let a=owner(&p);let c=Checked::new(&p).unwrap();
+    let t=Template::capture_mode(&c,&a,0,EMITTER,&stage(&a,0),MAX_RETAINED,true).unwrap();assert!(!t.literal_sites.is_empty());
+    for value in [(0x345678u128<<64)|0x456789,(0x123457u128<<64)|0x234568] {
+        let mut q=p.clone();q.functions[0].code[0]=Op::Imm{dst:0,value};let b=owner(&q);let checked=Checked::new(&q).unwrap();
+        assert_eq!(t.key,identity_mode(&checked,&b,0,&EMITTER,MAX_KEY_BYTES,true).unwrap());
+        let fresh=stage(&b,0);assert_ne!(fresh.words,t.words);
+        same(&fresh,&t.restore(&checked,&b,0,&EMITTER,MAX_CODE_BYTES/4).unwrap());
+    }
+}
+#[test]
+#[cfg(feature = "jit-parameterized-literals")]
+fn parameterized_literal_shape_selection_and_small_values_still_bind_keys() {
+    let mut p=fixture();p.functions[0].code[0]=Op::Imm{dst:0,value:0x123456};
+    let a=owner(&p);let c=Checked::new(&p).unwrap();let t=Template::capture_mode(&c,&a,0,EMITTER,&stage(&a,0),MAX_RETAINED,true).unwrap();
+    for value in [7,0x1234560000,1u128<<100] {
+        let mut q=p.clone();q.functions[0].code[0]=Op::Imm{dst:0,value};let b=owner(&q);
+        assert!(t.restore(&Checked::new(&q).unwrap(),&b,0,&EMITTER,MAX_CODE_BYTES/4).is_none());
+    }
+}
+#[test]
+#[cfg(feature = "jit-parameterized-literals")]
+fn parameterized_literal_missing_duplicate_and_corrupt_sites_decline() {
+    let mut p=fixture();p.functions[0].code[0]=Op::Imm{dst:0,value:0x123456};let a=owner(&p);let c=Checked::new(&p).unwrap();
+    for change in 0..7 {
+        let mut t=Template::capture_mode(&c,&a,0,EMITTER,&stage(&a,0),MAX_RETAINED,true).unwrap();
+        let i=t.relocations.iter().position(|r|matches!(r.kind,Kind::Literal{..})).unwrap();
+        match change {
+            0=>{t.relocations.remove(i);},1=>{t.relocations.insert(i,t.relocations[i].clone());},
+            2=>t.relocations[i].value^=1,3=>t.relocations[i].words+=1,
+            4=>t.relocations[i].kind=Kind::Literal{pc:1,high:false,rd:9},
+            5=>t.relocations[i].kind=Kind::Literal{pc:0,high:true,rd:9},
+            _=>{t.literal_sites.pop();},
+        }
+        assert!(t.restore(&c,&a,0,&EMITTER,MAX_CODE_BYTES/4).is_none(),"change {change}");
+    }
+}
+#[test]
+#[cfg(all(feature = "jit-parameterized-literals",target_arch="aarch64",target_os="macos"))]
+fn parameterized_literal_live_forwarding_arithmetic_branch_and_budgets_match() {
+    let history=std::rc::Rc::new(std::cell::RefCell::new(History::new(MAX_RETAINED).unwrap()));let mut hits=0;
+    for value in [0x10000,0x20000,0x10000,0xffff0001] {for budget in 0..=16 {
+        let mut p=fixture();p.functions.truncate(1);let f=&mut p.functions[0];f.registers=5;f.result.size=8;
+        f.code=vec![Op::Imm{dst:0,value},Op::Local{dst:1,offset:0},Op::Store{address:1,src:0,size:8},
+            Op::Load{dst:2,address:1,size:8},Op::Imm{dst:3,value:3},
+            Op::Binary{dst:2,overflow:4,op:Binary::Add,a:2,b:3,bits:64,signed:false},
+            Op::Switch{value:2,cases:vec![(0x10003,7)],otherwise:9},Op::Imm{dst:2,value:11},Op::Jump{target:11},
+            Op::Imm{dst:2,value:22},Op::Jump{target:11},Op::Store{address:1,src:2,size:8},Op::Return];
+        let context=Context::new_verified(&p,history.clone(),true).unwrap();let mut j=owner(&p);j.template_model_context=Some(context.clone());
+        let limits=crate::Limits{instructions:budget,..live_limits()};
+        let actual=live_execute(&p,&mut Some(j),limits.clone());let expected=crate::execute(&p,&[],limits);
+        match (actual,expected) {
+            (Ok(a),Ok(b))=>assert_eq!((a.value,a.instructions),(b.value,b.instructions)),
+            (Err(a),Err(b))=>assert_eq!(a,b),_=>panic!("literal budget/outcome mismatch"),
+        }
+        let counts=context.counts.borrow();assert_eq!(counts.hits,counts.verified_hits);hits+=counts.hits;
+    }}
+    assert!(hits>0);
+}
+#[test]
+#[cfg(all(feature = "jit-parameterized-literals",target_arch="aarch64",target_os="macos"))]
+fn parameterized_literal_live_current_data_addresses_and_faults_match() {
+    let history=std::rc::Rc::new(std::cell::RefCell::new(History::new(MAX_RETAINED).unwrap()));let mut hits=0;
+    for address in [0x10000,0x20000,0x40000,0x10000] {
+        let mut p=fixture();p.data=vec![0;0x30000];p.data[0x10000]=17;p.data[0x20000]=29;p.functions.truncate(1);
+        p.functions[0].result.size=8;p.functions[0].code=vec![Op::Imm{dst:0,value:address},Op::Load{dst:1,address:0,size:1},
+            Op::Local{dst:2,offset:0},Op::Store{address:2,src:1,size:8},Op::Return];
+        let context=Context::new_verified(&p,history.clone(),true).unwrap();let mut j=owner(&p);j.template_model_context=Some(context.clone());
+        let limits=crate::Limits{memory:1024*1024,..live_limits()};
+        let actual=live_execute(&p,&mut Some(j),limits.clone());let expected=crate::execute(&p,&[],limits);
+        match (actual,expected) {
+            (Ok(a),Ok(b))=>assert_eq!((a.value,a.instructions),(b.value,b.instructions)),
+            (Err(a),Err(b))=>assert_eq!(a,b),_=>panic!("literal current address/fault mismatch"),
+        }
+        let counts=context.counts.borrow();assert_eq!(counts.hits,counts.verified_hits);hits+=counts.hits;
+    }
+    assert!(hits>0);
+}
 #[test]
 fn cross_program_template_verifier_rejects_changed_words_and_metadata() {
     let program=fixture();let owner=owner(&program);let original=stage(&owner,0);

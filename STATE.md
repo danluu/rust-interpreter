@@ -222,3 +222,8 @@ Narrow immediatecensus345a7bba28226/28229 complete,5controls/profile+savedcensus
 failedbeforetests closed25730/25760. Next explicitlarge-literal parameterization
 withopaquefacts/range/call-slot analyses andcompletecheckedrelocations. Noactive
 experiment; main398a7cb8 pushedmisshistory, preservingpeer0dda92e2.
+
+Parameterized-literal prototype prepared: selectedlow64>=65536, excludingfusedfills;
+opaqueFact/range/call-slotinputs, checkedliteralrelocations+site manifest, newkey
+domain. Focused29template+3policy perprofile,24featureoff prepared; notrunyet.
+Main8509b167 pushednarrowcoverage; sourceexperimental,noadoption.

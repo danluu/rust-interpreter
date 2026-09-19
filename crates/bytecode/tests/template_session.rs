@@ -33,6 +33,7 @@ impl Session {
         assert_eq!(session.ready["artifact_digest_reuse"],cfg!(feature="jit-artifact-digest-reuse"));
         assert_eq!(session.ready["buffered_template_keys"],cfg!(feature="jit-buffered-template-keys"));
         assert_eq!(session.ready["template_miss_observer"],cfg!(feature="jit-template-miss-observer"));
+        assert_eq!(session.ready["parameterized_literals"],cfg!(feature="jit-parameterized-literals"));
         std::fs::write(session.folder.join("ready.json"),serde_json::to_vec(&session.ready).unwrap()).unwrap();
     }
     fn read(&mut self)->Value {

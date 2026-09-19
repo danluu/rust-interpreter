@@ -48,6 +48,8 @@ mod values;
 mod transfers;
 mod guarded_ranges;
 mod scratch_values;
+#[cfg(feature = "jit-parameterized-literals")]
+mod parameterized_literals;
 #[cfg(any(test, feature = "jit-template-session"))]
 pub(crate) mod cross_program_templates;
 #[cfg(feature = "jit-preparation-observer")]
@@ -602,7 +604,12 @@ impl<'a> Jit<'a> {
         let reads = read_registers(f);
         let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
         let fills = local_fills(f);
+        #[cfg(feature = "jit-parameterized-literals")]
+        let literals=parameterized_literals::selected_with_fills(f,&fills);
+        #[cfg(not(feature = "jit-parameterized-literals"))]
         let slots = if resumable { call_slots::collect(f, self.program) } else { std::collections::BTreeMap::new() };
+        #[cfg(feature = "jit-parameterized-literals")]
+        let slots = if resumable { call_slots::collect_with_literals(f,self.program,&literals) } else { BTreeMap::new() };
         #[cfg(test)]
         let slots = if self.disable_call_slot_hints { std::collections::BTreeMap::new() } else { slots };
         let native = |pc: usize| supported(&f.code[pc]) || fills.contains_key(&pc)
@@ -668,6 +675,8 @@ impl<'a> Jit<'a> {
                     region_end: pc,
                     values: values.as_ref(),
                     resumable,
+                    #[cfg(feature = "jit-parameterized-literals")]
+                    literals:Some(&literals),
                     ..Assembler::default()
                 };
                 let mut covered = 0;
@@ -687,7 +696,10 @@ impl<'a> Jit<'a> {
                 // Every internal/resume entry runs this preflight. Declines
                 // consume no guest work and use the existing resumable tail.
                 let range_declines = if resumable {
+                    #[cfg(not(feature = "jit-parameterized-literals"))]
                     let plan = range_groups::runtime_plan(f, start, pc, &mut range_work);
+                    #[cfg(feature = "jit-parameterized-literals")]
+                    let plan = range_groups::runtime_plan_with_literals(f,start,pc,&mut range_work,&literals);
                     a.prepare_guarded_range(plan)?
                 } else { vec![] };
                 span!(RangeGuard, None);
@@ -1141,6 +1153,8 @@ enum Failure {
 #[derive(Clone, Copy)]
 enum Fact {
     Imm(u128),
+    #[cfg(feature = "jit-parameterized-literals")]
+    Literal {pc:usize,value:u128},
     Local(usize),
     Cached { lo: u32, high_zero: bool },
     Physical { lo: u32 },
@@ -1148,6 +1162,8 @@ enum Fact {
 
 #[cfg_attr(not(test), derive(Default))]
 struct Assembler<'a> {
+    #[cfg(feature = "jit-parameterized-literals")]
+    literals:Option<&'a BTreeSet<usize>>,
     #[cfg(any(test, feature = "jit-template-session"))]
     model_relocations: Vec<cross_program_templates::Relocation>,
     scalar_fallbacks: BTreeMap<usize, usize>,
@@ -1205,6 +1221,8 @@ struct Assembler<'a> {
 impl Default for Assembler<'_> {
     fn default() -> Self {
         Self {
+            #[cfg(feature = "jit-parameterized-literals")]
+            literals:None,
             model_relocations: vec![],
             observe_guarded_local_retention: true,
             observe_static_local_facts: true,
@@ -1649,6 +1667,8 @@ impl Assembler<'_> {
                 self.mov(rd, if high { if high_zero { 31 } else { 6 } } else { lo });
             },
             Fact::Imm(value) => self.imm(rd, if high { (value >> 64) as u64 } else { value as u64 }),
+            #[cfg(feature = "jit-parameterized-literals")]
+            Fact::Literal{pc,value} => self.literal(rd,pc,value,high),
             Fact::Local(_) if high => self.mov(rd, 31),
             Fact::Local(offset) => {
                 if offset < 4096 {
@@ -1741,7 +1761,13 @@ impl Assembler<'_> {
     }
     fn fold(&mut self, op: &Op) -> bool {
         match *op {
-            Op::Imm {dst, value} => self.remember(dst, Fact::Imm(value)),
+            Op::Imm {dst, value} => {
+                #[cfg(feature = "jit-parameterized-literals")]
+                if self.literals.is_some_and(|pcs|pcs.contains(&self.current_pc)) {
+                    self.remember(dst,Fact::Literal{pc:self.current_pc,value});return true;
+                }
+                self.remember(dst, Fact::Imm(value));
+            },
             Op::Local {dst, offset} => self.remember(dst, Fact::Local(offset)),
             Op::Binary {dst, overflow, op, a, b, bits, signed} => {
                 let left = self.facts.get(&a).copied();

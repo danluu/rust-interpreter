@@ -59,6 +59,13 @@ pub(super) fn collect(f: &Function, program: &Program) -> BTreeMap<usize, Vec<Op
 }
 
 fn collect_with_work(f: &Function, program: &Program, max_work: usize) -> BTreeMap<usize, Vec<Option<usize>>> {
+    collect_with_policy(f,program,max_work,None)
+}
+#[cfg(feature = "jit-parameterized-literals")]
+pub(super) fn collect_with_literals(f:&Function,program:&Program,literals:&std::collections::BTreeSet<usize>)->BTreeMap<usize,Vec<Option<usize>>> {
+    collect_with_policy(f,program,MAX_WORK,Some(literals))
+}
+fn collect_with_policy(f:&Function,program:&Program,max_work:usize,literals:Option<&std::collections::BTreeSet<usize>>)->BTreeMap<usize,Vec<Option<usize>>> {
     let mut result = BTreeMap::new();
     if f.code.is_empty() || f.code.len() > MAX_OPS || f.registers > MAX_REGISTERS { return result; }
     let starts = block_starts(f);
@@ -82,6 +89,10 @@ fn collect_with_work(f: &Function, program: &Program, max_work: usize) -> BTreeM
             if hints.iter().any(Option::is_some) { result.insert(pc, hints); }
         }
         transfer(op, &mut facts, f.frame_size);
+        if literals.is_some_and(|pcs|pcs.contains(&pc)) {
+            let Op::Imm{dst,..}=op else {unreachable!("literal selection must refer to Imm")};
+            facts[*dst as usize]=None;
+        }
     }
     result
 }

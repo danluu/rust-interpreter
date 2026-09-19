@@ -67,6 +67,8 @@ impl Assembler<'_> {
     pub(super) fn observe_forwarded_fact(&mut self, fact: Fact, opcode: &'static str) {
         self.local_forwarding.push((self.current_pc, opcode));
         let kind = match fact { Fact::Imm(_) => "Imm", Fact::Local(_) => "Local",
+            #[cfg(feature = "jit-parameterized-literals")]
+            Fact::Literal{..}=>"Literal",
             Fact::Cached {..} => "Cached", Fact::Physical {..} => "Physical" };
         self.local_fact_events.push((self.current_pc, opcode, kind));
     }

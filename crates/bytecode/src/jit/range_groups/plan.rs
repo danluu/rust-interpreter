@@ -30,6 +30,13 @@ impl Plan {
 }
 
 pub(in crate::jit) fn runtime_plan(f: &Function, start: usize, end: usize, budget: &mut usize) -> Option<Plan> {
+    runtime_plan_with_policy(f,start,end,budget,None)
+}
+#[cfg(feature = "jit-parameterized-literals")]
+pub(in crate::jit) fn runtime_plan_with_literals(f:&Function,start:usize,end:usize,budget:&mut usize,literals:&std::collections::BTreeSet<usize>)->Option<Plan> {
+    runtime_plan_with_policy(f,start,end,budget,Some(literals))
+}
+fn runtime_plan_with_policy(f:&Function,start:usize,end:usize,budget:&mut usize,literals:Option<&std::collections::BTreeSet<usize>>)->Option<Plan> {
     if f.registers > MAX_ITEMS || f.code.len() > MAX_ITEMS || start >= end
         || end > f.code.len() || end-start > 1024 { return None; }
     // No helpers, transitions or unbounded transfers may clobber the cache.
@@ -54,6 +61,10 @@ pub(in crate::jit) fn runtime_plan(f: &Function, start: usize, end: usize, budge
             }
         }
         state.transfer(op,f.frame_size);
+        if literals.is_some_and(|pcs|pcs.contains(&pc)) {
+            let Op::Imm{dst,..}=op else {unreachable!("literal selection must refer to Imm")};
+            state.registers.insert(*dst,Value::Opaque);
+        }
     }
     let mut plans:Vec<_>=groups.into_iter().filter_map(|(root,sites)| {
         if sites.len()<8 { return None; }

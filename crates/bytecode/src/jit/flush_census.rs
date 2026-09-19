@@ -24,6 +24,8 @@ impl Assembler<'_> {
         let live_after = self.values.is_some_and(|v| v.live.after(end-1, register));
         let fact = match fact {
             Fact::Imm(_) => "Imm", Fact::Local(_) => "Local",
+            #[cfg(feature = "jit-parameterized-literals")]
+            Fact::Literal{..}=>"Literal",
             Fact::Cached {..} => "Cached", Fact::Physical {..} => panic!("persistent pair cannot flush here"),
         };
         let native_end = self.words.len()*4;

@@ -145,6 +145,8 @@ const KEYS: [&str; 7] = ["fixed_addresses","local_addresses","unknown_addresses"
 
 mod plan;
 pub(super) use plan::{Plan, runtime_plan};
+#[cfg(feature = "jit-parameterized-literals")]
+pub(super) use plan::runtime_plan_with_literals;
 
 fn function(f: &Function, intervals: &[(usize,usize,u64)], budget: &mut usize) -> Option<serde_json::Value> {
     function_with_mode(f,intervals,budget,false)

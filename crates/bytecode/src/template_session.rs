@@ -301,6 +301,7 @@ fn readiness(bytes:usize,verify:bool,startup:Cpu)->Result<Value,String> {
         "artifact_digest_reuse":cfg!(feature="jit-artifact-digest-reuse"),
         "buffered_template_keys":cfg!(feature="jit-buffered-template-keys"),
         "template_miss_observer":cfg!(feature="jit-template-miss-observer"),
+        "parameterized_literals":cfg!(feature="jit-parameterized-literals"),
         "cpu_at_entry":startup,"cpu_at_ready":cpu()?}))
 }
 fn serve_stdio(bytes:usize,verify:bool)->Result<(),String> {
