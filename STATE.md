@@ -51,7 +51,7 @@ fault/replay and private memory; call/branch/resource controls retained.
 - Parser verified replay01 c411265e:85874; all16 suites/1824 invocations pass,
   19815 independently regenerated hits, original errors/limits/CPU correct.
   CLOSED91007:507 frozen inputs/116 evidence files. No timing claim.
-- Fre verified replay01 b318df6d:2863/controller2867; all16 suites/192 invocations,
+- Fre verified replay01 b318df6d:2863/controller2908; all16 suites/192 invocations,
   14548 independently regenerated hits, original errors/limits/CPU; CLOSED12775.
   Immutable install01 source28c4c6a2:19116 CLOSED25894. Tool key
   3ebea1cdc1a521169df8bba1ca139df97759aaf200798c2bcb91bef4cba3c5ad.
