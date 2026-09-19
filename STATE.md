@@ -191,3 +191,8 @@ CLOSED26524/26527:1824invocations16,333observedhits, phases/kernelCPUallmatch.
 Medianperworker key8.883ms,lookup.426,restore1.463,miss25.681,capture1.186,verify0;
 ordinary37.913. Next boundedbufferedSHAkey writes preservingexactbytes/keyv3/limits,
 fullchecks unchanged. No activeexperiment. Main7a8e8c83 pushed preservingpeer9dc7d17f.
+
+Branch experiment/buffered-template-keys-20260919 prepared fixed4KiB SHAwritebuffer,
+exactv3preimage/digest/size-limit semantics preserved. Two stream/reject controls
+(buffered+unbuffered). Qualify658Rust/profile+16ignored,33diag,10unbufferedsession,
+24unbufferedmodels/defaultVM,Python442record. 48servers92clients. No runyet.

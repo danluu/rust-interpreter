@@ -31,6 +31,7 @@ impl Session {
         assert_eq!(session.ready["kind"],"ready");assert_eq!(session.ready["pid"],session.child.id());
         assert_eq!(session.ready["executable_sha256"],digest(&std::fs::read(executable).unwrap()));
         assert_eq!(session.ready["artifact_digest_reuse"],cfg!(feature="jit-artifact-digest-reuse"));
+        assert_eq!(session.ready["buffered_template_keys"],cfg!(feature="jit-buffered-template-keys"));
         std::fs::write(session.folder.join("ready.json"),serde_json::to_vec(&session.ready).unwrap()).unwrap();
     }
     fn read(&mut self)->Value {

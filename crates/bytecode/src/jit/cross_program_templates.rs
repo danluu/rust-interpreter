@@ -35,14 +35,54 @@ impl<'p> Checked<'p> {
         crate::validate(p).ok()?;Some(Self(p))
     }
 }
-struct BoundedHash {hash:Sha256,bytes:usize,limit:usize}
+struct BoundedHash {
+    hash:Sha256,bytes:usize,limit:usize,
+    #[cfg(feature = "jit-buffered-template-keys")]
+    buffer:[u8;4096],
+    #[cfg(feature = "jit-buffered-template-keys")]
+    pending:usize,
+}
+impl BoundedHash {
+    fn new(limit:usize)->Self {
+        Self{hash:Sha256::new(),bytes:0,limit,
+            #[cfg(feature = "jit-buffered-template-keys")] buffer:[0;4096],
+            #[cfg(feature = "jit-buffered-template-keys")] pending:0}
+    }
+    #[cfg(feature = "jit-buffered-template-keys")]
+    fn update_buffered(&mut self,mut bytes:&[u8]) {
+        while !bytes.is_empty() {
+            if self.pending==0 && bytes.len()>=self.buffer.len() {
+                self.hash.update(bytes);return;
+            }
+            let n=bytes.len().min(self.buffer.len()-self.pending);
+            self.buffer[self.pending..self.pending+n].copy_from_slice(&bytes[..n]);
+            self.pending+=n;bytes=&bytes[n..];
+            if self.pending==self.buffer.len() {
+                self.hash.update(&self.buffer);self.pending=0;
+            }
+        }
+    }
+    fn finish(mut self)->Option<[u8;32]> {
+        self.flush().ok()?;Some(self.hash.finalize().into())
+    }
+}
 impl Write for BoundedHash {
     fn write(&mut self,bytes:&[u8])->std::io::Result<usize> {
         let next=self.bytes.checked_add(bytes.len()).filter(|&n|n<=self.limit)
             .ok_or_else(||std::io::Error::other("template identity exceeds bound"))?;
-        self.hash.update(bytes);self.bytes=next;Ok(bytes.len())
+        // Reject the complete write before accepting any of its bytes. The
+        // fixed scratch buffer changes only how accepted bytes reach SHA256.
+        #[cfg(feature = "jit-buffered-template-keys")]
+        self.update_buffered(bytes);
+        #[cfg(not(feature = "jit-buffered-template-keys"))]
+        self.hash.update(bytes);
+        self.bytes=next;Ok(bytes.len())
     }
-    fn flush(&mut self)->std::io::Result<()> {Ok(())}
+    fn flush(&mut self)->std::io::Result<()> {
+        #[cfg(feature = "jit-buffered-template-keys")]
+        {self.hash.update(&self.buffer[..self.pending]);self.pending=0;}
+        Ok(())
+    }
 }
 #[derive(Serialize)]
 struct CallInput<'a> {
@@ -103,9 +143,9 @@ fn identity_mode(checked:&Checked<'_>,jit:&Jit<'_>,id:usize,emitter:&[u8;32],lim
     let test_flags=[false;8];
     let context=(cfg!(test),jit.program.version,&jit.program.target,jit.program.functions.len(),jit.uses_heap,
         jit.persistent_registers,jit.scalar.is_some(),test_flags,assertion_base);
-    let mut sink=BoundedHash{hash:Sha256::new(),bytes:0,limit};
+    let mut sink=BoundedHash::new(limit);
     bincode::serialize_into(&mut sink,&("cross-program-staging-model-v3",rebind,emitter,context,id,f,calls)).ok()?;
-    Some(sink.hash.finalize().into())
+    sink.finish()
 }
 
 struct Template {
@@ -396,6 +436,38 @@ impl Template {
 mod tests {
 use super::*;
 const EMITTER:[u8;32]=[17;32];
+#[test]
+fn key_hash_preserves_streamed_bytes_and_flush_boundaries() {
+    let payload=(0..16_397usize).map(|i|((i*37)^(i>>7)) as u8).collect::<Vec<_>>();
+    for len in [0,1,63,64,65,4095,4096,4097,8193,16_397] {
+        let expected:[u8;32]=Sha256::digest(&payload[..len]).into();
+        for chunk in [1,2,4,8,16,63,512,4095,4096,4097,65_536] {
+            for flush_often in [false,true] {
+                let mut sink=BoundedHash::new(len);
+                for (i,part) in payload[..len].chunks(chunk).enumerate() {
+                    sink.write_all(part).unwrap();
+                    if flush_often && i%3==0 {sink.flush().unwrap();sink.flush().unwrap();}
+                }
+                assert_eq!(sink.bytes,len);
+                assert_eq!(sink.finish().unwrap(),expected,"len={len} chunk={chunk} flush={flush_often}");
+            }
+        }
+    }
+}
+#[test]
+fn key_hash_rejects_oversize_writes_without_accepting_their_prefix() {
+    let payload=(0..16_398usize).map(|i|((i*29)^(i>>9)) as u8).collect::<Vec<_>>();
+    for limit in [0,1,63,64,65,4095,4096,4097,8193,16_397] {
+        let mut sink=BoundedHash::new(limit);let prefix=limit/2;
+        sink.write_all(&payload[..prefix]).unwrap();
+        assert!(sink.write_all(&payload[..limit-prefix+1]).is_err());
+        assert_eq!(sink.bytes,prefix);sink.flush().unwrap();
+        sink.write_all(&payload[prefix..limit]).unwrap();
+        assert!(sink.write_all(&[255]).is_err());assert_eq!(sink.bytes,limit);
+        let expected:[u8;32]=Sha256::digest(&payload[..limit]).into();
+        assert_eq!(sink.finish().unwrap(),expected);
+    }
+}
 fn fixture()->Program {
     let f=|name:&str,code:Vec<Op>|Function{name:name.into(),frame_size:16,frame_align:8,registers:4,
         args:vec![],result:crate::Slot{offset:0,size:0},code};
