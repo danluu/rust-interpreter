@@ -227,3 +227,5 @@ Parameterized-literal prototype prepared: selectedlow64>=65536, excludingfusedfi
 opaqueFact/range/call-slotinputs, checkedliteralrelocations+site manifest, newkey
 domain. Focused29template+3policy perprofile,24featureoff prepared; notrunyet.
 Main8509b167 pushednarrowcoverage; sourceexperimental,noadoption.
+
+Parameterized-literal focused05 sourcec24e1eba completed14584/14687 CLOSED69859:34controls/profile,24ordinary. Earlier01/02fault-fixture mismatches,03lock admission,04range-fixture bound preserved; no runtime correctness defect established. New independent literal manifest and 40 arithmetic/overflow pairs covered. Next full673Rust/profile+17ignored,33diagnostic,10ordinarysession,24ordinarymodel, then1824actualparser invocations with every hit verified. Main8509b167; no adoption. SuggestionsSHA4d74b3dc unchanged. Goal remains paused.
