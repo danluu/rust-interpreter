@@ -1,0 +1,32 @@
+--- a/crates/bytecode/src/jit/register_workspace.rs
++++ b/crates/bytecode/src/jit/register_workspace.rs
+@@ -1,5 +1,4 @@
+-//! Prototype: bounded dense register facts with sparse fallback and touched resets.
+-//! No runtime emitter uses this model yet.
++//! Bounded per-function ordinary-emitter facts; sparse defaults for other paths.
+ use crate::Reg;
+ use std::collections::BTreeMap;
+ 
+@@ -84,6 +83,22 @@
+     pub(super) fn clear(&mut self) { self.0.clear(); }
+ }
+ 
++/// Bound the combined dense workspace, in addition to each map's allocation.
++/// Sparse fallback retains the original collection's allocation behavior.
++pub(super) fn tables(registers: usize) -> (Map<super::Fact>, Set, Set) {
++    fn bytes<V>(n: usize) -> Option<usize> {
++        n.checked_mul(std::mem::size_of::<Option<V>>().checked_add(1 + std::mem::size_of::<Reg>())?)
++    }
++    let sizes = bytes::<super::Fact>(registers).zip(bytes::<()>(registers));
++    if let Some((facts, membership)) = sizes {
++        if registers <= MAX_REGISTERS && facts.checked_add(membership.saturating_mul(2))
++            .is_some_and(|total| total <= MAX_DENSE_BYTES) {
++            return (Map::dense(registers, facts), Set::dense(registers, membership), Set::dense(registers, membership));
++        }
++    }
++    (Map::default(), Set::default(), Set::default())
++}
++
+ #[cfg(test)]
+ mod tests {
+     use super::*;
