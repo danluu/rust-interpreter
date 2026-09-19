@@ -165,3 +165,22 @@ restore and capture on the same saved input. Prior History01 proved these input
 keys fit unchanged limits; the new replay explicitly requires that property.
 Preserve the older diagnostic rather than treating either single interval run
 as a statistical timing comparison. No production cache or native publication.
+
+## Model06: explicit native publication fixtures
+
+Model05 and History02 are closed before this extension. The first16 controls
+still allocate no code. Add two macOS/AArch64 controls that deliberately prepare
+real scalar callees, restore ordinary staging, and publish through the existing
+finish_preparation path. Keep the source owner alive so its scalar address is
+distinct from the current owner's. Require actual reuse to occur, compare with
+fresh staging before publication, then compare execution with fresh JIT output.
+
+One control changes the callee result and current data initializer independently;
+both appear in the128-bit returned value. The other covers passing/failing
+assertions, instruction budgets0–20, frame limits1–3 and memory limits128/4096,
+including repeated executions with fresh guest state. Width/key declines retain
+ordinary fresh emission. Compare success values/logical instruction counts and
+exact errors, including the current assertion message after rebinding its base.
+The focused run now expects18 controls/profile and explicitly records native
+fixture execution/publication. Original-project guest commands remain zero;
+this is correctness qualification, not a runtime cache or an end-to-end result.
