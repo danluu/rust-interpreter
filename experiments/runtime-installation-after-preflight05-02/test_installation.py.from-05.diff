@@ -1,0 +1,113 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/test_installation.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/test_installation.py
+@@ -10,7 +10,7 @@
+ from pathlib import Path
+ from types import SimpleNamespace
+ import unittest
+-from unittest.mock import Mock
++from unittest.mock import Mock, patch
+ 
+ import entry
+ import controller
+@@ -26,6 +26,23 @@
+ 
+ def require(ok,message):
+     if not ok:raise RuntimeError(message)
++
++
++def resource_fixture():
++    """Minimal real census shapes; no identity_for/provider qualification claimed."""
++    row=dict(sha256='a'*64,size=4097,mode=0o555)
++    spec=dict(components=[dict(destination='',files={'bin/rustc':row},links={})],
++        loader={str(i):{} for i in range(10)},compiler='rustc fixture\n',unstable_options={},
++        prepublication_qualification=dict(policy='fixture-final'))
++    identity=dict(admission=spec,files={'bin/rustc':'a'*64})
++    snapshots=[dict(files={'bin/rustc':[1,2,0o100555,4097,4,5,1]},links={},
++        directories={'.':[1,3,0o40555,64,4,5,1]})]
++    return spec,identity,snapshots,controller.R/'.work/runtime-compilers'/('a'*64)
++
++
++def budget(values=None):
++    spec,identity,snapshots,directory=values or resource_fixture()
++    return controller.copy_budget(spec,identity,snapshots,directory=directory)
+ 
+ 
+ class Fixture:
+@@ -50,6 +67,7 @@
+         self.plan=dict(phase='installation',owner=str(entry.R),work=CURRENT['work'],supervisor_work=CURRENT['supervisor'],
+             attempt=dict(path=str(entry.ROUTES),sha256=entry.ROUTES_SHA256),capacity=copy.deepcopy(CURRENT['capacity']),
+             retry_qualification=dict(kind='actual-old33'),installation_qualification=dict(kind='separate-new-controls'),
++            installation_resources=budget(),
+             source_preflight=copy.deepcopy(self.result),source_preflight_readback=dict(audit=copy.deepcopy(self.audit_ref),reference=copy.deepcopy(self.result)))
+         self.original=SimpleNamespace(require=require,same=lambda x,y:encoded(x)==encoded(y),R=entry.R)
+         self.history=Mock(return_value={'history':'returned only after full real validator in production'})
+@@ -99,12 +117,39 @@
+ 
+ 
+ class Phase(unittest.TestCase):
+-    def test_installation24_is_accepted_without_provider_access(self):
++    def test_installation16_and_prefix_budget_are_accepted_without_provider_access(self):
+         f=Fixture();self.assertEqual(controller.phase_admission(f.plan,sha=f.sha,read_json=f.read),CURRENT)
+-
+-    def test_preflight16_is_rejected(self):
+-        f=Fixture();f.plan['capacity']['entry_gib']=16
++        values=resource_fixture();before=copy.deepcopy(values);summary=budget(values)
++        self.assertEqual(values,before)
++        self.assertEqual((summary['copied_files'],summary['logical_bytes'],summary['rounded_payload_bytes']),(1,4097,8192))
++        self.assertEqual(summary['sysroot_directories'],2)
++        self.assertEqual(summary['total_children'],15)
++        self.assertGreater(summary['metadata_reservation_bytes'],32*2**20)
++        total=summary['total_reserved_bytes']
++        with patch.dict(controller.RESOURCES,prefix_limit_bytes=total):
++            self.assertEqual(budget()['total_reserved_bytes'],total)
++        with patch.dict(controller.RESOURCES,prefix_limit_bytes=total-1):
++            with self.assertRaises(RuntimeError):budget()
++        self.assertIsNone(controller.prefix_rejection({'runtime_installation_allocation_sample':{'bytes':2**30}}))
++        self.assertIsNotNone(controller.prefix_rejection({'runtime_installation_allocation_sample':{'bytes':2**30+1}}))
++
++    def test_stale_installation24_and_invalid_prefix_budgets_are_rejected(self):
++        f=Fixture();f.plan['capacity']['entry_gib']=24
+         with self.assertRaises(RuntimeError):controller.phase_admission(f.plan,sha=f.sha,read_json=f.read)
++        for size in [True,-1,2**30,2**30+1]:
++            values=resource_fixture();values[0]['components'][0]['files']['bin/rustc']['size']=size
++            values[2][0]['files']['bin/rustc'][3]=size
++            with self.subTest(size=size),self.assertRaises(RuntimeError):budget(values)
++        for defect in ['missing-file','extra-link','wrong-size','wide-stat','wrong-identity','wrong-loader','wrong-prefix']:
++            values=list(resource_fixture())
++            if defect=='missing-file':values[2][0]['files'].clear()
++            elif defect=='extra-link':values[2][0]['links']['extra']=[1]*7
++            elif defect=='wrong-size':values[2][0]['files']['bin/rustc'][3]+=1
++            elif defect=='wide-stat':values[2][0]['files']['bin/rustc'][1]=2**64
++            elif defect=='wrong-identity':values[1]['files']['bin/rustc']='b'*64
++            elif defect=='wrong-loader':values[0]['loader'].pop('0')
++            else:values[3]=Path('/fixture/unowned-prefix')
++            with self.subTest(defect=defect),self.assertRaises(RuntimeError):budget(values)
+ 
+     def test_phase_and_old_work_routes_are_rejected(self):
+         for field,value in [('phase','preflight'),('work',PRIOR['work']),('supervisor_work',PRIOR['supervisor']),('owner','/fixture/owner')]:
+@@ -114,6 +159,8 @@
+     def test_attempt_identity_cannot_be_replaced(self):
+         f=Fixture();f.plan['attempt']['path']=str(entry.PREFLIGHT_ROUTES)
+         with self.assertRaises(RuntimeError):controller.phase_admission(f.plan,sha=f.sha,read_json=f.read)
++        f=Fixture();f.data[str(entry.ROUTES)]['installation_resources']['prefix_limit_bytes']+=1
++        with self.assertRaises(RuntimeError):controller.phase_admission(f.plan,sha=f.sha,read_json=f.read)
+ 
+     def test_both_old_and_new_source_qualifications_are_required(self):
+         f=Fixture();self.assertEqual(f.owner_routes(),CURRENT)
+@@ -122,11 +169,16 @@
+ 
+     def test_new_qualification_is_exact_true_not_truthy(self):
+         with self.assertRaises(RuntimeError):Fixture().owner_routes(new=lambda p:1)
++        for field,value in [('total_reserved_bytes',True),('total_reserved_bytes',2**30+1),('total_children',14)]:
++            f=Fixture();f.plan['installation_resources'][field]=value
++            with self.subTest(field=field,value=value),self.assertRaises(RuntimeError):f.owner_routes()
+ 
+     def test_qualification_callbacks_cannot_mutate_plan(self):
+         f=Fixture();before=copy.deepcopy(f.plan)
+         def mutate(proof):proof['changed']=True;return True
+         f.owner_routes(old=mutate,new=mutate);self.assertEqual(f.plan,before)
++        result=budget();result['policy']['prefix_limit_bytes']=0
++        self.assertEqual(controller.RESOURCES['prefix_limit_bytes'],2**30)
+ 
+ 
+ class Preflight(unittest.TestCase):

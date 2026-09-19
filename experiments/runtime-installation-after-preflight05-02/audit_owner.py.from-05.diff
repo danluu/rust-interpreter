@@ -1,0 +1,88 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/audit_owner.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/audit_owner.py
+@@ -8,13 +8,13 @@
+ from pathlib import Path
+ import environment
+ 
+-ADAPTER = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01')
++ADAPTER = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02')
+ STARTUP_SOURCE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01')
+ PREFLIGHT_SOURCE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05')
+ PREFLIGHT_ROUTES = PREFLIGHT_SOURCE/'routes.json'
+ PREFLIGHT_ROUTES_SHA256 = '893d6102741b5206a829e2f5e130614667140b1eacc09d0c55616f7311f82e6a'
+ ROUTES = ADAPTER/'routes.json'
+-ROUTES_SHA256 = '789fbe817e19c886824cda20ad66fd020e57d7a862af627986cdad40bc07605f'
++ROUTES_SHA256 = 'ef75ddf2057ebd395a159623d387b01051ee1479363bf9c878f7641b99ec0dd2'
+ 
+ 
+ def attempt_routes(plan, *, phase, sha, read_json, original, validate_retry_qualification, validate_installation_qualification):
+@@ -24,12 +24,19 @@
+         and sha(ROUTES) == ROUTES_SHA256, 'exact authenticated retry descriptor required')
+     routes = read_json(ROUTES)
+     require(routes['phase'] == phase and routes['attempt_source'] == str(ADAPTER)
+-        and routes['startup_source'] == str(STARTUP_SOURCE) and routes['installation_entry_gib'] == 24
++        and routes['startup_source'] == str(STARTUP_SOURCE) and routes['installation_entry_gib'] == 16
+         and same(plan['capacity'], routes['capacity']), 'exact retry phase/capacity differs')
+     require(validate_retry_qualification(copy.deepcopy(plan['retry_qualification'])) is True,
+         'separate actual retry controls required')
+     require(validate_installation_qualification(copy.deepcopy(plan['installation_qualification'])) is True,
+         'separate actual installation controls required')
++    resources=plan['installation_resources']
++    require(same(resources['policy'],routes['installation_resources'])
++        and resources['policy']['prefix_limit_bytes']==2**30
++        and type(resources['total_reserved_bytes']) is int
++        and 0 < resources['total_reserved_bytes'] <= 2**30
++        and resources['loader_children']==10 and resources['total_children']==15,
++        'bounded finite installation resource admission required')
+     return routes
+ 
+ 
+@@ -147,7 +154,7 @@
+     require(set(manifest)=={'path','sha256'} and sha(manifest['path'])==manifest['sha256'],
+             'startup source manifest differs')
+     source_rows=read_json(manifest['path'])
+-    require(set(source_rows)=={'status','files'} and source_rows['status']=='reviewed-runtime-installation05-startup-source-closure',
++    require(set(source_rows)=={'status','files'} and source_rows['status']=='reviewed-runtime-installation06-startup-source-closure',
+             'startup source manifest schema differs')
+     for role in ['policy','preparer']:
+         require(source_rows['files'][proof[role]['path']]['sha256']==proof[role]['sha256'],
+@@ -160,7 +167,7 @@
+     return copy.deepcopy(proof)
+ 
+ 
+-def owner(plan, launch, terminal, outer, launcher, *, phase, expected, sha, read_json, original, workload_environment, validate_qualification, validate_retry_qualification, validate_installation_qualification):
++def owner(plan, launch, terminal, outer, launcher, *, phase, expected, sha, read_json, original, workload_environment, validate_qualification, validate_retry_qualification, validate_installation_qualification, validate_installation_resources):
+     """Bind the original completed owner; never manufacture a passed terminal."""
+     require, same, R = original.require, original.same, original.R
+     routes = attempt_routes(plan, phase=phase, sha=sha, read_json=read_json, original=original,
+@@ -174,6 +181,12 @@
+     require(terminal['status'] == 'passed' and type(terminal['pid']) is int
+             and type(terminal['parent_pid']) is int and terminal['pid'] > 0 and terminal['parent_pid'] > 0,
+             'actual passed runtime owner required')
++    # The saved-audit integration must authenticate the new pure budget helper
++    # and reconstruct it from the real retained admission.json and current spec.
++    # A boolean success flag is insufficient; require the complete typed summary.
++    require(same(validate_installation_resources(copy.deepcopy(plan)),plan['installation_resources'])
++        and same(terminal['installation_resources'],plan['installation_resources']),
++        'actual retained installation resource census differs')
+     for name in ['application_qualified', 'performance_measurement', 'exporter_qualified', 'std_mir_prepared']:
+         require(terminal[name] is False, 'unearned runtime qualification scope')
+     require(sha(packet/'launch.json') == expected['launch']
+@@ -186,7 +199,7 @@
+         original=original, workload_environment=workload_environment, validate_qualification=validate_qualification,
+         runtime_started_at=terminal['started_at'],validate_retry_qualification=validate_retry_qualification,validate_installation_qualification=validate_installation_qualification)
+     require(launch['cwd'] == str(R) and launch['environment'] == plan['launch_environment']
+-            and launch['capacity'] == plan['capacity'] == dict(entry_gib=24, stop_gib=9, floor_gib=8,
++            and launch['capacity'] == plan['capacity'] == dict(entry_gib=16, stop_gib=9, floor_gib=8,
+                 combined_namespace_bytes=14*2**30, evidence_bytes=256*2**20), 'runtime context or limits changed')
+     require(outer['status'] == 'finished' and type(outer['returncode']) is int and outer['returncode'] == 0
+             and outer['child_pid'] == terminal['pid'] and outer['supervisor_pid'] == terminal['parent_pid']
+@@ -195,7 +208,7 @@
+             and outer['log_sha256'] == sha(paths['outer']/'command.log'), 'actual runtime supervisor closure differs')
+     require(outer['child_started_at'] <= terminal['started_at'] <= terminal['admitted_at']
+             <= terminal['finished_at'] <= outer['finished_at']
+-            and terminal['free_bytes_before'] >= 24*2**30 and terminal['free_bytes_after'] >= 9*2**30,
++            and terminal['free_bytes_before'] >= 16*2**30 and terminal['free_bytes_after'] >= 9*2**30,
+             'actual runtime admission/timing differs')
+     # New launchers must follow the already reviewed actual hash launch schema.
+     # Old legacy wrapper-only "finished" records are not relabeled as closure.

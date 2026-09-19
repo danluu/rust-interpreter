@@ -1,0 +1,75 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/prepare_once.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/prepare_once.py
+@@ -21,8 +21,8 @@
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ SOURCE = X/'experiments/hir-options-hash/runtime-installation-04'
+-ADAPTER = ROOT/'experiments/runtime-installation-after-preflight05-01'
+-ROUTES_SHA = '789fbe817e19c886824cda20ad66fd020e57d7a862af627986cdad40bc07605f'
++ADAPTER = ROOT/'experiments/runtime-installation-after-preflight05-02'
++ROUTES_SHA = 'ef75ddf2057ebd395a159623d387b01051ee1479363bf9c878f7641b99ec0dd2'
+ HASH = ROOT/'experiments/hir-options-hash-driver-stage-03'
+ PYTHON = Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14')
+ CANONICAL = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+@@ -105,7 +105,7 @@
+     require(type(adapter) is dict and set(adapter) == {'preparer', 'source_manifest', 'startup_controls', 'retry_controls', 'installation_controls'}
+             and adapter['preparer']['path'] == str(ADAPTER/'prepare.py'), 'exact preparation adapter declaration')
+     manifest = document(adapter['source_manifest'])
+-    require(set(manifest) == {'status', 'files'} and manifest['status'] == 'reviewed-runtime-installation05-startup-source-closure'
++    require(set(manifest) == {'status', 'files'} and manifest['status'] == 'reviewed-runtime-installation06-startup-source-closure'
+             and type(manifest['files']) is dict, 'reviewed complete startup source closure')
+     historical = set(document(invocation['retirement'])['selected_paths'])
+     extra = dict(manifest['files'])
+@@ -143,7 +143,7 @@
+     require(raw(Path(__file__).resolve())[1]['sha256'] == args.source_sha256, 'reviewed launcher source required')
+     invocation = document(dict(path=args.invocation, sha256=args.invocation_sha256))
+     require(set(invocation) == {'status', 'phase', 'rehearsal', 'rehearsal_inputs', 'retirement',
+-            'hash_plan', 'audits', 'evidence', 'preflight', 'adapter'} and invocation['status'] == 'reviewed-runtime-installation05-preparation',
++            'hash_plan', 'audits', 'evidence', 'preflight', 'adapter'} and invocation['status'] == 'reviewed-runtime-installation06-preparation',
+             'concrete invocation remains unprepared or differs')
+     phase = invocation['phase']
+     require(phase == args.phase and phase == 'installation', 'exact runtime phase')
+@@ -189,7 +189,7 @@
+         '--retry-audit-sha256', adapter['retry_controls']['sha256'],
+         '--installation-audit-sha256', adapter['installation_controls']['sha256'],
+         '--preparation-passed-environment-json', encoded(ENV).decode().strip(),
+-        '--preparation-record', str(R/('.work/hir-options-hash-runtime-'+phase+'-preparation-execution-05/record.json')),
++        '--preparation-record', str(R/('.work/hir-options-hash-runtime-'+phase+'-preparation-execution-06/record.json')),
+         '--startup-source-manifest', adapter['source_manifest']['path'],
+         '--startup-source-manifest-sha256', adapter['source_manifest']['sha256']]
+     for role in ['beta', 'native', 'run_make', 'hash']:
+@@ -227,7 +227,7 @@
+     resource.setrlimit(resource.RLIMIT_CPU, (MAXIMUM_CPU_SECONDS, MAXIMUM_CPU_SECONDS))
+     resource.setrlimit(resource.RLIMIT_FSIZE, (16*2**20, 16*2**20))
+     packet = ADAPTER/(args.phase+'-plan-01')
+-    evidence = R/('.work/hir-options-hash-runtime-'+args.phase+'-preparation-execution-05')
++    evidence = R/('.work/hir-options-hash-runtime-'+args.phase+'-preparation-execution-06')
+     started = time.monotonic()
+     observations = dict(passed=ENV, before_validation=dict(os.environ))
+     allowed = {str(packet/name) for name in OUTPUT_NAMES}
+@@ -297,12 +297,12 @@
+     invocation, command, rows = validate(args)
+     phase = invocation['phase']
+     packet = ADAPTER/(phase+'-plan-01')
+-    evidence = R/('.work/hir-options-hash-runtime-'+phase+'-preparation-execution-05')
+-    runtime = R/('.work/hir-options-hash-runtime-'+phase+'-05')
+-    supervisor = R/('.work/experiments/hir-options-hash-runtime-'+phase+'-supervisor-05')
++    evidence = R/('.work/hir-options-hash-runtime-'+phase+'-preparation-execution-06')
++    runtime = R/('.work/hir-options-hash-runtime-'+phase+'-06')
++    supervisor = R/('.work/experiments/hir-options-hash-runtime-'+phase+'-supervisor-06')
+     require(all(not p.exists() and not p.is_symlink() for p in [packet, evidence, runtime, supervisor]), 'fresh preparation scope')
+     free = shutil.disk_usage(R).free
+-    require(free >= 24*2**30, 'fresh24GiB before preparation evidence or process')
++    require(free >= 16*2**30, 'fresh16GiB before preparation evidence or process')
+     evidence.mkdir(mode=0o700)
+     source, row = raw(Path(__file__).resolve())
+     with (evidence/'launcher.py').open('xb') as stream:
+@@ -318,7 +318,7 @@
+         parent_pid=os.getpid(), parent_parent_pid=os.getppid(), parent_pgid=os.getpgrp(),
+         cwd=str(R), command=argv, producer_command=command, environment=ENV,
+         canonical_lock=str(CANONICAL), canonical_owner='producer-child', wait_seconds=600,
+-        entry_free_bytes=free, capacity=dict(entry_gib=24, live_gib=9, floor_gib=8),
++        entry_free_bytes=free, capacity=dict(entry_gib=16, live_gib=9, floor_gib=8),
+         maximum_observation_seconds=MAXIMUM_OBSERVATION_SECONDS, maximum_child_seconds=MAXIMUM_CHILD_SECONDS,
+         maximum_cpu_seconds=MAXIMUM_CPU_SECONDS, source_sha256=row['sha256'],
+         invocation=dict(path=args.invocation, sha256=args.invocation_sha256), samples=[], observation_errors=[],
