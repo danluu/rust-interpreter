@@ -212,3 +212,10 @@ regions, including call-containing functions; no typed/runtimeproof claimedyet.
 Registered local-copy-equality-01:14controls, exactclosedloop PC assignment,
 region-local diagnosticbyteidentitymodel. No guest/build/nativeclaim. Freeze
 controllerthroughclosure; same12GiB/8GiB admission. Rootf2f45927pushed.
+
+local-copy-equality-01 sourcec3ae51c1 passed14controls, supervisor72053,
+CLOSED75783 with52bindings andbothderivations. Modeledredundantcopies2925/3374
+staticbutonly26/7selfsamples(1.35%/0.49%),cyclic19/4. Defer standalone runtimepass.
+Next consider independent SIMD payload residency for actual eight-byte local
+Copy loads; measure exactload-PC coverage andreviewclobbers beforetypedchange.
+Currentruntime unchanged; noRustbuild underdiskreserve. Allcommandscomplete.

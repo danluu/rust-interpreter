@@ -33,3 +33,7 @@ Loops direct503/1933 and304/1429; callfreeonly35/120. No runtimepassyet.
 
 Run local-copy-equality-01 controller analyze.py, then --close aftersuccess.
 14controls; no compiler/guest. Freeze sources; preserveanyfailure.
+
+Copy equality01 COMPLETE/CLOSED75783; low26/7samples, deferstandalonepass.
+Next possibility: reserved SIMD memory payload cache across volatile scratch
+clobbers. First exactsavedload-PC census +clobberreview; no runtimecandidateyet.
