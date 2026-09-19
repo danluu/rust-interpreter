@@ -1,3 +1,16 @@
+LATEST: bounded-scalar-padding-focused01 CLOSED21tests/profilepassed,
+sourcee0fa7f28 supervisor8859/controller8862; close81422passed. Workspace01
+CLOSED source34247a28 supervisor38761/controller38764; close10837passed:
+Python468/446/22, debug613/14, release613/14, VMsnapshot inraw. Runtime4filediff
+vs52d13ae7 (two productionfiles scalar_calls/resumable;two testfiles). Default
+unchanged. Main4d0446ad pushed scope02+failedpreflight preservingpeerbe4fc482.
+Next retire9receipt-derived caches fromclosedadoptedES8/shorttailES8 toprepare
+headroom, newfolderes8-completed-cache-retirement. Needcommit/pushbeforelaunch,
+independentclose REV, preserve anyfailedprefix. Free16.6GiB. Then5paired
+entropy-controlledoriginaltests+code-span-shrink check forboundedpadding VM;
+explicitinstall andnewprospective40commandES8screen. GoalPAUSED, nootherprocess
+controls; protectedtargetneverclean, ownedboundedbuildtargetcap3GiBfloor14.
+
 LATEST: main d836c9c3 pushed scalar-empty scope preservingpeer31261b16.
 Root experiment/bounded-scalar-padding-20260919. Newscope02 CLOSED success,
 sourceb1a3728d supervisor20250/controller20253; close29583passed. Scope01import
