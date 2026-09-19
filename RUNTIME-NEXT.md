@@ -2,7 +2,7 @@
 
 Manual indefinite task; goal remains PAUSED. No subagents or peer process control.
 No active task-owned command. Attempt01 is CLOSED admission-only: peer lock
-occupied45s, zero controls/cases. Readmission PLAN recorded; keep model unchanged. Root branch experiment/private-pointer-promotion-20260919.
+occupied45s, zero controls/cases. Readmission PLAN recorded; keep model unchanged. Root branch experiment/linear-budget-reservation-20260919.
 Main d73ab139 includes closed loop, copy equality and payload diagnostics; root df4aebf6
 restored the entire bytecode crate to adopted fca687eb. Installed runtime unchanged.
 
@@ -21,7 +21,8 @@ CLOSED47849: actual removable LDR samples2/2; specific narrow design parked.
 Isolated compact switch failed full primary, archived old branch38c51f5d.
 No unchanged retiming or cancelled guards. All raw failures retained.
 
-Next: assess fixed-path debit reservation across forward single-successor
+Next: execute/close registered linear-budget-reservation-01 model and scope.
+Fixed-path debit reservation across forward single-successor
 native chains, with exact suffix refunds at faults/VM exits. This is distinct
 from check-only region-budget-credit02, now CLOSED with12controls/53bindings
 but only1/2 potential CMP/B.LO samples. Guard-only proposal PARKED, no build.

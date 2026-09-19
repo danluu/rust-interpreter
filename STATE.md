@@ -294,3 +294,12 @@ Next distincthypothesis: single-successor forward chain debitreservation, known
 static suffix refund at everyearlyexit. Need machinecursor-aware model and exact
 wholebudgetword scope beforeproduction. Existinggeneralcheck-sharingmodel did
 NOT modelnativefaultcursor publication. No active command; nocleanupperformed.
+
+Newbranch experiment/linear-budget-reservation-20260919; prospective model and
+scope registered in benchmarks/experiments/linear-budget-reservation. Only
+forward single-successor ordinary regions, no targetrangeguard, capped4096.
+Predebitfixedpath, refundknownunentered suffix onearlyexit; modelexplicitly
+distinguishes nativecurrent-regionfaultprecharge fromsingle-stepsemanticbudget.
+Twelvecontrols plus currentexactnativewordpartition beforeanyproductionchange.
+Maincbeffb78 publishes closedbudgetcheck result/archivepreservingpeer598c4554.
+Archivedpatch whitespace is literalunifieddiff context; hash preserved.
