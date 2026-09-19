@@ -43,6 +43,7 @@ class FixtureEnvironmentUpgradeTests(unittest.TestCase):
         bad=copy.deepcopy(manifest);del bad[str(m.FAILED_TERMINAL).lstrip('/')]
         with self.assertRaises(RuntimeError):m.failed_native_reference(summary,bad)
 
+    @patch.object(m, 'FAILURE', ROOT / 'results/hir-native-correctness-failed-01')
     def test_separate_archive_verification_propagates_any_missing_payload(self):
         references=[dict(paths=dict(archive=f'/a/{i}.tar.gz',manifest=f'/a/{i}.json',summary=f'/a/{i}-summary.json'),
                          hashes={},required={f'/old/{i}.rs':'a'*64}) for i in range(3)]
