@@ -1,0 +1,142 @@
+--- executed-c8/run-unit-tests.py
++++ c9/run-unit-tests.py
+@@ -1,5 +1,5 @@
+ #!/usr/bin/env python3
+-"""Paired toolchain lookup correctness: two suites, 16 exact named tests."""
++"""Paired std readmission correctness: two suites, 24 exact named tests."""
+ import ast
+ import fcntl
+ import hashlib
+@@ -12,15 +12,15 @@
+ import sys
+ import time
+ 
+-ROOT = Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/fresh-toolchain-import-probe')  # Common owned cwd; each arm is imported by exact source path.
++ROOT = Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-probe')  # Common owned cwd; each arm is imported by exact source path.
+ PACKET = ROOT
+-PROPOSAL = PACKET.parent / "fresh-toolchain-import-proposal" / "v2"
++PROPOSAL = PACKET.parent / "std-readmission-stat-proposal" / "v2"
+ OUT = PACKET / "unit-screen-01"
+ LOCK = Path("/Users/danluu/dev/rust-interp/.work/benchmark.lock")
+ SOURCE = PACKET / "unit-source-manifest.json"
+-SOURCE_SHA = '4ccd2e088fc3699f74eefd7cf3c44a6fd92c8ac0d2218bd3970b7e8888814e31'
++SOURCE_SHA = '8d09306a6b13459ca442059a0aa226ff4c125f7c4eea8b41f54f578121a88378'
+ DRIVER = PACKET / "unit-driver.py"
+-DECISION_SHA = "841eba300a1556e2d1ef553263cdaeb8bf8267b569bc8b91805ebe3242b58591"
++DECISION_SHA = "UNBOUND"
+ PYTHON = Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14')
+ FIXED = {
+     Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14'): '87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634',
+@@ -28,23 +28,24 @@
+     Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/__init__.py'): '2dd10f1bf4c9ea5478e589216805e7f279d0e4bce134a19efa297404fb87407d',
+     Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/decoder.py'): 'dc98d3e677612ea7311303f06a144cec6b91ebadc7ec037d1777501647578a07',
+     Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/scanner.py'): '572958017eae8842eeddd0e3d18d3c56cc0a197348224915e1d87ce937841764',
+-    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/fresh-toolchain-import-probe/unit-source-manifest.json'): '4ccd2e088fc3699f74eefd7cf3c44a6fd92c8ac0d2218bd3970b7e8888814e31',
++    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-probe/unit-source-manifest.json'): '8d09306a6b13459ca442059a0aa226ff4c125f7c4eea8b41f54f578121a88378',
++    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-probe/unit-driver.py'): 'b703ae9bfdc7fcc07fabafd449e8bf38c2c1f1e165c3e904e4302f31fa10220f',
++    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-probe/applied-source-manifest.json'): 'abd6852ea94924b36e757553f2f3ca5945ade75e51a1187fbcbbe8adc392cfbc',
++    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/fresh-toolchain-import-probe/run-unit-tests.py'): '66722ddb54f01210e47adfeb5273426c2314661224d2b86f528e76c14ea34964',
+     Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/fresh-toolchain-import-probe/unit-driver.py'): '3da8d1b00c0b05a9e59412f6e9c5be88ee3c3110540432ca84f992e3d82ee6a9',
+-    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/fresh-toolchain-import-probe/decision-plan.json'): DECISION_SHA,
+-    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/fresh-toolchain-import-probe/applied-source-manifest.json'): '99c224a83e7b93200e7f57143b1456ff6ee8f18f56494da8e522125a5e136f92',
+-    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/bounded-trace-read-probe/run-unit-tests.py'): '4fed4128f06600b9134089753d74cfbb4d35e017601238ad16674c7f1dbe64dd',
+-    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/bounded-trace-read-probe/unit-driver.py'): 'b65ed83a9ba3c7b5ab58e75147c0f27c359ebd406135ec04a79ea52dc9cb61f4',
+-    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/bounded-trace-read-probe/unit-screen-01/result.json'): '2895ad87ed3976206913fb73162903c2e821ce632e87f75269257730f63106f9',
+-    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/fresh-toolchain-import-proposal/v2/source-bindings.json'): 'd69da55207070832ac2ebd8faf4c00be60d62aad12e10b05633df3daa8baf37c',
+-    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/fresh-toolchain-import-proposal/v2/candidate.patch'): '2efcecfcfbd177083471b6f31c8bea04734d5792ae9c18e406f0394eb0ac6aa3',
+-    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/fresh-toolchain-import-proposal/v2/README.md'): '969b8fe94917dd960cb7fcbc776b990b90f3d9a17f819ea56701445eed872c45',
+-    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/fresh-toolchain-import-proposal/v2/ast-normalization.json'): 'eba9d7f27aa18a6c49afd17a1fefde885023bed81633f90294b684bf5e3f2530',
++    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/fresh-toolchain-import-probe/unit-screen-01/result.json'): '213e06be03606cbb503a5e24711fc1f2385dd5491f32efa629f6b2cabc744cc0',
++    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-proposal/v2/source-bindings.json'): 'b23acbd73789a0d00e40ea4d17df592c6aeb8137e60d31fd7c3cb4f2aefcfd5d',
++    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-proposal/v2/candidate.patch'): 'e3a13a02214c4a1c030f3516aa72772286049ec92e0d4030e02d188b3fc092d8',
++    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-proposal/v2/README.md'): '075dd799ed1d5f00b735bfa701822e3e71a4f8d93f7c9d617d17acd3ff8e63ab',
++    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-proposal/v2/production-ast-diff.json'): 'ed6105143af49e80a503fd7468bdb157e83693986e4f886790db4e1833eacd98',
++    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-proposal/v2/local-version-proof.json'): '231633676891778ddc31dd8e8264a91aa703d743b3c195a3ef64e7236c0e68eb',
++    Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-probe/decision-plan.json'): DECISION_SHA,
+ }
+ 
+ GIB = 1024 ** 3
+ MIB = 1024 ** 2
+ FLOOR = 16 * GIB  # Only these tiny synthetic Python tests; Rust builds remain 32 GiB.
+-TESTS = (('baseline-toolchain-lookup', 'baseline', 'test_toolchain_lookup.py', 8), ('candidate-toolchain-lookup', 'candidate', 'test_toolchain_lookup.py', 8))
++TESTS = (('baseline-std-readmission', 'baseline', 'test_std_mir_readmission.py', 12), ('candidate-std-readmission', 'candidate', 'test_std_mir_readmission.py', 12))
+ EXPECTED_TESTS = sum(count for _, _, _, count in TESTS)
+ CHILDREN = []
+ 
+@@ -97,7 +98,7 @@
+             decision["candidate_applied_source_manifest_sha256"] ==
+             FIXED[PACKET / "applied-source-manifest.json"] and
+             q["total"] == EXPECTED_TESTS and q["work_processes"] == q["memory_processes"] == 2 and
+-            q["per_arm"] == {"test_toolchain_lookup.py": 8},
++            q["per_arm"] == {"test_std_mir_readmission.py": 12},
+             "unit qualification differs from frozen decision")
+     for arm, count in [("baseline", 189), ("candidate", 189)]:
+         source = descriptor["arms"][arm]
+@@ -116,10 +117,10 @@
+                     "project source changed: " + arm + "/" + relative)
+             files[str(root / path)] = p
+     proposal = json.loads((PROPOSAL / "source-bindings.json").read_bytes())
+-    changed = proposal["changed_paths"]
++    changed = proposal["files"]
+     require(proposal["base_commit"] == descriptor["base_commit"] and
+-            set(changed) == {"scripts/toolchain_lookup.py"},
+-            "wrong fresh-toolchain import proposal")
++            set(changed) == {"scripts/std_mir_readmission.py", "tests/test_std_mir_readmission.py"},
++            "wrong std readmission stat proposal")
+     baseline = descriptor["arms"]["baseline"]["sources"]
+     candidate = descriptor["arms"]["candidate"]["sources"]
+     differences = {name for name in set(baseline) | set(candidate)
+@@ -144,7 +145,7 @@
+         rows = [row for row in descriptor["tests"] if row["label"] == label]
+         require(len(rows) == 1, "wrong suite descriptor")
+         row = rows[0]
+-        test_arm = arm
++        test_arm = "candidate"
+         path = Path(descriptor["arms"][test_arm]["root"]) / "tests" / filename
+         require(row["arm"] == arm and row["filename"] == filename and row["path"] == str(path),
+                 "wrong test module binding")
+@@ -173,7 +174,7 @@
+     require(len(descriptor["tests"]) == len(TESTS), "extra suite in descriptor")
+     return dict(method="static AST only; no test/production module imports", modules=inventory,
+                 expected_tests=EXPECTED_TESTS,
+-                fixture_scope="existing synthetic toolchain identities/cache files; _discover stubbed; no compiler processes")
++                fixture_scope="synthetic metadata files, real readmission and receipt reuse; no compiler processes")
+ 
+ 
+ def run_child(label, command, environment, gate=None):
+@@ -261,7 +262,7 @@
+ 
+ def main():
+     require(sys.argv[1:] == ["--execute-synthetic-unit-tests"], "explicit execution flag required")
+-    require(DECISION_SHA != "UNBOUND", "C8 decision remains UNBOUND; source-only draft cannot execute")
++    require(DECISION_SHA != "UNBOUND", "C9 decision remains UNBOUND; source-only draft cannot execute")
+     require(sys.platform == "darwin" and ROOT.resolve() == ROOT and PACKET.resolve() == PACKET,
+             "wrong platform or owned paths")
+     require(os.environ.get("HOME") == "/Users/danluu", "HOME must remain unchanged")
+@@ -315,11 +316,14 @@
+                         report["tests_run"] == expected and report["discovered_ids"] == declared["expected_ids"] and
+                         report["successful_ids"] == declared["expected_ids"] and
+                         not any(report[key] for key in ("failures", "errors", "skipped", "expected_failures", "unexpected_successes")) and
+-                        report["module_path"] == str(Path(source["root"]) / "scripts/toolchain_lookup.py") and
+-                        report["module_content"] == source["sources"]["scripts/toolchain_lookup.py"] and
++                        report["module_path"] == str(Path(source["root"]) / "scripts/std_mir_readmission.py") and
++                        report["module_content"] == source["sources"]["scripts/std_mir_readmission.py"] and
+                         report["test_path"] == declared["path"] and
+                         report["test_content"] == {k: before[declared["path"]][k] for k in ("bytes", "sha256")} and
+-                        report["canonical_module_object_preserved"] is True and report["manifest_sha256"] == SOURCE_SHA,
++                        report["canonical_module_object_preserved"] is True and report["manifest_sha256"] == SOURCE_SHA and
++                        report["python"]["version_info"][:2] == [3, 14] and
++                        report["python"]["implementation"] == "cpython" and
++                        report["single_stat_guard"] is (True if arm == "candidate" else None),
+                         "driver names/module/result mismatch: " + label)
+                 tests.append(dict(label=label, arm=arm, pattern=filename, passed=expected,
+                                   failures=0, ignored=0, child_pid=receipt["pid"],
+@@ -340,7 +344,7 @@
+                       expected_tests=EXPECTED_TESTS, passed_tests=sum(r["passed"] for r in tests),
+                       tests=tests, test_inventory=inventory, bindings=before,
+                       bindings_after=after, post_binding_error=post_binding_error, children=CHILDREN,
+-                      scope="16 exact named Python correctness tests across two toolchain-lookup suites; existing synthetic filesystem/cache behavior with compiler discovery stubbed; no Rust/compiler/Cargo/VM workload or performance claim")
++                      scope="24 exact named Python correctness tests across two actual std-readmission implementations using the common candidate test module; synthetic filesystem/receipt behavior only; no Rust/compiler/Cargo/VM workload or performance claim")
+         write("result.json", result)
+         print(json.dumps(dict(status=result["status"], passed_tests=result["passed_tests"],
+                               error=error, result=str(OUT / "result.json"))), flush=True)

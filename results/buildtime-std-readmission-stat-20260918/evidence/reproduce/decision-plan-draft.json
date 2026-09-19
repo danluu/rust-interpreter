@@ -1,0 +1,267 @@
+{
+  "adoption": {
+    "all_required": true,
+    "by_case": {
+      "matching_device_readmission_receipt": {
+        "ab_component_cpu_geometric_ratio_max_exclusive": 1.0,
+        "ba_component_cpu_geometric_ratio_max_exclusive": 1.0,
+        "component_cpu_geometric_ratio_max": 0.95,
+        "component_cpu_strict_wins_min": 15,
+        "component_wall_geometric_ratio_max": 1.0,
+        "process_cpu_geometric_ratio_max": 1.01,
+        "process_wait4_peak_rss_geometric_ratio_max": 1.05,
+        "process_wall_geometric_ratio_max": 1.02
+      },
+      "matching_saved_stamps": {
+        "ab_component_cpu_geometric_ratio_max_exclusive": 1.0,
+        "ba_component_cpu_geometric_ratio_max_exclusive": 1.0,
+        "component_cpu_geometric_ratio_max": 0.95,
+        "component_cpu_strict_wins_min": 15,
+        "component_wall_geometric_ratio_max": 1.0,
+        "process_cpu_geometric_ratio_max": 1.01,
+        "process_wait4_peak_rss_geometric_ratio_max": 1.05,
+        "process_wall_geometric_ratio_max": 1.02
+      }
+    },
+    "decision_scope": "Public validation component only; no whole std setup/build/export/holdout claim",
+    "failure": "Any failed/missing/mismatched/inconclusive evidence parks; preserve procedural and performance decisions separately; no retiming or changed thresholds",
+    "no_helper_only_or_subset_adoption": true,
+    "numeric_gate_count": 16
+  },
+  "applied_sources": {
+    "scripts/std_mir_readmission.py": {
+      "baseline": {
+        "bytes": 3315,
+        "path": "/Users/danluu/dev/rust-interp-allocation-decoder-publication-20260918/scripts/std_mir_readmission.py",
+        "sha256": "930fa9788b6f41a8f11d51b9b28f2590b2cd146d6ab9cf91b4e32dd89f5dc426"
+      },
+      "candidate": {
+        "bytes": 4016,
+        "path": "/Users/danluu/dev/rust-interp-std-readmission-stat-20260918/scripts/std_mir_readmission.py",
+        "sha256": "6a66c05ddb948a6dfdf3082991aaadc1ad8800340e40ce05568df0a4cfc4e58d"
+      }
+    },
+    "tests/test_std_mir_readmission.py": {
+      "baseline": {
+        "bytes": 4359,
+        "path": "/Users/danluu/dev/rust-interp-allocation-decoder-publication-20260918/tests/test_std_mir_readmission.py",
+        "sha256": "559fd8020f3e4713d1d51222f02374b43739c6e773572ac2f0e7346da705bf35"
+      },
+      "candidate": {
+        "bytes": 11238,
+        "path": "/Users/danluu/dev/rust-interp-std-readmission-stat-20260918/tests/test_std_mir_readmission.py",
+        "sha256": "958f600746706ee04e9a113ef739b2e8aefd95c4864973dfaa2f45ff0af6d95e"
+      }
+    }
+  },
+  "base_commit": "f38004cbd3392b5a6763f920d80801826bbde77c",
+  "baseline_root": "/Users/danluu/dev/rust-interp-allocation-decoder-publication-20260918",
+  "cache": {
+    "measured": "-B frozen inventory",
+    "no_project_or_global_cache_writes": true,
+    "prefix": "one new owned common prefix; per-source-root bytecode paths and shared dependencies",
+    "prep_and_parity": "-B, keep cache empty",
+    "python": "pinned HomebrewPython3.14 -I -S -X pycache_prefix=ownedprefix",
+    "warmups": "exact8 permitted to populate prefix"
+  },
+  "candidate_applied_source_manifest_sha256": "abd6852ea94924b36e757553f2f3ca5945ade75e51a1187fbcbbe8adc392cfbc",
+  "candidate_root": "/Users/danluu/dev/rust-interp-std-readmission-stat-20260918",
+  "cases": [
+    {
+      "artifacts": 26,
+      "name": "matching_saved_stamps",
+      "route": "current==original; no receipt"
+    },
+    {
+      "artifacts": 26,
+      "name": "matching_device_readmission_receipt",
+      "route": "uniform saved device offset; already produced exact valid receipt"
+    }
+  ],
+  "clocks": {
+    "component": "actual validate call only; module import and bounded manifest/descriptor parsing outside component",
+    "cpu": "process_time_ns delta; no descendants inside validate",
+    "process": "parent wait4 user+system CPU, wall and peakRSS of each whole driver; reporting and source proof included",
+    "retain": "all raw timings, per-pair ratios, strict wins, AB/BA strata, arm medians and absolute paired deltas",
+    "wall": "perf_counter_ns delta around same actual call"
+  },
+  "compatibility_proposal": {
+    "common_test_source_sha256": "958f600746706ee04e9a113ef739b2e8aefd95c4864973dfaa2f45ff0af6d95e",
+    "constraints": "No install, download, interpreter query during this source phase, Rust/Cargo workload, or performance samples. Bind exact interpreter/framework/stdlib dependencies and selected developer-tool path as applicable. Only root may freeze this additional stage.",
+    "count_is_separate_from_primary_units_and_timing": true,
+    "exact_methods": [
+      "Readmission.test_complete_hash_readmission_preserves_manifest_and_reuses_exact_receipt",
+      "Readmission.test_unchanged_device_needs_no_readmission",
+      "Readmission.test_content_change_with_preserved_stamp_is_rejected",
+      "Readmission.test_other_stamp_changes_and_mixed_devices_are_rejected",
+      "Readmission.test_replaced_or_missing_artifact_after_readmission_is_rejected",
+      "Readmission.test_invalid_receipt_and_mutation_during_hash_are_rejected",
+      "Readmission.test_receipt_does_not_admit_different_manifest",
+      "Readmission.test_nonregular_paths_preserve_exact_artifact_error",
+      "Readmission.test_symlink_to_regular_artifact_retains_all_reuse_paths",
+      "Readmission.test_stat_failures_preserve_native_pathlib_error_policy",
+      "Readmission.test_later_missing_artifact_precedes_earlier_stamp_mismatch",
+      "Readmission.test_transient_stat_failure_is_not_hidden_by_retry"
+    ],
+    "proposed_flags": [
+      "-I",
+      "-S",
+      "-B"
+    ],
+    "proposed_memory_children": 2,
+    "proposed_runtime": "Actual installed system CPython3.9, invoked through its bound canonical executable rather than an unbound developer dispatcher",
+    "proposed_tests_per_arm": 12,
+    "proposed_total_tests": 24,
+    "proposed_work_children": 2,
+    "purpose": "Exercise the unchanged other-runtime production branch using an actual older interpreter, including native errno behavior and transient-error tests; do not simulate by flipping guard",
+    "runtime_bindings_sha256": "UNBOUND",
+    "source_only_runtime_assessment": {
+      "apple_launcher": "/usr/bin/python3",
+      "proposed_direct_executable": "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9",
+      "selected_developer_link": "/var/db/xcode_select_link",
+      "selected_developer_target": "/Applications/Xcode.app/Contents/Developer",
+      "status": "Recover agent inspected existing path/metadata only; exact executable/framework/stdlib hashes still pending. No version query or unit execution."
+    },
+    "state": "RECOMMENDED additional qualification; exact3.9 runtime binding proposal pending parent review/freeze",
+    "success_result_sha256": "UNBOUND",
+    "timing_or_adoption_threshold_change": false
+  },
+  "correctness": {
+    "common_test_source": {
+      "bytes": 11238,
+      "path": "/Users/danluu/dev/rust-interp-std-readmission-stat-20260918/tests/test_std_mir_readmission.py",
+      "sha256": "958f600746706ee04e9a113ef739b2e8aefd95c4864973dfaa2f45ff0af6d95e"
+    },
+    "exact_methods": [
+      "Readmission.test_complete_hash_readmission_preserves_manifest_and_reuses_exact_receipt",
+      "Readmission.test_unchanged_device_needs_no_readmission",
+      "Readmission.test_content_change_with_preserved_stamp_is_rejected",
+      "Readmission.test_other_stamp_changes_and_mixed_devices_are_rejected",
+      "Readmission.test_replaced_or_missing_artifact_after_readmission_is_rejected",
+      "Readmission.test_invalid_receipt_and_mutation_during_hash_are_rejected",
+      "Readmission.test_receipt_does_not_admit_different_manifest",
+      "Readmission.test_nonregular_paths_preserve_exact_artifact_error",
+      "Readmission.test_symlink_to_regular_artifact_retains_all_reuse_paths",
+      "Readmission.test_stat_failures_preserve_native_pathlib_error_policy",
+      "Readmission.test_later_missing_artifact_precedes_earlier_stamp_mismatch",
+      "Readmission.test_transient_stat_failure_is_not_hidden_by_retry"
+    ],
+    "existing_methods_unchanged": 7,
+    "input_and_output": "Both arms use same absolute owned fixture paths, actual module/API, exact None outcome, empty stdout/stderr and immutable fixture identities",
+    "module_selection": "Preload each actual arm scripts/std_mir_readmission.py under canonical std_mir_readmission, then load the identical candidate12-test source; assert test_module.recovery remains that arm module. No candidate-production substitution on baseline.",
+    "new_semantic_methods": 5,
+    "no_skips": true,
+    "primary_runtime": "Pinned Homebrew CPython3.14 POSIX; actual runtime guard enabled in candidate",
+    "proposed_paired_total": 24,
+    "proposed_tests_per_arm": 12,
+    "qualification_children": {
+      "memory": 2,
+      "work": 2
+    },
+    "test_count_scope": "12 candidate-test names against each production arm;24 executions total. A separate optional3.9 compatibility proposal below is not included.",
+    "unit_success_sha256": "UNBOUND"
+  },
+  "exposure": "Actual public std_mir_readmission.validate; reused26-artifact regular metadata layout on two existing setup paths",
+  "fixture_shape_sha256": "e6869d97e57f9814858ef9013b9d1c83835bc88174474cb451fbd5191bda0731",
+  "one_artifact_case_omitted": "No corresponding retained26-artifact production shape and weak additional information; avoid doubling a tiny setup panel",
+  "preparation": {
+    "actual_baseline_validate_calls": 3,
+    "limits": {
+      "max_entries": 256,
+      "max_file_bytes": 65536,
+      "max_total_bytes": 1048576
+    },
+    "memory_children": 1,
+    "no_cargo_compiler_or_guest": true,
+    "no_real_metadata_reads": true,
+    "no_validation_or_hash_stubs": true,
+    "owned_trees": 2,
+    "sequence": [
+      "create and seal actual small regular payloads, manifest with matching current stamps, baseline validate once",
+      "create and seal second actual small regular tree, manifest with every recorded device=currentdevice+1",
+      "baseline validate once to run complete actual hashes and publish its exact receipt, then once to prove reuse",
+      "freeze both trees, manifests, receipts, source inputs and fixture descriptors"
+    ],
+    "work_children": 1
+  },
+  "proposal_patch_sha256": "e3a13a02214c4a1c030f3516aa72772286049ec92e0d4030e02d188b3fc092d8",
+  "proposal_revision": "v2 conservative exact CPython3.14 POSIX guard; no retry on enabled-path error",
+  "proposal_source_bindings_sha256": "b23acbd73789a0d00e40ea4d17df592c6aeb8137e60d31fd7c3cb4f2aefcfd5d",
+  "qualification": {
+    "unit_success_receipt_sha256": "UNBOUND",
+    "unit_tests": {
+      "common_candidate_test_source": {
+        "bytes": 11238,
+        "path": "/Users/danluu/dev/rust-interp-std-readmission-stat-20260918/tests/test_std_mir_readmission.py",
+        "sha256": "958f600746706ee04e9a113ef739b2e8aefd95c4864973dfaa2f45ff0af6d95e"
+      },
+      "exact_methods": [
+        "Readmission.test_complete_hash_readmission_preserves_manifest_and_reuses_exact_receipt",
+        "Readmission.test_unchanged_device_needs_no_readmission",
+        "Readmission.test_content_change_with_preserved_stamp_is_rejected",
+        "Readmission.test_other_stamp_changes_and_mixed_devices_are_rejected",
+        "Readmission.test_replaced_or_missing_artifact_after_readmission_is_rejected",
+        "Readmission.test_invalid_receipt_and_mutation_during_hash_are_rejected",
+        "Readmission.test_receipt_does_not_admit_different_manifest",
+        "Readmission.test_nonregular_paths_preserve_exact_artifact_error",
+        "Readmission.test_symlink_to_regular_artifact_retains_all_reuse_paths",
+        "Readmission.test_stat_failures_preserve_native_pathlib_error_policy",
+        "Readmission.test_later_missing_artifact_precedes_earlier_stamp_mismatch",
+        "Readmission.test_transient_stat_failure_is_not_hidden_by_retry"
+      ],
+      "memory_processes": 2,
+      "module_selection": "Preload each actual arm scripts/std_mir_readmission.py under canonical std_mir_readmission, then load the identical candidate12-test source; assert test_module.recovery remains that arm module. No candidate-production substitution on baseline.",
+      "per_arm": {
+        "test_std_mir_readmission.py": 12
+      },
+      "total": 24,
+      "work_processes": 2
+    }
+  },
+  "resource": {
+    "disk_free_gib_min": 16,
+    "exact_pid_finally_wait4": true,
+    "fresh_checks_before_every_child": true,
+    "memory_free_percent_min": 30,
+    "no_peer_mutation_process_control_network_or_fallback": true,
+    "read_only_disk_observer_seconds": 5,
+    "rust_build_disk_gate_gib_unchanged": 32,
+    "shared_exclusive_benchmark_lock": true
+  },
+  "schedule": {
+    "all_parity_before_warmups": true,
+    "all_warmups_before_measurement": true,
+    "measured_arm_order": "AB even round; BA odd round for each case",
+    "measured_case_order": "forward on even rounds0..19, reversed on odd rounds",
+    "measured_drivers": 80,
+    "measured_pairs_per_case": 20,
+    "memory_admission_children": 92,
+    "no_retries_outlier_discard_replacements_or_extra_rounds": true,
+    "one_actual_api_call_per_driver": true,
+    "parity_drivers": 4,
+    "parity_per_case": [
+      "baseline",
+      "candidate"
+    ],
+    "screen_plus_preparation_children": 186,
+    "screen_recorded_children": 184,
+    "total_api_drivers": 92,
+    "units_separate": true,
+    "warmup_drivers": 8,
+    "warmup_per_case": [
+      "baseline",
+      "candidate",
+      "candidate",
+      "baseline"
+    ]
+  },
+  "schema_version": 1,
+  "stage_bindings": {
+    "applied_manifest_sha256": "abd6852ea94924b36e757553f2f3ca5945ade75e51a1187fbcbbe8adc392cfbc",
+    "controller_sha256": "UNBOUND",
+    "driver_sha256": "UNBOUND",
+    "pinned_python_manifest_sha256": "UNBOUND",
+    "unit_success_sha256": "UNBOUND"
+  },
+  "state": "PROPOSED ONLY: reviewed v2 applied; parent final read/freeze required before any C9 tests, imports, fixture preparation or timing"
+}

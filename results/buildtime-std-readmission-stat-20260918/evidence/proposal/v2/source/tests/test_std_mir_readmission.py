@@ -1,4 +1,3 @@
-import contextlib
 import errno
 import hashlib
 import json
@@ -11,17 +10,6 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import std_mir_readmission as recovery
-
-
-@contextlib.contextmanager
-def stat_fault(path, failing_stat):
-    """Fault both direct lookup and an older pathlib cached accessor."""
-    with contextlib.ExitStack() as stack:
-        stack.enter_context(patch.object(os, 'stat', side_effect=failing_stat))
-        accessor = getattr(path, '_accessor', None)
-        if accessor is not None and hasattr(accessor, 'stat'):
-            stack.enter_context(patch.object(accessor, 'stat', side_effect=failing_stat))
-        yield
 
 
 class Readmission(unittest.TestCase):
@@ -175,7 +163,7 @@ class Readmission(unittest.TestCase):
                     return native_stat(value, *args, **kwargs)
                 expected_type = RuntimeError
                 expected_args = ('standard-library MIR artifact changed: ' + str(path),)
-                with stat_fault(path, failing_stat):
+                with patch.object(os, 'stat', side_effect=failing_stat):
                     # The public Path predicate is the cross-version error oracle.
                     try:
                         regular = path.is_file()
@@ -226,14 +214,14 @@ class Readmission(unittest.TestCase):
                 expected_type = RuntimeError
                 expected_args = ('standard-library MIR artifact changed: ' + str(path),)
                 # Reset the transient fault for the oracle and for validation.
-                with stat_fault(path, one_shot_fault()):
+                with patch.object(os, 'stat', side_effect=one_shot_fault()):
                     try:
                         regular = path.is_file()
                     except (OSError, ValueError) as error:
                         expected_type, expected_args = type(error), error.args
                     else:
                         self.assertFalse(regular)
-                with stat_fault(path, one_shot_fault()):
+                with patch.object(os, 'stat', side_effect=one_shot_fault()):
                     with self.assertRaises(expected_type) as caught:
                         self.validate()
                 self.assertIs(type(caught.exception), expected_type)

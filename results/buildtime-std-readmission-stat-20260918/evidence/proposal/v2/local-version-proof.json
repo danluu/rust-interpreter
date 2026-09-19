@@ -1,0 +1,26 @@
+{
+  "generic_isfile": "FunctionDef(\n  name='isfile',\n  args=arguments(\n    posonlyargs=[],\n    args=[\n      arg(arg='path')],\n    kwonlyargs=[],\n    kw_defaults=[],\n    defaults=[]),\n  body=[\n    Expr(\n      value=Constant(value='Test whether a path is a regular file')),\n    Try(\n      body=[\n        Assign(\n          targets=[\n            Name(id='st', ctx=Store())],\n          value=Call(\n            func=Attribute(\n              value=Name(id='os', ctx=Load()),\n              attr='stat',\n              ctx=Load()),\n            args=[\n              Name(id='path', ctx=Load())],\n            keywords=[]))],\n      handlers=[\n        ExceptHandler(\n          type=Tuple(\n            elts=[\n              Name(id='OSError', ctx=Load()),\n              Name(id='ValueError', ctx=Load())],\n            ctx=Load()),\n          body=[\n            Return(\n              value=Constant(value=False))])],\n      orelse=[],\n      finalbody=[]),\n    Return(\n      value=Call(\n        func=Attribute(\n          value=Name(id='stat', ctx=Load()),\n          attr='S_ISREG',\n          ctx=Load()),\n        args=[\n          Attribute(\n            value=Name(id='st', ctx=Load()),\n            attr='st_mode',\n            ctx=Load())],\n        keywords=[]))],\n  decorator_list=[])",
+  "local_primary_files": {
+    "genericpath.py": {
+      "bytes": 6247,
+      "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/genericpath.py",
+      "sha256": "cdac5a68dd738051e0d66fc81d5947d6a1776248fc6fe862253477608d870ec4"
+    },
+    "pathlib/__init__.py": {
+      "bytes": 46807,
+      "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py",
+      "sha256": "042a4d0a5e1ef66778daa86dc269af205bd42d06e793e53d8b99dff4c45928ca"
+    },
+    "posixpath.py": {
+      "bytes": 18813,
+      "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/posixpath.py",
+      "sha256": "8a5bc2b6674e76efe0f507b873a41d746beba466a191153ed18a7580ef6e08e1"
+    }
+  },
+  "path_is_file": "FunctionDef(\n  name='is_file',\n  args=arguments(\n    posonlyargs=[],\n    args=[\n      arg(arg='self')],\n    kwonlyargs=[\n      arg(arg='follow_symlinks')],\n    kw_defaults=[\n      Constant(value=True)],\n    defaults=[]),\n  body=[\n    Expr(\n      value=Constant(value='\\n        Whether this path is a regular file (also True for symlinks pointing\\n        to regular files).\\n        ')),\n    If(\n      test=Name(id='follow_symlinks', ctx=Load()),\n      body=[\n        Return(\n          value=Call(\n            func=Attribute(\n              value=Attribute(\n                value=Name(id='os', ctx=Load()),\n                attr='path',\n                ctx=Load()),\n              attr='isfile',\n              ctx=Load()),\n            args=[\n              Name(id='self', ctx=Load())],\n            keywords=[]))],\n      orelse=[]),\n    Try(\n      body=[\n        Return(\n          value=Call(\n            func=Name(id='S_ISREG', ctx=Load()),\n            args=[\n              Attribute(\n                value=Call(\n                  func=Attribute(\n                    value=Name(id='self', ctx=Load()),\n                    attr='stat',\n                    ctx=Load()),\n                  args=[],\n                  keywords=[\n                    keyword(\n                      arg='follow_symlinks',\n                      value=Name(id='follow_symlinks', ctx=Load()))]),\n                attr='st_mode',\n                ctx=Load())],\n            keywords=[]))],\n      handlers=[\n        ExceptHandler(\n          type=Tuple(\n            elts=[\n              Name(id='OSError', ctx=Load()),\n              Name(id='ValueError', ctx=Load())],\n            ctx=Load()),\n          body=[\n            Return(\n              value=Constant(value=False))])],\n      orelse=[],\n      finalbody=[])],\n  decorator_list=[])",
+  "path_stat": "FunctionDef(\n  name='stat',\n  args=arguments(\n    posonlyargs=[],\n    args=[\n      arg(arg='self')],\n    kwonlyargs=[\n      arg(arg='follow_symlinks')],\n    kw_defaults=[\n      Constant(value=True)],\n    defaults=[]),\n  body=[\n    Expr(\n      value=Constant(value='\\n        Return the result of the stat() system call on this path, like\\n        os.stat() does.\\n        ')),\n    Return(\n      value=Call(\n        func=Attribute(\n          value=Name(id='os', ctx=Load()),\n          attr='stat',\n          ctx=Load()),\n        args=[\n          Name(id='self', ctx=Load())],\n        keywords=[\n          keyword(\n            arg='follow_symlinks',\n            value=Name(id='follow_symlinks', ctx=Load()))]))],\n  decorator_list=[])",
+  "policy": "Only this exact major/minor CPython POSIX family uses fused observation; future/older versions and other implementations/platforms retain original predicate sequence",
+  "posix_imports_genericpath_isfile_without_override": true,
+  "scope": "Read local installed primary sources only; no target/stdlib import or execution",
+  "scope_guard": "sys.implementation.name == cpython and sys.version_info[:2] == (3,14) and os.name == posix"
+}

@@ -1,0 +1,18 @@
+--- c9-primary/unit-driver.py
++++ c9-python39/compatibility-driver.py
+@@ -61,8 +61,14 @@
+     require(len(rows) == 1, "unknown unit suite")
+     row = rows[0]
+     root = Path(manifest["arms"][row["arm"]]["root"])
++    require(sys.implementation.name == "cpython" and tuple(sys.version_info[:3]) == (3, 9, 6),
++            "compatibility child must be actual pinned CPython3.9.6")
++    require(str(Path(sys.executable).resolve()) in (
++        "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9",
++        "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python"),
++        "compatibility child loaded another executable")
+     report = Path(report_name)
+-    require(report.parent == PACKET / "unit-screen-01" and
++    require(report.parent == PACKET / "compatibility-screen-01" and
+             report.name == label + "-tests.json" and not report.exists() and not report.is_symlink(),
+             "wrong or occupied report destination")
+     module_path = root / "scripts/std_mir_readmission.py"
