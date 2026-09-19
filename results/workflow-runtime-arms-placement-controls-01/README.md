@@ -1,0 +1,1 @@
+Thirteen new placement tests passed once. Only workflow_placement and its temporary-stub fixtures were imported. The unchanged35 helper suite was not rerun. See the exact command, hashes, PID/closure, full raw output and result in this directory; SOURCE-PROPOSAL.json in the standalone experiment records the separate source inspection.

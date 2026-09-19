@@ -1,0 +1,191 @@
+usage: bench_e2e_workflow.py [-h] [--run-id RUN_ID]
+                             [--lock-wait-seconds LOCK_WAIT_SECONDS]
+                             [--workload-lock WORKLOAD_LOCK]
+                             [--project {fre,pgrust,nushell,ruff,oxc,rg-aot}]
+                             [--workflow WORKFLOW] [--case-file CASE_FILE]
+                             [--batch] [--compare-isolated-batches]
+                             [--cycles CYCLES]
+                             [--initial-mode-order INITIAL_MODE_ORDER]
+                             [--minimum-free-gib MINIMUM_FREE_GIB]
+                             [--jobs JOBS] [--native-jobs NATIVE_JOBS]
+                             [--baseline-jobs BASELINE_JOBS]
+                             [--candidate-jobs CANDIDATE_JOBS]
+                             [--native-profile {repository,o0-incremental}]
+                             [--native-toolchain NATIVE_TOOLCHAIN]
+                             [--native-test-threads NATIVE_TEST_THREADS]
+                             [--native-rustflag NATIVE_RUSTFLAG]
+                             [--check-floor] [--cargo-timings]
+                             [--vary-selection] [--std-mir]
+                             [--runtime-compiler-key RUNTIME_COMPILER_KEY]
+                             [--std-mir-key STD_MIR_KEY]
+                             [--guest-rustflag GUEST_RUSTFLAG]
+                             [--baseline-guest-rustflag BASELINE_GUEST_RUSTFLAG]
+                             [--build-tool-opt-level {0,1,2,3}]
+                             [--instruction-limit INSTRUCTION_LIMIT]
+                             [--allocation-limit ALLOCATION_LIMIT]
+                             [--guest-mir-opt-level {0,1,2,3}]
+                             [--baseline-guest-mir-opt-level {0,1,2,3}]
+                             [--guest-mir-inline-scale {1,2,4,8}]
+                             [--inline-leaves] [--baseline-inline-leaves]
+                             [--trap-unsupported-calls] [--run-try-callbacks]
+                             [--baseline-tool-key BASELINE_TOOL_KEY]
+                             [--candidate-tool-key CANDIDATE_TOOL_KEY]
+                             [--aa-control] [--build-metrics]
+                             [--verify-restoration]
+                             [--candidate-jit-native-call-stubs]
+                             [--candidate-jit-resumable-calls]
+                             [--candidate-jit-persistent-registers]
+                             [--baseline-jit-resumable-calls]
+                             [--baseline-jit-persistent-registers]
+                             [--candidate-jit-native-calls]
+                             [--comparison-engine {interpreter,jit}]
+                             [--expect-identical-bytecode]
+                             [--baseline-runtime-compiler-key BASELINE_RUNTIME_COMPILER_KEY]
+                             [--baseline-std-mir-key BASELINE_STD_MIR_KEY]
+                             [--candidate-runtime-compiler-key CANDIDATE_RUNTIME_COMPILER_KEY]
+                             [--candidate-std-mir-key CANDIDATE_STD_MIR_KEY]
+
+Edit production code, then execute existing project tests.
+
+options:
+  -h, --help            show this help message and exit
+  --run-id RUN_ID
+  --lock-wait-seconds LOCK_WAIT_SECONDS
+                        bounded wait for the shared benchmark lock; default
+                        fails immediately
+  --workload-lock WORKLOAD_LOCK
+                        explicit shared workload lock; defaults to this
+                        workspace benchmark.lock
+  --project {fre,pgrust,nushell,ruff,oxc,rg-aot}
+  --workflow WORKFLOW   additional named workload within a project
+  --case-file CASE_FILE
+                        bounded public workflow JSON inside this workspace;
+                        mutually exclusive with a named workflow
+  --batch               invoke all custom test entries in one command
+  --compare-isolated-batches
+                        compare fresh and prepared per-test JIT state; native
+                        builds once and runs each test in a separate process
+  --cycles CYCLES       repeat the actual edit sequence after rebuilding an
+                        original-source anchor (1..30)
+  --initial-mode-order INITIAL_MODE_ORDER
+                        comma-separated permutation of the three modes;
+                        rotates cold-run order without changing mode settings
+  --minimum-free-gib MINIMUM_FREE_GIB
+                        refuse to start a command below this free-space
+                        threshold; not a disk reservation
+  --jobs JOBS           default Cargo jobs for custom engines and native
+                        (1..256)
+  --native-jobs NATIVE_JOBS
+                        override native/check Cargo jobs (1..256)
+  --baseline-jobs BASELINE_JOBS
+                        override baseline Cargo jobs in a paired comparison
+                        (1..256)
+  --candidate-jobs CANDIDATE_JOBS
+                        override candidate Cargo jobs in a paired comparison
+                        (1..256)
+  --native-profile {repository,o0-incremental}
+                        explicit native/check profile override; no fastest-
+                        native claim
+  --native-toolchain NATIVE_TOOLCHAIN
+                        explicit installed native/check compiler; default
+                        keeps the existing nightly route; custom engines are
+                        unchanged
+  --native-test-threads NATIVE_TEST_THREADS
+                        positive libtest thread count or default
+  --native-rustflag NATIVE_RUSTFLAG
+                        one explicit native/check rustc argument; repeat,
+                        using --native-rustflag=VALUE
+  --check-floor         independently time cargo check of the library-test
+                        target after each primary mode triplet
+  --cargo-timings       collect Cargo unit timing reports in every mode;
+                        report generation remains timed
+  --vary-selection      change the selected tests to match each production
+                        edit
+  --std-mir             use the reusable metadata-only standard library for
+                        custom engines
+  --runtime-compiler-key RUNTIME_COMPILER_KEY
+                        select one installed runtime compiler for both paired
+                        custom modes
+  --std-mir-key STD_MIR_KEY
+                        select prepared shared source-containing std MIR for
+                        the explicit runtime compiler
+  --guest-rustflag GUEST_RUSTFLAG
+                        append one custom compiler argument; repeat using
+                        --guest-rustflag=VALUE
+  --baseline-guest-rustflag BASELINE_GUEST_RUSTFLAG
+                        replace the baseline appended arguments; requires a
+                        paired comparison
+  --build-tool-opt-level {0,1,2,3}
+                        optimize host build tools equally for all engines
+  --instruction-limit INSTRUCTION_LIMIT
+                        explicit per-command guest instruction budget
+  --allocation-limit ALLOCATION_LIMIT
+                        explicit live guest allocation budget (default: VM
+                        default of 100000)
+  --guest-mir-opt-level {0,1,2,3}
+                        explicit MIR optimization for custom-engine Cargo
+                        commands; native retains its Cargo profile
+  --baseline-guest-mir-opt-level {0,1,2,3}
+                        replace baseline guest MIR flags with this level and
+                        no inlining-threshold overrides; requires --baseline-
+                        tool-key
+  --guest-mir-inline-scale {1,2,4,8}
+                        scale the pinned MIR inlining cost limits; requires
+                        --guest-mir-opt-level=3
+  --inline-leaves       inline bytecode leaves for custom engines, or only the
+                        candidate in a paired comparison
+  --baseline-inline-leaves
+                        also inline leaves with the installed baseline, to
+                        isolate a runtime change
+  --trap-unsupported-calls
+                        explicit unavailable foreign/catch_unwind stops in
+                        every custom engine; strict frontend checking remains
+                        enabled
+  --run-try-callbacks   execute normal-return try callbacks; actual unwinding
+                        fails; requires --trap-unsupported-calls
+  --baseline-tool-key BASELINE_TOOL_KEY
+                        compare an installed baseline with the candidate build
+                        on every edit, alongside native
+  --candidate-tool-key CANDIDATE_TOOL_KEY
+                        use a retained candidate in a paired comparison;
+                        defaults to the current build
+  --aa-control          require identical paired tools/settings in two
+                        isolated caches
+  --build-metrics       require measured build-to-ready wall and CPU for
+                        batched paired comparisons
+  --verify-restoration  build and execute the restored original after the
+                        source-edit context exits
+  --candidate-jit-native-call-stubs
+                        also link candidate Calls into ordinary regions;
+                        requires --candidate-jit-native-calls
+  --candidate-jit-resumable-calls
+                        enable resumable Calls in the paired JIT candidate
+  --candidate-jit-persistent-registers
+                        enable persistent native registers in the paired JIT
+                        candidate
+  --baseline-jit-resumable-calls
+                        enable resumable Calls in the paired JIT baseline
+  --baseline-jit-persistent-registers
+                        enable persistent native registers in the paired JIT
+                        baseline
+  --candidate-jit-native-calls
+                        enable experimental native call trees in the paired
+                        candidate only
+  --comparison-engine {interpreter,jit}
+                        engine for both tool builds; defaults to jit when
+                        comparing
+  --expect-identical-bytecode
+                        require matching executed bytecode when isolating a
+                        runtime change
+  --baseline-runtime-compiler-key BASELINE_RUNTIME_COMPILER_KEY
+                        explicit installed runtime for this custom arm;
+                        requires both arm keys
+  --baseline-std-mir-key BASELINE_STD_MIR_KEY
+                        prepared std for this arm runtime; requires both std
+                        keys and --std-mir
+  --candidate-runtime-compiler-key CANDIDATE_RUNTIME_COMPILER_KEY
+                        explicit installed runtime for this custom arm;
+                        requires both arm keys
+  --candidate-std-mir-key CANDIDATE_STD_MIR_KEY
+                        prepared std for this arm runtime; requires both std
+                        keys and --std-mir

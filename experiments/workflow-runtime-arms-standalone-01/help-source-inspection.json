@@ -1,0 +1,260 @@
+{
+  "assumptions": "Deploy exactly the reviewed source set into the declared fresh namespace; keep the inspected original R source hashes unchanged. Parent retains ownership of deployment and actual smoke invocation.",
+  "commands": [
+    [
+      "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+      "-E",
+      "-s",
+      "-B",
+      "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/experiments/workflow-runtime-arms-01/bench_e2e_workflow.py",
+      "--help"
+    ],
+    [
+      "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+      "-E",
+      "-s",
+      "-B",
+      "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/experiments/workflow-runtime-arms-01/verify_repeated_workflow.py",
+      "--help"
+    ]
+  ],
+  "cwd": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918",
+  "explanation": "Both entrypoints configure source placement and import definitions. Benchmark run_workflow constructs argparse and parse_args handles --help before key selection/provider loads/locks/source access; verifier main handles --help before its lock or report reads. Definition-time local dependency calls are Path(__file__).resolve, dataclass, and pure collection constructors only. Imported custom_compiler defines provider APIs but performs no installed-provider lookup.",
+  "placement_scope": "The bootstrap checks real script paths and import metadata only. No compiler/std/tool installation is read by --help. -E ignores Python environment options and -s disables user site; -B prevents bytecode writes. No smoke invocation has occurred.",
+  "source_graph": {
+    "compare_saved_runtime": {
+      "definition_time_calls": [],
+      "local_imports": [],
+      "source": {
+        "bytes": 14515,
+        "path": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/scripts/compare_saved_runtime.py",
+        "sha256": "34407784cbda57cf0239336c9e310f81a29a4bbfeae6f8c17fbe5a84b816d4d1"
+      }
+    },
+    "custom_compiler": {
+      "definition_time_calls": [
+        {
+          "function": "Path(__file__).resolve",
+          "line": 16
+        },
+        {
+          "function": "Path",
+          "line": 16
+        },
+        {
+          "function": "dataclass",
+          "line": 136
+        }
+      ],
+      "local_imports": [],
+      "source": {
+        "bytes": 17161,
+        "path": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/scripts/custom_compiler.py",
+        "sha256": "c6a44c3d271664de2c97bf6c3af3ea6426eba6dd3730ac0612411230a02b7449"
+      }
+    },
+    "interpreter": {
+      "definition_time_calls": [
+        {
+          "function": "Path(__file__).resolve",
+          "line": 28
+        },
+        {
+          "function": "Path",
+          "line": 28
+        }
+      ],
+      "local_imports": [
+        "workspace_cache"
+      ],
+      "source": {
+        "bytes": 50963,
+        "path": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/scripts/interpreter.py",
+        "sha256": "f6306e1d6e0a8318c67d9bdd2dae28e31c26c4e8dcac18a718fcf7ea6fc15703"
+      }
+    },
+    "native_suite": {
+      "definition_time_calls": [],
+      "local_imports": [
+        "interpreter",
+        "workflow_controls",
+        "workflow_io"
+      ],
+      "source": {
+        "bytes": 6767,
+        "path": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/scripts/native_suite.py",
+        "sha256": "cfd55e11787691f028165d9e3ee7c6484d074f754807a0ae7e5855154720c470"
+      }
+    },
+    "suite_reports": {
+      "definition_time_calls": [],
+      "local_imports": [
+        "native_suite"
+      ],
+      "source": {
+        "bytes": 3556,
+        "path": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/scripts/suite_reports.py",
+        "sha256": "8c3f13a9812041bfd7e426ba37296e8f416eec95336dc9ac67e9c4ae27d98e7f"
+      }
+    },
+    "workflow_case_file": {
+      "definition_time_calls": [],
+      "local_imports": [
+        "workflow_projects"
+      ],
+      "source": {
+        "bytes": 6787,
+        "path": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/scripts/workflow_case_file.py",
+        "sha256": "60ad42ba856f1db35b3e2419f29fbda85355940ded871792cdb05380f28860c1"
+      }
+    },
+    "workflow_cases": {
+      "definition_time_calls": [
+        {
+          "function": "dict",
+          "line": 33
+        },
+        {
+          "function": "dict",
+          "line": 40
+        },
+        {
+          "function": "dict",
+          "line": 85
+        },
+        {
+          "function": "dict",
+          "line": 121
+        },
+        {
+          "function": "dict",
+          "line": 164
+        },
+        {
+          "function": "dict",
+          "line": 221
+        },
+        {
+          "function": "dict",
+          "line": 323
+        },
+        {
+          "function": "list",
+          "line": 180
+        },
+        {
+          "function": "list",
+          "line": 231
+        },
+        {
+          "function": "list",
+          "line": 331
+        },
+        {
+          "function": "range",
+          "line": 180
+        },
+        {
+          "function": "range",
+          "line": 180
+        },
+        {
+          "function": "range",
+          "line": 231
+        },
+        {
+          "function": "range",
+          "line": 231
+        },
+        {
+          "function": "range",
+          "line": 331
+        },
+        {
+          "function": "dict",
+          "line": 378
+        },
+        {
+          "function": "dict",
+          "line": 437
+        },
+        {
+          "function": "dict",
+          "line": 496
+        }
+      ],
+      "local_imports": [],
+      "source": {
+        "bytes": 55679,
+        "path": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/scripts/workflow_cases.py",
+        "sha256": "dac664b0e2aa4cc6c2f854daa47ccf4feec218a2a7a6db28f537255edce6d632"
+      }
+    },
+    "workflow_compiler": {
+      "definition_time_calls": [],
+      "local_imports": [
+        "custom_compiler"
+      ],
+      "source": {
+        "bytes": 3501,
+        "path": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/scripts/workflow_compiler.py",
+        "sha256": "6f0de8c272c6fe8afef0017f899076cf37427dc45e5117b31966017db2545bff"
+      }
+    },
+    "workflow_controls": {
+      "definition_time_calls": [],
+      "local_imports": [],
+      "source": {
+        "bytes": 8179,
+        "path": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/scripts/workflow_controls.py",
+        "sha256": "b398f741449fae8c7a7d5cde8ba043085c2ce218e70d2e99eaaf9e7911ebfc39"
+      }
+    },
+    "workflow_io": {
+      "definition_time_calls": [],
+      "local_imports": [],
+      "source": {
+        "bytes": 4514,
+        "path": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/scripts/workflow_io.py",
+        "sha256": "c159a3152a0019e0d9ebe189ca4b1c48927cc45623d729ed3fd6edf0b13c2acb"
+      }
+    },
+    "workflow_jobs": {
+      "definition_time_calls": [],
+      "local_imports": [],
+      "source": {
+        "bytes": 3903,
+        "path": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/scripts/workflow_jobs.py",
+        "sha256": "15e877b9cc790cd51d55afea6fc57c68d03e2e75daafb6f3e97963b0dc600cd5"
+      }
+    },
+    "workflow_measurements": {
+      "definition_time_calls": [],
+      "local_imports": [],
+      "source": {
+        "bytes": 4445,
+        "path": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/scripts/workflow_measurements.py",
+        "sha256": "b9bc94c21422e1ffa52dd9e9b3d504e4d79e169ca37fb77f7b268a31a8a78132"
+      }
+    },
+    "workflow_projects": {
+      "definition_time_calls": [],
+      "local_imports": [],
+      "source": {
+        "bytes": 689,
+        "path": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/scripts/workflow_projects.py",
+        "sha256": "28dade2966ab4140e6965bffd572072f058c31f3843b71b51cd9d4722ed5cc57"
+      }
+    },
+    "workspace_cache": {
+      "definition_time_calls": [],
+      "local_imports": [],
+      "source": {
+        "bytes": 2405,
+        "path": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/scripts/workspace_cache.py",
+        "sha256": "1f0848930ddfb1ad0b1d6f128ad79b0e91faf9610d93f5e2e082dc4b39bb76ec"
+      }
+    }
+  },
+  "status": "source-inspected-not-executed"
+}

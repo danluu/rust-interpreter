@@ -1,0 +1,258 @@
+--- qualified-proposal/bench_e2e_workflow.py
++++ standalone-proposal/bench_e2e_workflow.py
+@@ -12,7 +12,10 @@
+ import subprocess
+ import sys
+ import time
++import workflow_placement
++_EXPECTED_ROOT=workflow_placement.configure(__file__)
+ from interpreter import ROOT, TOOLCHAIN, checked_tools, installed_tools, require_export_option
++workflow_placement.check_module('interpreter',_EXPECTED_ROOT/'scripts/interpreter.py',root=_EXPECTED_ROOT)
+ 
+ 
+ from workflow_cases import WORKFLOWS, WORKFLOW_VARIANTS
+@@ -27,6 +30,7 @@
+ from suite_reports import guest_test_failure, read_report, validate_report
+ import workflow_compiler
+ import workflow_runtime_arms
++workflow_placement.check_module('workflow_runtime_arms',Path(__file__).resolve().with_name('workflow_runtime_arms.py'))
+ 
+ 
+ def build_metrics(launch):
+@@ -367,7 +371,7 @@
+         raise RuntimeError('snapshot has tracked changes')
+     script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_case_file.py',ROOT/'scripts/workflow_projects.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/workflow_controls.py',ROOT/'scripts/workflow_io.py',ROOT/'scripts/std_mir.py',ROOT/'scripts/workflow_jobs.py']
+     script_paths+=[ROOT/'scripts/native_suite.py',ROOT/'scripts/suite_reports.py',ROOT/'scripts/compare_saved_runtime.py',
+-                  ROOT/'scripts/workspace_cache.py',ROOT/'scripts/test_discovery.py',ROOT/'scripts/workflow_compiler.py',ROOT/'scripts/workflow_runtime_arms.py']
++                  ROOT/'scripts/workspace_cache.py',ROOT/'scripts/test_discovery.py',ROOT/'scripts/workflow_compiler.py',Path(workflow_runtime_arms.__file__).resolve(),Path(workflow_placement.__file__).resolve()]
+     if runtime is not None or arm_selection is not None:
+         script_paths += [ROOT/'scripts'/name for name in ['runtime_compiler.py','runtime_tools.py','custom_compiler.py','std_mir_source_paths.py']]
+     if case_proof is not None:
+--- qualified-proposal/verify_repeated_workflow.py
++++ standalone-proposal/verify_repeated_workflow.py
+@@ -8,13 +8,17 @@
+ import statistics
+ import time
+ 
++import workflow_placement
++_EXPECTED_ROOT=workflow_placement.configure(__file__)
+ from workflow_measurements import initial_modes, mode_order
+ from workflow_jobs import recorded_build_jobs, verify_command_jobs
+-from bench_e2e_workflow import build_metrics, cache_workspace, guest_test_failure
++from bench_e2e_workflow import ROOT, build_metrics, cache_workspace, guest_test_failure
++workflow_placement.check_module('bench_e2e_workflow',Path(__file__).resolve().with_name('bench_e2e_workflow.py'),root=_EXPECTED_ROOT)
++workflow_placement.check_module('interpreter',_EXPECTED_ROOT/'scripts/interpreter.py',root=_EXPECTED_ROOT)
+ import workflow_compiler
+ import workflow_runtime_arms
+ 
+-ROOT = Path(__file__).resolve().parents[1]
++workflow_placement.check_module('workflow_runtime_arms',Path(__file__).resolve().with_name('workflow_runtime_arms.py'))
+ 
+ 
+ def require(condition, message):
+--- /dev/null
++++ standalone-proposal/workflow_placement.py
+@@ -0,0 +1,69 @@
++"""Place a side-by-side runner inside its existing provider owner's repository.
++
++Only script paths/import metadata are inspected. This module never imports an
++interpreter or provider, changes a provider root, or creates a file/directory.
++"""
++import importlib.util
++from pathlib import Path
++import sys
++
++DIRECTORY = 'workflow-runtime-arms-01'
++ENTRIES = ('bench_e2e_workflow.py', 'verify_repeated_workflow.py')
++
++
++def require(condition, message):
++    if not condition:
++        raise RuntimeError(message)
++
++
++def routes(entry):
++    entry = Path(entry)
++    require(entry.is_absolute() and '..' not in entry.parts
++            and entry.name in ENTRIES and entry.parent.name == DIRECTORY
++            and entry.parent.parent.name == 'experiments',
++            'runner must use its declared side-by-side experiment placement')
++    owner = entry.parents[2]
++    require(owner != Path('/'), 'invalid provider owner')
++    return owner, entry.parent, owner/'scripts'
++
++
++def check_module(name, expected_path, *, root=None):
++    module = sys.modules.get(name)
++    require(module is not None and getattr(module, '__file__', None) is not None,
++            'selected source module is not loaded: '+name)
++    require(Path(module.__file__) == expected_path
++            and expected_path.resolve(strict=True) == expected_path,
++            'selected source module differs: '+name)
++    if root is not None:
++        require(getattr(module, 'ROOT', None) == root,
++                'selected source module has another provider owner: '+name)
++
++
++def configure(entry_file):
++    entry = Path(entry_file)
++    require(entry.resolve(strict=True) == entry, 'runner path is indirect')
++    owner, adjacent, scripts = routes(entry)
++    require(scripts.resolve(strict=True) == scripts and scripts.is_dir(),
++            'provider scripts directory is indirect or missing')
++    own = adjacent/'workflow_placement.py'
++    require(Path(__file__) == own and own.resolve(strict=True) == own,
++            'placement helper is not adjacent to the selected runner')
++    expected = dict(interpreter=scripts/'interpreter.py',
++        bench_e2e_workflow=adjacent/'bench_e2e_workflow.py',
++        workflow_runtime_arms=adjacent/'workflow_runtime_arms.py',
++        workflow_placement=own)
++    for name, path in expected.items():
++        require(path.is_file() and path.resolve(strict=True) == path,
++                'selected source route is missing or indirect: '+name)
++        if name in sys.modules:
++            check_module(name, path, root=owner if name == 'interpreter' else None)
++    # The adjacent runner/helper must precede the original scripts. Remaining
++    # standard-library paths keep their existing order; PYTHONPATH is not used.
++    first = [str(adjacent), str(scripts)]
++    sys.path[:] = first + [p for p in sys.path if p not in first]
++    for name, path in expected.items():
++        if name not in sys.modules:
++            spec = importlib.util.find_spec(name)
++            require(spec is not None and spec.origin == str(path),
++                    'import search selects another source: '+name)
++    return owner
+--- /dev/null
++++ standalone-proposal/test_workflow_placement.py
+@@ -0,0 +1,131 @@
++"""New placement behavior only, using owned temporary script stubs.
++
++No real interpreter, compiler provider, application or benchmark is imported.
++"""
++from contextlib import ExitStack
++from pathlib import Path
++import sys
++import tempfile
++from types import ModuleType
++import unittest
++from unittest.mock import patch
++
++import workflow_placement as placement
++
++
++class Placement(unittest.TestCase):
++    def setUp(self):
++        self.stack = ExitStack()
++        self.addCleanup(self.stack.close)
++        temporary = self.stack.enter_context(tempfile.TemporaryDirectory())
++        self.owner = Path(temporary).resolve()/'owner'
++        self.adjacent = self.owner/'experiments'/placement.DIRECTORY
++        self.scripts = self.owner/'scripts'
++        self.adjacent.mkdir(parents=True)
++        self.scripts.mkdir()
++        for name in [*placement.ENTRIES, 'workflow_runtime_arms.py', 'workflow_placement.py']:
++            (self.adjacent/name).write_text('raise AssertionError("fixture must not be imported")\n')
++        (self.scripts/'interpreter.py').write_text('raise AssertionError("provider must not be imported")\n')
++        self.stack.enter_context(patch.object(placement, '__file__', str(self.adjacent/'workflow_placement.py')))
++        self.stack.enter_context(patch.object(sys, 'path', list(sys.path)))
++        self.stack.enter_context(patch.dict(sys.modules))
++        for name in ['interpreter', 'bench_e2e_workflow', 'workflow_runtime_arms']:
++            sys.modules.pop(name, None)
++
++    def entry(self):
++        return self.adjacent/'bench_e2e_workflow.py'
++
++    def test_routes_derive_the_existing_owner(self):
++        self.assertEqual(placement.routes(self.entry()), (self.owner, self.adjacent, self.scripts))
++
++    def test_noncanonical_layout_is_rejected(self):
++        for path in ['relative/bench_e2e_workflow.py', self.owner/'scripts/bench_e2e_workflow.py',
++                     self.adjacent/'unknown.py', self.adjacent/'..'/placement.DIRECTORY/'bench_e2e_workflow.py']:
++            with self.subTest(path=path), self.assertRaises(RuntimeError):
++                placement.routes(path)
++
++    def test_both_entries_select_adjacent_then_original_scripts_without_imports(self):
++        for name in placement.ENTRIES:
++            self.assertEqual(placement.configure(self.adjacent/name), self.owner)
++            self.assertEqual(sys.path[:2], [str(self.adjacent), str(self.scripts)])
++        self.assertNotIn('interpreter', sys.modules)
++        self.assertNotIn('bench_e2e_workflow', sys.modules)
++        self.assertNotIn('workflow_runtime_arms', sys.modules)
++
++    def test_foreign_search_path_cannot_win(self):
++        foreign = self.owner/'foreign'
++        foreign.mkdir()
++        (foreign/'interpreter.py').write_text('raise AssertionError("foreign")\n')
++        sys.path.insert(0, str(foreign))
++        placement.configure(self.entry())
++        self.assertEqual(sys.path[:3], [str(self.adjacent), str(self.scripts), str(foreign)])
++
++    def test_adjacent_interpreter_shadow_is_rejected(self):
++        (self.adjacent/'interpreter.py').write_text('raise AssertionError("shadow")\n')
++        with self.assertRaisesRegex(RuntimeError, 'import search'):
++            placement.configure(self.entry())
++
++    def test_preloaded_foreign_interpreter_is_rejected_before_path_change(self):
++        module = ModuleType('interpreter')
++        module.__file__ = str(self.adjacent/'bench_e2e_workflow.py')
++        module.ROOT = self.owner
++        sys.modules['interpreter'] = module
++        before = list(sys.path)
++        with self.assertRaisesRegex(RuntimeError, 'selected source module differs'):
++            placement.configure(self.entry())
++        self.assertEqual(sys.path, before)
++
++    def test_preloaded_original_script_cannot_replace_adjacent_runner(self):
++        path = self.scripts/'bench_e2e_workflow.py'
++        path.write_text('raise AssertionError("old runner")\n')
++        module = ModuleType('bench_e2e_workflow')
++        module.__file__ = str(path)
++        sys.modules['bench_e2e_workflow'] = module
++        with self.assertRaisesRegex(RuntimeError, 'selected source module differs'):
++            placement.configure(self.entry())
++
++    def test_preloaded_interpreter_owner_mismatch_is_rejected(self):
++        module = ModuleType('interpreter')
++        module.__file__ = str(self.scripts/'interpreter.py')
++        module.ROOT = self.owner/'different'
++        sys.modules['interpreter'] = module
++        with self.assertRaisesRegex(RuntimeError, 'another provider owner'):
++            placement.configure(self.entry())
++
++    def test_expected_loaded_modules_are_accepted(self):
++        for name, path in [('interpreter', self.scripts/'interpreter.py'),
++                           ('bench_e2e_workflow', self.adjacent/'bench_e2e_workflow.py')]:
++            module = ModuleType(name)
++            module.__file__ = str(path)
++            module.ROOT = self.owner
++            sys.modules[name] = module
++            placement.check_module(name, path, root=self.owner)
++        self.assertEqual(placement.configure(self.entry()), self.owner)
++
++    def test_missing_helper_is_rejected(self):
++        (self.adjacent/'workflow_runtime_arms.py').unlink()
++        with self.assertRaisesRegex(RuntimeError, 'missing or indirect'):
++            placement.configure(self.entry())
++
++    def test_symlinked_entry_is_rejected(self):
++        target = self.adjacent/'real.py'
++        self.entry().rename(target)
++        self.entry().symlink_to(target)
++        with self.assertRaisesRegex(RuntimeError, 'runner path is indirect'):
++            placement.configure(self.entry())
++
++    def test_symlinked_provider_scripts_are_rejected(self):
++        target = self.owner/'real-scripts'
++        self.scripts.rename(target)
++        self.scripts.symlink_to(target, target_is_directory=True)
++        with self.assertRaisesRegex(RuntimeError, 'scripts directory is indirect'):
++            placement.configure(self.entry())
++
++    def test_nonadjacent_placement_helper_is_rejected(self):
++        with patch.object(placement, '__file__', str(self.scripts/'interpreter.py')):
++            with self.assertRaisesRegex(RuntimeError, 'not adjacent'):
++                placement.configure(self.entry())
++
++
++if __name__ == '__main__':
++    unittest.main()
