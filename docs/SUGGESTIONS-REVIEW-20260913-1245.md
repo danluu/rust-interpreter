@@ -392,3 +392,12 @@ metadata failures caught before existing evidence was replaced. This admitted
 the parser guard without changing a timing gate, benchmark input or peer cache.
 [Closed costs](SESSION-RUNTIME-COSTS-20260919.md),
 [storage evidence](PUBLIC-EVIDENCE-STORAGE-20260919.md).
+
+The complete parser guard then finished110 commands with114 original tests and
+both strict controls intact, but its wall gate is unmeasurable:8.09% observed
+median improvement versus11.41% A/A. The separate15-pair saved-data audit finds
+most of the largest control difference in build-to-ready (226ms of234ms); it does
+not prove a host cause. Park the composition, cancel the two unstarted guards,
+and retain every timing and gate. Investigate the current emitted guest code
+next; older phase diagnostics show program validation around single-digit
+milliseconds, too small to justify speculative validation-cache complexity.
