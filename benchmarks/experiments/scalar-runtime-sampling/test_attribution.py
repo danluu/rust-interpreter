@@ -40,6 +40,26 @@ class CurrentAttribution(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 runtime_options(changed_plan, [changed_command])
 
+    def test_indirect_option_requires_current_boolean_plan_and_resumable_mode(self):
+        plan = dict(jit_resumable_calls=True, jit_indirect_calls=True)
+        command = ['vm', '--jit-resumable-calls', '--jit-indirect-calls']
+        self.assertTrue(runtime_options(plan, [command])['jit_indirect_calls'])
+        for changed_plan, changed_command in [
+                (dict(plan, jit_indirect_calls=False), command),
+                (dict(plan, jit_indirect_calls='true'), command),
+                (plan, command[:-1]),
+                (dict(jit_indirect_calls=True), ['vm', '--jit-indirect-calls'])]:
+            with self.assertRaises(RuntimeError):
+                runtime_options(changed_plan, [changed_command])
+
+    def test_legacy_indirect_absence_preserves_shape_but_rejects_unrecorded_flag(self):
+        plan = dict(jit_resumable_calls=True, jit_scalar_calls=True)
+        command = ['vm', '--jit-resumable-calls', '--jit-scalar-calls']
+        self.assertNotIn('jit_indirect_calls', runtime_options(plan, [command]))
+        with self.assertRaises(RuntimeError):
+            runtime_options(plan, [command + ['--jit-indirect-calls']])
+        self.assertFalse(runtime_options(dict(plan, jit_indirect_calls=False), [command])['jit_indirect_calls'])
+
 
 if __name__ == '__main__':
     unittest.main()
