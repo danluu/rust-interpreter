@@ -121,3 +121,8 @@ structural/Programchecksremain. Featureexplicit, keyv3+size-tiercomposition.
 Qualification656/profile+16ignored,33diagnostic,10featureoff/defaultVM and
 exact442Pythonrecord planned. No runstarted. Main56b77d06 nowpushed preserving
 peer753ef81e, correctedkeyproof andfinalphaseattribution published; noadoption.
+
+Artifactdigest qualification4bc2123c passed656Rust/profile+16ignored,33diag,
+10featureoff/defaultVM, exact442Python+22skip;48servers92clients. CLOSED77522/77525
+(supervisor56222/controller56225). Parserverify/diagnostic/installprepared. Main
+56b77d06pushconfirmed. Nextactual16savedparserreplay; freeabout17.9GiB.
