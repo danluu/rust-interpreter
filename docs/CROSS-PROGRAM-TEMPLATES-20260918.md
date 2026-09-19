@@ -111,8 +111,35 @@ failed. That debug failure is closed, release remained unstarted, and the correc
 fixture uses valid address8. [Native qualification](../results/cross-program-template-model-07/summary.json),
 [preserved fixture failure](../results/cross-program-template-model-06/summary.json).
 
-Next connect this primitive to normal lazy function preparation under an explicit
-test-only cache context. Preserve fresh scalar proof/admission, per-owner native
-code/table budgets and ordinary publication/fallback. Then use actual project
-suites across the saved artifacts to exercise real reachability and preparation
-order before selecting a persistent cache design. No production cache is enabled.
+The test-only context now runs through normal lazy preparation, preserving fresh
+scalar proof/admission and ordinary publication. It passes20 focused controls in
+both profiles; the broader workspace passes628 tests/profile with15 ignored.
+The actual parser replay then executes114 test bodies over eight saved states,
+with reuse disabled and enabled:1,824 invocations. All expected outcomes match,
+including8 passes/106 failures for the deliberately wrong edit and114 passes for
+every other state. The16,301 restored blocks all match fresh code and metadata
+before publication. No matching template fails restoration.
+
+Actual scheduling matters: workers exchange the larger share of reached
+functions on edits2 and3, unlike the earlier fixed-function replay. Aggregate
+hits/lookups for valid edits1–5 are2,185/3,598,2,326/3,658,3,547/3,597,
+1,877/3,640 and2,597/3,632. Each valid worker/state has one key decline and one
+ordinary JIT decline; this observation alone does not identify their reason.
+Worker0 ends with1,948 cumulative evictions; worker1 has none. Retained charges
+stay within64MiB per worker. This establishes actual reachability and execution
+correctness for these states, not a production hit rate or command speedup.
+[Real-suite replay](../results/cross-program-template-suites-01/summary.json),
+[verifier controls](../results/cross-program-template-model-09/summary.json),
+[workspace checks](../results/cross-program-template-workspace-01/summary.json).
+
+Next move the qualified primitive behind an explicit experimental feature and
+give a caller ownership of the bounded in-memory history across checked Programs.
+Keep normal builds and default preparation unchanged. The intended command-level
+candidate is an explicitly started local execution session: retain only trusted
+staging templates in memory between commands, build/check every changed source
+normally, and recreate native owners and guest state for each request. This avoids
+loading executable cache files and supplies a concrete route to cross-command
+reuse. Transport, setup, hashing, validation, misses and all session CPU must be
+included in the changed-source comparison; a session without reuse is an
+additional mechanism control, alongside adopted fresh-process and native commands.
+No production cache is enabled yet.
