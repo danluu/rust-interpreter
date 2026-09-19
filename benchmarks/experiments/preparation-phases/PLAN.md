@@ -47,3 +47,10 @@ cannot support optimization inference. Per-function prepared/no-entry facts do
 not claim exact decline identity; aggregate compiled/declined counts remain
 available. Ordinary publication includes final admission and decline handling.
 Successful commands and a copied observer survive any later-stage failure.
+
+Integrated01: the debug child passed nine tests, including the intended eight
+and an existing frame-preparation control selected by preparation_o. The
+controller's exact eight-count assertion then failed before any other child.
+Close and preserve the successful debug log; integrated02 reuses it after exact
+Rust/Cargo hash verification, expects nine in release, and runs only the three
+previously unstarted commands. No runtime correction or debug rerun is needed.

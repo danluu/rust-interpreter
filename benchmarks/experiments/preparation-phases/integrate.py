@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='preparation-phases-integrated-01'
+RUN='preparation-phases-integrated-02'
 def read(p):return json.loads(p.read_text())
 
 def main():
@@ -21,14 +21,24 @@ def main():
             prior=ROOT/'results'/run;closed=read(prior/'closure.json')
             assert closed['status']=='closed' and closed['all_hashes_verified'] and sha(prior/'summary.json')==closed['summary_sha256']
             paths += [prior/'closure.json',prior/'summary.json']
+        prior=ROOT/'results/preparation-phases-integrated-01';closed=read(prior/'closure.json')
+        assert closed['status']=='closed' and closed['all_hashes_verified'] and sha(prior/'summary.json')==closed['summary_sha256']
+        previous=ROOT/'.work/preparation-phases-integrated-01';summary=read(prior/'summary.json')
+        assert sha(previous/'plan.json')==summary['plan_sha256'] and sha(previous/'records.json')==summary['records_sha256']
+        debug,=read(previous/'records.json');assert debug['label']=='debug' and debug['returncode']==0
+        for stream in ['stdout','stderr']:assert sha(previous/('debug.'+stream))==debug[stream+'_sha256']
+        assert 'test result: ok. 9 passed; 0 failed; 0 ignored;' in (previous/'debug.stdout').read_text()
+        for name,digest in read(previous/'plan.json')['frozen'].items():
+            if name.startswith('crates/') or name in ['Cargo.toml','Cargo.lock','rust-toolchain.toml']:assert sha(ROOT/name)==digest
+        paths += [prior/'closure.json',prior/'summary.json',previous/'plan.json',previous/'records.json',previous/'debug.stdout',previous/'debug.stderr']
         frozen={str(p.relative_to(ROOT)):sha(p) for p in paths}
         assert not subprocess.check_output(['git','diff','--name-only','HEAD'],cwd=ROOT).strip()
         revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
         raw=ROOT/'.work'/RUN;raw.mkdir(exist_ok=False)
         write(raw/'plan.json',dict(owner=str(ROOT),source_revision=revision,frozen=frozen,
             controller_command=[sys.executable,*sys.orig_argv[1:]],target=str(target.relative_to(ROOT)),
-            required_free_bytes=needed,allocated_target_bytes=allocated,minimum_child_gib=8,expected_commands=4,
-            tests_per_profile=8,original_project_guest_commands=0,native_fixture_execution=True,
+            required_free_bytes=needed,allocated_target_bytes=allocated,minimum_child_gib=8,expected_commands=3,
+            tests_per_profile=9,original_project_guest_commands=0,native_fixture_execution=True,
             executable_code_publication=True,production_runtime_changes=0,performance_measurement=False))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_','CARGO_'))
             and k not in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER','RUST_TEST_THREADS','PYTHONPATH']}
@@ -37,7 +47,7 @@ def main():
             CARGO_PROFILE_TEST_DEBUG='0',RUST_TEST_THREADS='2',CARGO_TERM_COLOR='never',PYTHONDONTWRITEBYTECODE='1')
         records=[];write(raw/'records.json',records)
         outputs={};write(raw/'outputs.json',outputs)
-        for label,extra in [('debug',[]),('release',['--release']),('observer',['--release']),('ordinary',[])]:
+        for label,extra in [('release',['--release']),('observer',['--release']),('ordinary',[])]:
             require_space(ROOT,8);assert shutil.disk_usage(ROOT).free>=needed
             command=['cargo','+nightly-2026-09-08','test',*extra,'--locked','--offline','--jobs','2',
                 '--manifest-path',str(ROOT/'Cargo.toml'),'--target-dir',str(target),'-p','rust-interp-bytecode',
@@ -57,12 +67,12 @@ def main():
                 assert len(artifacts)==1;binary=Path(artifacts[0]['executable']);assert binary.is_relative_to(target)
                 saved=raw/'rust-interp-preparation-observer';shutil.copy2(binary,saved)
                 outputs[str(saved.relative_to(ROOT))]=sha(saved);write(raw/'outputs.json',outputs)
-            elif label!='ordinary':assert 'test result: ok. 8 passed; 0 failed; 0 ignored;' in out
+            elif label!='ordinary':assert 'test result: ok. 9 passed; 0 failed; 0 ignored;' in out
             assert all(sha(ROOT/p)==h for p,h in frozen.items());print(label,'passed',flush=True)
         out=ROOT/'results'/RUN;out.mkdir(exist_ok=False)
         write(out/'summary.json',dict(status='passed',source_revision=revision,raw=str(raw.relative_to(ROOT)),
-            plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),tests_per_profile=8,commands=4,
-            outputs=outputs,setup_seconds=sum(r['seconds'] for r in records),original_project_guest_commands=0,native_fixture_execution=True,
+            plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),tests_per_profile=9,commands=3,
+            reused_debug_controls='preparation-phases-integrated-01',outputs=outputs,setup_seconds=sum(r['seconds'] for r in records),original_project_guest_commands=0,native_fixture_execution=True,
             executable_code_publication=True,production_runtime_changes=0,performance_measurement=False))
 
 def close():
@@ -87,7 +97,7 @@ def close():
         for p,h in read(raw/'outputs.json').items():assert sha(ROOT/p)==h;evidence[p]=h
         out.mkdir(exist_ok=True);assert not (out/'closure.json').exists()
         if terminal['returncode']==0:
-            summary=read(out/'summary.json');assert summary['status']=='passed' and len(records)==4
+            summary=read(out/'summary.json');assert summary['status']=='passed' and len(records)==3
             assert all(r['returncode']==0 for r in records)
             assert summary['plan_sha256']==sha(raw/'plan.json') and summary['records_sha256']==sha(raw/'records.json')
         else:
