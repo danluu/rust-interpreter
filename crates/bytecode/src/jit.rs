@@ -328,6 +328,8 @@ pub(crate) const MAX_CODE_BYTES: usize = 16 * 1024 * 1024;
 
 struct CompiledFunction<'a> {
     #[cfg(test)]
+    internal_entries: Vec<Option<usize>>,
+    #[cfg(test)]
     local_forwarding: Vec<(usize, &'static str)>,
     #[cfg(test)]
     local_fact_events: Vec<(usize, &'static str, &'static str)>,
@@ -833,6 +835,7 @@ impl<'a> Jit<'a> {
         #[cfg(test)]
         drop(_links_timer);
         Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
+            #[cfg(test)] internal_entries,
             #[cfg(test)] memory_spans,
             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
             liveness_declined: self.persistent_registers && values.is_none(),

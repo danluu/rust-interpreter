@@ -84,6 +84,14 @@ impl Jit<'_> {
     }
 }
 
+// Labels exist only in observer/test builds and never emit machine words.
+macro_rules! scalar_protocol_mark {
+    ($a:expr, $kind:literal, $argument:expr) => {
+        #[cfg(test)]
+        $a.mark_protocol($kind, $argument);
+    };
+}
+
 const OUTPUT:usize=scalar_ir::native_leaf::CALL_OUTPUT;
 const ARGUMENTS:usize=scalar_ir::native_leaf::CALL_ARGUMENTS;
 const _:()={assert!(std::mem::size_of::<scalar_ir::native_leaf::Output>()==96);};
@@ -105,24 +113,32 @@ impl Assembler<'_> {
         let mut before=vec![];let mut private=vec![];
         self.imm(9,entry.maximum_steps as u64+1);
         self.cmp(BUDGET_REGISTER,9);self.decline(Cond::Lo,&mut before);
+        scalar_protocol_mark!(self,"scalar_entry_budget",None);
         self.load64(9,19,state::FRAME_LEN);self.load64(10,19,resumable::FRAME_END);
         self.cmp(9,10);self.decline(Cond::Hs,&mut before);
+        scalar_protocol_mark!(self,"scalar_frame_capacity",None);
         self.imm(10,f.frame_align as u64-1);
         self.three(0xab000000,21,3,10);self.decline(Cond::Hs,&mut before);
         self.imm(10,!(f.frame_align as u64-1));self.three(0x8a000000,21,21,10);
         self.imm(10,f.frame_size.max(1) as u64);
         self.three(0xab000000,11,21,10);self.decline(Cond::Hs,&mut before);
         self.load64(10,19,resumable::MEMORY_END);self.cmp(11,10);self.decline(Cond::Hi,&mut before);
+        scalar_protocol_mark!(self,"scalar_memory_capacity",None);
         self.load64(12,19,state::REGISTER_LEN);self.imm(10,f.registers as u64);
         self.three(0xab000000,17,12,10);self.decline(Cond::Hs,&mut before);
         self.load64(10,19,resumable::REGISTER_END);self.cmp(17,10);self.decline(Cond::Hi,&mut before);
+        scalar_protocol_mark!(self,"scalar_register_capacity",None);
         self.lsl_imm(13,17,4);self.three(0xab000000,13,13,11);self.decline(Cond::Hs,&mut before);
         self.load64(10,19,resumable::WORKING_BUDGET);self.cmp(13,10);self.decline(Cond::Hi,&mut before);
+
+        scalar_protocol_mark!(self,"scalar_working_budget",None);
 
         let stack=ARGUMENTS+args.len()*16;assert!(stack%16==0 && stack<4096);
         self.sub_imm(31,31,stack);
         for (reg,offset) in [(3,24),(30,32),(11,48)] {self.store64(reg,31,offset);}
+        scalar_protocol_mark!(self,"scalar_save_host",None);
         if f.result.size!=0 {self.get(11,destination,false);self.scalar_guard_address(11,f.result.size,true,&mut private);self.store64(11,31,40);}
+        scalar_protocol_mark!(self,"scalar_result_guard",None);
         for (index,(&source,slot)) in args.iter().zip(&f.args).enumerate() {
             if slot.size==0 {continue;} // No input lane exists for a zero-byte argument.
             let prior=self.failures.len();
@@ -133,9 +149,11 @@ impl Assembler<'_> {
             private.extend(self.failures.drain(prior..).map(|(at,kind)|{assert!(kind==Failure::Memory);at}));
             // The scalar emitter reads no high half for an input <= 8 bytes.
             // Keep the exact address guard and low-byte read, including odd widths.
+            scalar_protocol_mark!(self,"argument_scalar_source",Some(index));
             self.load_mem(9,if slot.size>8 {10} else {31},11,slot.size);
             self.store64(9,31,ARGUMENTS+index*16);
             if slot.size>8 {self.store64(10,31,ARGUMENTS+index*16+8);}
+            scalar_protocol_mark!(self,"argument_scalar_capture",Some(index));
         }
         // Private leaf inputs and Output live at fixed caller-SP offsets;
         // x21 is the prechecked logical base. x0–x2, x4–x8 and x19–x29 stay
@@ -143,31 +161,41 @@ impl Assembler<'_> {
         self.imm(16,entry.target as u64);
         self.emit(0xd63f0200); // blr x16: one nonrecursive native leaf
         self.cmp(9,31);self.decline(Cond::Ne,&mut private);
+        scalar_protocol_mark!(self,"scalar_dispatch",None);
 
         // Restore the parent's live ABI while retaining private output. No
         // fallible action follows success; this is the transaction commit.
         for (reg,offset) in [(3,24),(30,32)] {self.load64(reg,31,offset);}
+        scalar_protocol_mark!(self,"scalar_restore_host",None);
         self.charge_transition(pc,profiled);
         if let Some(steps)=entry.success_steps {self.sub_imm(BUDGET_REGISTER,BUDGET_REGISTER,steps);}
         else {self.load64(9,31,OUTPUT+16);self.three(0xcb000000,BUDGET_REGISTER,BUDGET_REGISTER,9);}
+        scalar_protocol_mark!(self,"scalar_charge_steps",None);
         self.three(0x8b000000,11,2,3);self.three(0x8b000000,12,2,21);
         self.zero_range()?; // retain exactly the ordinary Call's zeroed padding
+        scalar_protocol_mark!(self,"scalar_padding_clear",None);
         if f.result.size!=0 {
             self.load64(9,31,OUTPUT);self.load64(10,31,OUTPUT+8);self.load64(12,31,40);
             self.store_mem(9,10,12,f.result.size);
         }
+        scalar_protocol_mark!(self,"scalar_result_copy",None);
         self.load64(10,31,48);self.load64(9,19,state::PEAK_LINEAR);self.cmp(10,9);
         self.emit(0x9a892149); // csel x9,x10,x9,hs
         self.store64(9,19,state::PEAK_LINEAR);
+        scalar_protocol_mark!(self,"scalar_peak_memory",None);
         self.mov(3,21);
         self.increment_cursor(state::CALLS);self.increment_cursor(state::RETURNS);
+        scalar_protocol_mark!(self,"scalar_commit_counters",None);
         if profiled {self.scalar_profile(id,f.code.len())?;}
+        scalar_protocol_mark!(self,"scalar_commit_profile",None);
         self.add_imm(31,31,stack);
         self.successor(pc+1);
+        scalar_protocol_mark!(self,"scalar_successor",None);
 
         let restore=self.words.len();
         for at in private {self.patch_conditional(at,restore)?;}
         self.scalar_restore(stack);
+        scalar_protocol_mark!(self,"scalar_private_fallback",None);
         let fallback=self.words.len();
         for at in before {self.patch_conditional(at,fallback)?;}
         Ok(())
