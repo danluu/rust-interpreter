@@ -180,7 +180,7 @@
 +mod branch_budget;
 --- /dev/null
 +++ b/crates/bytecode/src/jit/branch_budget_tests.rs
-@@ -0,0 +1,196 @@
+@@ -0,0 +1,218 @@
 +//! Native reservation boundaries, kept separate from the typed graph model.
 +use super::*;
 +
@@ -375,5 +375,27 @@
 +                (a,b)=>panic!("budget {budget}: {a:?} versus {b:?}"),
 +            }
 +        }
++    }
++}
++
++#[test]
++fn branch_reservation_fast_entries_do_not_supply_implicit_arithmetic_flags() {
++    for op in [Binary::Sub,Binary::Shl,Binary::Shr,Binary::Eq,Binary::Lt] {
++        let mut p=diamond();
++        p.functions[0].code[1]=Op::Binary {dst:1,overflow:7,op,a:5,b:6,bits:128,signed:false};
++        p.functions[0].code[2]=Op::Store {address:4,src:1,size:16};
++        for profiled in [false,true] {for persistent in [false,true] {
++            let candidate=compiled(&p,profiled,persistent,true);let reference=compiled(&p,profiled,persistent,false);
++            for (a,b) in [(0u128,1u128),(1u128<<127,63),(u128::MAX,64),(1,127),(u128::MAX,u128::MAX)] {
++                let actual=probe(&candidate,0,8,0,16,a,b);
++                assert_eq!(actual,probe(&reference,0,8,0,16,a,b));
++                let expected=match op {
++                    Binary::Sub=>a.wrapping_sub(b),Binary::Shl=>a.wrapping_shl(b as u32),
++                    Binary::Shr=>a.wrapping_shr(b as u32),Binary::Eq=>u128::from(a==b),
++                    Binary::Lt=>u128::from(a<b),_=>unreachable!(),
++                };
++                assert_eq!(&actual.memory[16..32],&expected.to_le_bytes());
++            }
++        }}
 +    }
 +}

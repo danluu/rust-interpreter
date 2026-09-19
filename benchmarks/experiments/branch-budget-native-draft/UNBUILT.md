@@ -5,7 +5,7 @@ The shared benchmark lock belongs to a peer's Ruff experiment. Preserve that
 workload and complete the planner gate before applying this patch.
 
 The patch proposes feature-only checked/fast entries and exact suffix refunds,
-plus seven native controls. Its source hashes are in receipt.json. Positive
+plus eight native controls. Its source hashes are in receipt.json. Positive
 refunds use non-flag-setting ADD x22 and a local branch thunk. Source-associated
 links require their certified target; missing native entries reject unpublished
 staging rather than entering a VM tail that would refund twice. Fault/VM tails
@@ -16,7 +16,8 @@ The controls cover each ordinary external entry in an unequal diamond, every
 short budget, both profile/register modes, duplicate/wide switch selectors,
 exact fault budget and state, ABI/backing canaries, guarded preflight declines,
 code-capacity refusal, map reconstruction, ADD encodings and long initializer
-credit-cap boundaries. These are authored controls, not passed tests.
+credit-cap boundaries. Wide arithmetic controls also reject dependence on incoming
+condition flags after skipping a budget check. These are authored controls, not passed tests.
 
 Still needed: a new qualified map reader, both-profile native qualification,
 default-disabled emission comparison, workspace/strict/original-project suite
