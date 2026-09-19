@@ -1,0 +1,1 @@
+Failed overall. Both alias models executed all 13 test bodies successfully, then each command returned 1 because std and rustc_literal_escaper were not supplied in rlib form. The result remains failed; tests_per_checker is the requested suite size, not an assertion of successful command closure. See successor03 for the corrected complete run.

@@ -1,0 +1,1 @@
+Exact core/std dependency association correction: pass both matching full .rmeta and stub .rlib forms as the passed native13 command does, retaining the actual02 MIR-only literal dependency rlib format. Both failed predecessors are preserved; all tests/source/MIR/alias settings/resource limits are unchanged. No feature override or native-code dependency.

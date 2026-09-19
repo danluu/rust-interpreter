@@ -1,0 +1,1 @@
+Passed. Dependency compilation and both Miri commands returned 0. Each alias model ran all 13 actual library tests: ten Arena and three Interner tests, with empty stderr. All retained source/sysroot records and generated dependency outputs stayed unchanged. This qualifies the library unit suite; compiler/server integration and application performance remain unmeasured.

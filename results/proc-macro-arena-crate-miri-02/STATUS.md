@@ -1,0 +1,1 @@
+Failed before test execution. Both test commands returned 1 because the chosen core/std rlibs were metadata stubs and the corresponding full rmeta files were not also supplied. The dependency build succeeded. The result remains failed; tests_per_checker is the requested suite size, not an executed test count. See successor03.

@@ -1,0 +1,134 @@
+--- miri05/run_once.py
++++ whole-crate-miri01/run_once.py
+@@ -1,11 +1,14 @@
+-"""Both alias checkers over ten actual corrected Arena04 tests."""
++"""Real literal dependency metadata and both alias checkers over all thirteen actual proc_macro tests."""
+ from pathlib import Path
+ import fcntl, hashlib, json, os, resource, shutil, subprocess, time, tomllib, traceback
+ 
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ RESULT = Path(__file__).resolve().parent
+-WORK = ROOT / '.work/proc-macro-arena-miri-03'
+-SOURCE = ROOT / 'experiments/proc-macro-arena-reuse-04'
++WORK = ROOT / '.work/proc-macro-arena-crate-miri-01'
++SOURCE = ROOT / 'results/proc-macro-arena-crate-05/source'
++PLAN_PATH = Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/proc-macro-arena-whole-crate-miri-plan-01.json')
++assert hashlib.sha256(PLAN_PATH.read_bytes()).hexdigest() == '41a09bd38b49f162dbe3eab9a3e65404ba3f1708836054e06da93f56d3f0814e'
++PLAN = json.loads(PLAN_PATH.read_text())
+ SYSROOT = ROOT / '.work/proc-macro-arena-miri-02/sysroot'
+ TOOLS = ROOT / '.work/proc-macro-miri-tools-01'
+ TC = Path('/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin')
+@@ -14,7 +17,7 @@
+ REGISTRY_ID = 'index.crates.io-1949cf8c6b5b557f'
+ LOCK = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+ GIB = 1024**3
+-PINS = {Path(k): v for k, v in {'/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/patched/arena.rs': 'a2b05d25db81e5703fa5872e4b7961774a961a3360c0420daf8d2c740e4e5fa2', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/arena_unit_tests.rs': '8a35ff5739e53cb4984f56d299888ce1cf99ad03aff2a9211777438a4e0141d6', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-miri-tools-01/bin/miri': '8f20c45b352ceffd3495a23c90b62653ee46a671979e66a264ebcb4c6a25105f', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-miri-04/setup-record.json': 'ccf4049e269b2b41457bf50032cea72ea1f517dff8688206c0d458fafa453c00', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-miri-04/result.json': '5ae60bb920563e2face6157b81c3760ba10c81d7f80d5215727e939be49e98a8', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-stock-miri-01/result.json': '700fdc0db828a3ef85e89ea7cda9f4b41033dea1301488759d1e4b07490128ec'}.items()}
++PINS = {Path(k): v for k, v in {'/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/Cargo.toml': 'f91d22525f86110eb784ba390dd389033b87e8f7841c071a7803a1c63121a990', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/arena.rs': 'a2b05d25db81e5703fa5872e4b7961774a961a3360c0420daf8d2c740e4e5fa2', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/buffer.rs': '858499925d66e8014bf779ded30d67718ce9fed9541442f4a81b799b7f302560', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/client.rs': 'fe5d6760d816a6f1f612d85107eed3a88d8929af93cb4309ababcd3e9b4565b2', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/closure.rs': '03453e29c27d9a3ffafe2455bee14d65815fa6c8df1e9d6cf131aacc2ef624a8', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/fxhash.rs': '43c95da90564aa359a25b5a567cb5da351f40092caa260c29d009b7e25c68647', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/handle.rs': 'cd7e0b6c7940f7ae9baad9c463e4bc3a77dd5db29922a2e988dfeef4230d5bde', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/mod.rs': 'cdcdf5e2d24471f06b59f2baa7f254c5160bc0acc25a06c535f8cb3872eeb83b', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/panic_message.rs': '56d2ceea35eaae7cf601a8029e5351b24a3ac56c3e3f4f4b2d4fd6d933aed971', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/rpc.rs': '611a26a3f2080a821a6921c1f0e74e734bf9cb9dd37891c82765f9755a6cf06c', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/selfless_reify.rs': 'ee921c120b8a72c6e1e0df5ec3d5b0662b5411c49673a7ceecbc37b421c76edd', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/server.rs': '1a6eb7d13e8af5b16e3fa7930e4ff2925bf861ec4b86e06df75595d01e9e8d3a', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/symbol.rs': '086c4712892a0377af36274941cce3585cf306290ebbb06158ccf4789bdbe3ba', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/diagnostic.rs': '8c84548915beeea0de620ac65ab93d89d124e19ac02632b080293b0c1c80cb8a', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/escape.rs': '66c6b2d053be4c6b8a63c508c475173322ea3a70e495018938ba5f93b8662dfd', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/lib.rs': '68237ec6a7a9a2d1dd7cd81e41ccb2996414df1891e4d8dba9e4f19a862c1f50', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/quote.rs': '87451d78d39b8de71a06744cb20b38cd415c38f621e41c9112b0cf005128d2b0', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/to_tokens.rs': '8d6dd0acef632336cf4b10319eb1f4a035a035b6bb4b0d3ba57aed11f917e48a', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/literal-escaper.rs': 'd79e2b634a4d25f44258c2a8afd854e1f87c967716fb564603feb89246c0f722', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-miri-tools-01/bin/miri': '8f20c45b352ceffd3495a23c90b62653ee46a671979e66a264ebcb4c6a25105f', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/result.json': '3650b6c5bd07ecf3ea75125131f967921fdc148d1af6aceef5a58c4e1624d60c', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-miri-05/result.json': 'a0a24195b2809ef100c422e1744da021d550d0e73fa41c51bd28ef166846674c', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-miri-02/sysroot/lib/rustlib/aarch64-apple-darwin/lib/libcore-5f55620141d53a81.rmeta': 'adb271a81db50f61c6e280ac2b486bd64d82aa4a7b83065fbf83eedf1efeb5de', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-miri-02/sysroot/lib/rustlib/aarch64-apple-darwin/lib/libstd-caac9ef6fc0b4c88.rmeta': '6aef747cc57841a30e8e954cc047093bb92ab9f0f48f96547db3f5816a27a198', '/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/proc-macro-arena-whole-crate-miri-plan-01.json': '41a09bd38b49f162dbe3eab9a3e65404ba3f1708836054e06da93f56d3f0814e', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/preparation-plan.json': '992a5892d22eb5eb5c330cde45a9cd4cedc585850235ef0782f80ae80c43a348', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-miri-04/setup-record.json': 'ccf4049e269b2b41457bf50032cea72ea1f517dff8688206c0d458fafa453c00'}.items()}
+ 
+ def sha(path):
+     return hashlib.sha256(path.read_bytes()).hexdigest()
+@@ -45,14 +48,15 @@
+     resource.setrlimit(resource.RLIMIT_FSIZE, (512 * 1024**2, 512 * 1024**2))
+     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+ 
+-def run(label, command, cpu):
+-    record = {'command': command, 'cwd': str(WORK), 'environment': environment,
++def run(label, command, cpu, additions):
++    child_environment = dict(environment, **additions)
++    record = {'command': command, 'cwd': str(WORK), 'environment': child_environment,
+               'parent_pid': os.getpid(), 'parent_parent_pid': os.getppid(),
+               'started_at': time.time(), 'free_bytes_before': gate(),
+               'cpu_limit_seconds_per_process': cpu, 'file_limit_bytes': 512 * 1024**2,
+               'capacity_observations_are_posthoc_checks': True}
+     with (RESULT / (label + '.stdout')).open('xb') as out, (RESULT / (label + '.stderr')).open('xb') as err:
+-        child = subprocess.Popen(command, cwd=WORK, env=environment, stdout=out, stderr=err,
++        child = subprocess.Popen(command, cwd=WORK, env=child_environment, stdout=out, stderr=err,
+                                  preexec_fn=lambda: limits(cpu), pass_fds=(lock.fileno(),))
+         record.update(pid=child.pid, spawned_at=time.time())
+         save(label + '-started.json', record)
+@@ -81,18 +85,13 @@
+ assert LOCK.is_file() and LOCK.resolve(strict=True) == LOCK
+ gate()
+ WORK.mkdir()
+-for name in ['tmp', 'cargo-home']:
++for name in ['tmp', 'cargo-home', 'deps']:
+     (WORK / name).mkdir()
+ for parent in [WORK, *WORK.parents]:
+     assert not any((parent / '.cargo' / n).exists() for n in ['config', 'config.toml']), str(parent)
+-environment = {
+-    'PATH': str(TC / 'bin') + ':/usr/bin:/bin:/usr/sbin:/sbin', 'LANG': 'C', 'LC_ALL': 'C',
+-    'TMPDIR': str(WORK / 'tmp'), 'CARGO_HOME': str(WORK / 'cargo-home'),
+-    'CARGO_NET_OFFLINE': 'true', 'CARGO_BUILD_JOBS': '1',
+-    'CARGO': str(TC / 'bin/cargo'), 'MIRI': str(TOOLS / 'bin/miri'),
+-    'MIRI_HOST_SYSROOT': str(TC), 'MIRI_LIB_SRC': str(LIB),
+-    'MIRI_SYSROOT': str(SYSROOT), 'DYLD_LIBRARY_PATH': str(TC / 'lib'),
+-}
++environment = PLAN['environment']
++assert 'MIRI_BE_RUSTC' not in environment
++
+ source_paths = [*PINS, *sorted(p for p in SYSROOT.rglob('*') if p.is_file()), TC / 'bin/rustc', TC / 'bin/cargo', LIB / 'Cargo.lock',
+                 LIB / 'Cargo.toml', TC / 'lib/rustlib/multirust-channel-manifest.toml',
+                 TOOLS / 'download.json', TOOLS / 'extraction.json', Path(__file__)]
+@@ -102,6 +101,8 @@
+                      'canonical_lock': str(LOCK), 'maximum_lock_wait_seconds': 600,
+                      'environment': environment, 'work': str(WORK)})
+ commands = []
++dependency_passed = False
++dependency_outputs = None
+ checker_passed = {'stacked-borrows': False, 'tree-borrows': False}
+ admitted = None
+ released = None
+@@ -119,12 +120,28 @@
+                 time.sleep(0.25)
+         admitted = time.time()
+         save('admission.json', {'admitted_at': admitted, 'free_bytes': gate(), 'parent_pid': os.getpid()})
+-        base = [str(TOOLS / 'bin/miri'), '--sysroot', str(SYSROOT), '--test', '--edition=2024']
+-        target = [str(SOURCE / 'arena_unit_tests.rs'), '--', '--test-threads=1']
+-        for label, flags in [('stacked-borrows', []), ('tree-borrows', ['-Zmiri-tree-borrows'])]:
+-            record = run(label, base + flags + target, 180)
++        expected = json.loads((ROOT / 'results/proc-macro-arena-crate-05/preparation-plan.json').read_text())['expected_unit_tests']
++        names = [name for group in expected.values() for name in group]
++        assert len(names) == len(set(names)) == 13
++        dependency = PLAN['commands'][0]
++        record = run(dependency['label'], dependency['argv'], dependency['cpu_seconds'], dependency['environment_additions'])
++        dependency_passed = record['returncode'] == 0
++        if not dependency_passed:
++            raise RuntimeError('literal dependency metadata compilation failed')
++        metadata = WORK / 'deps/librustc_literal_escaper.rmeta'
++        assert metadata.is_file() and metadata.stat().st_size > 0
++        dependency_outputs = {str(p): row(p) for p in sorted((WORK / 'deps').iterdir()) if p.is_file()}
++        assert len(dependency_outputs) == 2 and any(p.endswith('.d') for p in dependency_outputs)
++        save('dependency-outputs.json', dependency_outputs)
++        for command in PLAN['commands'][1:]:
++            assert command['environment_additions'] == {}
++            label = command['label']
++            record = run(label, command['argv'], command['cpu_seconds'], command['environment_additions'])
++            raw = (RESULT / (label + '.stdout')).read_text()
+             checker_passed[label] = (record['returncode'] == 0 and
+-                'test result: ok. 10 passed; 0 failed; 0 ignored;' in (RESULT / (label + '.stdout')).read_text())
++                'test result: ok. 13 passed; 0 failed; 0 ignored;' in raw and
++                all(raw.count('::' + name + ' ... ok') == 1 for name in names))
++        assert dependency_outputs == {str(p): row(p) for p in sorted((WORK / 'deps').iterdir()) if p.is_file()}
+     released = time.time()
+ except BaseException:
+     failure = traceback.format_exc()
+@@ -136,15 +153,15 @@
+     after = {str(p): row(p) for p in source_paths}
+     save('source-after.json', after)
+     unchanged = before == after
+-    result = {'status': 'passed' if failure is None and unchanged and len(commands) == 2 and all(checker_passed.values()) else 'failed',
++    result = {'status': 'passed' if failure is None and unchanged and len(commands) == 3 and dependency_passed and all(checker_passed.values()) else 'failed',
+               'finished_at': time.time(), 'canonical_lock_admitted_at': admitted,
+               'canonical_lock_released_at': released, 'sources_unchanged': unchanged,
+-              'reused_successful_sysroot': str(SYSROOT), 'both_checkers_observed': len(commands) == 2,
+-              'completed_commands': len(commands), 'arena_tests_per_checker': 10,
++              'reused_successful_sysroot': str(SYSROOT), 'both_checkers_observed': len(commands) == 3, 'dependency_passed': dependency_passed,
++              'completed_commands': len(commands), 'tests_per_checker': 13, 'arena_tests_per_checker': 10, 'interner_tests_per_checker': 3,
+               'stacked_borrows_passed': checker_passed['stacked-borrows'],
+               'tree_borrows_passed': checker_passed['tree-borrows'],
+               'workspace_usage': disk_usage(WORK), 'free_bytes_after': shutil.disk_usage(ROOT).free,
+-              'compiler_integration': False, 'interner_tests_run': 0, 'benchmark': False,
++              'compiler_integration': False, 'interner_scope': 'actual original module with reviewed reset change', 'benchmark': False,
+               'network_permitted': False, 'failure': failure}
+     save('result.json', result)
+     manifest = {p.name: row(p) for p in sorted(RESULT.iterdir()) if p.is_file()}

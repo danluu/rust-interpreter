@@ -1,0 +1,374 @@
+{
+  "artifact_correction": "Keep successful actual02 MIR-only literal rlib format. For core/std explicitly bind both matching .rlib and .rmeta forms exactly as actual native13; sysroot rlibs contain metadata stubs, and rmeta-only loses link-format association. No changes to test/source/MIR/alias flags.",
+  "bounds": {
+    "canonical_lock": "/Users/danluu/dev/rust-interp/.work/benchmark.lock",
+    "canonical_wait_seconds": 600,
+    "capacity_observations": "posthoc checks; no signals or foreign process control",
+    "concurrency": 1,
+    "cpu_seconds_dependency": 120,
+    "cpu_seconds_each_checker": 180,
+    "entry_free_bytes": 17179869184,
+    "new_output_estimate": "Dependency metadata likely below 1 MiB; conservative new scratch estimate below 16 MiB excluding existing 112.6 MB sysroot; output size remains an estimate until actual readback.",
+    "observed_floor_bytes": 8589934592,
+    "per_output_file_bytes": 536870912,
+    "scratch_bound_bytes": 4294967296
+  },
+  "checks": [
+    "Hash all exact 18 source files, literal source, Miri/compiler bins and all 82 sysroot files before and after.",
+    "Dependency must close rc0 with regular nonempty rlib; hash and retain generated rlib+dep-info.",
+    "Unset MIRI_BE_RUSTC for both test commands; no RUSTC_BOOTSTRAP or crate-feature injection, no alias checker disabled.",
+    "Run both checkers independently after dependency success; require exact 13 passed plus all 10 Arena and 3 Interner test names from saved native preparation plan.",
+    "Retain actual commands/environment/PIDs/parentage/start/end/waited closure/stdout/stderr and source hashes with ordinary runner.",
+    "No setup rerun, Cargo, network, native artifact substitution, source mutation, or fallback."
+  ],
+  "commands": [
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-miri-tools-01/bin/miri",
+        "--crate-name",
+        "rustc_literal_escaper",
+        "--edition=2021",
+        "--crate-type=rlib",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/literal-escaper.rs",
+        "--target",
+        "aarch64-apple-darwin",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-miri-02/sysroot",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "--emit=link,dep-info",
+        "-o",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-crate-miri-03/deps/librustc_literal_escaper.rlib"
+      ],
+      "cpu_seconds": 120,
+      "environment_additions": {
+        "MIRI_BE_RUSTC": "target"
+      },
+      "label": "literal-dependency"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-miri-tools-01/bin/miri",
+        "--crate-name",
+        "proc_macro",
+        "--edition=2024",
+        "--test",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/lib.rs",
+        "--target",
+        "aarch64-apple-darwin",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-miri-02/sysroot",
+        "--cfg",
+        "feature=\"default\"",
+        "--cfg",
+        "feature=\"rustc-dep-of-std\"",
+        "--check-cfg",
+        "cfg(test,miri)",
+        "--check-cfg",
+        "cfg(feature, values(\"default\", \"rustc-dep-of-std\"))",
+        "--extern",
+        "core=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-miri-02/sysroot/lib/rustlib/aarch64-apple-darwin/lib/libcore-5f55620141d53a81.rlib",
+        "--extern",
+        "core=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-miri-02/sysroot/lib/rustlib/aarch64-apple-darwin/lib/libcore-5f55620141d53a81.rmeta",
+        "--extern",
+        "std=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-miri-02/sysroot/lib/rustlib/aarch64-apple-darwin/lib/libstd-caac9ef6fc0b4c88.rlib",
+        "--extern",
+        "std=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-miri-02/sysroot/lib/rustlib/aarch64-apple-darwin/lib/libstd-caac9ef6fc0b4c88.rmeta",
+        "--extern",
+        "rustc_literal_escaper=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-crate-miri-03/deps/librustc_literal_escaper.rlib",
+        "-L",
+        "dependency=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-crate-miri-03/deps",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-C",
+        "panic=unwind",
+        "--",
+        "--test-threads=1"
+      ],
+      "cpu_seconds": 180,
+      "environment_additions": {},
+      "label": "stacked-borrows"
+    },
+    {
+      "argv": [
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-miri-tools-01/bin/miri",
+        "--crate-name",
+        "proc_macro",
+        "--edition=2024",
+        "--test",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/lib.rs",
+        "--target",
+        "aarch64-apple-darwin",
+        "--sysroot",
+        "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-miri-02/sysroot",
+        "--cfg",
+        "feature=\"default\"",
+        "--cfg",
+        "feature=\"rustc-dep-of-std\"",
+        "--check-cfg",
+        "cfg(test,miri)",
+        "--check-cfg",
+        "cfg(feature, values(\"default\", \"rustc-dep-of-std\"))",
+        "--extern",
+        "core=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-miri-02/sysroot/lib/rustlib/aarch64-apple-darwin/lib/libcore-5f55620141d53a81.rlib",
+        "--extern",
+        "core=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-miri-02/sysroot/lib/rustlib/aarch64-apple-darwin/lib/libcore-5f55620141d53a81.rmeta",
+        "--extern",
+        "std=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-miri-02/sysroot/lib/rustlib/aarch64-apple-darwin/lib/libstd-caac9ef6fc0b4c88.rlib",
+        "--extern",
+        "std=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-miri-02/sysroot/lib/rustlib/aarch64-apple-darwin/lib/libstd-caac9ef6fc0b4c88.rmeta",
+        "--extern",
+        "rustc_literal_escaper=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-crate-miri-03/deps/librustc_literal_escaper.rlib",
+        "-L",
+        "dependency=/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-crate-miri-03/deps",
+        "-C",
+        "opt-level=0",
+        "-C",
+        "debuginfo=0",
+        "-C",
+        "panic=unwind",
+        "-Zmiri-tree-borrows",
+        "--",
+        "--test-threads=1"
+      ],
+      "cpu_seconds": 180,
+      "environment_additions": {},
+      "label": "tree-borrows"
+    }
+  ],
+  "created_at": 1789818873.99371,
+  "environment": {
+    "CARGO": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/bin/cargo",
+    "CARGO_BUILD_JOBS": "1",
+    "CARGO_HOME": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-crate-miri-03/cargo-home",
+    "CARGO_NET_OFFLINE": "true",
+    "DYLD_LIBRARY_PATH": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib",
+    "LANG": "C",
+    "LC_ALL": "C",
+    "MIRI": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-miri-tools-01/bin/miri",
+    "MIRI_HOST_SYSROOT": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin",
+    "MIRI_LIB_SRC": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library",
+    "MIRI_SYSROOT": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-miri-02/sysroot",
+    "PATH": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+    "TMPDIR": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-crate-miri-03/tmp"
+  },
+  "explicit_std_metadata": [
+    {
+      "bytes": 1024,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-miri-02/sysroot/lib/rustlib/aarch64-apple-darwin/lib/libcore-5f55620141d53a81.rlib",
+      "sha256": "9cc7c8be4e7984c2d29ce3fb55f73e2ea6ff5d714fb5f5c6375a191f524510c5"
+    },
+    {
+      "bytes": 67800996,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-miri-02/sysroot/lib/rustlib/aarch64-apple-darwin/lib/libcore-5f55620141d53a81.rmeta",
+      "sha256": "adb271a81db50f61c6e280ac2b486bd64d82aa4a7b83065fbf83eedf1efeb5de"
+    },
+    {
+      "bytes": 1024,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-miri-02/sysroot/lib/rustlib/aarch64-apple-darwin/lib/libstd-caac9ef6fc0b4c88.rlib",
+      "sha256": "0c991ddb3a32ae39905853acfd64fddb9977d389f9c6924536ec133af5ec5bad"
+    },
+    {
+      "bytes": 8236204,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-miri-02/sysroot/lib/rustlib/aarch64-apple-darwin/lib/libstd-caac9ef6fc0b4c88.rmeta",
+      "sha256": "6aef747cc57841a30e8e954cc047093bb92ab9f0f48f96547db3f5816a27a198"
+    }
+  ],
+  "literal_dependency": {
+    "bytes": 21694,
+    "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/literal-escaper.rs",
+    "sha256": "d79e2b634a4d25f44258c2a8afd854e1f87c967716fb564603feb89246c0f722"
+  },
+  "miri": {
+    "bytes": 5188472,
+    "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-miri-tools-01/bin/miri",
+    "sha256": "8f20c45b352ceffd3495a23c90b62653ee46a671979e66a264ebcb4c6a25105f"
+  },
+  "prior_arena_miri_result": {
+    "bytes": 737,
+    "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-miri-05/result.json",
+    "sha256": "a0a24195b2809ef100c422e1744da021d550d0e73fa41c51bd28ef166846674c"
+  },
+  "prior_failed_attempt": {
+    "literal-dependency-record.json": {
+      "bytes": 3256,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-miri-01/literal-dependency-record.json",
+      "sha256": "b531424333808c91535890860577e02b8730e11e071920b1720e29bccd9096ce"
+    },
+    "manifest.json": {
+      "bytes": 8777,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-miri-01/manifest.json",
+      "sha256": "9e04cae5f33ec5b8c7a3c360f12e2736ae586fbc8a56d8a8a3a57cf4bc8c7d0b"
+    },
+    "result.json": {
+      "bytes": 887,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-miri-01/result.json",
+      "sha256": "12e596feba14cceedc554f99b660d80b3ce6f2672f3d64ce33bdc4328b92f132"
+    },
+    "stacked-borrows-record.json": {
+      "bytes": 3972,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-miri-01/stacked-borrows-record.json",
+      "sha256": "80d02eef28be447b48d0acec8e4b33e3a8e23fa8943390e4d8e723141b8ca019"
+    },
+    "tree-borrows-record.json": {
+      "bytes": 3998,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-miri-01/tree-borrows-record.json",
+      "sha256": "3a2086f67f9ab0d218098e915ca770ed41c2002237d6b03c8fbb4359758a691b"
+    }
+  },
+  "prior_failed_attempt02": {
+    "literal-dependency-record.json": {
+      "bytes": 3251,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-miri-02/literal-dependency-record.json",
+      "sha256": "70342c17da72ca162ac1805703e751df12d2d5e8a61dda4b287d333437356b3b"
+    },
+    "manifest.json": {
+      "bytes": 8789,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-miri-02/manifest.json",
+      "sha256": "b8ed3ee224eb341951f867a778e2ef6b811792e0a0b9fd9388589c8c7404f134"
+    },
+    "result.json": {
+      "bytes": 887,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-miri-02/result.json",
+      "sha256": "386ec9c889c06529f50d1741cbf2908cd3159f9f7f633f324fcbd7a38032a3a3"
+    },
+    "stacked-borrows-record.json": {
+      "bytes": 3970,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-miri-02/stacked-borrows-record.json",
+      "sha256": "6cfdb2b334916d03f099d71e89e9b28134a8e7734744a2a245a968a63f56a444"
+    },
+    "tree-borrows-record.json": {
+      "bytes": 3993,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-miri-02/tree-borrows-record.json",
+      "sha256": "d49236280a833de9507bad883ff91fc5494a80701c88b99ffa3df209dcbee8db"
+    }
+  },
+  "prior_native_result": {
+    "bytes": 770,
+    "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/result.json",
+    "sha256": "3650b6c5bd07ecf3ea75125131f967921fdc148d1af6aceef5a58c4e1624d60c"
+  },
+  "results": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-miri-03",
+  "scope": "Whole actual proc_macro unit crate (10 Arena +3 Interner) under Miri; not bridge08, rustc server, macro dylib/caller, full compiler qualification or benchmark.",
+  "source": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source",
+  "source_basis": [
+    {
+      "file": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/tools/miri/src/bin/miri.rs",
+      "lines": "235-272, 275-334, 414-435",
+      "reason": "MIRI_BE_RUSTC=target injects default MIR flags and dependency callbacks. Codegen/join/link all delegate to DummyCodegenBackend; target rlib container includes MIR metadata without native machine-code backend."
+    },
+    {
+      "file": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/tools/miri/src/lib.rs",
+      "lines": "187-203",
+      "reason": "Default flags include always-encode-mir and mir-opt-level=0 without changing the alias checker."
+    },
+    {
+      "file": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/tools/miri/cargo-miri/src/phases.rs",
+      "lines": "406-432, 528-533",
+      "reason": "Cargo-miri uses the same target mode, including metadata-only compilation."
+    },
+    {
+      "file": "actual native13 compile-record.json",
+      "reason": "Actual passed command supplies core/std both .rlib and .rmeta with same hashes/basenames. Compiler locator extract_lib processes rmeta before rlib."
+    }
+  ],
+  "source_rows": [
+    {
+      "bytes": 598,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/Cargo.toml",
+      "sha256": "f91d22525f86110eb784ba390dd389033b87e8f7841c071a7803a1c63121a990"
+    },
+    {
+      "bytes": 12636,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/arena.rs",
+      "sha256": "a2b05d25db81e5703fa5872e4b7961774a961a3360c0420daf8d2c740e4e5fa2"
+    },
+    {
+      "bytes": 3345,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/buffer.rs",
+      "sha256": "858499925d66e8014bf779ded30d67718ce9fed9541442f4a81b799b7f302560"
+    },
+    {
+      "bytes": 8977,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/client.rs",
+      "sha256": "fe5d6760d816a6f1f612d85107eed3a88d8929af93cb4309ababcd3e9b4565b2"
+    },
+    {
+      "bytes": 915,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/closure.rs",
+      "sha256": "03453e29c27d9a3ffafe2455bee14d65815fa6c8df1e9d6cf131aacc2ef624a8"
+    },
+    {
+      "bytes": 3364,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/fxhash.rs",
+      "sha256": "43c95da90564aa359a25b5a567cb5da351f40092caa260c29d009b7e25c68647"
+    },
+    {
+      "bytes": 2113,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/handle.rs",
+      "sha256": "cd7e0b6c7940f7ae9baad9c463e4bc3a77dd5db29922a2e988dfeef4230d5bde"
+    },
+    {
+      "bytes": 12226,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/mod.rs",
+      "sha256": "cdcdf5e2d24471f06b59f2baa7f254c5160bc0acc25a06c535f8cb3872eeb83b"
+    },
+    {
+      "bytes": 1910,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/panic_message.rs",
+      "sha256": "56d2ceea35eaae7cf601a8029e5351b24a3ac56c3e3f4f4b2d4fd6d933aed971"
+    },
+    {
+      "bytes": 6724,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/rpc.rs",
+      "sha256": "611a26a3f2080a821a6921c1f0e74e734bf9cb9dd37891c82765f9755a6cf06c"
+    },
+    {
+      "bytes": 2970,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/selfless_reify.rs",
+      "sha256": "ee921c120b8a72c6e1e0df5ec3d5b0662b5411c49673a7ceecbc37b421c76edd"
+    },
+    {
+      "bytes": 10509,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/server.rs",
+      "sha256": "1a6eb7d13e8af5b16e3fa7930e4ff2925bf861ec4b86e06df75595d01e9e8d3a"
+    },
+    {
+      "bytes": 9042,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/bridge/symbol.rs",
+      "sha256": "086c4712892a0377af36274941cce3585cf306290ebbb06158ccf4789bdbe3ba"
+    },
+    {
+      "bytes": 5858,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/diagnostic.rs",
+      "sha256": "8c84548915beeea0de620ac65ab93d89d124e19ac02632b080293b0c1c80cb8a"
+    },
+    {
+      "bytes": 1787,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/escape.rs",
+      "sha256": "66c6b2d053be4c6b8a63c508c475173322ea3a70e495018938ba5f93b8662dfd"
+    },
+    {
+      "bytes": 75695,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/lib.rs",
+      "sha256": "68237ec6a7a9a2d1dd7cd81e41ccb2996414df1891e4d8dba9e4f19a862c1f50"
+    },
+    {
+      "bytes": 18499,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/quote.rs",
+      "sha256": "87451d78d39b8de71a06744cb20b38cd415c38f621e41c9112b0cf005128d2b0"
+    },
+    {
+      "bytes": 9240,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-crate-05/source/src/to_tokens.rs",
+      "sha256": "8d6dd0acef632336cf4b10319eb1f4a035a035b6bb4b0d3ba57aed11f917e48a"
+    }
+  ],
+  "status": "source-only-artifact-container-correction-awaiting-review",
+  "sysroot": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-miri-02/sysroot",
+  "work": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-crate-miri-03"
+}
