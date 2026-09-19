@@ -104,8 +104,9 @@ heap fallbacks followed by full reads; focused stage expects15controls/profile
 supervisor57029/child57032. No new tool is installed or timing admitted yet.
 The full build passes634Rusttests/profile,16ignored,427Pythonpass/22skip.
 Source4a99a7fc,18026/18029,121.1seconds setup; isolatedtool6c26c1c8,VM610a3574.
-Strict121commands and3original profiles (including checked native-address
-comparison against parked3e53b127) are prepared; no timing has started. See `benchmarks/experiments/selective-narrow-repair/focus.py`
+Strict121commands are closed atf13370dc,50389/50392 with all outcomes passing.
+Three original profiles (including checked native-address comparison against
+parked3e53b127) are next; no timing has started. See `benchmarks/experiments/selective-narrow-repair/focus.py`
 and `docs/SELECTIVE-NARROW-REPAIR-20260918.md`. Main ccb3b465 contains only the
 closed conservative-primary outcome; root owns this new experimental branch.
 
