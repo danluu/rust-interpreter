@@ -70,3 +70,16 @@ A primary pass admits these guards; it does not establish adoption. Later projec
 and both parser gates remain required. No timing retries or main runtime adoption
 follow a failed gate. Experimental sources remain on
 `experiment/session-runtime-composition-20260919`.
+
+Pgrust attempt01 stopped before any timed command: the borrow-control fixture
+used std in hashfn's no_std crate, causing E0433 rather than E0499. The
+[closed failed prefix](../results/session-runtime-composition-edit-pgrust-01/summary.json)
+preserves both compiler errors, two normally closed sessions with zero requests,
+and restored source. A dedicated controller now uses core in that probe. Its
+[closed portable qualification](../results/session-runtime-composition-pgrust-protocol-01/summary.json)
+includes four actual pinned-rustc type/borrow rejections across std and no_std,
+with no code or metadata emitted. Attempt02 uses fresh namespaces; it has passed
+the actual project strict controls and is running the unchanged176-command guard.
+The original controller remains intact. Later parser/large proof bindings are
+being requalified to require the corrected pgrust result; no timed samples from
+attempt01 exist to reuse or discard.
