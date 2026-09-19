@@ -66,16 +66,22 @@ Protocol01 supervisor2288 timed out waitingfor sharedlock, no stage/test/guest/
 compiler/timing started. Bounded auditor compact-switch-admission/preserve.py
 closed and preserved terminal+source. Root98c34570 changes only next protocol
 name to compact-native-switch-screen-protocol-02 (qualify.py+benchmark.py).
-Protocol02 NOT LAUNCHED. Waitfor sharedlock availability, then16controls/close,
-then benchmark.py --case token --run-id compact-native-switch-screen-token-01.
-Current lock last held by peerPID99293 prepare_once.py; DO NOT control it.
-Use readonly lsof/boundedwaiting; no new admission loop while it remainsbusy.
-No own commands active at this checkpoint. All sources/runtime qualified.
-Current rootbranch experiment/composed-native-costs-20260919; latestroot98c34570,
-lastpushed5ba6a5b1. Main04fc8995 includes sampler/captures and peercecfbba1.
-Docs COMPACT-NATIVE-SWITCH-20260919.md prepared; public proof publicationpending.
-Freeabout24.7GiB; recheck floors. No fullguard controller should start before
-new40commandgate passes. Keep parked parent andall failures/captureartifacts.
+Protocol02 PASSED16controls and independently CLOSED74966. Current primary
+compact-native-switch-screen-token-01 RUNNING supervisor75171,sourcec99a82ac,
+started05:21:41. Controller benchmark.py --case token --run-id same. Do not
+modify frozen runtime/scripts/tests/controllers or sourcefre during run. Check
+exact terminal+rawrecords before action, no unchanged timing rerun. Expected40
+commands+2strict,12originaltests; all five arms, original/wrong/5valid/restored.
+Close with compact-native-switch-screen/close.py RUN after successful completion;
+retain failed/unmeasurableperformanceverdict without laterguards. If gatepasses,
+prepare full176-command token thenfolded/pgrust/rg guards and bothparser/Nushell
+checks with fresh source-bound currentcandidate proof; do not reuseparenttimings.
+
+Mainf1bf9da9 now carries all closedcompact-switchproofs/docs, preservespeer
+27c24fa5. Experimentalruntime still onlyrootbranch (lastpushedb8615090).
+Currentrootc99a82ac beforethischeckpoint. Candidate identitiesabove; resource
+last24.5GiB, two workers and8GiB childfloor; benchmarkinitial16GiB. All guest
+samples/censuses/qualification/replays/install are alreadycomplete; NEVERrepeat.
 
 ## Qualified candidate identities
 

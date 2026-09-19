@@ -33,8 +33,10 @@ Compact-switch candidate9bf97808 now fullyqualified:727Rust/profile19ignored,
 fre192/14575; all independentlyclosed. Installedcc1ebf5e (VM3d3512bd/server67a85808),
 unchangedadoptedcompiler. See STATE.md and COMPACT-NATIVE-SWITCH-20260919.md.
 Protocol01 emptylockadmission timeout is closed; no tests/timings began.
-Next waitfor sharedlock availability then launch compact-native-switch-screen-
-protocol-02 via qualify.py, closewith --close, then one40command primary
-benchmark.py --case token --run-id compact-native-switch-screen-token-01.
-No ownactivecommands. Peer99293 heldlock lastcheck; preserveitswork.
-Currentroot98c34570,pushed5ba6a5b1,main04fc8995; proofpublicationpending.
+Protocol02 now PASSED16controls/CLOSED74966. Primary40command changed-source
+run compact-native-switch-screen-token-01 RUNNING75171,sourcec99a82ac,05:21:41.
+Do not change frozenruntime/scripts/tests/controllers or fre source. Verify
+terminal/records then independentclose; do not rerun timing or widen gates.
+A primary failure stopslaterguards. Passrequiresfresh fullprojectguards/parser/
+Nushell before mainadoption. Mainf1bf9da9 publishesclosedcorrectnessproofs only,
+preservespeer27c24fa5. STATE.md has exactidentities/commands. Savedgoalpaused.
