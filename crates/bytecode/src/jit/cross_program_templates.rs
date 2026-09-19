@@ -216,7 +216,8 @@ fn verify_staging(a:&CompiledFunction<'_>,b:&CompiledFunction<'_>)->Result<(),Em
 }
 
 /// Per-owner template attempts, including explicit verification when selected.
-#[derive(Clone,Copy,Debug,Default,Serialize)]
+#[derive(Clone,Debug,Default,Serialize)]
+#[cfg_attr(not(feature = "jit-template-miss-observer"),derive(Copy))]
 pub struct Counts {
     pub lookups:usize,pub hits:usize,pub verified_hits:usize,pub key_declines:usize,
     pub restore_declines:usize,pub inserted:usize,pub capture_declines:usize,
@@ -232,6 +233,28 @@ pub struct Counts {
     pub capture_insert_ns:u128,
     #[cfg(feature = "jit-preparation-observer")]
     pub verify_ns:u128,
+    #[cfg(feature = "jit-template-miss-observer")]
+    pub trace:Vec<TemplateAttempt>,
+    #[cfg(feature = "jit-template-miss-observer")]
+    pub trace_dropped:usize,
+}
+#[cfg(feature = "jit-template-miss-observer")]
+#[derive(Clone,Debug,Default,Serialize)]
+pub struct TemplateAttempt {
+    pub function:usize,pub key:Option<String>,pub lookup:&'static str,
+    pub inserted:bool,pub charge:usize,pub code_bytes:usize,
+    pub emission_ns:u128,pub words:usize,pub failed:bool,
+}
+#[cfg(feature = "jit-template-miss-observer")]
+impl Counts {
+    fn record(&mut self,event:TemplateAttempt) {
+        const LIMIT:usize=4096;
+        if self.trace.len()==LIMIT || (self.trace.len()==self.trace.capacity()
+            && self.trace.try_reserve_exact((LIMIT-self.trace.len()).min(256)).is_err()) {
+            self.trace_dropped=self.trace_dropped.saturating_add(1);return;
+        }
+        self.trace.push(event);
+    }
 }
 pub(crate) struct Context<'p> {
     checked:Checked<'p>,history:std::rc::Rc<std::cell::RefCell<History>>,counts:std::cell::RefCell<Counts>,
@@ -247,9 +270,11 @@ impl<'p> Context<'p> {
         Some(std::rc::Rc::new(Self{checked:Checked::new(p)?,history,counts:Default::default(),verify_hits}))
     }
     #[cfg(feature = "jit-template-session")]
-    pub(crate) fn statistics(&self)->Counts {*self.counts.borrow()}
+    pub(crate) fn statistics(&self)->Counts {self.counts.borrow().clone()}
     pub(super) fn stage(&self,jit:&Jit<'p>,id:usize,word_budget:usize)->Result<Option<CompiledFunction<'p>>,EmitError> {
         let mut counts=self.counts.borrow_mut();counts.lookups+=1;
+        #[cfg(feature = "jit-template-miss-observer")]
+        let (mut event,emission_before)=(TemplateAttempt{function:id,lookup:"key_decline",..Default::default()},counts.miss_emit_ns);
         // The expression is evaluated exactly once, including failures; clocks
         // and additional counters are absent from ordinary feature builds.
         macro_rules! observed {
@@ -262,13 +287,20 @@ impl<'p> Context<'p> {
                 result
             }};
         }
+        let result=(|| {
         let Some(request)=observed!(key_ns,Request::new(&self.checked,jit,id,[41;32],true)) else {
             counts.key_declines+=1;return observed!(miss_emit_ns,jit.emit_function(&jit.program.functions[id],word_budget));
         };
+        #[cfg(feature = "jit-template-miss-observer")]
+        {event.key=Some(request.key.iter().map(|b|format!("{b:02x}")).collect());event.lookup="miss";}
         {
             let mut history=self.history.borrow_mut();
             if let Some(template)=observed!(lookup_ns,history.get(&request.key)) {
+                #[cfg(feature = "jit-template-miss-observer")]
+                {event.lookup="restore_decline";}
                 if let Some(restored)=observed!(restore_ns,template.restore_request(&request,word_budget)) {
+                    #[cfg(feature = "jit-template-miss-observer")]
+                    {event.lookup="hit";}
                     if self.verify_hits {
                         let fresh=observed!(verify_ns,request.emit(word_budget))?.ok_or(EmitError::InvalidRelocation("template restored but fresh emission declined"))?;
                         observed!(verify_ns,verify_staging(&restored,&fresh.compiled))?;counts.verified_hits+=1;
@@ -279,10 +311,24 @@ impl<'p> Context<'p> {
             }
         }
         let Some(emission)=observed!(miss_emit_ns,request.emit(word_budget))? else {return Ok(None);};
-        if observed!(capture_insert_ns,Template::capture_emission(&emission,MAX_RETAINED).and_then(|t|self.history.borrow_mut().insert(t))).is_some() {
+        if observed!(capture_insert_ns,Template::capture_emission(&emission,MAX_RETAINED).and_then(|t|{
+            #[cfg(feature = "jit-template-miss-observer")]
+            {event.charge=t.charge()?.checked_add(HISTORY_NODE)?;event.code_bytes=t.words.capacity().checked_mul(4)?;}
+            self.history.borrow_mut().insert(t)
+        })).is_some() {
             counts.inserted+=1;
+            #[cfg(feature = "jit-template-miss-observer")]
+            {event.inserted=true;}
         } else {counts.capture_declines+=1;}
         Ok(Some(emission.compiled))
+        })();
+        #[cfg(feature = "jit-template-miss-observer")]
+        {
+            event.emission_ns=counts.miss_emit_ns-emission_before;
+            event.words=result.as_ref().ok().and_then(|v|v.as_ref()).map_or(0,|v|v.words.len());
+            event.failed=result.is_err();counts.record(event);
+        }
+        result
     }
 }
 impl History {
@@ -436,6 +482,16 @@ impl Template {
 mod tests {
 use super::*;
 const EMITTER:[u8;32]=[17;32];
+#[test]
+#[cfg(feature = "jit-template-miss-observer")]
+fn template_attempt_trace_is_bounded_and_reports_dropped_events() {
+    let mut counts=Counts::default();
+    for function in 0..4103 {counts.record(TemplateAttempt{function,..Default::default()});}
+    assert_eq!(counts.trace.len(),4096);assert_eq!(counts.trace_dropped,7);
+    assert!(counts.trace.capacity()<=4096);
+    assert!(counts.trace.iter().enumerate().all(|(id,event)|event.function==id));
+    let copy=counts.clone();assert_eq!(copy.trace.len(),4096);assert_eq!(copy.trace_dropped,7);
+}
 #[test]
 fn key_hash_preserves_streamed_bytes_and_flush_boundaries() {
     let payload=(0..16_397usize).map(|i|((i*37)^(i>>7)) as u8).collect::<Vec<_>>();

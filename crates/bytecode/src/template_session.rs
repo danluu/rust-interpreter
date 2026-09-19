@@ -300,6 +300,7 @@ fn readiness(bytes:usize,verify:bool,startup:Cpu)->Result<Value,String> {
         "large_function_interpreter_threshold":if cfg!(feature="jit-large-function-interpreter") {Some(65_536usize)} else {None},
         "artifact_digest_reuse":cfg!(feature="jit-artifact-digest-reuse"),
         "buffered_template_keys":cfg!(feature="jit-buffered-template-keys"),
+        "template_miss_observer":cfg!(feature="jit-template-miss-observer"),
         "cpu_at_entry":startup,"cpu_at_ready":cpu()?}))
 }
 fn serve_stdio(bytes:usize,verify:bool)->Result<(),String> {

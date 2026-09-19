@@ -32,6 +32,7 @@ impl Session {
         assert_eq!(session.ready["executable_sha256"],digest(&std::fs::read(executable).unwrap()));
         assert_eq!(session.ready["artifact_digest_reuse"],cfg!(feature="jit-artifact-digest-reuse"));
         assert_eq!(session.ready["buffered_template_keys"],cfg!(feature="jit-buffered-template-keys"));
+        assert_eq!(session.ready["template_miss_observer"],cfg!(feature="jit-template-miss-observer"));
         std::fs::write(session.folder.join("ready.json"),serde_json::to_vec(&session.ready).unwrap()).unwrap();
     }
     fn read(&mut self)->Value {
@@ -87,10 +88,48 @@ fn request(session:&Session,label:&str,value:u128,data:u8,env:&[u8])->Value {
             "persistent_registers":true,"scalar_calls":true}})
 }
 
+// Independent model of the recorded LRU; this never influences execution.
+#[cfg(feature = "jit-template-miss-observer")]
+#[derive(Default)]
+struct HistoryModel { entries:std::collections::VecDeque<(String,usize)>, evictions:usize }
+#[cfg(feature = "jit-template-miss-observer")]
+impl HistoryModel {
+    fn check(&mut self,counts:&Value,storage:&Value) {
+        let trace=counts["trace"].as_array().unwrap();assert_eq!(counts["trace_dropped"],0);
+        assert_eq!(trace.len() as u64,counts["lookups"].as_u64().unwrap());
+        let mut emission=0u64;
+        for event in trace {
+            assert_eq!(event["failed"],false);emission+=event["emission_ns"].as_u64().unwrap();
+            let lookup=event["lookup"].as_str().unwrap();
+            if lookup=="key_decline" {assert!(event["key"].is_null());continue;}
+            let key=event["key"].as_str().unwrap();assert_eq!(key.len(),64);
+            assert!(key.bytes().all(|b|b.is_ascii_hexdigit()));
+            let position=self.entries.iter().position(|(k,_)|k==key);
+            assert_eq!(position.is_some(),matches!(lookup,"hit"|"restore_decline"));
+            if let Some(position)=position {let row=self.entries.remove(position).unwrap();self.entries.push_back(row);}
+            if event["inserted"]==true {
+                if let Some(position)=self.entries.iter().position(|(k,_)|k==key) {self.entries.remove(position);}
+                let charge=event["charge"].as_u64().unwrap() as usize;
+                assert!(charge>=event["code_bytes"].as_u64().unwrap() as usize);
+                while self.entries.iter().map(|(_,n)|n).sum::<usize>()+512+charge>64*1024*1024 || self.entries.len()>=16_384 {
+                    self.entries.pop_front().unwrap();self.evictions+=1;
+                }
+                self.entries.push_back((key.to_string(),charge));
+            }
+        }
+        assert_eq!(emission,counts["miss_emit_ns"].as_u64().unwrap());
+        assert_eq!(self.entries.len() as u64,storage["entries"].as_u64().unwrap());
+        assert_eq!((512+self.entries.iter().map(|(_,n)|n).sum::<usize>()) as u64,storage["charged_bytes"].as_u64().unwrap());
+        assert_eq!(self.evictions as u64,storage["evictions"].as_u64().unwrap());
+    }
+}
+
 #[test]
 fn edited_suites_and_request_inputs_match_without_and_with_history() {
     let mut reference=vec![];
     for (label,history) in [("fresh",0),("cached",64*1024*1024)] {
+        #[cfg(feature = "jit-template-miss-observer")]
+        let mut models=[HistoryModel::default(),HistoryModel::default()];
         let mut session=Session::start(label,history);let mut hits=0;
         for (i,(value,data,env,passed)) in [(7,1,&b"yes"[..],true),(8,1,&b""[..],false),(8,1,&b"yes"[..],true),
             (0,1,&b"yes"[..],false),(7,0,&b"yes"[..],false),(7,1,&b"yes"[..],true)].into_iter().enumerate() {
@@ -126,6 +165,8 @@ fn edited_suites_and_request_inputs_match_without_and_with_history() {
                         <=setup["total_ns"].as_u64().unwrap());
                     if !row["templates"].is_null() {
                         let templates=&row["templates"];
+                        #[cfg(feature = "jit-template-miss-observer")]
+                        models[row["worker"].as_u64().unwrap() as usize].check(templates,&row["storage"]);
                         let phase_sum=["key_ns","lookup_ns","restore_ns","miss_emit_ns","capture_insert_ns","verify_ns"]
                             .iter().map(|k|templates[*k].as_u64().unwrap()).sum::<u64>();
                         assert!(phase_sum<=row["preparation_observer"]["ordinary_ns"].as_u64().unwrap());
@@ -135,6 +176,8 @@ fn edited_suites_and_request_inputs_match_without_and_with_history() {
                 }
                 #[cfg(not(feature = "jit-preparation-observer"))]
                 if !row["templates"].is_null() {assert!(row["templates"].get("key_ns").is_none());}
+                #[cfg(not(feature = "jit-template-miss-observer"))]
+                if !row["templates"].is_null() {assert!(row["templates"].get("trace").is_none());}
                 if history==0 {assert!(row["templates"].is_null() && row["storage"].is_null());}
                 else {let n=row["templates"]["hits"].as_u64().unwrap();hits+=n;assert_eq!(row["templates"]["verified_hits"],n);
                     assert!(row["storage"]["charged_bytes"].as_u64().unwrap()<=history as u64);}
