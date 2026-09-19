@@ -17,8 +17,8 @@ with conservative6.54M/8.51M interpreter read repairs. Its7commands,7Rustcontrol
 per profile and6trafficcontrols pass; both current profiles and retained captures
 reconcile exactly. The implicit-zero prototype now passes9focused controls/profile and628full
 Rusttests/profile (15ignored),427Pythonpasses/22skips. Tool3e53b127 /VM8e369c0f
-is installed experimentally. Close the existing build evidence after peer-lock
-admission, then run121strict/cache commands and3current-host exact profiles.
+is installed experimentally. The existing build evidence is now closed after peer-lock
+admission. Run121strict/cache commands and3current-host exact profiles.
 Only then admit the unchanged40-command primary. Do not rerun the completed
 build merely because its evidence closure waits. Preserve stale-storage safety, initial-zero
 semantics, all budgets/faults and strict checking. Main remains unchanged.

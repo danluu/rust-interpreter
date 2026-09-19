@@ -72,8 +72,9 @@ Isolated tool3e53b127220f71115eec7b18e2ed452577471ab48cfd5d4c669c0ae3a295f32a,
 VM8e369c0f3a6f6fd0b793372d27c26f4848db8536f4cb8bfcf8672b0d0a12ca72,
 unchanged exporter/wrapper. The first evidence-closing command timed out45s
 waiting for peer compiler-build PID92782; all build commands remain successful.
-Retry only the closer after fresh admission; do not repeat tests/build. Then
-strict121-command workflows and3exact current-host profiles before the primary. Controllers are in
+Closure retry74141/74168 now passes461frozen inputs/450Git bindings without
+repeating a build command. Next strict121-command workflows and3exact
+current-host profiles before the primary. Controllers are in
 `benchmarks/experiments/implicit-zero-storage-workflows` and
 `benchmarks/experiments/implicit-zero-storage-screen`.
 [Contract](docs/IMPLICIT-ZERO-REGISTER-DESIGN-20260918.md),
