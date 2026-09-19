@@ -373,3 +373,14 @@ below23.004GiB buildfloor afterpeerallocation; same sharedtargetNEVERCLEAN.
 Unappliednativeintegration draft preservedinbenchmarks/experiments/branch-budget-
 native-draft (patch/receipt/UNBUILT.md),7authored nativecontrols, no build/execution.
 Actualcrate stillonly825fe65b typedplanner/default-offfeature; no emitterchanges.
+
+Public-profile readback02 supervisor31045/controller31048 failed equality because
+st_blocks alone decreased aftercompression. Newreaderregistered e7510ee7 retains
+that failure and onlypermits positive nonincreasingblocks; everyotheridentityfield
+(includinginode/ctime) plusnormal+mmapSHA/exactbirthtimemustmatch. Readback03
+supervisor38086/controller38127 finished0, CLOSED176files,65allocation-onlydecreases,
+finalallocation985337856bytes; saved5574594560bytes(5.19GiB). Alloldrecordsintact.
+Started exactisolatedprimaryretirement01 supervisor45184, sourcee7510ee7; await
+finished0+independentclosure beforetypedplannerqualification. No Rustbuild yet.
+Native draft now8controls (addswidearithmeticincomingflagindependence),source
+preservedatd858af33; separateobserver4dbc26cd has9authoredunrunPythoncontrols.
