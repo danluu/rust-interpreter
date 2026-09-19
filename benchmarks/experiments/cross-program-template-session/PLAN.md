@@ -1,5 +1,39 @@
 # Explicit session for cross-command template reuse
 
+Client01 adds --jit-template-session READY_JSON to the explicit feature VM. It
+requires a prepared two-worker resumable suite with a catalog/report, rejects
+unsupported execution options, and sends bounded artifact/catalog hashes plus
+the current raw environment. The server decodes/validates the current Program;
+the client does not decode it again. Private owner/modes, greeting and response
+identities must match. A create-new .session.json report sidecar records actual
+server identity, request/CPU/result hashes, without credentials or environment.
+An uncertain outcome never triggers a retry or another execution route.
+
+Run nine session controls/profile, including two new actual VM process controls:
+six edits with changed callee/data/environment and32 selected entries; unsupported
+options, wrong identity/private mode, report/receipt reservation, malformed artifact
+and healthy recovery. Expect22 owned server processes and32 VM clients across the
+two profiles. Keep both release/debug VM/server binaries. The unchanged library
+and wire controls remain backed by the closed endpoint/API results. No original
+project source-build or performance claim. Launcher integration follows this gate.
+
+Endpoint01 adds an explicit --serve-socket NEW_DIRECTORY adapter to the qualified
+request path. The new directory is0700, socket/readiness file0600; a random
+per-instance token and executable identity bind every connection. Public receipts
+never contain the token. A bounded framed greeting supplies the next request ID;
+malformed/unauthenticated requests do not consume it. An accepted request is never
+automatically replayed after a disconnect. Existing report reservation remains.
+The owner keeps stdin open and closes it for orderly shutdown; Darwin poll watches
+the owner pipe and listener without adding a worker or signals. Explicit shutdown
+also joins workers. Preserve old endpoint directories, including on startup error.
+
+Qualify25 controls/profile:4 wire controls,8 PreparedJit,6 history and7 session
+fixtures. Nine owned processes/profile include the existing four pipe fixtures,
+socket history off/on, socket rejection/lost-response recovery, owner EOF and an
+existing-directory startup rejection. All processes are reaped and receipts kept;
+four expected nonzero exits across both profiles. No source-build timing or runtime
+adoption. The subsequent client route remains unimplemented at this stage.
+
 The closed model and actual parser edit replay precede this candidate. All1,824
 test-body invocations match native expected outcomes and16,301 reused blocks
 match fresh emission before publication. This establishes correctness for the
@@ -126,3 +160,29 @@ snapshots against kernel user/system totals (1ms conversion tolerance). This is
 CPU accounting qualification and saved-artifact correctness, not a performance
 comparison or a changed-source end-to-end claim. Socket/launcher integration and
 the full primary reservation remain subsequent requirements.
+
+Launcher01 adds the explicit readiness option to interpreter.py. It requires an
+installed feature client tool, prepared/two-worker resumable suite and catalog;
+shared/indirect/tracing/discovery combinations fail before tools. Existing strict
+Cargo checking still precedes the VM; compiler failure never contacts a server.
+Bounded receipt validation records the actual server identity and request CPU,
+with explicit notice that process totals/startup remain the benchmark's charge.
+It compares selected artifact/catalog/report hashes, outcomes and current limits.
+
+Run the complete Python suite (at least463 discovered,22 expected skips) and
+compile the ordinary feature-disabled release VM. Rust code is unchanged from
+closed client01; use its retained feature VM/server rather than rebuild them.
+Install that VM with byte-identical adopted exporter/wrapper under a new immutable
+composition key. This does not adopt the runtime or alter compiler/Cargo policy.
+Then replay the actual retained parser edits through independent clients and the
+same launcher receipt verifier before changed-source comparisons.
+
+Launcher01 stopped after463Python tests:439passed,22skipped and two old archive
+fixture failures. All seven new controls passed. The failing tests referenced
+archives under the retired semantic-reuse worktree; exact archives are present
+in this checkout. Close the failed attempt before the repair. Two test-only
+constant overrides now select this checkout's archive files, retaining all exact
+hash/manifest/raw-evidence checks. Production compiler helpers are unchanged.
+Launcher02 verifies these exact two-line additions and every other Rust/script/test
+hash, preserves the439 passes, and runs only the two repaired controls plus the
+unstarted ordinary VM build/install. No full-suite rerun or skipped failure.

@@ -51,3 +51,30 @@ dynamic scheduling, two Cargo workers and all prospective primary/noise gates.
 The session is worthwhile only if changed-source end-to-end results clear those
 gates after these costs. Current in-memory correctness evidence is not a timing
 result and does not justify excluding transport or setup.
+
+The socket adapter is qualified at7ce2f250 by endpoint01 (closed). Its25 controls
+in each profile include18 owned processes across both profiles, all reaped. Four
+expected nonzero exits cover malformed pipe framing and occupied socket directory.
+Socket controls cover current callee/data/environment, verified history reuse,
+authentication/server identity, schema/sequence/unknown fields, cwd/report errors,
+lost response without replay and ownerEOF while waiting in accept. Private token
+files remain0600 in0700 directories; published receipts contain only public
+identity or file hashes. No independent-command client or performance claim yet.
+
+The explicit VM client is qualified at8bf8d47a by client01 (closed). Nine session
+controls/profile launch22 owned servers and32 actual VM client commands across
+both profiles. Requests with changed inputs and guest failures preserve current
+semantics; wrong modes, stale identity, permissions and reserved outputs fail
+without execution. A malformed artifact returns an error and the next valid
+request succeeds. The client does not decode the Program or retry requests. A
+bounded create-new report sidecar identifies the actual server, CPU counters and
+result digest. The next gate connects strict Cargo commands to this client.
+
+Launcher02 is closed at21ee5a94:441 Python controls pass with22 expected skips,
+and the feature-disabled VM builds. Launcher01's full run exposed two retired
+archive paths in existing tests; it is preserved as failed. Two test-only fixture
+bindings select the exact local archives and pass all original hash checks; the
+439 earlier successes are reused after exact source-delta verification. Compiler
+implementation and peer files are untouched. The explicit client VM is installed
+with byte-identical adopted exporter/wrapper under tool9f7aa601253a6817745070cf16a5122282d4fd9f70b33a14b625ee7a09a4a30b.
+Actual source-build performance remains unmeasured.
