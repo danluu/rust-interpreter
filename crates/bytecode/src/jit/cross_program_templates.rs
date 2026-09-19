@@ -427,6 +427,24 @@ fn cross_program_template_new_initializers_and_callee_body_preserve_exact_caller
     assert!(a.code.is_none() && b.code.is_none());assert_eq!(a.bytes+b.bytes,0);
 }
 #[test]
+fn cross_program_template_callee_initial_zero_requirement_is_an_emission_input() {
+    let p=fixture();let a=owner(&p);let checked=Checked::new(&p).unwrap();
+    let mut q=p.clone();q.functions[1].code=vec![
+        Op::Assert{value:2,expected:false,message:"initial register value".into()},Op::Return];
+    let b=owner(&q);let current=Checked::new(&q).unwrap();
+    assert!(!a.resumable.as_ref().unwrap().zeroes[1]);
+    assert!(b.resumable.as_ref().unwrap().zeroes[1]);
+    assert_ne!(stage(&a,0).words,stage(&b,0).words);
+    for rebind in [false,true] {
+        let old=Request::new(&checked,&a,0,EMITTER,rebind).unwrap();
+        let emission=old.emit(MAX_CODE_BYTES/4).unwrap().unwrap();
+        let template=Template::capture_emission(&emission,MAX_RETAINED).unwrap();
+        let new=Request::new(&current,&b,0,EMITTER,rebind).unwrap();
+        assert_ne!(old.key,new.key,"callee initialization changes emitted caller code");
+        assert!(template.restore_request(&new,MAX_CODE_BYTES/4).is_none());
+    }
+}
+#[test]
 fn cross_program_template_changed_body_layout_heap_options_and_emitter_miss() {
     let p=fixture();let a=owner(&p);let t=template(&Checked::new(&p).unwrap(),&a,0);
     for which in 0..6 {

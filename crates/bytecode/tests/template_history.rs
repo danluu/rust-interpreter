@@ -24,6 +24,42 @@ fn equal(a:Result<rust_interp_bytecode::Execution,String>,b:Result<rust_interp_b
 }
 
 #[test]
+fn changed_callee_initial_registers_cannot_reuse_stale_caller_templates() {
+    let function=|name:&str,code:Vec<Op>|Function{name:name.into(),frame_size:16,frame_align:8,
+        registers:4,args:vec![],result:Slot{offset:0,size:0},code};
+    // Both callees contain a Call, excluding scalar-leaf substitution. Poison
+    // stays live across the helper call so persistent registers spill it too.
+    let tail=||vec![Op::Local{dst:0,offset:0},Op::Call{function:3,args:vec![],destination:0},Op::Return];
+    let mut initial=vec![Op::Imm{dst:1,value:7}];initial.extend(tail());
+    let original=Program{version:VERSION,target:"aarch64-apple-darwin".into(),entry:0,
+        data:vec![],statics:vec![],thread_locals:vec![],functions:vec![
+            function("caller",vec![Op::Local{dst:0,offset:0},
+                Op::Call{function:2,args:vec![],destination:0},Op::Call{function:1,args:vec![],destination:0},
+                Op::Call{function:2,args:vec![],destination:0},Op::Call{function:1,args:vec![],destination:0},Op::Return]),
+            function("changed callee",initial),
+            function("poison reused registers",vec![Op::Imm{dst:1,value:99},Op::Local{dst:0,offset:0},
+                Op::Call{function:3,args:vec![],destination:0},
+                Op::Assert{value:1,expected:true,message:"poison retained".into()},Op::Return]),
+            function("helper",vec![Op::Return])]};
+    let mut changed=original.clone();changed.functions[1].code=vec![
+        Op::Assert{value:1,expected:false,message:"callee requires fresh zero registers".into()}];
+    changed.functions[1].code.extend(tail());
+    for persistent in [false,true] {for scalar in [false,true] {for verify in [false,true] {
+        let history=TemplateHistory::new(1024*1024,verify).unwrap();
+        let options=Limits{jit_persistent_registers:persistent,jit_scalar_calls:scalar,..limits()};
+        for p in [&original,&changed,&original,&changed] {
+            let expected=execute_with_engine(p,&[],Limits::default(),Engine::Interpreter);
+            assert!(expected.is_ok());
+            let mut fresh=PreparedJit::new(p,&options).unwrap();
+            equal(fresh.execute(&[],options.clone()),execute_with_engine(p,&[],Limits::default(),Engine::Interpreter));
+            let mut cached=PreparedJit::with_template_history(p,&options,&history).unwrap();
+            equal(cached.execute(&[],options.clone()),expected);
+            equal(cached.execute(&[],options.clone()),execute_with_engine(p,&[],Limits::default(),Engine::Interpreter));
+        }
+    }}}
+}
+
+#[test]
 fn caller_templates_survive_changed_callees_data_and_dropped_original_owners() {
     for verify in [false,true] {
         let history=TemplateHistory::new(64*1024*1024,verify).unwrap();
