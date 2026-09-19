@@ -20,6 +20,25 @@ class IsolatedLauncherValidation(unittest.TestCase):
         self.assertEqual(error.exception.code, 2)
         tools.assert_not_called()
 
+    def test_session_requires_explicit_installed_client_and_two_prepared_workers(self):
+        self.rejected(['--entry','first','--jit-template-session','/missing'])
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory).resolve();ready=root/'ready.json';ready.write_text('{}')
+            base=['--entry','first','--entry','second','--test-body','--engine','jit','--jit-resumable-calls',
+                '--isolated-batch','prepared','--suite-report',str(root/'report.json'),
+                '--jit-template-session',str(ready)]
+            for extra in [[],['--suite-workers','2'],['--tool-key','a'*64,'--suite-workers','1'],
+                    ['--tool-key','a'*64,'--suite-workers','2','--jit-shared-templates'],
+                    ['--tool-key','a'*64,'--suite-workers','2','--jit-indirect-calls']]:
+                with self.subTest(extra=extra):self.rejected(base+extra)
+            valid=base+['--tool-key','a'*64,'--suite-workers','2']
+            with patch.object(sys,'argv',['interpreter.py','--package','fixture',*valid]), \
+                    patch.object(interpreter,'installed_tools',side_effect=RuntimeError('selection reached tools')), \
+                    self.assertRaisesRegex(RuntimeError,'selection reached tools'):
+                interpreter.main()
+            (root/'report.json.session.json').write_text('preserve')
+            self.rejected(valid)
+
     def test_shared_templates_require_a_prepared_jit_suite_before_tools(self):
         self.rejected(['--entry','first','--jit-shared-templates'])
         with tempfile.TemporaryDirectory() as directory:

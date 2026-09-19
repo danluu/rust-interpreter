@@ -248,6 +248,7 @@ def _main(resources):
     parser.add_argument('--suite-report',type=Path,help='new JSON result path for --isolated-batch')
     parser.add_argument('--suite-workers',type=int,help='isolated test workers, each owning its JIT (1..64; default: 1)')
     parser.add_argument('--jit-shared-templates',action='store_true',help='experimental bounded emission sharing across prepared workers; one effective worker keeps ordinary preparation')
+    parser.add_argument('--jit-template-session',type=Path,help='explicit experimental session readiness file; requires an installed client tool and a prepared two-worker suite')
     parser.add_argument('--jit-native-call-stubs',action='store_true',help='experimental Calls linked with ordinary regions; requires --jit-native-calls')
     parser.add_argument('--jit-scalar-calls',action='store_true',help='experimental custom scalar leaves; requires resumable JIT and full checking')
     parser.add_argument('--jit-resumable-calls',action='store_true',help='experimental native Calls over guest frames; requires JIT, excludes tree/stub calls')
@@ -351,6 +352,10 @@ def _main(resources):
         if args.suite_report.exists() or args.suite_report.is_symlink() or not args.suite_report.parent.is_dir():
             parser.error('--suite-report requires a new file in an existing directory')
         args.suite_report=args.suite_report.resolve()
+    if args.jit_template_session is not None:
+        from template_session_receipt import validate_selection
+        try:validate_selection(args)
+        except (OSError,ValueError) as error:parser.error(str(error))
     if args.allocation_trace and auditing:
         parser.error('--allocation-trace cannot be combined with --audit-entries')
     if args.retain_audit_bodies and not auditing:
@@ -644,6 +649,7 @@ def _main(resources):
     values=args.arguments
     if values and values[0]=='--':values=values[1:]
     vm_command=[str(tools/'rust-interp-vm'),'--engine',args.engine]
+    if args.jit_template_session is not None:vm_command+=['--jit-template-session',str(args.jit_template_session)]
     if args.jit_shared_templates:vm_command.append('--jit-shared-templates')
     if args.jit_resumable_calls:vm_command.append('--jit-resumable-calls')
     if args.jit_scalar_calls:vm_command.append('--jit-scalar-calls')
@@ -656,7 +662,7 @@ def _main(resources):
     if args.isolated_batch is not None:
         vm_command+=['--isolated-batch',args.isolated_batch,'--suite-report',str(args.suite_report)]
         if args.suite_workers is not None:vm_command+=['--suite-workers',str(args.suite_workers)]
-        if filtered or entry_catalog_supported(tools,key):
+        if args.jit_template_session is not None or filtered or entry_catalog_supported(tools,key):
             catalog=selected_entry_catalog(artifacts[0],args.entry)
             vm_command+=['--suite-catalog',str(catalog)]
             timings['entry_catalog_path']=str(catalog)
@@ -687,6 +693,10 @@ def _main(resources):
     stage=time.perf_counter()
     result=subprocess.run([*vm_command,str(artifacts[0]),*values],env=env)
     timings['execution_seconds']=time.perf_counter()-stage
+    if args.jit_template_session is not None:
+        from template_session_receipt import read_receipt
+        timings['template_session']=read_receipt(args.jit_template_session,args.suite_report,
+            artifacts[0],catalog,result.returncode)
     if args.suite_report is not None and args.suite_report.is_file():
         if args.suite_report.stat().st_size>16*1024*1024:
             raise RuntimeError('suite report exceeds 16 MiB')

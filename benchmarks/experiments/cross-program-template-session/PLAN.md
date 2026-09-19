@@ -160,3 +160,19 @@ snapshots against kernel user/system totals (1ms conversion tolerance). This is
 CPU accounting qualification and saved-artifact correctness, not a performance
 comparison or a changed-source end-to-end claim. Socket/launcher integration and
 the full primary reservation remain subsequent requirements.
+
+Launcher01 adds the explicit readiness option to interpreter.py. It requires an
+installed feature client tool, prepared/two-worker resumable suite and catalog;
+shared/indirect/tracing/discovery combinations fail before tools. Existing strict
+Cargo checking still precedes the VM; compiler failure never contacts a server.
+Bounded receipt validation records the actual server identity and request CPU,
+with explicit notice that process totals/startup remain the benchmark's charge.
+It compares selected artifact/catalog/report hashes, outcomes and current limits.
+
+Run the complete Python suite (at least463 discovered,22 expected skips) and
+compile the ordinary feature-disabled release VM. Rust code is unchanged from
+closed client01; use its retained feature VM/server rather than rebuild them.
+Install that VM with byte-identical adopted exporter/wrapper under a new immutable
+composition key. This does not adopt the runtime or alter compiler/Cargo policy.
+Then replay the actual retained parser edits through independent clients and the
+same launcher receipt verifier before changed-source comparisons.

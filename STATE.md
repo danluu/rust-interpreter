@@ -272,3 +272,10 @@ outputs execute no request, malformedartifact error recovers without fallback.
 Actualserveridentity/CPU/result hashes persist in bounded sidecar receipts; no
 credential/environment contents. No active experiment. Next launcher plumbing,
 retainedrealparser throughVMclients, then fullchangedsourceprimary at24GiB gate.
+
+Launcher01 prepared: explicit runtime option and receipt verification added after
+strict Cargo; an installed clienttool is required, noauto build/server/fallback.
+Full Python checks include mocked ordering/selection plus receipt tamper controls;
+ordinary feature-disabled VM build planned. Retained client01 Rust/binaries are
+unchanged and will compose with exact adopted exporter/wrapper under new toolkey.
+Controller benchmarks/experiments/cross-program-template-session/launcher.py.

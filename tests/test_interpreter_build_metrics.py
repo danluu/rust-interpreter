@@ -337,6 +337,25 @@ class InterpreterBuildMetricsTests(unittest.TestCase):
         self.assertEqual(vm[vm.index('--suite-workers') + 1], '2')
         self.assertEqual(vm[vm.index('--suite-catalog') + 1], str(self.entry_catalog))
 
+    def test_explicit_session_keeps_strict_cargo_before_client_and_records_remote_identity(self):
+        self.isolated_suite(filtered=True)
+        ready=(self.root/'session-ready.json').resolve();ready.write_text('{}')
+        identity=dict(server_pid=123,server_executable_sha256='c'*64,status='completed')
+        with patch('template_session_receipt.read_receipt',return_value=identity) as read_receipt:
+            self.assertEqual(self.launch(['--jit-template-session',str(ready)],arguments=()),0)
+        self.assertEqual(len(self.invocations),2);self.assertEqual(self.invocations[0][0][0],'cargo')
+        vm=self.invocations[1][0];self.assertEqual(vm[vm.index('--jit-template-session')+1],str(ready))
+        self.assertEqual(vm[vm.index('--suite-catalog')+1],str(self.entry_catalog))
+        read_receipt.assert_called_once_with(ready,(self.root/'suite.json').resolve(),self.artifact,self.entry_catalog,0)
+        [stats]=self.launch_stats();self.assertEqual(stats['template_session'],identity)
+
+    def test_strict_cargo_failure_never_contacts_the_selected_session(self):
+        self.isolated_suite(filtered=True);self.cargo_returncode=101
+        ready=(self.root/'session-ready.json').resolve();ready.write_text('{}')
+        with patch('template_session_receipt.read_receipt') as read_receipt:
+            self.assertEqual(self.launch(['--jit-template-session',str(ready)],arguments=()),101)
+        self.assertEqual(len(self.invocations),1);read_receipt.assert_not_called()
+
     def test_invalid_isolated_entry_catalog_does_not_claim_ready_or_start_vm(self):
         self.isolated_suite()
         self.entry_catalog.write_text(json.dumps(dict(schema_version=1, bytecode_version=5,
