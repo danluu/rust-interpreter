@@ -1,4 +1,4 @@
-//! Bounded whole-function proof for implicit-zero upper words in private storage.
+//! Whole-function upper-half proof for diagnostics; code emission is unchanged.
 use crate::{Binary, Function, Op, Reg, Unary};
 
 const MAX_REGISTERS: usize = 65_536;
@@ -59,31 +59,6 @@ pub(super) fn prove(function: &Function) -> Option<Vec<bool>> {
         if invalid_read || invalid_write { return None; }
     }
     Some(narrow.into_iter().zip(seen).map(|(narrow, seen)| narrow && seen).collect())
-}
-
-pub(super) fn visit_full_reads(op:&Op,mut read:impl FnMut(Reg)) {
-    // Reviewed directly against execute_prepared_impl: these paths cast every
-    // input to usize/u8 before using it. Keep unreviewed helpers conservative.
-    match op {
-        Op::Load{..}|Op::Copy{..}|Op::CopyDynamic{..}|Op::FillBytes{..}|
-        Op::CompareBytes{..}|Op::Call{..}|Op::Allocate{..}|Op::Deallocate{..}|
-        Op::Reallocate{..}|Op::RandomBytes{..}|Op::CpuFeatureQuery{..}=>{},
-        Op::Store{src,size,..}=>{if *size>8 {read(*src);}},
-        Op::CallIndirect{callee,..}=>read(*callee),
-        Op::Binary{bits,..}|Op::Unary{bits,..} if narrow_width(*bits)=>{},
-        Op::Cast{from,..} if narrow_width(*from)=>{},
-        // Full truth/selection,128-bit math, checked handles and helpers stay
-        // full. In particular, C allocation and descriptors take raw u128s.
-        _=>crate::registers::visit_registers(op,read,|_|{}),
-    }
-}
-
-/// The proof belongs to this validated function. Repair full reads before writes:
-/// an aliased output cannot change what its input logically contained.
-pub(super) fn repair_reads(narrow: &[bool], op: &Op, registers: &mut [u128]) {
-    visit_full_reads(op, |r| {
-        if narrow[r as usize] { registers[r as usize] &= u128::from(u64::MAX); }
-    });
 }
 
 #[cfg(test)]

@@ -48,7 +48,7 @@ fn protocol_partitions_cover_copy_sizes_profiles_and_register_clearing() {
                     let allocation = values::analyze(f);
                     let slots = call_slots::collect(f, &program);
                     let (a, _, _) = jit.emit_resumable_transition(f, pc, &reads,
-                        allocation.as_ref(), slots.get(&pc).map(Vec::as_slice), None).unwrap();
+                        allocation.as_ref(), slots.get(&pc).map(Vec::as_slice)).unwrap();
                     validate_partition(&a).unwrap();
                     let kinds: BTreeSet<_> = a.protocol_spans.iter().map(|s| s.kind).collect();
                     assert!(kinds.contains("entry") && kinds.contains("entry_budget")
@@ -143,7 +143,7 @@ fn observe_saved_protocol() {
         for row in collector.rows.iter().filter(|row| row.kind == Kind::Transition) {
             let pc = row.pc.unwrap();
             let (a, resume, _) = jit.emit_resumable_transition(f, pc, &reads,
-                allocation.as_ref(), slots.get(&pc).map(Vec::as_slice), None).unwrap();
+                allocation.as_ref(), slots.get(&pc).map(Vec::as_slice)).unwrap();
             verify_words(&a.words, &bytes[row.offset..row.end]).unwrap();
             assert_eq!(staged.resumes[pc], Some((row.offset-offset)/4 + resume));
             validate_partition(&a).unwrap();
