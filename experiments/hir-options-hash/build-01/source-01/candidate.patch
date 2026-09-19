@@ -1,0 +1,71 @@
+diff --git a/compiler/rustc_ast_lowering/src/body_cache/mod.rs b/compiler/rustc_ast_lowering/src/body_cache/mod.rs
+--- a/compiler/rustc_ast_lowering/src/body_cache/mod.rs
++++ b/compiler/rustc_ast_lowering/src/body_cache/mod.rs
+@@ -79,11 +79,11 @@
+     let policy = if tcx.sess.opts.unstable_opts.hir_body_cache_reuse { REUSE_POLICY } else { FORMAT };
+     policy.encode(&mut encoder);
+     source_identity::SOURCE_IDENTITY.encode(&mut encoder);
+     cfg!(debug_assertions).encode(&mut encoder);
+     tcx.sess.cfg_version.encode(&mut encoder);
+-    tcx.sess.opts.dep_tracking_hash(false).as_u64().encode(&mut encoder);
++    tcx.incremental_options_hash().as_u64().encode(&mut encoder);
+     probe.input.encode(&mut encoder);
+     let key = encoder.finish();
+     if key.len() > storage::MAX_RECORD / 2 { return None; }
+     Some(Candidate {
+         owner: hir::OwnerId { def_id: resolver.owners[&owner].def_id },
+diff --git a/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs b/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
+--- a/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
++++ b/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
+@@ -1 +1 @@
+-pub(super) const SOURCE_IDENTITY: &str = "a6cf8a739f3c7a29707bacb4f12ecb575700f72bc41004260f99951f85ecf13b";
++pub(super) const SOURCE_IDENTITY: &str = "7c6bc02810f5c3ed7cf09d4566253611a890ce51dd8e534a908862da382c39ea";
+diff --git a/compiler/rustc_middle/src/ty/context.rs b/compiler/rustc_middle/src/ty/context.rs
+--- a/compiler/rustc_middle/src/ty/context.rs
++++ b/compiler/rustc_middle/src/ty/context.rs
+@@ -27,10 +27,11 @@
+ use rustc_data_structures::steal::Steal;
+ use rustc_data_structures::sync::{
+     self, DynSend, DynSync, FreezeReadGuard, Lock, RwLock, WorkerLocal,
+ };
+ use rustc_errors::{Applicability, Diag, DiagCtxtHandle, Diagnostic, MultiSpan};
++use rustc_hashes::Hash64;
+ use rustc_hir::attrs::lang_items::LangItem;
+ use rustc_hir::def::DefKind;
+ use rustc_hir::def_id::{CrateNum, DefId, LOCAL_CRATE, LocalDefId};
+ use rustc_hir::definitions::{DefPathData, Definitions, PerParentDisambiguatorState};
+ use rustc_hir::intravisit::VisitorExt;
+@@ -663,10 +664,14 @@
+ ///
+ /// The individual fields are mostly unrelated to each other, but have been grouped together to
+ /// reduce the number of top-level fields in [`GlobalCtxt`].
+ #[derive(Default)]
+ pub struct GlobalCaches<'tcx> {
++    /// Options are immutable for the lifetime of the owning GlobalCtxt.
++    /// Keep this cache local to that context, including in multi-run drivers.
++    incremental_options_hash: OnceLock<Hash64>,
++
+     // Internal caches for metadata decoding. No need to track deps on this.
+     pub ty_rcache: Lock<FxHashMap<ty::CReaderCacheKey, Ty<'tcx>>>,
+ 
+     /// Caches the results of trait selection. This cache is used
+     /// for things that do not have to do with the parameters in scope.
+@@ -839,10 +844,18 @@
+         f(unsafe { &*gcx })
+     }
+ }
+ 
+ impl<'tcx> TyCtxt<'tcx> {
++    /// The complete incremental option hash for this immutable context.
++    /// Unlike the crate hash, this includes TRACKED_NO_CRATE_HASH options.
++    pub fn incremental_options_hash(self) -> Hash64 {
++        *self.caches.incremental_options_hash.get_or_init(|| {
++            self.sess.opts.dep_tracking_hash(false)
++        })
++    }
++
+     pub fn has_typeck_results(self, def_id: LocalDefId) -> bool {
+         // Closures' typeck results come from their outermost function,
+         // as they are part of the same "inference environment".
+         let root = self.typeck_root_def_id_local(def_id);
+         self.hir_node_by_def_id(root).body_id().is_some()
