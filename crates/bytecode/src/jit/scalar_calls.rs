@@ -20,7 +20,7 @@ pub(super) struct Entry {
     success_steps: Option<usize>,
     target: usize,
 }
-#[cfg(test)]
+#[cfg(any(test, feature = "jit-template-session"))]
 impl Entry {
     pub(super) fn template_model_identity(self)->(usize,usize,Option<usize>,usize) {
         (self.bytes,self.maximum_steps,self.success_steps,self.target)
@@ -146,10 +146,10 @@ impl Assembler<'_> {
         // Private leaf inputs and Output live at fixed caller-SP offsets;
         // x21 is the prechecked logical base. x0–x2, x4–x8 and x19–x29 stay
         // live. Only the allocator's x3 and the link register need restoring.
-        #[cfg(test)]
+        #[cfg(any(test, feature = "jit-template-session"))]
         let target_word=self.words.len();
         self.imm(16,entry.target as u64);
-        #[cfg(test)]
+        #[cfg(any(test, feature = "jit-template-session"))]
         self.model_relocations.push(cross_program_templates::Relocation {
             word:target_word,words:self.words.len()-target_word,value:entry.target as u64,
             kind:cross_program_templates::Kind::Scalar{function:id,pc},

@@ -27,6 +27,34 @@ impl<'program> PreparedJit<'program> {
         let started = std::time::Instant::now();
         Self::check_mode(limits)?;
         crate::validate(program)?;
+        Self::new_validated(program, limits, started)
+    }
+
+    /// Prepare a fresh owner using an explicitly retained, thread-local staging
+    /// history. Validation and scalar admission run for this Program; published
+    /// code and every guest invocation remain private to this new owner.
+    #[cfg(feature = "jit-template-session")]
+    pub fn with_template_history(program: &'program Program, limits: &Limits,
+        history: &crate::TemplateHistory) -> Result<Self, String> {
+        let started = std::time::Instant::now();
+        Self::check_mode(limits)?;
+        // context() validates and rejects partial headers before construction.
+        let context = history.context(program)?;
+        let mut owner = Self::new_validated(program, limits, started)?;
+        owner.jit.as_mut().unwrap().attach_templates(context);
+        owner.preparation_nanos = started.elapsed().as_nanos();
+        Ok(owner)
+    }
+
+    #[cfg(feature = "jit-template-session")]
+    pub fn template_statistics(&self) -> Option<crate::TemplateStatistics> {
+        self.jit.as_ref().unwrap().template_statistics()
+    }
+
+    // Both callers above have validated this immutable Program. Keep this
+    // helper private so no caller can bypass validation through the public API.
+    fn new_validated(program: &'program Program, limits: &Limits,
+        started: std::time::Instant) -> Result<Self, String> {
         let jit = crate::create_jit::<false, true, false, true>(program, limits)?;
         let metadata = ExecutionMetadata::new(program, jit.as_ref(), true, limits.memory)?;
         Ok(Self { program, jit, metadata, code_bytes: limits.jit_code_bytes,

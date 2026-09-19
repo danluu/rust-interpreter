@@ -48,8 +48,8 @@ mod values;
 mod transfers;
 mod guarded_ranges;
 mod scratch_values;
-#[cfg(test)]
-mod cross_program_templates;
+#[cfg(any(test, feature = "jit-template-session"))]
+pub(crate) mod cross_program_templates;
 
 #[cfg(test)]
 mod limit_tests;
@@ -321,7 +321,7 @@ enum FaultKind { Assertion, Trap }
 pub(crate) const MAX_CODE_BYTES: usize = 16 * 1024 * 1024;
 
 struct CompiledFunction<'a> {
-    #[cfg(test)]
+    #[cfg(any(test, feature = "jit-template-session"))]
     model_relocations: Vec<cross_program_templates::Relocation>,
     #[cfg(test)]
     local_forwarding: Vec<(usize, &'static str)>,
@@ -347,7 +347,7 @@ struct CompiledFunction<'a> {
 }
 
 pub(crate) struct Jit<'a> {
-    #[cfg(test)]
+    #[cfg(any(test, feature = "jit-template-session"))]
     template_model_context: Option<std::rc::Rc<cross_program_templates::Context<'a>>>,
     // MAP_JIT write protection is per-thread. Make confinement intentional,
     // including on platforms whose placeholder Code type contains no pointer.
@@ -393,6 +393,16 @@ pub(crate) struct Jit<'a> {
     pub liveness_declines: usize,
 }
 impl<'a> Jit<'a> {
+    #[cfg(feature = "jit-template-session")]
+    pub(crate) fn attach_templates(&mut self, context: std::rc::Rc<cross_program_templates::Context<'a>>) {
+        assert!(self.template_model_context.is_none() && self.bytes == 0);
+        self.template_model_context = Some(context);
+    }
+    #[cfg(feature = "jit-template-session")]
+    pub(crate) fn template_statistics(&self) -> Option<cross_program_templates::Counts> {
+        self.template_model_context.as_ref().map(|c| c.statistics())
+    }
+
     pub fn new(program: &'a Program, profiled: bool, capacity: usize) -> Result<Self, String> {
         Self::new_with_call_stubs(program, profiled, capacity, false)
     }
@@ -411,7 +421,7 @@ impl<'a> Jit<'a> {
                 | Op::CurrentDirectory { .. })
         });
         Ok(Self { _thread_bound: std::marker::PhantomData, program, profiled, uses_heap, capacity, code: None,
-            #[cfg(test)] template_model_context: None,
+            #[cfg(any(test, feature = "jit-template-session"))] template_model_context: None,
             prepared: vec![false; program.functions.len()],
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
@@ -460,11 +470,11 @@ impl<'a> Jit<'a> {
         if self.native_call_stubs { self.prepare_region_calls(id)?; }
         if self.scalar.is_some() { self.prepare_scalar_callees(id)?; }
         let remaining = (self.capacity - self.bytes) / 4;
-        #[cfg(test)]
+        #[cfg(any(test, feature = "jit-template-session"))]
         let staged = if let Some(context) = &self.template_model_context {
             context.stage(self, id, remaining)
         } else { self.emit_function(&self.program.functions[id], remaining) };
-        #[cfg(not(test))]
+        #[cfg(not(any(test, feature = "jit-template-session")))]
         let staged = self.emit_function(&self.program.functions[id], remaining);
         self.finish_preparation(id, staged)
     }
@@ -531,7 +541,7 @@ impl<'a> Jit<'a> {
         mut spans: Option<&mut code_spans::Collector>) -> Result<Option<CompiledFunction<'a>>, EmitError> {
         let resumable = self.resumable.is_some();
         let mut words = vec![];
-        #[cfg(test)]
+        #[cfg(any(test, feature = "jit-template-session"))]
         let mut model_relocations = vec![];
         #[cfg(test)]
         let mut local_forwarding = vec![];
@@ -712,7 +722,7 @@ impl<'a> Jit<'a> {
                 for (at, code) in std::mem::take(&mut a.assertions) {
                     let target = a.words.len();
                     a.imm(0, code);
-                    #[cfg(test)]
+                    #[cfg(any(test, feature = "jit-template-session"))]
                     a.model_relocations.push(cross_program_templates::Relocation {
                         word: target, words: a.words.len() - target, value: code,
                         kind: cross_program_templates::Kind::Assertion((ASSERTION_FAILURE_BASE - code) as usize - assertion_base),
@@ -756,8 +766,9 @@ impl<'a> Jit<'a> {
                         memory_spans.push(span);
                     }
                     retained_local_writes.extend(a.retained_local_writes);
-                    cross_program_templates::append(&mut model_relocations, a.model_relocations, words.len());
                 }
+                #[cfg(any(test, feature = "jit-template-session"))]
+                cross_program_templates::append(&mut model_relocations, a.model_relocations, words.len());
                 words.extend(a.words);
                 entries[start] = Some(Block { offset, end: pc });
                 operations += pc - start;
@@ -777,7 +788,7 @@ impl<'a> Jit<'a> {
                         let fallback = *a.scalar_fallbacks.get(&at).ok_or(EmitError::InvalidRelocation("missing scalar successor fallback"))?;
                         links.push((words.len() + at, successor, words.len() + fallback));
                     }
-                    #[cfg(test)]
+                    #[cfg(any(test, feature = "jit-template-session"))]
                     cross_program_templates::append(&mut model_relocations, a.model_relocations, words.len());
                     words.extend(a.words);
                 }
@@ -807,7 +818,7 @@ impl<'a> Jit<'a> {
             patch_jump(&mut words, at, target)?;
         }
         Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
-            #[cfg(test)] model_relocations,
+            #[cfg(any(test, feature = "jit-template-session"))] model_relocations,
             #[cfg(test)] memory_spans,
             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
             liveness_declined: self.persistent_registers && values.is_none(),
@@ -1088,7 +1099,7 @@ enum Fact {
 
 #[cfg_attr(not(test), derive(Default))]
 struct Assembler<'a> {
-    #[cfg(test)]
+    #[cfg(any(test, feature = "jit-template-session"))]
     model_relocations: Vec<cross_program_templates::Relocation>,
     scalar_fallbacks: BTreeMap<usize, usize>,
     #[cfg(test)]

@@ -1,4 +1,4 @@
-//! Test-only, trusted in-memory staging reuse. No persistence or publication.
+//! Trusted in-memory staging reuse. No serialized native code or shared code arena.
 use super::*;
 use serde::Serialize;
 use sha2::{Digest,Sha256};
@@ -8,8 +8,10 @@ const MAX_KEY_BYTES:usize=4*1024*1024;
 const MAX_CALL_SITES:usize=16_384;
 const MAX_RETAINED:usize=64*1024*1024;
 
+#[cfg(test)]
 #[path="cross_program_template_replay.rs"]
 mod replay;
+#[cfg(test)]
 #[path="cross_program_template_suites.rs"]
 mod suites;
 
@@ -27,6 +29,8 @@ fn immediate(kind:Kind,value:u64)->Vec<u32> {
 
 struct Checked<'p>(&'p Program);
 impl<'p> Checked<'p> {
+    #[cfg(test)]
+    #[cfg(test)]
     fn new(p:&'p Program)->Option<Self> {
         if p.version & crate::PARTIAL_VALIDATION!=0 {return None;}
         crate::validate(p).ok()?;Some(Self(p))
@@ -62,6 +66,7 @@ impl<'j,'p> Request<'j,'p> {
             .map(|compiled|Emission{request:self,compiled}))
     }
 }
+#[cfg(test)]
 fn identity(checked:&Checked<'_>,jit:&Jit<'_>,id:usize,emitter:&[u8;32],limit:usize)->Option<[u8;32]> {
     identity_mode(checked,jit,id,emitter,limit,false)
 }
@@ -88,9 +93,12 @@ fn identity_mode(checked:&Checked<'_>,jit:&Jit<'_>,id:usize,emitter:&[u8;32],lim
             })});
     }
     let assertion_base=(!rebind && f.code.iter().any(|op|matches!(op,Op::Assert{..}))).then_some(jit.assertions.len());
+    #[cfg(test)]
     let test_flags=[jit.disable_call_slot_hints,jit.observe_guarded_local_retention,jit.observe_static_local_facts,
         jit.observe_scalar_copy,jit.observe_scratch_locals,jit.scratch_values_enabled,jit.observe_flush,jit.observe_memory_parts];
-    let context=(jit.program.version,&jit.program.target,jit.program.functions.len(),jit.uses_heap,
+    #[cfg(not(test))]
+    let test_flags=[false;8];
+    let context=(cfg!(test),jit.program.version,&jit.program.target,jit.program.functions.len(),jit.uses_heap,
         jit.persistent_registers,jit.scalar.is_some(),test_flags,assertion_base);
     let mut sink=BoundedHash{hash:Sha256::new(),bytes:0,limit};
     bincode::serialize_into(&mut sink,&("cross-program-staging-model-v2",rebind,emitter,context,id,f,calls)).ok()?;
@@ -114,9 +122,59 @@ struct History {
     charge:usize,limit:usize,clock:u64,evictions:usize,
 }
 
-#[derive(Default,Serialize)]
-struct Counts {lookups:usize,hits:usize,verified_hits:usize,key_declines:usize,restore_declines:usize,inserted:usize,capture_declines:usize}
-pub(super) struct Context<'p> {
+/// Experimental bounded staging history for one owning worker thread.
+///
+/// Contains only templates emitted by this executable. No native arena, guest
+/// state, Program reference, or external native-code input is retained. The
+/// handle and its prepared owners stay on their creating thread. Storage charges
+/// include vector capacities and map slack; they are not an allocator RSS bound.
+#[cfg(feature = "jit-template-session")]
+pub struct TemplateHistory {
+    history:std::rc::Rc<std::cell::RefCell<History>>,
+    verify_hits:bool,
+}
+#[cfg(feature = "jit-template-session")]
+#[derive(Clone,Copy,Debug,Serialize)]
+pub struct TemplateStorage {
+    pub charged_bytes:usize,pub limit_bytes:usize,pub entries:usize,pub evictions:usize,
+}
+#[cfg(feature = "jit-template-session")]
+impl TemplateHistory {
+    /// Select a retained-payload limit in512..=64MiB. Verification deliberately
+    /// emits each hit again; enable it for correctness diagnostics, not timing.
+    pub fn new(limit_bytes:usize,verify_hits:bool)->Result<Self,String> {
+        let history=History::new(limit_bytes).ok_or("template history limit must be in512..=67108864")?;
+        Ok(Self{history:std::rc::Rc::new(std::cell::RefCell::new(history)),verify_hits})
+    }
+    pub fn storage(&self)->TemplateStorage {
+        let history=self.history.borrow();TemplateStorage{charged_bytes:history.charge,limit_bytes:history.limit,
+            entries:history.entries.len(),evictions:history.evictions}
+    }
+    pub(crate) fn context<'p>(&self,program:&'p Program)->Result<std::rc::Rc<Context<'p>>,String> {
+        if program.version & crate::PARTIAL_VALIDATION!=0 {return Err("template history requires fully checked bytecode".into());}
+        crate::validate(program)?;
+        Ok(std::rc::Rc::new(Context{checked:Checked(program),history:self.history.clone(),
+            counts:Default::default(),verify_hits:self.verify_hits}))
+    }
+}
+
+// Compare all staged executable state before publication. Return a bounded
+// fatal preparation error on a mismatch; never silently publish or fall back.
+fn verify_staging(a:&CompiledFunction<'_>,b:&CompiledFunction<'_>)->Result<(),EmitError> {
+    let equal=a.words==b.words && a.resumes==b.resumes && a.assertions==b.assertions
+        && a.model_relocations==b.model_relocations
+        && (a.operations,a.register_pairs,a.liveness_declined)==(b.operations,b.register_pairs,b.liveness_declined)
+        && a.entries.iter().map(|b|b.map(|b|(b.offset,b.end))).eq(b.entries.iter().map(|b|b.map(|b|(b.offset,b.end))));
+    if equal {Ok(())} else {Err(EmitError::InvalidRelocation("template verification differs from fresh emission"))}
+}
+
+/// Per-owner template attempts, including explicit verification when selected.
+#[derive(Clone,Copy,Debug,Default,Serialize)]
+pub struct Counts {
+    pub lookups:usize,pub hits:usize,pub verified_hits:usize,pub key_declines:usize,
+    pub restore_declines:usize,pub inserted:usize,pub capture_declines:usize,
+}
+pub(crate) struct Context<'p> {
     checked:Checked<'p>,history:std::rc::Rc<std::cell::RefCell<History>>,counts:std::cell::RefCell<Counts>,
     verify_hits:bool,
 }
@@ -124,9 +182,12 @@ impl<'p> Context<'p> {
     fn new(p:&'p Program,history:std::rc::Rc<std::cell::RefCell<History>>)->Option<std::rc::Rc<Self>> {
         Self::new_verified(p,history,false)
     }
+    #[cfg(test)]
     fn new_verified(p:&'p Program,history:std::rc::Rc<std::cell::RefCell<History>>,verify_hits:bool)->Option<std::rc::Rc<Self>> {
         Some(std::rc::Rc::new(Self{checked:Checked::new(p)?,history,counts:Default::default(),verify_hits}))
     }
+    #[cfg(feature = "jit-template-session")]
+    pub(crate) fn statistics(&self)->Counts {*self.counts.borrow()}
     pub(super) fn stage(&self,jit:&Jit<'p>,id:usize,word_budget:usize)->Result<Option<CompiledFunction<'p>>,EmitError> {
         let mut counts=self.counts.borrow_mut();counts.lookups+=1;
         let Some(request)=Request::new(&self.checked,jit,id,[41;32],true) else {
@@ -137,8 +198,8 @@ impl<'p> Context<'p> {
             if let Some(template)=history.get(&request.key) {
                 if let Some(restored)=template.restore_request(&request,word_budget) {
                     if self.verify_hits {
-                        let fresh=request.emit(word_budget)?.expect("restoration succeeded but fresh emission declined");
-                        tests::same(&restored,&fresh.compiled);counts.verified_hits+=1;
+                        let fresh=request.emit(word_budget)?.ok_or(EmitError::InvalidRelocation("template restored but fresh emission declined"))?;
+                        verify_staging(&restored,&fresh.compiled)?;counts.verified_hits+=1;
                     }
                     counts.hits+=1;return Ok(Some(restored));
                 }
@@ -219,9 +280,11 @@ impl Template {
             self.relocations.capacity().checked_mul(std::mem::size_of::<Relocation>())?]
             .into_iter().try_fold(std::mem::size_of::<Self>()+5*64,usize::checked_add)
     }
+#[cfg(test)]
     fn capture(checked:&Checked<'_>,jit:&Jit<'_>,id:usize,emitter:[u8;32],staged:&CompiledFunction<'_>,limit:usize)->Option<Self> {
         Self::capture_mode(checked,jit,id,emitter,staged,limit,false)
     }
+#[cfg(test)]
     fn capture_mode(checked:&Checked<'_>,jit:&Jit<'_>,id:usize,emitter:[u8;32],staged:&CompiledFunction<'_>,limit:usize,rebind:bool)->Option<Self> {
         let request=Request::new(checked,jit,id,emitter,rebind)?;
         Self::capture_request(&request,staged,limit)
@@ -258,6 +321,7 @@ impl Template {
         result.valid_relocations(f,jit,true)?;
         (result.valid(f) && result.charge()?<=limit).then_some(result)
     }
+#[cfg(test)]
     fn restore<'p>(&self,checked:&Checked<'p>,jit:&Jit<'p>,id:usize,emitter:&[u8;32],word_budget:usize)->Option<CompiledFunction<'p>> {
         let request=Request::new(checked,jit,id,*emitter,self.rebind)?;
         self.restore_request(&request,word_budget)
@@ -290,8 +354,9 @@ impl Template {
         }
         Some(CompiledFunction{words,model_relocations,entries:copy(&self.entries)?,resumes:copy(&self.resumes)?,assertions,
             operations:self.operations,register_pairs:self.register_pairs,liveness_declined:self.liveness_declined,
-            local_forwarding:vec![],local_fact_events:vec![],scratch_hits:vec![],scratch_copy_hits:vec![],
-            flush_spans:vec![],memory_spans:vec![],retained_local_writes:vec![]})
+            #[cfg(test)] local_forwarding:vec![],#[cfg(test)] local_fact_events:vec![],
+            #[cfg(test)] scratch_hits:vec![],#[cfg(test)] scratch_copy_hits:vec![],
+            #[cfg(test)] flush_spans:vec![],#[cfg(test)] memory_spans:vec![],#[cfg(test)] retained_local_writes:vec![]})
     }
 }
 
@@ -311,6 +376,25 @@ fn fixture()->Program {
 fn owner(p:&Program)->Jit<'_> {Checked::new(p).unwrap();Jit::new_resumable(p,false,MAX_CODE_BYTES,true).unwrap()}
 fn stage<'p>(j:&Jit<'p>,id:usize)->CompiledFunction<'p> {j.emit_function(&j.program.functions[id],MAX_CODE_BYTES/4).unwrap().unwrap()}
 fn template(c:&Checked<'_>,j:&Jit<'_>,id:usize)->Template {Template::capture(c,j,id,EMITTER,&stage(j,id),MAX_RETAINED).unwrap()}
+#[test]
+fn cross_program_template_verifier_rejects_changed_words_and_metadata() {
+    let program=fixture();let owner=owner(&program);let original=stage(&owner,0);
+    verify_staging(&original,&stage(&owner,0)).unwrap();
+    for change in 0..7 {
+        let mut altered=stage(&owner,0);
+        match change {
+            0=>altered.words[0]^=1,
+            1=>{altered.resumes.pop();},
+            2=>{altered.assertions.clear();},
+            3=>{altered.model_relocations.clear();},
+            4=>altered.operations+=1,
+            5=>altered.liveness_declined=!altered.liveness_declined,
+            _=>{altered.entries.pop();},
+        }
+        assert!(matches!(verify_staging(&altered,&original),Err(EmitError::InvalidRelocation(_))));
+    }
+    assert!(owner.code.is_none());
+}
 pub(super) fn same(a:&CompiledFunction<'_>,b:&CompiledFunction<'_>) {
     // Keep failures bounded even when a real function stages millions of words.
     assert_eq!(a.words.len(),b.words.len());
