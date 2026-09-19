@@ -470,3 +470,14 @@ unknownwriteskill,128bytecopyfactcap,CFGintersections;18authoredunruncontrols in
 6400oldmaskoracle+19584newconcretebyteoracle. No production/runtimechanges. Next
 reviewprototype, registerbuild/closure andcoveragecontrollers, safediskadmission
 beforeanybuild. Priorconstantsproof remainsunchanged andcompiledasreference.
+
+September19 recovery at23502d88: compression01 timed out on shared lock BEFORE
+inventory/mutation. Retained terminal+source/log evidence closed in results;
+no raw inventory exists. Peer87740/88456 installation untouched; lock now free.
+New compression02 binds original admission failure and performs fresh selection.
+Main8e161832 publication verified: cache-retirement evidence pushed preserving
+peer installation-audit commits. Frame-slot build01 controller registered but
+UNRUN:18debug/18release,build,offline saved-artifact analysis, independent close.
+Legacy constants build has no closure.json; controller explicitly verifies its
+terminal/logs/original Git source and compares all previous typed proofs. No new
+runtime change. Build still depends on actual fresh storage admission.

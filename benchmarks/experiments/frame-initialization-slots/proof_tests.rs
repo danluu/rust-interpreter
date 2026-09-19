@@ -66,6 +66,9 @@ fn memmove_snapshots_slot_values_before_overlap_invalidation() {
             Op::Store{address:1,src:0,size:8},local(3,dst),
             Op::Copy{dst:3,src:1,size:8},Op::Load{dst:2,address:3,size:8},load(2,8),Op::Return];
         assert!(check(&program(vec![f.clone()])).1[0].eligible);
+        let mut dynamic=f.clone();
+        dynamic.code.splice(5..6,[Op::Imm{dst:4,value:8},Op::CopyDynamic{dst:3,src:1,size:4}]);
+        assert!(check(&program(vec![dynamic])).1[0].eligible);
         f.code[5]=Op::Copy{dst:3,src:1,size:7};
         if src!=dst {assert!(!check(&program(vec![f])).1[0].eligible);}
     }

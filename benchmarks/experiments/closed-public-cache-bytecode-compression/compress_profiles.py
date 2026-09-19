@@ -9,7 +9,7 @@ sys.path.insert(0,str(ROOT/'benchmarks/experiments/closed-public-artifact-compre
 from compress import identity,unopened,attributes,verify,sha,read,write,capture,acquire_lock,require_space,PRESERVE
 from birthtime import birthtime,set_birthtime
 
-RUN='closed-public-cache-bytecode-compression-01'
+RUN='closed-public-cache-bytecode-compression-02'
 CACHE_RUNS='branch-budget-native-screen-token-01 compact-switch-adopted-screen-token-01 compact-native-switch-edit-token-01 session-runtime-composition-edit-token-01 session-project-edit-token-01 session-runtime-composition-screen-token-01 compact-native-switch-screen-token-01'.split()
 RUNS=CACHE_RUNS+['branch-budget-native-profile-01']
 
@@ -39,6 +39,15 @@ def main():
             if expected is not None:assert digest==expected,p
             frozen[str(p.relative_to(ROOT))]=digest
             return read(p)
+        failed=ROOT/'results/closed-public-cache-bytecode-compression-01'
+        fc=bind(failed/'closure.json');assert fc['status']=='closed' and fc['no_mutation_stage_reached']
+        fs=bind(failed/'summary.json',fc['summary_sha256'])
+        ft=bind(failed/'terminal.json',fc['terminal_sha256'])
+        assert fs['status']=='admission-failed' and fs['mutations']==0 and not fs['raw_inventory_created']
+        assert ft['status']=='finished' and ft['returncode']==1
+        assert not (ROOT/'.work/closed-public-cache-bytecode-compression-01').exists()
+        for name,digest in fs['evidence'].items():
+            p=ROOT/name;assert sha(p)==digest;frozen[name]=digest
         qualification=ROOT/'results/closed-public-artifact-compression-recovery-02'
         qc=bind(qualification/'closure.json');assert qc['status']=='closed'
         qs=bind(qualification/'summary.json',qc['summary_sha256'])

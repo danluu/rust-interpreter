@@ -42,6 +42,14 @@ Only material coverage warrants a separate runtime contract and qualification.
 No guest execution, native-code publication, timing or adoption belongs here.
 
 Before compilation register a source-bound controller and independent closure.
+The registered build01 runs eighteen debug controls, eighteen release controls,
+one release diagnostic build, and one offline analysis. It revalidates the legacy
+constant-proof build from its terminal, command logs and original Git bindings
+(that build predates closure.json). The old proof must reproduce every previous
+proof result and typed call on the identical saved artifact:669 confined and1150
+initialized functions with callee effects. Report every eligibility loss as well
+as gain; those counts alone do not establish sampled coverage. Retain the binary,
+typed output and old source bindings, then independently close the four commands.
 Use the shared target, two Cargo/test workers, shared lock45s, build admission
 max(14GiB,8GiB+2*allocated target), analysis12GiB and child8GiB. The shared target
 is never cleaned. Preserve private/peer work, closed failures and the paused goal.

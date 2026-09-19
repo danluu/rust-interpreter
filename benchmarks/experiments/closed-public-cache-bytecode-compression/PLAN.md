@@ -1,5 +1,10 @@
 # Compress exact retained public cache bytecode and new reservation evidence
 
+Attempt01 timed out on the shared lock before inventory or mutation. Its source,
+terminal and log are retained and independently verified. Attempt02 binds that
+failure, requires the original inventory directory to remain absent, and creates
+a fresh inventory after admission. No original mutation stage is replayed.
+
 Select only the final restored-source bytecode files from seven explicitly named,
 closed public fre histories: reservation primary, isolated-switch primary,
 compact-switch full token, session-composition full token, session-project full

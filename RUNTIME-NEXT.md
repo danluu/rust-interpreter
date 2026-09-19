@@ -35,3 +35,8 @@ commands. Preserveallpeer/private/shareddata; noAWS/browseractions.
 Publishclosedstorageevidence next with explicitpaths through .work/publication-main,
 fetch/ffquietly preservingpeers. Nevermergeexperimentbranchwholesale. Suggestions
 unchanged/untracked4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f.
+
+Recovery update: storage publication main8e161832 verified pushed. Compression01
+FAILED45s sharedlock before anyinventory/mutation; closed failure retained. Fresh
+compression02 registered with failure binding, launch next when lock free. Slot
+build01 controller now registered UNRUN. No activeowned command at checkpoint.

@@ -1,6 +1,7 @@
 //! Read validated saved bytecode and report proofs; never execute a guest.
 pub use rust_interp_bytecode::*;
 use serde_json::json;
+use std::io::Read;
 #[path = "../../../crates/bytecode/src/registers.rs"]
 mod registers;
 #[path = "../../../crates/bytecode/src/register_init.rs"]
@@ -13,7 +14,9 @@ mod previous;
 
 fn main() {
     let args: Vec<_> = std::env::args_os().collect(); assert_eq!(args.len(), 3);
-    let input = std::fs::read(&args[1]).unwrap(); assert!(input.len() <= 128 * 1024 * 1024);
+    let mut input = Vec::new();
+    std::fs::File::open(&args[1]).unwrap().take(128 * 1024 * 1024 + 1).read_to_end(&mut input).unwrap();
+    assert!(input.len() <= 128 * 1024 * 1024);
     let program: Program = bincode::deserialize(&input).unwrap(); validate(&program).unwrap();
     let old_effects = previous::effects(&program);
     let old_confined: Vec<_> = old_effects.iter().map(|p| p.eligible).collect();
