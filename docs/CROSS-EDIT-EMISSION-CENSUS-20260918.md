@@ -48,3 +48,26 @@ per-function preparation observations by exact artifact/function metadata. This
 will describe how much observed preparation is associated with unchanged bodies
 and layouts, excluding no-entry functions from native-template potential. It
 will not predict elapsed savings, authorize reuse or rerun the original guests.
+
+The original-anchor report is now complete. Its first attempt exceeded the64MiB
+report bound without publishing; schema2 stores original metadata once and the
+corrected report is22,452,178bytes under the unchanged limit. Thirteen model
+controls/profile and four association controls pass. Original artifact,
+function names/op counts and the retained complete preparation trace all match.
+
+For valid edited artifacts, unchanged caller bytes plus direct-callee layouts
+are associated with26.9–38.3ms of original ordinary emission in worker0 and
+18.1–30.6ms in worker1. These compare every edit with the original artifact,
+not with a fully populated multi-edit cache. They are overlapping diagnostic
+intervals, not predicted wall savings. Roughly23.9ms per worker belongs to the
+prepared reducer with no ordinary entries and is excluded from native-template
+potential. Scalar admission, addresses and assertion identities can reduce
+eligible reuse further. [Association](../results/cross-edit-emission-weight-01/summary.json).
+
+The next step is a bounded test-only reuse primitive with a complete explicit
+emission-input identity and exact comparison against fresh staging. Start with
+strict matching of owner-dependent scalar targets and assertion bases; no
+unproved address patching or immediate normalization. Include budget and metadata
+checks on restoration. Persistent storage, production integration and another
+end-to-end campaign remain separate decisions after that proof. The opportunity
+is modest, so storage/lookup/validation overhead will have to earn its cost.

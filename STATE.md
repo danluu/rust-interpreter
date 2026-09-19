@@ -47,16 +47,28 @@ observer. Anchors01 atb8e498b1 under22575/22661 failed the64MiB report bound bef
 publication (diagnostic child22882 returns101); CLOSED42993/42996. No guest ran.
 Failure, inputs and successful earlier controls are preserved.
 
-Model04 atcef2214e is running under63343 (child in terminal):13controls/profile,
-including deduplicated schema2 metadata. Report cap stays64MiB; each original
-function's ID/name/opcount/hash is stored once, masks stay per-state. Verify its
-terminal and close with model.py --close before running anchors02. New anchor
-controller is anchors.py; close_anchors.py takes run and supervisor names.
-After anchor closure, weight.py (weight01) associates original diagnostic phases
-using associate.py, four Python controls and the unchanged refined trace validator.
-It verifies exact original artifact, function names/op counts and complete trace;
-keeps workers/phases separate and excludes no-entry functions from native-template
-potential. Weight stage unstarted. No new original guest or timing campaign.
+Model04 atcef2214e passed13controls/profile under63343/63346, CLOSED81375/81379.
+Anchors02 at294b8321 passed under85935/85938, CLOSED96565/96595; schema2 report
+is22,452,178bytes under the unchanged64MiB cap. Each original function's metadata
+is stored once, masks remain per-state. All seven original-anchor comparisons
+verify. No guest/code publication.
+
+Weight01 ata3923edc passedfourcontrols and the full saved-trace association under
+99970/99973. Closer01 timed out on the peer lock, preserved/CLOSED76400/76403;
+closer02 CLOSED86457/86460 without repeating successful work. It verifies exact
+original artifact/function metadata and the complete unchanged refined trace.
+Valid-edit body/layout candidates associate with26.9–38.3ms original ordinary
+emission in worker0 and18.1–30.6ms in worker1, versus23.9ms no-entry reducer
+work excluded per owner. This is association with one original instrumented
+capture, not edited-run measurements or an upper bound for a populated history.
+Workers overlap, phases nest; no CPU or predicted savings claim.
+
+Next preserve/push/publish this completed census evidence, then create a separate
+test-only cross-program template model from adopted runtime. Require an explicit
+bounded identity for all emitter inputs, exact fresh staging equivalence, strict
+matching of scalar target/shape and assertion-base state, budget/metadata guards,
+and fresh-program assertion references. No unproved address rewriting. No
+persistent storage, runtime integration or timing campaign until proof and review.
 
 Do not change frozen Rust/controllers until closure. Current free about22GiB,
 with rapid observed depletion; recheck each stage. No cache or performance
