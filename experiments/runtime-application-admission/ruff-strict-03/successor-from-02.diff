@@ -1,0 +1,172 @@
+--- previous/runtime_admission
++++ successor/runtime_admission
+@@ -8,6 +8,7 @@
+ import sys
+ import time
+ from types import SimpleNamespace
++import runtime_platform
+ 
+ OWNER = Path(__file__).resolve().parents[2]
+ R_OWNER = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+@@ -102,7 +103,9 @@
+         self.record = dict(schema_version=1, status='waiting', owner=str(OWNER), runtime_owner=str(R_OWNER),
+             policy=policy, pid=os.getpid(), parent_pid=os.getppid(), started_at=time.time(),
+             plan_sha256=file_digest(self.plan_path), freeze_sha256=self.freeze_sha, children=[],
+-            benchmark=False, performance_qualified=False)
++            benchmark=False, performance_qualified=False,
++            platform_identity=self.plan['platform_identity'],
++            platform_context=[dict(observed_at=time.time(), uname=self.observed_platform)])
+         self.save()
+ 
+     def arguments(self):
+@@ -121,7 +124,9 @@
+                     'runtime admission input changed: ' + name)
+         require(str(Path(sys.executable).resolve()) == self.freeze['python']['resolved'] and
+                 file_digest(Path(sys.executable)) == self.freeze['python']['sha256'], 'admission Python differs')
+-        require(list(os.uname()) == self.plan['platform'], 'runtime admission platform changed')
++        self.observed_platform = runtime_platform.validate(list(os.uname()), self.plan['platform_identity'])
++        if hasattr(self, 'record'):
++            self.record['platform_context'].append(dict(observed_at=time.time(), uname=self.observed_platform))
+         for module in list(sys.modules.values()):
+             name = getattr(module, '__file__', None)
+             if name and name.startswith('/Users/danluu/dev/rust-interp'):
+--- previous/run.py
++++ successor/run.py
+@@ -9,7 +9,7 @@
+ 
+ HERE = Path(__file__).resolve().parent
+ sys.path.insert(0, str(HERE.parent))
+-from runtime_admission_v2 import RuntimeAdmission, OWNER, R_OWNER, read, validate_hir_flags
++from runtime_admission_v3 import RuntimeAdmission, OWNER, R_OWNER, read, validate_hir_flags
+ from run_ruff_diagnostic import provider, flags
+ sys.path.insert(0, str(HERE.parent / 'ruff-profile-02'))
+ from profile_helpers import source_inventory
+@@ -19,7 +19,7 @@
+ from workflow_measurements import source_states
+ from workflow_io import SourceEdit
+ 
+-NAME = 'ruff-runtime-strict-02'
++NAME = 'ruff-runtime-strict-03'
+ POLICY = 'runtime-ruff-strict-history-v1'
+ WORK = OWNER / '.work' / NAME
+ SOURCE = R_OWNER / '.work/sources/ruff'
+--- previous/prepare.py
++++ successor/prepare.py
+@@ -11,6 +11,7 @@
+ HERE = Path(__file__).resolve().parent
+ sys.path.insert(0, str(HERE))
+ import run as a
++import runtime_platform
+ from runtime_compiler import load_runtime_compiler
+ from runtime_tools import validate_tool_runtime
+ from interpreter import installed_tools
+@@ -34,21 +35,45 @@
+ def main():
+     a.require(Path.cwd() == a.OWNER and sys.dont_write_bytecode and not sys.flags.optimize,
+               'fixed owner/unoptimized Python -B required')
+-    invalid = HERE.parent/'ruff-strict-01/plan'
+-    a.require(sha(invalid/'launch.json') == 'c4d846b594f14b3640f6c857fc2ade2b29d2b9aa40f525a50f1f71241ebff2bd'
+-              and sha(invalid/'inputs.json') == '2ca7ca3692e205fea434147925f0778fa9b13aff2e76a1aa8dd9b8b2e754bb78'
+-              and sha(invalid/'plan.json') == '833948ebb5a6ad6d10ef855f7f5776e9f1dc3b201faf421d55c8f69dbfa177eb',
++    invalid = HERE.parent/'ruff-strict-02/plan'
++    a.require(sha(invalid/'launch.json') == '550b951c0ed2c348db7b95e6b535e9a23c55e24835851ba559ff9e1ff8a46f24'
++              and sha(invalid/'inputs.json') == '18f791a147ef55238c0d4f5872cd1b48886be68a6a4c8e2f9c46d2a1d233953a'
++              and sha(invalid/'plan.json') == '866bd6543b636bc7350405d01670af747763483cbf95068077a33e0b3f0b554b',
+               'original unrun strict proposal changed')
+     invalid_plan = a.read(invalid/'plan.json')
+     for name, expected in a.read(invalid/'inputs.json')['files'].items():
+         a.require(Path(name).resolve(strict=True) == Path(name) and sha(name) == expected,
+                   'old strict input changed; no automatic readmission: '+name)
+     before, after = invalid_plan['platform'], list(os.uname())
+-    a.require(before[0] == after[0] and before[2:] == after[2:] and before[1] != after[1],
+-              'this successor admits only the observed nodename transition')
+-    a.require(not (a.OWNER/'.work/ruff-runtime-strict-01').exists()
+-              and not (a.OWNER/'.work/experiments/ruff-runtime-strict-supervisor-01').exists(),
+-              'old proposal unexpectedly executed')
++    a.require(runtime_platform.identity(before) == runtime_platform.identity(after),
++              'kernel or machine identity changed; no automatic readmission')
++    for number in ['01', '02']:
++        a.require(not (a.OWNER/('.work/ruff-runtime-strict-'+number)).exists()
++                  and not (a.OWNER/('.work/experiments/ruff-runtime-strict-supervisor-'+number)).exists(),
++                  'old proposal unexpectedly executed')
++    hostname_review = a.read(HERE/'hostname-review.json')
++    for name, row in hostname_review['inputs'].items():
++        a.require(Path(name).stat().st_size == row['size'] and sha(name) == row['sha256'],
++                  'hostname source review changed: '+name)
++    controls = a.OWNER/'.work/runtime-platform-controls-01'
++    controls_receipt = controls/'receipt.json'
++    controls_audit = a.OWNER/'.work/runtime-platform-controls-independent-verification-01.json'
++    a.require(sha(controls_receipt) == '5576c067e83c48a000260e559f8be832b7d12800e382f6bb0ac76b0fcdba1311'
++              and sha(controls_audit) == '8939158f14b767d159dcd663cb629cbe9b8e72b17a98e169e46476014c10213b'
++              and a.read(controls_receipt)['status'] == 'passed'
++              and a.read(controls_audit)['status'] == 'verified', 'actual platform controls changed')
++    control_files = [controls_receipt, controls/'result.json', controls/'command/receipt.json',
++        controls/'command/stdout', controls/'command/stderr', controls_audit,
++        a.OWNER/'.work/verify_runtime_platform_controls_01.py',
++        a.OWNER/'.work/launch_runtime_platform_controls_01.py']
++    for directory in [a.OWNER/'experiments/runtime-platform-controls-01',
++                      a.OWNER/'.work/experiments/runtime-platform-controls-supervisor-01',
++                      a.OWNER/'.work/runtime-platform-controls-launch-execution-01']:
++        control_files.extend(sorted(directory.iterdir()))
++    control_freeze = a.read(a.OWNER/'experiments/runtime-platform-controls-01/inputs.json')
++    for name, row in control_freeze['files'].items():
++        a.require(sha(name) == row['sha256'], 'passed platform control source changed: '+name)
++        control_files.append(Path(name))
+     old_plan = HERE.parent / 'ruff-diagnostic-01/plan.json'
+     old_freeze = HERE.parent / 'ruff-diagnostic-01/inputs.json'
+     old = a.read(old_plan)
+@@ -108,8 +133,8 @@
+               'strict provider identity/route changed beyond nodename')
+     python = Path('/opt/homebrew/bin/python3')
+     producer_files = [*sorted((a.R_OWNER / 'scripts').glob('*.py')),
+-        HERE / 'run.py', HERE / 'prepare.py', HERE / 'README.md', HERE / 'successor-from-01.diff',
+-        HERE.parent / 'runtime_admission_v2.py', HERE.parent / 'run_ruff_diagnostic.py',
++        HERE / 'run.py', HERE / 'prepare.py', HERE / 'README.md', HERE / 'successor-from-02.diff', HERE / 'hostname-review.json',
++        HERE.parent / 'runtime_admission_v3.py', HERE.parent / 'runtime_platform.py', HERE.parent / 'test_runtime_platform.py', HERE.parent / 'run_ruff_diagnostic.py',
+         HERE.parent / 'ruff-profile-02/profile_helpers.py',
+         a.OWNER / 'experiments/stable-cgu/owned_stage.py', a.OWNER / 'scripts/supervise_experiment.py']
+     commands = [dict(label=spec['label'], command=a.command(str(python), spec), cwd=str(a.R_OWNER),
+@@ -121,10 +146,13 @@
+         source_acquisition=old['source_acquisition'], prior_diagnostic=reference(prior_receipt),
+         prior_records=reference(prior_records), historical_plan=reference(old_plan),
+         python=str(python), launch_environment=environment, child_environment=environment,
+-        platform=list(os.uname()), executor_routes=executors, providers=providers,
++        platform=after, platform_identity=runtime_platform.identity(after), executor_routes=executors, providers=providers,
++        platform_controls=dict(receipt=reference(controls_receipt), audit=reference(controls_audit)),
++        hostname_source_review=reference(HERE/'hostname-review.json'),
+         superseded_unrun=dict(launch=reference(invalid/'launch.json'), freeze=reference(invalid/'inputs.json'),
+             plan=reference(invalid/'plan.json'), former_platform=before, current_platform=after,
+-            only_platform_delta='nodename', former_status='unrun-invalid-current-platform'),
++            identity_fields=list(runtime_platform.IDENTITY_FIELDS), nodename_policy='record-context-only',
++            former_status='unrun-complete-uname-guard-unstable'),
+         provider_directories=old['provider_directories'], configuration=configuration,
+         producer_sources={str(path): sha(path) for path in producer_files},
+         canonical_lock=old['canonical_lock'], wait_seconds=600, history=schedule, commands=commands,
+@@ -147,6 +175,9 @@
+     files.update([destination / 'plan.json', old_plan, old_freeze, prior_receipt, prior_records,
+                   invalid/'plan.json', invalid/'inputs.json', invalid/'launch.json'])
+     files.update(map(Path, a.read(invalid/'inputs.json')['files']))
++    files.update(map(Path, hostname_review['inputs']))
++    files.update(control_files)
++    files.add(invalid/'metadata-preflight.json')
+     files.update(Path(name) for name, row in configuration.items() if row['exists'])
+     a.require(all(path.resolve(strict=True) == path and path.is_file()
+                   and path.stat().st_size <= 32 * 2**20 for path in files), 'ordinary bounded frozen files required')
+@@ -173,7 +204,7 @@
+         source_proof = a.source_inventory(a.SOURCE, inventory,
+             lambda: a.require(__import__('shutil').disk_usage(a.OWNER).free >= 9*2**30, 'readmission free-space floor'))
+         a.require(plan['history'] == invalid_plan['history'] and plan['commands'] == [
+-            {**row, 'command': [arg.replace('ruff-runtime-strict-01', 'ruff-runtime-strict-02') for arg in row['command']]}
++            {**row, 'command': [arg.replace('ruff-runtime-strict-02', 'ruff-runtime-strict-03') for arg in row['command']]}
+             for row in invalid_plan['commands']], 'strict command/history delta exceeds owned names')
+     finally:
+         os.environ.clear()
+@@ -186,7 +217,7 @@
+     launch = dict(owner=str(a.OWNER), cwd=str(a.OWNER), environment=environment,
+         helper=reference(HERE / 'run.py'), plan=reference(probe.plan_path), source_freeze=reference(probe.freeze_path),
+         command=[str(python), '-B', str(a.OWNER / 'scripts/supervise_experiment.py'), '--run-id',
+-                 'ruff-runtime-strict-supervisor-02', '--', str(python), '-B', str(HERE / 'run.py'),
++                 'ruff-runtime-strict-supervisor-03', '--', str(python), '-B', str(HERE / 'run.py'),
+                  '--plan', str(probe.plan_path), '--freeze', str(probe.freeze_path),
+                  '--freeze-sha256', sha(probe.freeze_path)],
+         canonical_lock=plan['canonical_lock'], wait_seconds=600, bounds=plan['bounds'], expected_children=16,
