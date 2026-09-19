@@ -249,3 +249,5 @@ Newbranch experiment/shared-literal-keys-20260919. Prototype jit-shared-literal-
 Shared-key focused01 source8ded298b complete25265/25284 CLOSED40033:39controls/profile31param-only. Five newconcurrency/ownership/limits/currentcallee tests pass. Full678/profile17ignored,33diag,10offsession31offmodels/defaultVM prepared; actualreplay/phase/install newnames prepared. No performance run forsharedkeys.
 
 Shared-key fullqualification01 sourcec029ed04 ACTIVE45587/controller45610. Freeze crates/scripts/tests andshared-literal-keys-workspace throughclosure. Pythonproof442+22skipreused; debug/release pending. Prepared replay/phase/install controllers unstarted. Sourcebranchpushed c029ed04;main60832978 retainsliteralprimaryfailure.
+
+Shared full01 sourcec029ed04 complete45587/45610 CLOSED2331:678Rust/profile17ignored,33diag,10offsession31offmodel/defaultVM,442Python+22skip reused;48servers92clients. Nextactualsavedparser with everyhitverified. Primary05cleanup prepared NOTrun, onlyifnewcandidateadmissionneedsit.

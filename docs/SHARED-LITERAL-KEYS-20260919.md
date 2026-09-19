@@ -29,7 +29,11 @@ size boundary, mismatched Program ownership, current callee/options changes,
 storage bounds and oversized-body rejection.
 [Focused proof](../results/shared-literal-keys-focused-01/summary.json).
 
-Full workspace qualification is in progress. Actual parser replay must verify
+Full workspace qualification passes 678 Rust tests per profile (17 ignored),
+33 diagnostic integrations, 10 feature-off session checks, 31 feature-off template
+checks and the default VM build. The unchanged 442 Python controls (22 skips) are
+reused through exact hashes. All 48 owned servers and 92 clients have terminal
+records. [Workspace proof](../results/shared-literal-keys-qualification-01/summary.json). Actual parser replay must verify
 every cache hit against fresh native emission; phase attribution then decides
 whether a new end-to-end primary is justified. Sharing may introduce contention
 or setup overhead. No performance gain or default-runtime adoption is established.
