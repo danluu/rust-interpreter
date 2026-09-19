@@ -177,3 +177,8 @@ under existingjit-preparation-observer only. Native/key/admission unchanged;
 macro evaluates once+records failures. Qualify22models+33integrations/profile and
 33featureoff;36servers69clients. Replay16savedactualsuites verifyOFF diagnostic.
 No runstarted yet. Fullcostclosed24293/24333,fullguardunmeasurable preserved.
+
+Templatephases qualificatione3feaebf completedall5testcommands:22models+33integrations
+perprofile,32featureoff (not33:oneobserveronlytest). Harnesscountfailedafterallpassed,
+CLOSED90083/90086. No runtimefixneeded. qualify_completed.py preparedtoreuseall5
+hash-boundtests andonlybuild/copydiagnosticreleasebinary; replayrequiresqualified02.
