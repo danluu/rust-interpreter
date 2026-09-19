@@ -93,3 +93,9 @@ zeroassertion whileinterpreter/freshJITpass. CLOSED40201/40204. FixedCallInput
 initial_register_zeroes andinternalkeydomainv3. Full654/profile+16ignored qualification
 plus33diagnosticcontrols/defaultVM prepared, notstarted;Python442+22skip preserved
 after script/tests bindingchecks. Actual16savedparser verifyeveryhit replay prepared.
+
+Fixqualificationaffb4716 ACTIVE60783/controller60786. Exact priorPythonrecord
+reused, debugfull654pending thenrelease654/diagnostic33/defaultVM. Freezecrates,
+scripts/tests andtemplate-callee-initialization folder untilclosure. No other
+benchmark/replay active. Newbugdocs describesconfirmedredcontrols andkeyv3fix;
+main08a88a3a publishedpreviousclosedunmeasurableprimary/costs, runtimeunchanged.
