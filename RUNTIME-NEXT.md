@@ -17,3 +17,8 @@ CLEAN. Free~23.64GiB; analysis12GiB allowed. Buildfloor mustbefreshmax(14GiB,
 8GiB+2*allocatedtarget), currently notadmitted. Lock45s,2workers; preserveallpeers.
 Main da13cab4 publishedstorage. Nextpublish closedslotdiagnostic explicitpaths
 through .work/publication-main, preservingpeers. No activeownedcommands.
+UPDATE: overwrittenwrites01 now CLOSED12controls/bothderivations, ZERO sample
+coverage. PARKED. Older typed local-overwrite-coverage01 alreadynegative; do not
+recreate. Broad/conditionaldemandregionJIT alsoalreadyfailedtimings. Nextconsider
+exactheaplayout lookup table, preserving ordered free ranges/pointer allocation.
+No candidateimplemented oractivecommand. Main968b1472 slotpublicationpushed.

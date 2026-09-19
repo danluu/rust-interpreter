@@ -77,3 +77,14 @@ Root d9dcb02f pushed before current pending registration. Latest main da13cab4
 published storage; publish closed slot diagnostic/coverage next. No activeowned
 commands. Suggestions remains unchanged/untracked SHA256
 4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f.
+
+local-overwritten-writes01 source00ee280a supervisor34801/controller34804 passed12
+controls (2000x40concreteevents). Bothcensuses andindependentclose48205 passed,
+52bindings.1501/1802candidates, ZERO current1933/1429samples. PARKED, no runtime.
+Historysearchthenfoundoldertyped local-overwrite-coverage01 alreadynegative1/1651,
+2/1439. Currentanalysis updatescapturedscope, NOT a newmechanism. Also broad/
+conditionaldemandcompilationalreadyimplementedandfailedtoken/parsergates; don't
+repeat. Main968b1472 publishesclosedslotproof preservingpeer608da6ba.
+Nextreviewheapownershipmetadata: latestsavedcapturehas73/155heap-contextsamples;
+exactlayoutget/insert/remove usesBTreeMap despite noordering requirement. Free-
+range addressordering MUST remain unchanged. No allocatorimplementationyet.
