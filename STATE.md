@@ -7,7 +7,7 @@ qualified work regularly. Do not stop at milestones.
 
 ## Current direction
 
-Branch experiment/cross-edit-emission-census-20260918. HEAD ffd00225 before this
+Branch experiment/cross-edit-emission-census-20260918. HEAD546029a7 before this
 state update. Adopted Rust/Cargo was restored exactly at4d06c3ed after parking the
 register-workspace candidate. Current Rust difference is a cfg(test)-only
 structural census, with no JIT construction, guest execution or native cache.
@@ -33,6 +33,14 @@ five valid edits exact bodies cover~30–100% of all ops, closed direct-call gra
 Next classify exact global/function/op differences and relate overlap to measured
 preparation before choosing a cache mechanism. Do not enable reuse from these
 counts. [Assessment](docs/CROSS-EDIT-EMISSION-CENSUS-20260918.md).
+
+Model02 at546029a7 adds typed/global difference classification and passes11tests
+per profile under13308/13311. Both ignored observers were excluded. Closer02
+is newly launched; verify terminal before differences01. Differences controller
+reads the same eight bound artifacts with no guest/JIT/native publication and
+retains all seven transitions. Do not change frozen Rust/controllers until closure.
+Current free space about22GiB, with rapid observed depletion; recheck each stage.
+No cache or performance candidate is enabled by the diagnostic.
 
 The census hashes complete functions at identical numeric IDs, then checks direct
 callees and an iteratively propagated closed direct-call graph. It excludes
