@@ -109,3 +109,20 @@ process starts. Close this failure. Transport02 uses an empty struct variant for
 Shutdown so its fields are checked, retains the negative test, verifies every
 non-server Rust/Cargo hash, and reuses the completed environment command. Seven
 remaining/corrected commands run; no successful library command is repeated.
+
+Transport02 is closed, all30 tests/profile pass with eight owned fixture session
+processes orderly exited/reaped, including two expected protocol rejections.
+Parser01 now uses its retained release executable for two owned sessions, history
+off/on, with verification enabled. Bind all eight actual parser states/catalogs
+and native outcomes to closed suites01; run16 suites/1,824 test invocations. Check
+full name/index coverage, exact failure-text parity and every restored hit count.
+Retain each completed report/response even if a later case fails. No rerun.
+
+Parser01 holds the benchmark lock, needs12GiB initially and8GiB before each session
+and request, and builds nothing. It sends raw environment pairs only through the
+owned pipe; retain their digest, never contents. Record exact process identity,
+use EOF/protocol shutdown and wait4 on that exact child, and reconcile server CPU
+snapshots against kernel user/system totals (1ms conversion tolerance). This is
+CPU accounting qualification and saved-artifact correctness, not a performance
+comparison or a changed-source end-to-end claim. Socket/launcher integration and
+the full primary reservation remain subsequent requirements.

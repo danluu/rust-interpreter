@@ -73,6 +73,8 @@ def close():
         for r in records:
             for stream in ['stdout','stderr']:
                 p=raw/(r['label']+'.'+stream);assert sha(p)==r[stream+'_sha256'];evidence[str(p.relative_to(ROOT))]=sha(p)
+            for p,h in r.get('outputs',{}).items():
+                assert sha(ROOT/p)==h;evidence[p]=h
         out.mkdir(exist_ok=True);assert not (out/'closure.json').exists()
         if terminal['returncode']==0:
             summary=read(out/'summary.json');assert summary['status']=='passed' and len(records)==plan['expected_commands']
