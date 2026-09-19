@@ -16,16 +16,20 @@ def load():
         assert t['owner']==str(ROOT) and t['status']=='finished' and t['returncode']==0
         paths.extend(folder/n for n in ['closure.json','summary.json','terminal.json'])
         return s
-    candidate=closed('parameterized-literals-install-01')
-    replay=closed('parameterized-literals-parser-client-01')
+    candidate=closed('session-duration-order-install-01')
+    replay=closed('session-duration-order-parser-client-01')
     protocol=closed('cross-program-template-parser-protocol-01')
     assert candidate['python']['passed']==442 and candidate['python']['skipped']==22
-    assert candidate['rust']==dict(passed=673,ignored=17)
+    assert candidate['rust']==dict(passed=679,ignored=17)
     assert replay['test_invocations']==1824 and replay['verified_cache_hits']>0 and replay['kernel_cpu_reconciled']
     assert protocol['tests']==7
     assert candidate['composition']['artifact_digest_reuse'] is replay['artifact_digest_reuse'] is True
     assert candidate['composition']['template_key_domain']=='cross-program-staging-literals-v1'
     assert candidate['composition']['parameterized_literals'] is replay['parameterized_literals'] is True
+    assert candidate['composition']['duration_order'] is replay['duration_order'] is True
+    assert candidate['composition']['shared_literal_keys'] is replay['shared_literal_keys'] is False
+    ordering=closed('session-duration-order-evidence-01')
+    assert ordering['priority_conformity_reports']==16 and ordering['priority_conformity_invocations']==1824
     assert candidate['composition']['buffered_template_keys'] is replay['buffered_template_keys'] is False
     assert candidate['composition']['large_function_interpreter_threshold']==replay['large_function_interpreter_threshold']==65536
     assert candidate['composition']['diagnostic_feature'] is replay['diagnostic_feature'] is False
@@ -33,9 +37,9 @@ def load():
         plan_path=ROOT/s['raw']/'plan.json';assert sha(plan_path)==s['plan_sha256'];paths.append(plan_path)
         for path,h in read(plan_path)['frozen'].items():
             if path.startswith(('crates/','scripts/','tests/','benchmarks/experiments/cross-program-template-screen/',
-                    'benchmarks/experiments/parameterized-literals-install/',
-                    'benchmarks/experiments/parameterized-literals-workspace/','benchmarks/experiments/parameterized-literals-replay/',
-                    'benchmarks/experiments/parameterized-literals-phases/')) or path in ['Cargo.toml','Cargo.lock','rust-toolchain.toml']:
+                    'benchmarks/experiments/session-duration-order-install/',
+                    'benchmarks/experiments/session-duration-order-workspace/','benchmarks/experiments/session-duration-order-replay/',
+                    'benchmarks/experiments/session-duration-order-phases/')) or path in ['Cargo.toml','Cargo.lock','rust-toolchain.toml']:
                 assert sha(ROOT/path)==h,('qualified source changed',path);paths.append(ROOT/path)
     base_path=ROOT/'results/scratch-scalar-main-qualification-01/summary.json';base=read(base_path);paths.append(base_path)
     assert base['status']=='passed' and base['tool_key']==BASELINE
