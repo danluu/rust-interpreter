@@ -123,3 +123,11 @@ retired (closed-composition-nushell-{native-lines,main-native}-retirement-01),
 The two runs recover about3.65/5.41GiB free respectively (not their logical
 8.0/17.3GB totals). Do not repeat them. Only the current Nu check cache remains
 for a future exact ownership/protection audit if needed.
+
+Integration01 under24839/24865 failed debug compilation before tests: existing
+memory_operand_tests compares Set equality/debug. CLOSED33381 (child in receipt).
+Added cfg(test)-only semantic contents equality and debug, preserving that test;
+model Set control checks dense/sparse equality too. Integrated02 is next/current,
+seven focused tests/profile. No native/guest code executed yet. Root HEAD retains
+all failed attempts; stage patches are historical drafts already applied after
+model closure. Main/pushed publication5c4885ad preserves peer7ec18d38.

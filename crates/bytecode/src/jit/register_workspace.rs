@@ -83,6 +83,19 @@ impl Set {
     pub(super) fn clear(&mut self) { self.0.clear(); }
 }
 
+#[cfg(test)]
+impl PartialEq for Set {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.filter_sorted(|_,_| true) == other.0.filter_sorted(|_,_| true)
+    }
+}
+#[cfg(test)]
+impl std::fmt::Debug for Set {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_set().entries(self.0.filter_sorted(|_,_| true).into_iter().map(|(reg,_)|reg)).finish()
+    }
+}
+
 /// Bound the combined dense workspace, in addition to each map's allocation.
 /// Sparse fallback retains the original collection's allocation behavior.
 pub(super) fn tables(registers: usize) -> (Map<super::Fact>, Set, Set) {
@@ -163,6 +176,8 @@ mod tests {
             let mut oracle=std::collections::BTreeSet::new();
             for pass in 0..5 {
                 for i in 0..1024 {let r=((i*73+pass*13)%257) as Reg;assert_eq!(set.insert(r),oracle.insert(r));assert_eq!(set.contains(&r),oracle.contains(&r));}
+                let mut sparse=Set::default();for &reg in &oracle {sparse.insert(reg);}
+                assert_eq!(set,sparse);
                 set.clear();oracle.clear();assert!((0..257).all(|r|!set.contains(&r)));
             }
         }

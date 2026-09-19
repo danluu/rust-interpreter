@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='emitter-register-workspace-integrated-01'
+RUN='emitter-register-workspace-integrated-02'
 def read(p):return json.loads(p.read_text())
 
 def main():

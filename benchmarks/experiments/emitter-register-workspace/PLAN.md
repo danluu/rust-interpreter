@@ -56,3 +56,11 @@ persistent-register and heap modes; six code capacities including zero. Compare
 words, entries, resumes, assertions, operation counts and facts. This stage
 changes production preparation storage but publishes/executes no native code.
 Full controls and exact original saved-code reconstruction are still required.
+
+Integrated01 stopped at debug compilation because an existing memory-operand
+assertion compares live-in sets; the new wrapper lacked PartialEq/Debug. Preserve
+and close that failure before adding cfg(test)-only content equality and debug
+formatting. Do not derive storage/capacity equality or weaken the existing test.
+The model's membership control now also compares dense and sparse sets directly.
+Integrated02 repeats the failed compilation and unstarted release; no successful
+guest or staging command is repeated.
