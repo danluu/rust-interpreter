@@ -160,3 +160,10 @@ reuses Python442+22skip, running debug/release652+16ignored anddefault VM.
 Freeze candidate/crates/scripts/tests/size-tier experiment folder throughclosure.
 Next actual savedparser verify-hit replay and installation, then primary03 only
 after24GiB admission. Goalpaused; no peer process/worktree control.
+
+Qualification03 passed652Rust/profile+16ignored and feature-off VM; Python442+22skip
+reused exact prior record. CLOSED60406/60437. Actualsavedparser replay/install
+controllers prepared, not yet started. Main8567ce51 pushed closed diagnostic and
+cleanup evidence, preserving peer f83ae5dc; experimental runtime remains unadopted.
+Additional bounded fre custom-cache retirement prepared/notstarted;16 exact roots
+from fourcompleted154-command cases, no native/sharedtarget/peerwork.
