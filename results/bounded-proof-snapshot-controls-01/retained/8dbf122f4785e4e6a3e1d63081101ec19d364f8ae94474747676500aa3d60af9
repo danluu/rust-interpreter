@@ -1,0 +1,43 @@
+import hashlib,json,re,time
+from pathlib import Path
+A=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+D=A/'experiments/bounded-proof-snapshot-controls-01'
+W=A/'.work/bounded-proof-snapshot-controls-01'
+S=A/'.work/experiments/bounded-proof-snapshot-controls-supervisor-01'
+L=A/'.work/proof-snapshot-controls-launch-execution-01'
+def read(p):return json.loads(p.read_bytes())
+def sha(p):
+ with p.open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
+def stamp(p):
+ s=p.lstat();return [s.st_dev,s.st_ino,s.st_mode,s.st_size,s.st_mtime_ns,s.st_ctime_ns,s.st_nlink]
+assert sha(D/'launch.json')=='c8113681377650a3c7901ffbdf971ce32dfe157981e1755bc361a16b83185f26'
+assert sha(D/'inputs.json')=='0458ec86c071902458baad787f3557b4268dee4aea7bcd44cae50d5340c4c8be'
+f=read(D/'inputs.json');launch=read(D/'launch.json');r=read(W/'receipt.json');c=read(W/'command/receipt.json');o=read(S/'status.json');l=read(L/'record.json');t=read(W/'result.json')
+for n,v in f['files'].items():
+ p=Path(n);assert p.resolve(strict=True)==p and stamp(p)==v['stamp'] and sha(p)==v['sha256'] and stamp(p)==v['stamp'],n
+for n,v in f['routes'].items():assert str(Path(n).resolve(strict=True))==v,n
+assert l['status']=='finished' and l['returncode']==0 and l['command']==launch['command'] and l['environment']==launch['environment'] and l['cwd']==str(A)
+for stream in ['stdout','stderr']:assert l[stream+'_sha256']==sha(L/stream)
+hand=read(L/'stdout');assert hand['supervisor_pid']==o['supervisor_pid'] and hand['directory']==str(S)
+assert o['status']=='finished' and o['returncode']==0 and o['command']==launch['command'][6:] and o['cwd']==str(A)
+assert o['plan_sha256']==sha(S/'plan.json') and o['log_sha256']==sha(S/'command.log')
+assert r['status']=='passed' and r['controls_passed']==7 and r['pid']==o['child_pid'] and r['parent_pid']==o['supervisor_pid']
+assert r['inputs_sha256']==sha(D/'inputs.json') and r['result_sha256']==sha(W/'result.json')
+assert len(r['commands'])==1 and r['commands'][0]==dict(path=str(W/'command/receipt.json'),pid=c['pid'],sha256=sha(W/'command/receipt.json'))
+assert c['status']=='finished' and c['returncode']==0 and c['command']==f['command'] and c['cwd']==str(A/'experiments/bounded-proof-snapshots') and c['environment']==f['environment']
+assert c['supervisor_pid']==r['pid'] and c['parent_pid']==o['supervisor_pid']
+assert c['identity']['ps_returncode']==c['identity']['cwd_returncode']==0
+ps=c['identity']['ps'].split();assert list(map(int,ps[:3]))==[c['pid'],r['pid'],c['pid']]
+assert c['identity']['ps'].endswith(' '.join(c['command'])) and 'n'+c['cwd']+'\n' in c['identity']['cwd']
+assert o['child_started_at']<=r['started_at']<=r['admitted_at']<=c['started_at']<=c['finished_at']<=r['finished_at']<=o['finished_at']
+for stream in ['stdout','stderr']:assert c[stream+'_sha256']==sha(W/'command'/stream)
+raw=(W/'command/stderr').read_text();names=re.findall(r'^test_[A-Za-z0-9_]+ \(([^)]+)\) \.\.\. ok$',raw,re.M)
+assert sorted(names)==f['expected_names']==t['expected_names'] and len(names)==7
+assert re.search(r'^Ran 7 tests in [0-9.]+s\n\nOK\n$',raw,re.M) and not (W/'command/stdout').read_bytes()
+assert t['status']=='passed' and t['tests_run']==7 and all(t[k]==0 for k in ['failures','errors','skipped','expected_failures','unexpected_successes','child_processes','compiler_calls'])
+assert all(r[k]==0 for k in ['compiler_calls','provider_probes','B3_compositions']) and not list((W/'tmp').iterdir())
+assert r['free_bytes_before']>=16*2**30 and r['free_bytes_after']>=9*2**30
+proof=dict(status='verified',finished_at=time.time(),controls=7,input_files=len(f['files']),input_bytes=sum(v['stamp'][3] for v in f['files'].values()),receipt_sha256=sha(W/'receipt.json'),result_sha256=sha(W/'result.json'),raw_sha256={s:sha(W/'command'/s) for s in ['stdout','stderr']},supervisor_pid=o['supervisor_pid'],helper_pid=r['pid'],test_pid=c['pid'],exact_names=names,compiler_calls=0,provider_probes=0,process_signals=0,observed_context='Seven tiny bounded compression/filesystem fixture controls; no compiler or provider calls',verifier_sha256=sha(Path(__file__)))
+out=Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/proof-snapshot-controls-independent-verification-01.json')
+with out.open('x') as f:json.dump(proof,f,indent=2,sort_keys=True);f.write('\n')
+print(json.dumps(dict(path=str(out),sha256=sha(out),receipt_sha256=proof['receipt_sha256'])))

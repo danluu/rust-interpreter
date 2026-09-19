@@ -1,0 +1,30 @@
+import hashlib,json,pathlib,shutil
+R=pathlib.Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+A=pathlib.Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918')
+H=R/'experiments/bounded-proof-snapshot-controls-01';W=R/'.work/bounded-proof-snapshot-controls-01'
+O=R/'results/bounded-proof-snapshot-controls-01';assert not O.exists()
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+f=json.loads((H/'inputs.json').read_bytes());audit=A/'.work/proof-snapshot-controls-independent-verification-01.json'
+assert sha(audit)=='ec227893916b7e930a39fb9649ed2989d21ad4de681cd50d6bfae9e0a476df6f'
+a=json.loads(audit.read_bytes());assert a['status']=='verified' and a['receipt_sha256']==sha(W/'receipt.json')
+paths={H/'inputs.json',H/'launch.json',audit,A/'.work/verify_proof_snapshot_controls_01.py',A/'.work/proof-snapshots-controls-source-review-01.json',R/'.work/launch_proof_snapshot_controls_01.py',pathlib.Path(__file__).resolve()}
+for name,row in f['files'].items():
+ p=pathlib.Path(name);assert sha(p)==row['sha256']
+ if p.suffix in ['.py','.md']:paths.add(p)
+for directory in [W,R/'.work/experiments/bounded-proof-snapshot-controls-supervisor-01',R/'.work/proof-snapshot-controls-launch-execution-01']:
+ for p in directory.rglob('*'):
+  assert not p.is_symlink()
+  if p.is_file():paths.add(p)
+assert len(paths)<=64 and sum(p.stat().st_size for p in paths)<=2**20
+O.mkdir();(O/'retained').mkdir();manifest={}
+for p in sorted(paths):
+ assert p.resolve(strict=True)==p and p.is_file() and p.stat().st_size<=256*1024
+ digest=sha(p);dest=O/'retained'/digest
+ if not dest.exists():shutil.copyfile(p,dest)
+ assert sha(dest)==digest and sha(p)==digest
+ manifest[str(p)]={'path':str(dest.relative_to(O)),'sha256':digest,'bytes':p.stat().st_size}
+(O/'manifest.json').write_text(json.dumps(manifest,sort_keys=True,indent=2)+'\n')
+summary={'status':'seven-controls-passed-and-independently-audited','controls':7,'launch_sha256':sha(H/'launch.json'),'inputs_sha256':sha(H/'inputs.json'),'receipt_sha256':sha(W/'receipt.json'),'audit_sha256':sha(audit),'retained_records':len(paths),'retained_logical_bytes':sum(p.stat().st_size for p in paths),'compiler_calls':0,'provider_calls':0,'production_snapshots_written':0,'application_performance_measured':False}
+(O/'summary.json').write_text(json.dumps(summary,sort_keys=True,indent=2)+'\n')
+(O/'README.md').write_text('# Bounded proof snapshot controls\n\nSeven owned-fixture controls passed once, with complete independent source and\nactual-run audit. Retained records contain exact tested sources, bounded harness,\nlaunch/supervisor/child receipts, raw output, result and verifier. System tool\npayloads remain identified by the original freeze; they are not copied here.\n\nChecks cover deterministic lossless retention, duplicate-source validation,\nchanged inputs/projections, file/total/compressed/manifest limits, corrupt gzip\nCRC/truncation/extra payload, failed capacity and symlink rejection. No compiler,\nprovider, production snapshot, application or performance workload was run.\n')
+print(json.dumps(summary))
