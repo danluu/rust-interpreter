@@ -40,3 +40,7 @@ clobbers. First exactsavedload-PC census +clobberreview; no runtimecandidateyet.
 
 Next run local-copy-payload-01 analyze.py, then independent --close.
 Exactnative3wordcopyrecognizer;10controls;nonewguest/build. Main7b92ad16pushed.
+
+Payload01 ADMISSIONBLOCKED, closedreceipt; noanalysis/controlran. Usev2
+analyze.py --run-id local-copy-payload-02 aftersharedlockbecomesavailable,
+then samecommand --close. Modelunchanged10controls. Nopeerprocesscontrol.

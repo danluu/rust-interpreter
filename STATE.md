@@ -224,3 +224,9 @@ Registered local-copy-payload-01:10controls,exactnative3wordlocalCopy8
 recognizer,eightreservedpayloadslots,fouraliases/slot,knownbarriers,actualLDR
 selfPCcoverage. No runtime/nativeproof. Main7b92ad16pushed closedloop/copyequality
 evidence;rootf83ace31pushed. New sourcesfreeze throughclosure.
+
+Payload01 supervisor59997/controller60000 waited45s forpeerlock andexited1
+before rawdirectory/control/case. Receipt-onlyfailure closure verifiesoriginal
+sourcee28125e4 andterminal/log/plan; nootherprocess controlled. Newv2controller
+bindsclosedadmissionfailure,unchangedmodel10controls,requiresunique--run-id.
+Wait forsharedlock admission; peer52034/52747 preflightactive,outofscope.
