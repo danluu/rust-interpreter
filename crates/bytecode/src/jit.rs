@@ -48,7 +48,6 @@ mod values;
 mod transfers;
 mod guarded_ranges;
 mod scratch_values;
-mod register_workspace;
 
 #[cfg(test)]
 mod limit_tests;
@@ -368,8 +367,6 @@ pub(crate) struct Jit<'a> {
     resumable: Option<resumable::Entries>,
     scalar: Option<scalar_calls::State>,
     #[cfg(test)]
-    dense_register_workspace: bool,
-    #[cfg(test)]
     disable_call_slot_hints: bool,
     #[cfg(test)]
     observe_guarded_local_retention: bool,
@@ -412,8 +409,6 @@ impl<'a> Jit<'a> {
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
             assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None, scalar: None,
-            #[cfg(test)]
-            dense_register_workspace: true,
             #[cfg(test)]
             disable_call_slot_hints: false,
             #[cfg(test)]
@@ -571,11 +566,6 @@ impl<'a> Jit<'a> {
                 starts[pc + 1] = true;
             }
         }
-        let (mut region_facts, mut region_defined, mut region_live_in) = register_workspace::tables(f.registers);
-        #[cfg(test)]
-        if !self.dense_register_workspace {
-            region_facts = Default::default(); region_defined = Default::default(); region_live_in = Default::default();
-        }
         let mut pc = 0;
         while pc < f.code.len() {
             let start = pc;
@@ -592,9 +582,6 @@ impl<'a> Jit<'a> {
             if pc - start >= if resumable { 1 } else { 3 } {
                 let offset = words.len() * 4;
                 let mut a = Assembler {
-                    facts: std::mem::take(&mut region_facts),
-                    defined: std::mem::take(&mut region_defined),
-                    live_in: std::mem::take(&mut region_live_in),
                     #[cfg(test)]
                     observe_guarded_local_retention: self.observe_guarded_local_retention,
                     #[cfg(test)]
@@ -752,10 +739,6 @@ impl<'a> Jit<'a> {
                     retained_local_writes.extend(a.retained_local_writes);
                 }
                 words.extend(a.words);
-                // Facts and membership are region-local. Retain only empty
-                // host buffer capacity, never values from a predecessor.
-                a.facts.clear(); a.defined.clear(); a.live_in.clear();
-                region_facts = a.facts; region_defined = a.defined; region_live_in = a.live_in;
                 entries[start] = Some(Block { offset, end: pc });
                 operations += pc - start;
             }
@@ -1120,9 +1103,9 @@ struct Assembler<'a> {
     heap: bool,
     frame_size: usize,
     reads: &'a [Option<(usize, usize)>],
-    facts: register_workspace::Map<Fact>,
-    defined: register_workspace::Set,
-    live_in: register_workspace::Set,
+    facts: BTreeMap<Reg, Fact>,
+    defined: BTreeSet<Reg>,
+    live_in: BTreeSet<Reg>,
     // x5/x6 are caller-saved and otherwise unused after heap relocation,
     // except for medium copies, which explicitly evict this local cache.
     // A narrow value occupies one slot; a wide value owns both slots.
@@ -1597,14 +1580,15 @@ impl Assembler<'_> {
         // value read elsewhere. Also retain values read before their first
         // definition in this region: a backedge may re-enter this same region
         // and read its previous execution's final value.
-        let live = self.facts.filter_sorted(|reg, fact| {
-            if matches!(fact, Fact::Physical { .. }) { return false; }
+        let live: Vec<_> = self.facts.iter().filter_map(|(&reg, &fact)| {
+            if matches!(fact, Fact::Physical { .. }) { return None; }
             if let Some(values) = self.values {
-                return values.live.at(end - 1, reg) || values.live.after(end - 1, reg);
+                return (values.live.at(end - 1, reg) || values.live.after(end - 1, reg)).then_some((reg, fact));
             }
-            self.reads[reg as usize].is_some_and(|(first, last)|
-                matches!(fact, Fact::Cached { .. }) || first < start || last >= end || self.live_in.contains(&reg))
-        });
+            self.reads[reg as usize]
+                .filter(|&(first, last)| matches!(fact, Fact::Cached { .. }) || first < start || last >= end || self.live_in.contains(&reg))
+                .map(|_| (reg, fact))
+        }).collect();
         for (reg, fact) in live {
             #[cfg(test)]
             let offset = self.words.len() * 4;
