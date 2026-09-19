@@ -1,0 +1,114 @@
+--- controls03/run.py
++++ controls04/run.py
+@@ -14,7 +14,7 @@
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ sys.path.insert(0, str(X / 'experiments/stable-cgu'))
+ import owned_stage as owned
+-WORK = OWNER / '.work/hir-options-hash-prerequisite-controls-03'
++WORK = OWNER / '.work/hir-options-hash-prerequisite-controls-04'
+ 
+ 
+ def read(path):
+@@ -71,10 +71,10 @@
+             stderr = (WORK / 'command/stderr').read_text()
+             names = re.findall(r'^test_[A-Za-z0-9_]+ \(([^)]+)\) \.\.\. ok$', stderr, re.M)
+             assert sorted(names) == freeze['expected_names']
+-            assert re.search(r'^Ran 21 tests in [0-9.]+s\n\nOK\n$', stderr, re.M)
++            assert re.search(r'^Ran 63 tests in [0-9.]+s\n\nOK\n$', stderr, re.M)
+             assert not (WORK / 'command/stdout').read_bytes()
+             result = read(WORK / 'result.json')
+-            assert result['status'] == 'passed' and result['tests_run'] == 21 and result['expected_names'] == freeze['expected_names']
++            assert result['status'] == 'passed' and result['tests_run'] == 63 and result['expected_names'] == freeze['expected_names']
+             assert all(result[name] == 0 for name in ['failures', 'errors', 'skipped', 'expected_failures', 'unexpected_successes', 'child_processes', 'compiler_calls'])
+             assert not list((WORK / 'tmp').iterdir()), 'synthetic fixture cleanup incomplete'
+             total = 0
+@@ -87,7 +87,7 @@
+                     assert path.is_dir()
+             assert total <= 2 * 1024 * 1024, 'retained pure-control output cap exceeded'
+             guard(freeze)
+-            receipt.update(status='passed', controls_passed=21, result_sha256=owned.sha(WORK / 'result.json'),
++            receipt.update(status='passed', controls_passed=63, result_sha256=owned.sha(WORK / 'result.json'),
+                            retained_file_bytes=total, free_bytes_after=owned.disk(OWNER, 9))
+     except BaseException as error:
+         receipt.update(status='failed', error=repr(error)); raise
+--- controls03/child.py
++++ controls04/child.py
+@@ -10,8 +10,8 @@
+ HERE = Path(__file__).resolve().parent
+ SOURCE = HERE.with_name('hir-options-hash-driver-stage')
+ OWNER = HERE.parents[1]
+-WORK = OWNER / '.work/hir-options-hash-prerequisite-controls-03'
+-MODULES = ['test_prerequisites', 'test_native_wrapper']
++WORK = OWNER / '.work/hir-options-hash-prerequisite-controls-04'
++MODULES = ['test_prerequisites', 'test_native_wrapper', 'test_snapshot_bindings']
+ MAX_FILE = 256 * 1024
+ 
+ 
+@@ -50,7 +50,7 @@
+         if isinstance(item, unittest.TestSuite):
+             return [name for test in item for name in names(test)]
+         return [item.id()]
+-    assert sorted(names(suite)) == expected and len(expected) == 21
++    assert sorted(names(suite)) == expected and len(expected) == 63
+     result = unittest.TextTestRunner(verbosity=2).run(suite)
+     freeze = json.loads((HERE / 'inputs.json').read_bytes())
+     for module in list(sys.modules.values()):
+@@ -64,7 +64,7 @@
+                   maximum_file_bytes=MAX_FILE, maximum_writable_names=256,
+                   maximum_directory_names=2048, child_processes=0, compiler_calls=0)
+     (WORK / 'result.json').write_text(json.dumps(report, sort_keys=True, indent=2) + '\n')
+-    assert result.wasSuccessful() and result.testsRun == 21 and not result.skipped
++    assert result.wasSuccessful() and result.testsRun == 63 and not result.skipped
+     assert not result.expectedFailures and not result.unexpectedSuccesses
+     signal.alarm(0)
+ 
+--- controls03/prepare.py
++++ controls04/prepare.py
+@@ -11,16 +11,16 @@
+     here, source, owner = control.HERE, control.SOURCE, control.OWNER
+     assert Path.cwd() == owner and sys.dont_write_bytecode
+     assert not any((here / name).exists() for name in ['inputs.json', 'launch.json'])
+-    assert not control.WORK.exists() and not (owner / '.work/experiments/hir-options-hash-prerequisite-controls-supervisor-03').exists()
++    assert not control.WORK.exists() and not (owner / '.work/experiments/hir-options-hash-prerequisite-controls-supervisor-04').exists()
+     names = []
+-    modules = ['test_prerequisites', 'test_native_wrapper']
++    modules = ['test_prerequisites', 'test_native_wrapper', 'test_snapshot_bindings']
+     for module in modules:
+         tree = ast.parse((source / (module + '.py')).read_text())
+         for node in tree.body:
+             if isinstance(node, ast.ClassDef):
+                 names.extend(module + '.' + node.name + '.' + child.name for child in node.body
+                              if isinstance(child, ast.FunctionDef) and child.name.startswith('test_'))
+-    assert len(names) == len(set(names)) == 21
++    assert len(names) == len(set(names)) == 63
+     files, routes = {}, {}
+     def add(path):
+         path = Path(path); resolved = path.resolve(strict=True)
+@@ -34,7 +34,7 @@
+         if path.suffix == '.py':
+             ast.parse(path.read_text(), filename=str(path))
+     for directory in [here, source]:
+-        for path in (sorted(directory.iterdir()) if directory == here else [source/'prerequisites.py', source/'test_prerequisites.py', source/'test_native_wrapper.py']):
++        for path in (sorted(directory.iterdir()) if directory == here else [source/'prerequisites.py', source/'test_prerequisites.py', source/'test_native_wrapper.py', source/'snapshot_bindings.py', source/'test_snapshot_bindings.py']):
+             assert path.is_file() and not path.is_symlink()
+             add(path)
+     for path in [control.X/'.work/hir-options-hash-compiler-01/source/compiler/rustc/src/main.rs',
+@@ -63,15 +63,15 @@
+     control.owned.write(here / 'inputs.json', freeze)
+     launch = dict(status='prepared-unrun-awaiting-review', owner=str(owner), environment=environment,
+                   command=[str(python), '-B', str(owner / 'scripts/supervise_experiment.py'), '--run-id',
+-                           'hir-options-hash-prerequisite-controls-supervisor-03', '--', str(python), '-B',
++                           'hir-options-hash-prerequisite-controls-supervisor-04', '--', str(python), '-B',
+                            str(here / 'run.py'), '--inputs-sha256', control.owned.sha(here / 'inputs.json')],
+                   inputs_sha256=control.owned.sha(here / 'inputs.json'), helper_sha256=control.owned.sha(here / 'run.py'),
+-                  expected_children=1, controls=21, capacity=freeze['capacity'], bounds=freeze['bounds'])
++                  expected_children=1, controls=63, capacity=freeze['capacity'], bounds=freeze['bounds'])
+     control.owned.write(here / 'launch.json', launch)
+     control.guard(freeze)
+     print(json.dumps(dict(status='prepared-unrun', launch_sha256=control.owned.sha(here / 'launch.json'),
+                          inputs_sha256=launch['inputs_sha256'], files=len(files),
+-                         bytes=sum(row['stamp'][3] for row in files.values()), controls=21), indent=2))
++                         bytes=sum(row['stamp'][3] for row in files.values()), controls=63), indent=2))
+ 
+ 
+ if __name__ == '__main__':

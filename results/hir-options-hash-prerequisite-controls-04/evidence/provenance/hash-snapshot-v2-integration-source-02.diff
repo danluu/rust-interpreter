@@ -1,0 +1,914 @@
+--- before/stage.py
++++ current/stage.py
+@@ -5,6 +5,7 @@
+ This file imports definitions only; main is the sole execution entry point.
+ """
+ import argparse
++import ast
+ from contextlib import contextmanager
+ import importlib.util
+ import json
+@@ -24,14 +25,20 @@
+ REVISION = '4de35bdacef0e3cd18a66bc30b5459c19e09b118'
+ NATIVE_SOURCE = A/'experiments/hir-options-hash-native-controls-03'
+ NATIVE_WORK = A/'.work/hir-options-hash-native-controls-03'
++NATIVE_QUALIFICATION_SOURCE = A/'experiments/hir-options-hash-native-reconciliation-01'
++NATIVE_QUALIFICATION_WORK = A/'.work/hir-options-hash-native-controls-reconciliation-01'
++NATIVE_FAILURE_AUDIT = dict(path=str(A/'.work/native-controls-failure-verification-03.json'),
++    sha256='1058d64e64d75748a3da12115a8400a01daa5cd499b39b09c8d29520eaab4f24')
+ BETA_SOURCE = A/'experiments/hir-options-hash-beta-composition-08'
+ BETA_WORK = A/'.work/hir-options-hash-beta-composition-08'
+ RECIPE_SOURCE = O/'experiments/hir-options-hash-run-make-stage-02'
+ RECIPE_WORK = O/'.work/hir-options-hash-run-make-01'
+-SNAPSHOT_SOURCE = ROOT/'experiments/bounded-proof-snapshots/proof_snapshots.py'
+-SNAPSHOT_CONTROLS = ROOT/'experiments/bounded-proof-snapshot-controls-01'
+-SNAPSHOT_CONTROL_WORK = ROOT/'.work/bounded-proof-snapshot-controls-01'
+-SNAPSHOT_AUDIT = A/'.work/proof-snapshot-controls-independent-verification-01.json'
++SNAPSHOT_SOURCE = A/'experiments/bounded-proof-snapshots-v2/proof_snapshots.py'
++SNAPSHOT_TESTS = [SNAPSHOT_SOURCE.with_name(name) for name in
++                  ['test_proof_snapshots.py', 'test_reference_reuse.py']]
++SNAPSHOT_CONTROLS = A/'experiments/bounded-proof-snapshot-controls-v2-01'
++SNAPSHOT_CONTROL_WORK = A/'.work/bounded-proof-snapshot-controls-v2-01'
++SNAPSHOT_AUDIT = A/'.work/proof-snapshot-controls-v2-independent-verification-01.json'
+ SNAPSHOT_LIMITS = dict(maximum_files=1024, maximum_file_bytes=64*2**20,
+     maximum_logical_bytes=512*2**20, maximum_compressed_bytes=128*2**20,
+     maximum_manifest_bytes=4*2**20)
+@@ -102,14 +109,16 @@
+     predecessor = module('prerequisites', HERE/'prerequisites.py')
+     native_recipe = module('native_recipe', NATIVE_SOURCE/'recipe.py')
+     native_observed = module('native_observed', NATIVE_SOURCE/'observations.py')
++    wrong_beta = module('wrong_beta', NATIVE_QUALIFICATION_SOURCE/'wrong_beta.py')
+     adapter = module('recipe_adapter', RECIPE_SOURCE/'adapter.py')
+     bundle = adapter.load_bundle()
+     monitor = adapter.monitor()
+     metadata = adapter.metadata()
+     comp = module('composition', BETA_SOURCE/'compose_sysroot.py')
++    snapshot_bindings = module('snapshot_bindings', HERE/'snapshot_bindings.py')
+     return dict(core=core, predecessor=predecessor, trace=trace, recipe=native_recipe,
+                 observed=native_observed, adapter=adapter, bundle=bundle, monitor=monitor,
+-                metadata=metadata, comp=comp)
++                metadata=metadata, comp=comp, snapshot_bindings=snapshot_bindings, wrong_beta=wrong_beta)
+ 
+ 
+ def snapshot_records(freeze, inputs_sha256, comp):
+@@ -121,9 +130,26 @@
+         comp.check_file(dict(path=str(HERE/'inputs.json'), sha256=inputs_sha256))]
+ 
+ 
+-def snapshot_reservation(projection, records):
+-    return (projection['compressed_bytes'] + 4096*len(records)
+-            + 2*SNAPSHOT_LIMITS['maximum_manifest_bytes'] + REMAINING_EVIDENCE_RESERVATION)
++def snapshot_reservation(projection, records, bindings):
++    if set(projection['files']) != {row['path'] for row in records}:
++        raise RuntimeError('physical reservation omits logical source records')
++    return bindings.reservation(projection, SNAPSHOT_LIMITS['maximum_manifest_bytes'],
++                                REMAINING_EVIDENCE_RESERVATION)
++
++
++def snapshot_predecessors(audits):
++    return [dict(role='beta', source=str(BETA_SOURCE), evidence=str(BETA_WORK), audit=audits['beta']),
++            dict(role='native', source=str(NATIVE_SOURCE), evidence=str(NATIVE_WORK), audit=NATIVE_FAILURE_AUDIT,
++                 qualification=dict(source=str(NATIVE_QUALIFICATION_SOURCE), evidence=str(NATIVE_QUALIFICATION_WORK),
++                                    audit=audits['native']))]
++
++
++def snapshot_directory(path, snapshots):
++    path = Path(path); snapshots.ordinary_route(path)
++    before = snapshots.identity(path.lstat()); children = sorted(os.listdir(path))
++    if snapshots.identity(path.lstat()) != before:
++        raise RuntimeError('snapshot proof directory changed during listing')
++    return dict(identity=before, children=children)
+ 
+ 
+ def load_snapshots(freeze, comp):
+@@ -236,6 +262,13 @@
+         prior = self.read_json(source/'inputs.json')
+         prior_plan = self.read_json(source/'plan.json')
+         self.require(self.owned.sha(source/'plan.json') == prior['plan_sha256'], 'predecessor plan differs')
++        if source == NATIVE_QUALIFICATION_SOURCE:
++            base = dict(path=str(NATIVE_SOURCE/'inputs.json'), sha256=self.owned.sha(self.frozen(NATIVE_SOURCE/'inputs.json')))
++            self.require(prior['base_inputs'] == prior_plan['base_inputs'] == base,
++                         'native reconciliation compact base binding differs')
++            self.inherited_freeze(NATIVE_SOURCE)
++        else:
++            self.require('base_inputs' not in prior, 'unreviewed inherited proof base')
+         for name, row in prior['files'].items():
+             self.require(name in self.freeze['files'] and self.freeze['files'][name]['sha256'] == row['sha256'],
+                          'hash freeze omits predecessor input')
+@@ -261,6 +294,22 @@
+                      and self.owned.sha(evidence/'source-snapshots.json') == terminal['source_snapshots_sha256']
+                      and manifest['full_logical_readback'] is True and manifest['full_gzip_eof'] is True,
+                      'completed compressed predecessor snapshot proof differs')
++
++    def snapshot_reuse(self):
++        """Rebuild exact closed predecessor ownership before granting reuse."""
++        def file_record(path):
++            self.snapshots.ordinary_route(Path(path))
++            self.frozen(path)
++            return dict(path=str(path), **self.freeze['files'][str(path)])
++        bindings = self.modules['snapshot_bindings'].catalog(
++            snapshot_predecessors(self.plan['independent_audits']), self.plan['evidence_roots'],
++            SNAPSHOT_LIMITS, read_json=self.read_json, file_record=file_record,
++            directory_record=lambda path: snapshot_directory(path, self.snapshots))
++        self.require(bindings == self.plan['snapshot_reuse'], 'closed snapshot predecessor catalog changed')
++        records = snapshot_records(self.freeze, self.inputs_sha256, self.comp)
++        selected = self.modules['snapshot_bindings'].select(records, bindings)
++        self.require(selected == self.snapshot_plan['reuse_selection'], 'complete reference selection changed')
++        return selected
+ 
+     def prerequisites(self):
+         """All operations are frozen file reads and pure parsing."""
+@@ -288,13 +337,14 @@
+                      'B3 producer inventory/strip proof differs')
+         self.audit('beta', BETA_WORK/'receipt.json')
+         self.retained_snapshot_proof(BETA_SOURCE, BETA_WORK, beta)
+-        native_plan = self.inherited_freeze(NATIVE_SOURCE)
++        native_plan = self.inherited_freeze(NATIVE_QUALIFICATION_SOURCE)
+         environment, omitted = driver_environment(native_plan['environment'], self.core.ARTIFACTS/'tmp')
+         self.require(self.plan['environment'] == environment
+                      and self.plan['omitted_bootstrap_environment'] == omitted,
+                      'hash environment does not match the qualified native predecessor')
+         native = self.read_json(NATIVE_WORK/'receipt.json')
+-        result = self.read_json(NATIVE_WORK/'native-controls.json')
++        native_qualification = self.read_json(NATIVE_QUALIFICATION_WORK/'receipt.json')
++        result = self.read_json(NATIVE_QUALIFICATION_WORK/'native-controls.json')
+         self.require(native['inputs_sha256'] == self.owned.sha(NATIVE_SOURCE/'inputs.json')
+                      and native_plan['assembly']['source'] == str(BETA_SOURCE)
+                      and native_plan['assembly']['evidence'] == str(BETA_WORK)
+@@ -308,13 +358,21 @@
+         # compile, including that otherwise uncovered first positive row.
+         for index in [7, 9, 11, 13, 14, 15, 16]:
+             self.modules['observed'].clean(self.read_bytes(NATIVE_WORK/'commands'/f'{index:03}'/'stderr'))
++        def verify_beta_provider(row):
++            self.frozen(row['path'])
++            actual = dict(path=row['path'], **self.freeze['files'][row['path']])
++            self.require(actual == row, 'wrong-B3 diagnostic provider differs from frozen bytes')
++            return actual
+         native_proof = self.modules['predecessor'].native_controls(native_plan, native, result,
+             evidence=NATIVE_WORK, read_json=self.read_json, read_bytes=self.read_bytes,
+-            recipe=self.modules['recipe'], observations=self.modules['observed'], loader_trace=self.modules['trace'])
++            recipe=self.modules['recipe'], observations=self.modules['observed'], loader_trace=self.modules['trace'],
++            qualification_terminal=native_qualification, qualification_evidence=NATIVE_QUALIFICATION_WORK,
++            wrong_beta=self.modules['wrong_beta'], beta_providers=native_plan['wrong_beta_providers'],
++            verify_provider=verify_beta_provider)
+         self.require(native_plan['source_identity'] == self.plan['source_identity']
+                      and [str(self.core.B3/name) for name in result['ordered_driver_destinations']]
+                          == self.plan['ordered_driver_pair'], 'hash role pair differs from actual native controls')
+-        self.audit('native', NATIVE_WORK/'receipt.json')
++        self.audit('native', NATIVE_QUALIFICATION_WORK/'receipt.json')
+         self.retained_snapshot_proof(NATIVE_SOURCE, NATIVE_WORK, native)
+         recipe_plan = self.inherited_freeze(RECIPE_SOURCE)
+         recipe = self.read_json(RECIPE_WORK/'receipt.json')
+@@ -408,29 +466,76 @@
+                      and self.snapshot_plan['helper'] == dict(path=str(SNAPSHOT_SOURCE),
+                          sha256=self.freeze['files'][str(SNAPSHOT_SOURCE)]['sha256']),
+                      'hash snapshot projection policy or helper differs')
++        selected = self.snapshot_plan['reuse_selection']; projection = self.snapshot_plan['projection']
++        self.require(set(selected) == {'records', 'evidence_roots'}
++                     and projection['policy'] == 'bounded-gzip-proof-snapshots-v2'
++                     and projection['reuse'] == {row['blob']['logical_sha256']: row for row in selected['records']}
++                     and len(projection['reuse']) == len(selected['records'])
++                     and projection['evidence_roots'] == selected['evidence_roots']
++                     and self.snapshot_plan['projected_reservation_bytes'] == snapshot_reservation(projection,
++                         snapshot_records(self.freeze, self.inputs_sha256, self.comp), self.modules['snapshot_bindings']),
++                     'hash selected references or physical reservation differs')
+ 
+     def snapshot_qualification(self):
+-        paths = [SNAPSHOT_SOURCE, SNAPSHOT_SOURCE.with_name('test_proof_snapshots.py'),
++        paths = [SNAPSHOT_SOURCE, *SNAPSHOT_TESTS,
+             SNAPSHOT_CONTROLS/'inputs.json', SNAPSHOT_CONTROLS/'launch.json', SNAPSHOT_AUDIT,
+             *[SNAPSHOT_CONTROL_WORK/name for name in ['receipt.json', 'result.json',
+                 'command/receipt.json', 'command/stdout', 'command/stderr']]]
+         for path in paths:
+             self.frozen(path)
+         controls = self.read_json(SNAPSHOT_CONTROLS/'inputs.json')
+-        for path in [SNAPSHOT_SOURCE, SNAPSHOT_SOURCE.with_name('test_proof_snapshots.py')]:
++        for name, row in controls['files'].items():
++            self.frozen(name)
++            frozen = self.freeze['files'][name]
++            self.require(frozen['sha256'] == row['sha256']
++                         and [frozen['identity'][key] for key in
++                             ['dev','ino','mode','size','mtime_ns','ctime_ns','nlink']] == row['stamp'],
++                         'snapshot control source/input differs from actual qualification')
++        for path in [SNAPSHOT_SOURCE, *SNAPSHOT_TESTS]:
+             self.require(controls['files'][str(path)]['sha256'] == self.freeze['files'][str(path)]['sha256'],
+                          'snapshot helper differs from tested source')
+         terminal, audit = self.read_json(SNAPSHOT_CONTROL_WORK/'receipt.json'), self.read_json(SNAPSHOT_AUDIT)
+         result = self.read_json(SNAPSHOT_CONTROL_WORK/'result.json')
+-        self.require(terminal['status'] == 'passed' and terminal['controls_passed'] == 7
++        names = []
++        for path in SNAPSHOT_TESTS:
++            for cls in ast.parse(self.read_bytes(path), filename=str(path)).body:
++                if isinstance(cls, ast.ClassDef):
++                    names.extend(path.stem+'.'+cls.name+'.'+test.name for test in cls.body
++                        if isinstance(test, ast.FunctionDef) and test.name.startswith('test_'))
++        self.require(len(names) > 7 and len(names) == len(set(names)), 'explicit original and reuse controls required')
++        count = len(names)
++        self.require(terminal['status'] == 'passed' and terminal['controls_passed'] == count
+                      and terminal['inputs_sha256'] == self.owned.sha(SNAPSHOT_CONTROLS/'inputs.json')
+                      and terminal['result_sha256'] == audit['result_sha256'] == self.owned.sha(SNAPSHOT_CONTROL_WORK/'result.json')
+-                     and audit['status'] == 'verified' and audit['controls'] == 7
++                     and audit['status'] == 'verified' and audit['controls'] == count
+                      and audit['receipt_sha256'] == self.owned.sha(SNAPSHOT_CONTROL_WORK/'receipt.json')
+-                     and result['status'] == 'passed' and result['tests_run'] == 7
++                     and sorted(names) == controls['expected_names'] == result['expected_names']
++                     and sorted(audit['exact_names']) == sorted(names)
++                     and result['status'] == 'passed' and result['tests_run'] == count
+                      and all(result[key] == 0 for key in ['failures', 'errors', 'skipped',
+                          'expected_failures', 'unexpected_successes', 'child_processes', 'compiler_calls']),
+-                     'actual seven-control snapshot qualification required')
++                     'actual source-derived v2 snapshot qualification required')
++        child_path = SNAPSHOT_CONTROL_WORK/'command/receipt.json'
++        child = self.read_json(child_path)
++        self.require(terminal['commands'] == [dict(path=str(child_path), pid=child['pid'],
++                         sha256=self.owned.sha(child_path))]
++                     and child['status'] == 'finished' and child['returncode'] == 0
++                     and child['command'] == controls['command']
++                     and child['environment'] == controls['environment']
++                     and child['cwd'] == str(SNAPSHOT_SOURCE.parent)
++                     and child['supervisor_pid'] == terminal['pid'] and child['parent_pid'] == terminal['parent_pid']
++                     and terminal['admitted_at'] <= child['started_at'] <= child['finished_at'] <= terminal['finished_at'],
++                     'actual snapshot test child recipe/owner differs')
++        for stream in ['stdout', 'stderr']:
++            path = SNAPSHOT_CONTROL_WORK/'command'/stream
++            self.require(self.owned.sha(self.frozen(path)) == child[stream+'_sha256'] == audit['raw_sha256'][stream],
++                         'actual snapshot test raw hashes differ')
++        stderr = self.read_bytes(SNAPSHOT_CONTROL_WORK/'command/stderr').decode('utf-8', 'strict')
++        observed_names = re.findall(r'^test_[A-Za-z0-9_]+ \(([^)]+)\) \.\.\. ok$', stderr, re.M)
++        self.require(not self.read_bytes(SNAPSHOT_CONTROL_WORK/'command/stdout')
++                     and sorted(observed_names) == sorted(names)
++                     and re.search(r'^Ran '+str(count)+r' tests in [0-9.]+s\n\nOK\n$', stderr, re.M),
++                     'actual snapshot test names/footer differ')
+ 
+     def retain_sources(self):
+         """Retain complete selected bytes within the unchanged physical evidence cap."""
+@@ -441,16 +546,19 @@
+             if time.monotonic()-last_sample[0] >= 5:
+                 self.budget(); last_sample[0] = time.monotonic()
+         records = snapshot_records(self.freeze, self.inputs_sha256, self.comp)
+-        projection = self.snapshots.measure(records, SNAPSHOT_LIMITS, capacity)
++        selected = self.snapshot_reuse()
++        projection = self.snapshots.measure(records, SNAPSHOT_LIMITS, capacity,
++            reuse=selected['records'], evidence_roots=selected['evidence_roots'])
+         self.require(projection == self.snapshot_plan['projection'], 'hash snapshot projection differs')
+-        current = self.budget(); reservation = snapshot_reservation(projection, records)
++        current = self.budget(); reservation = snapshot_reservation(projection, records, self.modules['snapshot_bindings'])
+         self.require(reservation == self.snapshot_plan['projected_reservation_bytes']
+                      and current['evidence_allocated_bytes'] + reservation <= 256*2**20,
+                      'hash snapshots and remaining stage exceed aggregate evidence cap')
+         self.record['snapshot_admission'] = dict(existing_evidence_bytes=current['evidence_allocated_bytes'],
+             projected_reservation_bytes=reservation, evidence_cap_bytes=256*2**20)
+         self.save()
+-        manifest = self.snapshots.write_verified(records, WORK/'source-snapshots', projection, SNAPSHOT_LIMITS, capacity)
++        manifest = self.snapshots.write_verified(records, WORK/'source-snapshots', projection, SNAPSHOT_LIMITS, capacity,
++            reuse=selected['records'], evidence_roots=selected['evidence_roots'])
+         data = self.snapshots.encoded(manifest)
+         self.require(len(data) <= SNAPSHOT_LIMITS['maximum_manifest_bytes'], 'bounded hash snapshot manifest required')
+         with (WORK/'source-snapshots.json').open('xb') as stream:
+--- before/prepare.py
++++ current/prepare.py
+@@ -141,6 +141,14 @@
+         source = Path(source)
+         freeze = read(self.add(source/'inputs.json', snapshot=True))
+         plan = read(self.add(source/'plan.json', snapshot=True))
++        if source == stage.NATIVE_QUALIFICATION_SOURCE:
++            require(freeze['base_inputs'] == plan['base_inputs']
++                    and freeze['base_inputs']['path'] == str(stage.NATIVE_SOURCE/'inputs.json')
++                    and freeze['base_inputs']['sha256'] == sha(stage.NATIVE_SOURCE/'inputs.json'),
++                    'exact original native proof base required')
++            self.inherit(stage.NATIVE_SOURCE)
++        else:
++            require('base_inputs' not in freeze, 'unreviewed inherited proof base')
+         if source in [stage.BETA_SOURCE, stage.NATIVE_SOURCE]:
+             self.add(source/'snapshot-plan.json', snapshot=True)
+         require(sha(source/'plan.json') == freeze['plan_sha256'], 'predecessor plan hash differs')
+@@ -174,7 +182,7 @@
+     # Refuse missing/unsuccessful prerequisites before importing/discovering any
+     # provider closure. Every supplied digest must describe actual audit bytes.
+     work = dict(compiler=COMPILER_WORK, beta=stage.BETA_WORK,
+-                native=stage.NATIVE_WORK, run_make=stage.RECIPE_WORK)
++                native=stage.NATIVE_QUALIFICATION_WORK, run_make=stage.RECIPE_WORK)
+     audits = {}
+     for role, evidence in work.items():
+         path, digest = args[role+'_audit'], args[role+'_audit_sha256']
+@@ -197,7 +205,7 @@
+         for row in audits.values(): d.add(row['path'], row, snapshot=True)
+         compiler_plan = d.inherit(COMPILER_SOURCE)
+         beta_plan = d.inherit(stage.BETA_SOURCE)
+-        native_plan = d.inherit(stage.NATIVE_SOURCE)
++        native_plan = d.inherit(stage.NATIVE_QUALIFICATION_SOURCE)
+         recipe_plan = d.inherit(stage.RECIPE_SOURCE)
+         for name, row in recipe_plan['admitted_provider_files'].items(): d.add(name, row)
+         metadata_source = stage.X/'experiments/hir-options-hash/compiler-metadata-03'
+@@ -205,7 +213,9 @@
+         require(compiler_plan['metadata_plan'] == metadata_plan, 'actual metadata source binding differs')
+         for root in work.values(): d.tree(root)
+         for root in work.values(): d.add(root/'receipt.json', snapshot=True)
+-        for path in [COMPILER_WORK/'compiled.json', stage.NATIVE_WORK/'native-controls.json',
++        d.tree(stage.NATIVE_WORK)
++        d.add(stage.NATIVE_WORK/'receipt.json', snapshot=True)
++        for path in [COMPILER_WORK/'compiled.json', stage.NATIVE_QUALIFICATION_WORK/'native-controls.json',
+                      stage.RECIPE_WORK/'result.json']:
+             d.add(path, snapshot=True)
+         actual = support.completed_build(d.add)
+@@ -240,7 +250,7 @@
+         native_paths = modules['recipe'].paths(native_plan['namespace'])
+         d.tree(native_paths['stock'].parent)
+         d.tree(support.BASE)
+-        native_result = read(stage.NATIVE_WORK/'native-controls.json')
++        native_result = read(stage.NATIVE_QUALIFICATION_WORK/'native-controls.json')
+         pair = [str(core.B3/name) for name in native_result['ordered_driver_destinations']]
+         providers = {}
+         for row in native_plan['runtime_closure']['libraries']:
+@@ -269,31 +279,47 @@
+             capacity=dict(entry_gib=24,stop_gib=9,floor_gib=8,namespace_bytes=14*2**30,evidence_bytes=256*2**20),
+             qualification_scope='One compile and two hash-driver processes; no application or performance claim.')
+         plan['children'] = core.desired_commands(plan)
+-        for path in [stage.SNAPSHOT_SOURCE, stage.SNAPSHOT_SOURCE.with_name('test_proof_snapshots.py'),
++        for path in [stage.SNAPSHOT_SOURCE, *stage.SNAPSHOT_TESTS,
+                      stage.SNAPSHOT_CONTROLS/'inputs.json', stage.SNAPSHOT_CONTROLS/'launch.json', stage.SNAPSHOT_AUDIT,
+                      *[stage.SNAPSHOT_CONTROL_WORK/name for name in ['receipt.json', 'result.json',
+                          'command/receipt.json', 'command/stdout', 'command/stderr']]]:
+             d.add(path, snapshot=True)
++        for name, row in read(stage.SNAPSHOT_CONTROLS/'inputs.json')['files'].items():
++            d.add(name, row, snapshot=True)
+         snapshots = stage.load_snapshots(dict(files=d.files), d.comp)
+         d.imports()
+         for path in [Path(__file__).resolve(), HERE/'stage.py', HERE/'controls.py', HERE/'prerequisites.py',
++                     HERE/'snapshot_bindings.py', HERE/'test_snapshot_bindings.py',
+                      HERE/'launch.py', HERE/'verify.py',
+                      stage.ROOT/'scripts/supervise_experiment.py', *core.SOURCE_HASHES]: d.add(path, snapshot=True)
++        def snapshot_file(path):
++            snapshots.ordinary_route(Path(path)); d.add(path)
++            return dict(path=str(path), **d.files[str(path)])
++        # Bind every already-retained old blob and its complete audited catalog
++        # before publishing the plan/freeze. The selected logical source list
++        # is unchanged; this catalog only supplies alternative physical bytes.
++        plan['snapshot_reuse'] = modules['snapshot_bindings'].catalog(
++            stage.snapshot_predecessors(audits), plan['evidence_roots'], stage.SNAPSHOT_LIMITS,
++            read_json=read, file_record=snapshot_file,
++            directory_record=lambda path: stage.snapshot_directory(path, snapshots))
+         write(HERE/'plan.json', plan); d.add(HERE/'plan.json', snapshot=True)
+         freeze = dict(files=d.files, links=d.links, absent_paths=sorted(d.absent),
+             python=str(Path(sys.executable).resolve(strict=True)), plan_sha256=sha(HERE/'plan.json'),
+             launch_environment=environment, snapshot_inputs=sorted(d.snapshots))
+         write(HERE/'inputs.json', freeze)
+         records = stage.snapshot_records(freeze, sha(HERE/'inputs.json'), d.comp)
+-        projection = snapshots.measure(records, stage.SNAPSHOT_LIMITS, d.floor)
++        selected = modules['snapshot_bindings'].select(records, plan['snapshot_reuse'])
++        projection = snapshots.measure(records, stage.SNAPSHOT_LIMITS, d.floor,
++            reuse=selected['records'], evidence_roots=selected['evidence_roots'])
+         current = monitor.sample(evidence_root=stage.WORK, evidence_roots=sorted(roots))
+         require(monitor.rejection(current) is None, 'hash aggregate evidence admission failed')
+-        reservation = stage.snapshot_reservation(projection, records)
++        reservation = stage.snapshot_reservation(projection, records, modules['snapshot_bindings'])
+         require(current['evidence_allocated_bytes'] + reservation <= 256*2**20,
+                 'hash compressed proof and remaining stage exceed evidence cap')
+         snapshot_plan = dict(inputs_sha256=sha(HERE/'inputs.json'), limits=stage.SNAPSHOT_LIMITS,
+             helper=dict(path=str(stage.SNAPSHOT_SOURCE), sha256=freeze['files'][str(stage.SNAPSHOT_SOURCE)]['sha256']),
+             projection=projection, remaining_evidence_reservation_bytes=stage.REMAINING_EVIDENCE_RESERVATION,
++            reuse_selection=selected,
+             measured_existing_evidence_bytes=current['evidence_allocated_bytes'],
+             projected_reservation_bytes=reservation, evidence_cap_bytes=256*2**20)
+         encoded = snapshots.encoded(snapshot_plan)
+@@ -306,13 +332,15 @@
+         # no execute/core invocation. This catches actual schema mismatches.
+         probe = stage.Stage.__new__(stage.Stage)
+         probe.modules, probe.core, probe.monitor, probe.owned, probe.comp = modules, core, monitor, d.owned, d.comp
++        probe.snapshots = snapshots
+         probe.require = require; probe.freeze = freeze; probe.plan = plan
+         probe.inputs_sha256 = sha(HERE/'inputs.json'); probe.environment = environment
+         probe.bind_snapshot_plan(sha(HERE/'snapshot-plan.json'))
+         original_environment = dict(os.environ)
+         os.environ.clear(); os.environ.update(environment)
+         try:
+-            probe.guard(True); probe.snapshot_qualification(); observed = probe.prerequisites(); budget = probe.budget()
++            probe.guard(True); probe.snapshot_qualification(); probe.snapshot_reuse()
++            observed = probe.prerequisites(); budget = probe.budget()
+         finally:
+             os.environ.clear(); os.environ.update(original_environment)
+         d.floor()
+--- before/snapshot_bindings.py
++++ current/snapshot_bindings.py
+@@ -0,0 +1,256 @@
++"""Pure association and selection of audited, already-accounted proof blobs.
++
++The caller supplies the two fixed predecessor roles and verified file/directory
++readers. No filesystem discovery, imports, provider calls or writes occur here.
++The complete original catalogs remain in the plan; selection only decides where
++each still-present logical input gets its separately verified compressed bytes.
++"""
++import hashlib
++import json
++from pathlib import Path
++import re
++import stat
++
++POLICY = 'hash-proof-reference-selection-v1'
++PRIORITY = ['beta', 'native']
++FIELDS = {'dev', 'ino', 'mode', 'size', 'mtime_ns', 'ctime_ns', 'nlink'}
++BLOB_FIELDS = {'filename', 'logical_sha256', 'logical_bytes', 'sha256', 'compressed_bytes'}
++NATIVE_FAILURE = "ValueError('wrong-B3 failure is not compiler metadata incompatibility')"
++
++
++def require(value, message):
++    if not value:
++        raise ValueError(message)
++
++
++def encoded(value):
++    return (json.dumps(value, sort_keys=True, separators=(',', ':'))+'\n').encode()
++
++
++def hash_token(value):
++    return type(value) is str and re.fullmatch('[0-9a-f]{64}', value) is not None
++
++
++def ordinary_file(row, path):
++    require(set(row) == {'path', 'identity', 'sha256', 'size'} and row['path'] == str(path)
++            and hash_token(row['sha256']) and set(row['identity']) == FIELDS
++            and all(type(v) is int for v in row['identity'].values())
++            and stat.S_ISREG(row['identity']['mode']) and row['identity']['nlink'] == 1
++            and type(row['size']) is int and row['size'] == row['identity']['size'],
++            'ordinary single-link frozen proof file required')
++    return row
++
++
++def reconciliation(qualifier, predecessor, terminal, association, original_inputs, accounted_roots, *, read_json, file_record):
++    """A new zero-child qualifier may validate an honestly failed snapshot owner."""
++    require(set(qualifier) == {'source', 'evidence', 'audit'}, 'exact reconciliation routes required')
++    source = Path(qualifier['source']); evidence = Path(qualifier['evidence'])
++    require(source.is_absolute() and evidence.is_absolute() and '..' not in source.parts and '..' not in evidence.parts
++            and source != Path(predecessor['source']) and evidence != Path(predecessor['evidence']),
++            'separate reconciliation source and owner required')
++    result = dict(source=str(source), evidence=str(evidence))
++    def load(name, path):
++        row = ordinary_file(file_record(path), path)
++        if name is not None:result[name] = dict(path=str(path), sha256=row['sha256'])
++        return read_json(path), row
++    receipt, receipt_file = load('receipt', evidence/'receipt.json')
++    qualified, qualified_file = load('result', evidence/'native-controls.json')
++    audit, _ = load('audit', Path(qualifier['audit']['path']))
++    freeze, frozen_file = load(None, source/'inputs.json')
++    plan, plan_file = load(None, source/'plan.json')
++    old_plan_path = Path(predecessor['source'])/'plan.json'
++    old_plan, old_plan_file = load(None, old_plan_path)
++    require(result['audit'] == qualifier['audit'] and audit['status'] == 'verified'
++            and audit['receipt_sha256'] == receipt_file['sha256']
++            and audit['result_sha256'] == qualified_file['sha256']
++            and receipt['status'] == 'passed' and receipt['read_only_reconciliation'] is True
++            and receipt['commands'] == [] and receipt['actual_workload_children'] == 0
++            and receipt['saved_actual_children'] == 20 and receipt['historical_failed_children'] == 11
++            and receipt['native_roles_and_behavior_qualified'] is True
++            and terminal['finished_at'] <= receipt['started_at'] <= receipt['admitted_at'] <= receipt['finished_at'],
++            'actual zero-child reconciliation qualification required')
++    require(receipt['inputs_sha256'] == frozen_file['sha256']
++            and receipt['plan_sha256'] == freeze['plan_sha256'] == plan_file['sha256']
++            and receipt['result_sha256'] == qualified_file['sha256']
++            and original_inputs['plan_sha256'] == old_plan_file['sha256'],
++            'reconciliation source/result or original plan hash differs')
++    base = dict(path=str(Path(predecessor['source'])/'inputs.json'), sha256=association['inputs']['sha256'])
++    additions = {'read_only_reconciliation', 'actual_workload_children', 'base_inputs', 'command_evidence',
++                 'reconciliation', 'wrong_beta_providers', 'wrong_beta_lib', 'reconciliation_evidence_roots'}
++    require(freeze['base_inputs'] == plan['base_inputs'] == base
++            and str(Path(predecessor['evidence'])/'native-controls.json') in freeze['absent_paths']
++            and set(plan) == set(old_plan)|additions and not set(old_plan)&additions
++            and encoded({key:plan[key] for key in old_plan}) == encoded(old_plan)
++            and plan['read_only_reconciliation'] is True and plan['actual_workload_children'] == 0,
++            'reconciliation must preserve every original command plan value')
++    require(plan['reconciliation_evidence_roots'] == sorted(set(old_plan['evidence_roots'])|{str(evidence)})
++            and set(plan['reconciliation_evidence_roots']) <= set(accounted_roots),
++            'reconciliation cannot omit or move existing physical accounting')
++    commands = dict(source=predecessor['source'], evidence=predecessor['evidence'],
++        receipt_sha256=association['receipt']['sha256'], inputs_sha256=association['inputs']['sha256'],
++        plan_sha256=old_plan_file['sha256'], snapshot_plan_sha256=terminal['snapshot_plan_sha256'],
++        status='failed', error=NATIVE_FAILURE, commands=terminal['commands'], failure_audit=association['audit'])
++    require(len(terminal['commands']) == 20
++            and plan['command_evidence'] == receipt['command_evidence'] == qualified['command_evidence'] == commands
++            and plan['reconciliation'] == receipt['reconciliation'] == qualified['reconciliation']
++            and plan['reconciliation']['source'] == str(source)
++            and plan['reconciliation']['base_inputs'] == base
++            and plan['reconciliation']['failure_audit'] == association['audit'],
++            'reconciliation does not own the exact failed original history')
++    require(qualified['status'] == 'native-roles-and-behavior-qualified'
++            and qualified['candidate_revision'] == terminal['candidate_revision'] == old_plan['candidate_revision']
++            and qualified['qualified_native_children'] == 20 and qualified['total_actual_native_children'] == 31
++            and qualified['history'] == terminal['commands'][:18] and qualified['wrong_B3_commands'] == terminal['commands'][18:],
++            'reconciled qualification/history count differs')
++    return result
++
++
++def catalog(predecessors, accounted_roots, limits, *, read_json, file_record, directory_record):
++    """Bind every old v1 blob to the exact audited B3/native source and WORK.
++
++    file_record/directory_record must reject symlinks in the entire route, return
++    current complete identities, and verify file hashes against the enclosing
++    freeze (or add those full hashes during read-only preparation).
++    """
++    require(type(predecessors) is list and [p['role'] for p in predecessors] == PRIORITY,
++            'exact beta then native predecessor roles required')
++    require(type(accounted_roots) is list and accounted_roots == sorted(set(accounted_roots)),
++            'exact accounted evidence roots required')
++    records = []; proofs = []; roots = {}; paths = set()
++    for predecessor in predecessors:
++        expected_fields = {'role', 'source', 'evidence', 'audit'}
++        if predecessor['role'] == 'native':expected_fields.add('qualification')
++        require(set(predecessor) == expected_fields, 'exact predecessor routes required')
++        role = predecessor['role']; source = Path(predecessor['source']); evidence = Path(predecessor['evidence'])
++        require(source.is_absolute() and evidence.is_absolute() and '..' not in source.parts
++                and '..' not in evidence.parts and str(evidence) in accounted_roots,
++                'predecessor evidence is not already counted')
++        snapshot_root = evidence/'source-snapshots'
++        require(not any(snapshot_root == Path(root) or snapshot_root in Path(root).parents
++                        or Path(root) in snapshot_root.parents for root in roots), 'overlapping predecessor proof roots')
++        association = dict(role=role, source=str(source), evidence=str(evidence), snapshot_root=str(snapshot_root))
++        def load(name, path):
++            row = ordinary_file(file_record(path), path)
++            association[name] = dict(path=str(path), sha256=row['sha256'])
++            return read_json(path), row
++        terminal, terminal_file = load('receipt', evidence/'receipt.json')
++        audit_ref = predecessor['audit']
++        require(set(audit_ref) == {'path', 'sha256'} and hash_token(audit_ref['sha256']), 'exact predecessor audit reference')
++        audit, _ = load('audit', Path(audit_ref['path']))
++        require(association['audit'] == audit_ref and audit['receipt_sha256'] == terminal_file['sha256']
++                and terminal['started_at'] <= terminal['admitted_at'] <= terminal['finished_at'],
++                'closed actual predecessor/audit association required')
++        if role == 'beta':
++            require(terminal['status'] == 'passed' and audit['status'] == 'verified', 'closed actual beta qualification required')
++        else:
++            require(terminal['status'] == 'failed' and terminal['error'] == NATIVE_FAILURE
++                    and terminal['source_restored'] is True and audit['status'] == 'verified-retained-failure'
++                    and audit['children'] == 20 and audit['historical_failed_children'] == 11
++                    and audit['total_actual_native_children'] == 31 and audit['qualified_native_children'] == 0
++                    and audit['source_restored'] is True and audit['native_roles_and_behavior_qualified'] is False,
++                    'original native snapshot owner must remain failed')
++        freeze, input_file = load('inputs', source/'inputs.json')
++        snapshot, _ = load('projection', source/'snapshot-plan.json')
++        retained, _ = load('retained_projection', evidence/'snapshot-plan.json')
++        manifest, _ = load('manifest', evidence/'source-snapshots.json')
++        require(association['projection']['sha256'] == association['retained_projection']['sha256']
++                == terminal['snapshot_plan_sha256'] and retained == snapshot
++                and input_file['sha256'] == terminal['inputs_sha256'] == snapshot['inputs_sha256']
++                and association['manifest']['sha256'] == terminal['source_snapshots_sha256'],
++                'original source/work snapshot receipt hashes differ')
++        if role == 'native':
++            require(predecessor['qualification']['evidence'] in accounted_roots,
++                    'reconciliation evidence is not already counted')
++            association['qualification'] = reconciliation(predecessor['qualification'], predecessor, terminal,
++                association, freeze, accounted_roots, read_json=read_json, file_record=file_record)
++        helper = snapshot['helper']; helper_file = ordinary_file(file_record(Path(helper['path'])), Path(helper['path']))
++        require(helper_file['sha256'] == helper['sha256'] == freeze['files'][helper['path']]['sha256'],
++                'original snapshot helper is not bound to original freeze')
++        projection = snapshot['projection']
++        require(snapshot['limits'] == projection['limits'] == limits
++                and projection['policy'] == manifest['policy'] == 'bounded-gzip-proof-snapshots-v1'
++                and manifest['projection_sha256'] == hashlib.sha256(encoded(projection)).hexdigest()
++                and manifest['full_logical_readback'] is True and manifest['full_gzip_eof'] is True,
++                'completed original v1 snapshot projection/manifest required')
++        names = freeze['snapshot_inputs']
++        require(type(names) is list and names == sorted(set(names)) and set(names) <= set(freeze['files'])
++                and str(source/'inputs.json') not in names, 'complete original logical selection required')
++        original_files = {name:dict(path=name, **freeze['files'][name]) for name in names}
++        original_files[str(source/'inputs.json')] = input_file
++        require(projection['files'] == dict(sorted(original_files.items())), 'original logical input set was changed')
++        blobs = projection['blobs']; wanted = {}
++        for row in original_files.values():
++            require(row['sha256'] not in wanted or wanted[row['sha256']] == row['size'], 'equal logical hashes have different sizes')
++            wanted[row['sha256']] = row['size']
++        require(type(blobs) is dict and set(blobs) == set(wanted) and manifest['blobs'] == blobs,
++                'complete original compressed catalog required')
++        require(len(original_files) <= limits['maximum_files']
++                and projection['logical_bytes'] == sum(row['size'] for row in original_files.values()) <= limits['maximum_logical_bytes']
++                and projection['unique_logical_bytes'] == sum(wanted.values())
++                and projection['manifest_reservation_bytes'] == 2*limits['maximum_manifest_bytes'],
++                'original logical accounting differs')
++        expected_mapping = {name:dict(path=str(snapshot_root/(row['sha256']+'.gz')), sha256=row['sha256'],
++                                     size=row['size'], encoding='gzip') for name, row in original_files.items()}
++        require(manifest['files'] == expected_mapping, 'original manifest path/hash mapping differs')
++        directory = directory_record(snapshot_root)
++        require(set(directory) == {'identity', 'children'} and set(directory['identity']) == FIELDS
++                and all(type(v) is int for v in directory['identity'].values())
++                and stat.S_ISDIR(directory['identity']['mode'])
++                and directory['children'] == sorted(key+'.gz' for key in blobs),
++                'complete ordinary predecessor snapshot directory required')
++        roots[str(snapshot_root)] = directory['identity']
++        total = 0; allocated = 0
++        for key, blob in sorted(blobs.items()):
++            require(hash_token(key) and set(blob) == BLOB_FIELDS and blob['logical_sha256'] == key
++                    and blob['logical_bytes'] == wanted[key] and blob['filename'] == key+'.gz'
++                    and hash_token(blob['sha256']) and type(blob['compressed_bytes']) is int
++                    and 0 < blob['compressed_bytes'] <= limits['maximum_compressed_bytes'],
++                    'original blob descriptor differs')
++            path = snapshot_root/blob['filename']; row = ordinary_file(file_record(path), path)
++            require(row['sha256'] == blob['sha256'] and row['size'] == blob['compressed_bytes']
++                    and str(path) not in paths, 'original compressed file differs or catalog path duplicated')
++            records.append(dict(path=str(path), identity=row['identity'], blob=blob, evidence_root=str(snapshot_root)))
++            paths.add(str(path)); total += blob['compressed_bytes']; allocated += ((blob['compressed_bytes']+4095)//4096)*4096
++        require(total == projection['compressed_bytes'] == manifest['compressed_bytes'] <= limits['maximum_compressed_bytes']
++                and allocated == projection['compressed_allocated_bytes'], 'original compressed accounting differs')
++        proofs.append(association)
++    return dict(policy=POLICY, priority=list(PRIORITY), predecessors=proofs,
++                records=records, evidence_roots=dict(sorted(roots.items())))
++
++
++def select(records, bindings):
++    """Keep all logical records; choose at most one retained blob per digest."""
++    require(bindings['policy'] == POLICY and bindings['priority'] == PRIORITY
++            and [row['role'] for row in bindings['predecessors']] == PRIORITY,
++            'unreviewed predecessor selection policy')
++    wanted = {}; sources = set()
++    for row in records:
++        require(set(row) == {'path', 'sha256', 'size', 'identity'} and hash_token(row['sha256'])
++                and row['path'] not in sources and type(row['size']) is int and row['size'] >= 0,
++                'complete unique logical source records required')
++        require(row['sha256'] not in wanted or wanted[row['sha256']] == row['size'], 'logical alias size mismatch')
++        wanted[row['sha256']] = row['size']; sources.add(row['path'])
++    require(sources, 'empty logical selection')
++    selected = {}; inodes = set(); paths = set(); used = set()
++    for row in bindings['records']:
++        key = row['blob']['logical_sha256']
++        if key not in wanted or key in selected:
++            continue
++        require(row['blob']['logical_bytes'] == wanted[key], 'candidate differs from selected logical bytes')
++        inode = (row['identity']['dev'], row['identity']['ino'])
++        require(row['identity']['nlink'] == 1 and inode not in inodes and row['path'] not in paths
++                and row['evidence_root'] in bindings['evidence_roots'], 'duplicate physical reference credit')
++        selected[key] = row; inodes.add(inode); paths.add(row['path']); used.add(row['evidence_root'])
++    return dict(records=[selected[key] for key in sorted(selected)],
++                evidence_roots={name:bindings['evidence_roots'][name] for name in sorted(used)})
++
++
++def reservation(projection, maximum_manifest_bytes, remaining_bytes):
++    """Reserve only new physical blobs; old roots stay in the monitor's total."""
++    blobs = projection['blobs']; storage = projection['storage']
++    require(set(storage) == set(blobs), 'complete physical storage selection required')
++    keys = [key for key in blobs if storage[key]['kind'] == 'stored']
++    require(all(row['kind'] in ['stored', 'reused'] for row in storage.values()), 'unknown physical storage role')
++    allocated = sum(((blobs[key]['compressed_bytes']+4095)//4096)*4096 for key in keys)
++    require(allocated == projection['new_compressed_allocated_bytes'], 'new physical allocation projection differs')
++    return allocated+4096*len(keys)+2*maximum_manifest_bytes+remaining_bytes
+--- before/test_snapshot_bindings.py
++++ current/test_snapshot_bindings.py
+@@ -0,0 +1,262 @@
++"""Synthetic association controls; no files, providers, subprocesses or writes."""
++import copy
++import hashlib
++from pathlib import Path
++import unittest
++
++import snapshot_bindings as b
++
++LIMITS = dict(maximum_files=1024, maximum_file_bytes=64*2**20,
++    maximum_logical_bytes=512*2**20, maximum_compressed_bytes=128*2**20,
++    maximum_manifest_bytes=4*2**20)
++
++
++class Fixture:
++    def __init__(self, mutations=None):
++        self.json = {}; self.files = {}; self.directories = {}; self.predecessors = []; self.inputs = []
++        self.inode = 10; self.mutations = mutations or {}
++        helper = self.put(Path('/qualified/v1/proof_snapshots.py'), b'original helper')
++        for role in ['beta', 'native']:
++            source = Path('/qualified')/role/'source'; work = Path('/qualified')/role/'work'
++            root = work/'source-snapshots'
++            ordinary = [self.put(source/'shared.py', b'shared original source'),
++                        self.put(source/'unique.py', role.encode())]
++            self.inputs.extend(ordinary)
++            old_plan = dict(candidate_revision='candidate',evidence_roots=[str(work)],
++                children=[dict(index=i) for i in range(20 if role=='native' else 19)])
++            old_plan_row = self.put_json(source/'plan.json',old_plan)
++            original_parser = self.put(source/'observations.py',b'original observations')
++            freeze = dict(files={row['path']:{key:row[key] for key in ['identity','sha256','size']}
++                                  for row in ordinary+[helper,old_plan_row,original_parser]},
++                          plan_sha256=old_plan_row['sha256'], snapshot_inputs=sorted(row['path'] for row in ordinary))
++            input_row = self.put_json(source/'inputs.json', freeze)
++            originals = dict(sorted((row['path'],row) for row in ordinary+[input_row]))
++            blobs = {}
++            for row in originals.values():
++                key = row['sha256']; compressed = b'synthetic blob descriptor '+key.encode()
++                physical = self.put(root/(key+'.gz'), compressed)
++                blobs[key] = dict(filename=key+'.gz', logical_sha256=key, logical_bytes=row['size'],
++                                  sha256=physical['sha256'], compressed_bytes=len(compressed))
++            total = sum(row['compressed_bytes'] for row in blobs.values())
++            projection = dict(policy='bounded-gzip-proof-snapshots-v1', limits=LIMITS,
++                files=originals, blobs=dict(sorted(blobs.items())), logical_bytes=sum(row['size'] for row in originals.values()),
++                unique_logical_bytes=sum(row['logical_bytes'] for row in blobs.values()), compressed_bytes=total,
++                compressed_allocated_bytes=sum(((row['compressed_bytes']+4095)//4096)*4096 for row in blobs.values()),
++                manifest_reservation_bytes=8*2**20)
++            self.mutate(role, 'projection', projection)
++            snapshot = dict(inputs_sha256=input_row['sha256'], limits=LIMITS, projection=projection,
++                            helper=dict(path=helper['path'],sha256=helper['sha256']))
++            source_projection = self.put_json(source/'snapshot-plan.json',snapshot)
++            self.put_json(work/'snapshot-plan.json',snapshot)
++            manifest = dict(policy='bounded-gzip-proof-snapshots-v1', projection_sha256=hashlib.sha256(b.encoded(projection)).hexdigest(),
++                files={name:dict(path=str(root/(row['sha256']+'.gz')), sha256=row['sha256'],size=row['size'],encoding='gzip')
++                       for name,row in originals.items()}, blobs=dict(sorted(blobs.items())),compressed_bytes=total,
++                full_gzip_eof=True,full_logical_readback=True)
++            self.mutate(role,'manifest',manifest)
++            manifest_row = self.put_json(work/'source-snapshots.json',manifest)
++            terminal = dict(status='passed',started_at=1,admitted_at=2,finished_at=3,
++                inputs_sha256=input_row['sha256'],snapshot_plan_sha256=source_projection['sha256'],
++                source_snapshots_sha256=manifest_row['sha256'])
++            if role=='native':terminal.update(status='failed',error=b.NATIVE_FAILURE,source_restored=True,
++                candidate_revision='candidate',commands=[dict(path=str(work/'commands'/f'{i:03}'/'receipt.json'),
++                    sha256=str(i%10)*64,pid=100+i) for i in range(20)])
++            self.mutate(role,'terminal',terminal)
++            terminal_row = self.put_json(work/'receipt.json',terminal)
++            audit = dict(status='verified',receipt_sha256=terminal_row['sha256'])
++            if role=='native':audit.update(status='verified-retained-failure',children=20,historical_failed_children=11,
++                total_actual_native_children=31,qualified_native_children=0,source_restored=True,native_roles_and_behavior_qualified=False)
++            self.mutate(role,'audit',audit)
++            audit_row = self.put_json(Path('/qualified/audits')/(role+'.json'),audit)
++            self.directories[str(root)] = dict(identity=self.identity(0,0o40700),children=sorted(key+'.gz' for key in blobs))
++            predecessor=dict(role=role,source=str(source),evidence=str(work),audit=dict(path=audit_row['path'],sha256=audit_row['sha256']))
++            if role=='native':
++                qs=source.parent/'reconciliation-source';qw=work.parent/'reconciliation-work'
++                base=dict(path=input_row['path'],sha256=input_row['sha256'])
++                commands=dict(source=str(source),evidence=str(work),receipt_sha256=terminal_row['sha256'],
++                    inputs_sha256=input_row['sha256'],plan_sha256=old_plan_row['sha256'],snapshot_plan_sha256=source_projection['sha256'],
++                    status='failed',error=b.NATIVE_FAILURE,commands=terminal['commands'],failure_audit=predecessor['audit'])
++                parser=self.put(qs/'wrong_beta.py',b'corrected observations')
++                reconciliation=dict(source=str(qs),base_inputs=base,original_parser=dict(path=original_parser['path'],sha256=original_parser['sha256']),
++                    parser=dict(path=parser['path'],sha256=parser['sha256']),parser_controls=dict(controls=1),failure_audit=predecessor['audit'])
++                qplan=dict(old_plan,read_only_reconciliation=True,actual_workload_children=0,base_inputs=base,
++                    command_evidence=commands,reconciliation=reconciliation,wrong_beta_providers=[],wrong_beta_lib='/qualified/beta/lib',
++                    reconciliation_evidence_roots=sorted([str(work),str(qw)]))
++                self.mutate(role,'qualification_plan',qplan)
++                qplan_row=self.put_json(qs/'plan.json',qplan)
++                qfreeze=dict(base_inputs=base,files={qplan_row['path']:{key:qplan_row[key] for key in ['identity','sha256','size']}},
++                    links={},absent_paths=[str(work/'native-controls.json')],plan_sha256=qplan_row['sha256'])
++                self.mutate(role,'qualification_freeze',qfreeze)
++                qfreeze_row=self.put_json(qs/'inputs.json',qfreeze)
++                qualified=dict(status='native-roles-and-behavior-qualified',candidate_revision='candidate',qualified_native_children=20,
++                    total_actual_native_children=31,history=terminal['commands'][:18],wrong_B3_commands=terminal['commands'][18:],
++                    command_evidence=commands,reconciliation=reconciliation)
++                self.mutate(role,'qualification_result',qualified)
++                result_row=self.put_json(qw/'native-controls.json',qualified)
++                qreceipt=dict(status='passed',started_at=4,admitted_at=5,finished_at=6,read_only_reconciliation=True,
++                    commands=[],actual_workload_children=0,saved_actual_children=20,historical_failed_children=11,
++                    native_roles_and_behavior_qualified=True,inputs_sha256=qfreeze_row['sha256'],plan_sha256=qplan_row['sha256'],
++                    result_sha256=result_row['sha256'],command_evidence=commands,reconciliation=reconciliation)
++                self.mutate(role,'qualification_terminal',qreceipt)
++                qr=self.put_json(qw/'receipt.json',qreceipt)
++                qaudit=dict(status='verified',receipt_sha256=qr['sha256'],result_sha256=result_row['sha256'])
++                self.mutate(role,'qualification_audit',qaudit)
++                qa=self.put_json(Path('/qualified/audits/native-reconciliation.json'),qaudit)
++                predecessor['qualification']=dict(source=str(qs),evidence=str(qw),audit=dict(path=qa['path'],sha256=qa['sha256']))
++            self.predecessors.append(predecessor)
++        self.accounted = sorted([row['evidence'] for row in self.predecessors]
++            +[row['qualification']['evidence'] for row in self.predecessors if 'qualification' in row])
++
++    def identity(self,size,mode=0o100600):
++        self.inode += 1
++        return dict(dev=1,ino=self.inode,mode=mode,size=size,mtime_ns=10,ctime_ns=10,nlink=1)
++
++    def put(self,path,data):
++        row=dict(path=str(path),sha256=hashlib.sha256(data).hexdigest(),size=len(data),identity=self.identity(len(data)))
++        self.files[str(path)]=row;return row
++
++    def put_json(self,path,value):
++        self.json[str(path)]=copy.deepcopy(value);return self.put(path,b.encoded(value))
++
++    def mutate(self,role,kind,value):
++        callback=self.mutations.get((role,kind))
++        if callback:callback(value)
++
++    def catalog(self):
++        return b.catalog(self.predecessors,self.accounted,LIMITS,
++            read_json=lambda p:copy.deepcopy(self.json[str(p)]),
++            file_record=lambda p:copy.deepcopy(self.files[str(p)]),
++            directory_record=lambda p:copy.deepcopy(self.directories[str(p)]))
++
++
++class AssociationControls(unittest.TestCase):
++    def test_complete_catalog_keeps_both_predecessors_and_all_blobs(self):
++        f=Fixture();catalog=f.catalog()
++        self.assertEqual([p['role'] for p in catalog['predecessors']],['beta','native'])
++        self.assertEqual(len(catalog['records']),6)
++        self.assertEqual(len(catalog['evidence_roots']),2)
++        self.assertEqual([p['audit'] for p in catalog['predecessors']],[p['audit'] for p in f.predecessors])
++
++    def test_same_payload_prefers_beta_without_dropping_logical_aliases(self):
++        f=Fixture();catalog=f.catalog();before=copy.deepcopy(f.inputs)
++        selected=b.select(f.inputs,catalog)
++        shared=f.inputs[0]['sha256']
++        row=next(row for row in selected['records'] if row['blob']['logical_sha256']==shared)
++        self.assertIn('/beta/work/',row['path'])
++        self.assertEqual(len(selected['records']),3)
++        self.assertEqual(f.inputs,before)
++        self.assertEqual(sum(row['blob']['logical_sha256']==shared for row in catalog['records']),2)
++
++    def test_new_source_retains_selection_and_does_not_receive_reuse_credit(self):
++        f=Fixture();new=f.put(Path('/qualified/new.py'),b'new proof input');records=f.inputs+[new]
++        before=copy.deepcopy(records);selected=b.select(records,f.catalog())
++        self.assertNotIn(new['sha256'],[row['blob']['logical_sha256'] for row in selected['records']])
++        self.assertEqual(records,before)
++
++    def test_closed_audit_must_bind_actual_receipt(self):
++        f=Fixture({('beta','audit'):lambda row:row.update(receipt_sha256='0'*64)})
++        with self.assertRaisesRegex(ValueError,'closed actual'):f.catalog()
++
++    def test_failed_predecessor_cannot_supply_credited_bytes(self):
++        f=Fixture({('beta','terminal'):lambda row:row.update(status='failed')})
++        with self.assertRaisesRegex(ValueError,'closed actual'):f.catalog()
++
++    def test_evidence_root_must_already_be_in_monitor_total(self):
++        f=Fixture();f.accounted.remove(f.predecessors[1]['evidence'])
++        with self.assertRaisesRegex(ValueError,'already counted'):f.catalog()
++
++    def test_manifest_path_cannot_escape_fixed_predecessor_snapshot_root(self):
++        def change(row):next(iter(row['files'].values()))['path']='/unaccounted/payload.gz'
++        f=Fixture({('beta','manifest'):change})
++        with self.assertRaisesRegex(ValueError,'path/hash mapping'):f.catalog()
++
++    def test_source_and_retained_projection_are_bound_to_terminal(self):
++        f=Fixture({('native','terminal'):lambda row:row.update(snapshot_plan_sha256='f'*64)})
++        with self.assertRaisesRegex(ValueError,'receipt hashes'):f.catalog()
++
++    def test_original_logical_input_cannot_disappear(self):
++        def change(row):row['files'].pop(next(iter(row['files'])))
++        f=Fixture({('beta','projection'):change})
++        with self.assertRaisesRegex(ValueError,'logical input set'):f.catalog()
++
++    def test_blob_hardlink_has_no_independent_storage_credit(self):
++        f=Fixture();path=next(path for path in f.files if path.endswith('.gz'))
++        f.files[path]['identity']['nlink']=2
++        with self.assertRaisesRegex(ValueError,'single-link'):f.catalog()
++
++    def test_selected_inodes_cannot_receive_duplicate_credit(self):
++        f=Fixture();catalog=f.catalog();eligible=[row for row in catalog['records'] if row['blob']['logical_sha256'] in {r['sha256'] for r in f.inputs}]
++        first=eligible[0];other=next(row for row in eligible if row['blob']['logical_sha256']!=first['blob']['logical_sha256'])
++        other['identity']['ino']=first['identity']['ino']
++        with self.assertRaisesRegex(ValueError,'physical reference'):b.select(f.inputs,catalog)
++
++    def test_complete_snapshot_directory_membership_is_required(self):
++        f=Fixture();next(iter(f.directories.values()))['children'].append('unadmitted.gz')
++        with self.assertRaisesRegex(ValueError,'snapshot directory'):f.catalog()
++
++    def test_full_gzip_readback_claim_is_required(self):
++        f=Fixture({('beta','manifest'):lambda row:row.update(full_gzip_eof=False)})
++        with self.assertRaisesRegex(ValueError,'v1 snapshot'):f.catalog()
++
++    def test_equal_digest_cannot_change_logical_size(self):
++        f=Fixture();records=copy.deepcopy(f.inputs);records[0]['size']+=1
++        with self.assertRaisesRegex(ValueError,'alias size'):b.select(records,f.catalog())
++
++    def test_reservation_counts_only_new_physical_blobs_and_fixed_reserves(self):
++        projection=dict(blobs={'new':dict(compressed_bytes=4097),'old':dict(compressed_bytes=1000000)},
++            storage={'new':dict(kind='stored'),'old':dict(kind='reused',path='/already/counted.gz')},
++            new_compressed_allocated_bytes=8192)
++        self.assertEqual(b.reservation(projection,4*2**20,32*2**20),8192+4096+40*2**20)
++        projection['new_compressed_allocated_bytes']=4097
++        with self.assertRaisesRegex(ValueError,'allocation'):b.reservation(projection,4*2**20,32*2**20)
++
++    def test_native_failed_owner_stays_distinct_from_successful_qualifier(self):
++        f=Fixture();native=f.catalog()['predecessors'][1]
++        self.assertEqual(f.json[native['receipt']['path']]['status'],'failed')
++        self.assertEqual(f.json[native['qualification']['receipt']['path']]['status'],'passed')
++        self.assertNotEqual(native['receipt']['path'],native['qualification']['receipt']['path'])
++        self.assertIn('/native/work/source-snapshots',native['snapshot_root'])
++
++    def test_native_owner_cannot_be_relabelled_passed(self):
++        f=Fixture({('native','terminal'):lambda row:row.update(status='passed')})
++        with self.assertRaisesRegex(ValueError,'must remain failed'):f.catalog()
++
++    def test_failed_reconciliation_does_not_qualify_original_snapshots(self):
++        f=Fixture({('native','qualification_terminal'):lambda row:row.update(status='failed')})
++        with self.assertRaisesRegex(ValueError,'zero-child'):f.catalog()
++
++    def test_reconciliation_cannot_claim_new_workload_children(self):
++        f=Fixture({('native','qualification_terminal'):lambda row:row.update(actual_workload_children=1)})
++        with self.assertRaisesRegex(ValueError,'zero-child'):f.catalog()
++
++    def test_reconciliation_cannot_change_original_recipe(self):
++        f=Fixture({('native','qualification_plan'):lambda row:row.update(children=[])})
++        with self.assertRaisesRegex(ValueError,'original command plan'):f.catalog()
++
++    def test_reconciliation_preserves_nested_json_value_types(self):
++        for index,replacement in [(0,False),(0,0.0),(1,True),(1,1.0)]:
++            with self.subTest(index=index,replacement=repr(replacement)):
++                def change(row):
++                    children=copy.deepcopy(row['children'])
++                    children[index]['index']=replacement
++                    row['children']=children
++                f=Fixture({('native','qualification_plan'):change})
++                with self.assertRaisesRegex(ValueError,'original command plan'):f.catalog()
++
++    def test_original_result_absence_is_part_of_reconciliation_freeze(self):
++        f=Fixture({('native','qualification_freeze'):lambda row:row.update(absent_paths=[])})
++        with self.assertRaisesRegex(ValueError,'original command plan'):f.catalog()
++
++    def test_qualifier_audit_binds_exact_new_result(self):
++        f=Fixture({('native','qualification_audit'):lambda row:row.update(result_sha256='f'*64)})
++        with self.assertRaisesRegex(ValueError,'zero-child'):f.catalog()
++
++    def test_qualifier_cannot_predate_original_failure(self):
++        f=Fixture({('native','qualification_terminal'):lambda row:row.update(started_at=1)})
++        with self.assertRaisesRegex(ValueError,'zero-child'):f.catalog()
++
++    def test_reconciliation_cannot_reset_old_monitor_roots(self):
++        f=Fixture({('native','qualification_plan'):lambda row:row.update(reconciliation_evidence_roots=[])})
++        with self.assertRaisesRegex(ValueError,'physical accounting'):f.catalog()
++
++
++if __name__=='__main__':unittest.main()

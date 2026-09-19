@@ -1,8 +1,10 @@
 # Cache the immutable incremental option hash
 
-This is an **uncompiled, unrun source candidate** against compiler commit
-`7efc0d9484da82cd327deb3b48616f8ec81eaf8d`. Its runtime benefit is unmeasured.
-No compiler checkout, installed runtime, or installed interpreter tool is changed.
+This candidate was derived from compiler commit
+`7efc0d9484da82cd327deb3b48616f8ec81eaf8d`. Its private compiler build and direct
+crate tests passed; see [the build evidence](../../results/hir-options-hash-build-02/README.md).
+Application performance remains unmeasured, and the candidate has not replaced
+the installed application runtime.
 
 `artifacts-01/candidate.patch` adds a private `OnceLock<Hash64>` to
 `GlobalCaches`, a `TyCtxt::incremental_options_hash()` accessor, and replaces
@@ -40,4 +42,6 @@ qualification must regenerate `SOURCE_IDENTITY` from the complete inherited
 source closure plus the changed context file. Do not apply this two-file
 semantic patch directly to an installed compiler or present its old source
 identity as qualification of the candidate. See [QUALIFICATION.md](QUALIFICATION.md)
-for the unrun controls and required future admission.
+for the qualification design. Completed stages are recorded separately in
+`results/`; a successful compiler build alone does not qualify an application
+installation or establish a performance gain.

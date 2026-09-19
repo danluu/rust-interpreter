@@ -1,0 +1,36 @@
+{
+  "execution": "Source reads and AST parse only; no verifier/controller/helper imports, tests, provider calls, discovery or workloads.",
+  "findings": [
+    {
+      "function": "inherited_inputs",
+      "impact": "Independent audit validates selected links and absences but cannot detect omission from inherited closure.",
+      "issue": "Final freeze is not required to include each inherited links row and absent_paths entry from base and delta catalogs.",
+      "requested": "Require exact inherited link rows and inherited absence subset in the combined freeze, matching Stage.inherited_freeze."
+    },
+    {
+      "function": "snapshot_helper_qualification",
+      "impact": "Independent helper qualification does not reproduce the complete input closure now enforced by Stage.",
+      "issue": "Only the three helper/test source hashes are compared to the actual control input catalog; all fourteen original file stamps and executor routes are not independently associated.",
+      "requested": "Compare all fourteen control inputs and their seven-field stamps, and all executor routes, with the final freeze/current guarded state."
+    }
+  ],
+  "reviewed_at": 1789798052.3135529,
+  "reviewed_clear": [
+    "original failed native03 and passed zero-child reconciliation ownership stay distinct",
+    "exact failure audit and qualifier receipt/result/audit association",
+    "eight additive plan keys and typed preservation of all original plan values",
+    "old failed native01 and native02 histories remain explicit",
+    "complete original beta/native v1 blob and logical catalogs",
+    "deterministic beta-first selection without removing logical inputs",
+    "ordinary nlink1 paths and selected inode uniqueness",
+    "full compressed SHA, gzip CRC/EOF and bounded logical readback",
+    "new physical blob allocation plus unchanged fixed reservation",
+    "same numeric PID requires nonoverlapping lifetimes and distinct observed PS starts when both are available"
+  ],
+  "source": {
+    "bytes": 63712,
+    "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage/verify.py",
+    "sha256": "a249ec606816302ad3f5468f0a4b2563b5c4cbb225199cc66f9383b7b198353b"
+  },
+  "status": "source-reviewed-with-two-narrow-findings"
+}

@@ -71,7 +71,8 @@ plans/freezes, audits, terminal receipts and provider catalogs. Complete provide
 payloads remain hashed and inventoried rather than duplicated into snapshots.
 The original unrun plain-copy draft would exceed its 128 MiB logical limit on
 the actual prerequisite plans/freezes alone. The revised draft uses the bounded
-lossless gzip helper that passed seven fixture controls and independent audit.
+lossless gzip helper whose reference-reuse successor passed all seven original
+controls and fifteen additional controls, followed by independent audit.
 It admits at most 1024 logical files, 64 MiB per file, 512 MiB total logical
 bytes and 128 MiB compressed payloads. The aggregate physical evidence limit
 stays 256 MiB. A separately launch-bound projection includes the finalized
@@ -79,9 +80,10 @@ freeze and reserves block rounding, two 4 MiB documents and 32 MiB for remaining
 stage evidence. Admission remeasures exact selected bytes before writing;
 every retained payload receives complete decompression/hash/trailer readback.
 Free space is checked on every chunk and aggregate allocation at the shared
-monitor's five-second cadence. These integration changes have received
-independent source review and AST parsing only; the seven controls qualify the
-helper, not this enclosing stage.
+monitor's five-second cadence. The caller's predecessor associations and
+reservation rules passed twenty-five pure controls as part of the 63-control
+run described below. The enclosing stage still requires actual discovery,
+execution and independent audit.
 
 The direct-rustc environment is derived from the qualified native predecessor.
 Exactly the reviewed Cargo/Git/bootstrap-only keys are omitted; their values
@@ -134,9 +136,14 @@ attempts have independent failure audits; neither qualifies a native compiler.
 
 The prerequisite reader and independent verifier bind the exact private wrapper
 bytes to the immutable Cargo source, allowing only removal of its Cargo-specific
-unused-crate lint expectation. A successful native03 must contain twenty fresh
-children and preserve both failed histories, for thirty-one actual children in
-total. The loader reader now receives complete qualified library records rather
+unused-crate lint expectation. Native03 completed its twenty children with the
+expected return codes but its controller rejected a legitimate compiler-builtins
+diagnostic in the wrong-B3 control. A full independent failure audit verified
+the saved commands and bytes. A separate read-only reconciliation is being
+prepared with a corrected parser that passed eleven focused controls. The
+original failed receipt remains the owner of those commands. Qualification must
+preserve both earlier failed histories, for thirty-one actual native children
+in total. The loader reader now receives complete qualified library records rather
 than a dictionary that collapses logical routes. The hash driver uses a sibling
 artifact directory, preserving the failed native directories.
 
@@ -147,5 +154,17 @@ inputs, raw output, supervisor completion and audit remain in
 additional controls for the second failed history, for twenty-one controls in
 the fresh `hir-options-hash-prerequisite-controls-03` run. All twenty-one passed
 once and the independent readback passed; complete source and raw evidence are
-retained in `results/hir-options-hash-prerequisite-controls-03`. Native03/hash
-execution remains unrun; no application timing is established.
+retained in `results/hir-options-hash-prerequisite-controls-03`.
+
+The current reader adds seventeen reconciliation controls and twenty-five
+snapshot-binding controls. All 63 controls passed once and the independent
+audit passed; complete frozen inputs and raw evidence are retained in
+`results/hir-options-hash-prerequisite-controls-04`. They reject changes to the
+failed command owner, saved raw output, original recipe, parser qualification
+and evidence accounting. Existing gzip blobs can be reused only through complete
+audited predecessor catalogs; every logical input remains selected and every
+physical blob remains counted.
+
+The enclosing controller, preparer and independent verifier have source review.
+Actual native reconciliation and the three-command hash stage remain pending;
+no application timing or sub-0.5-second result is established.
