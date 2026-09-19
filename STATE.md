@@ -66,22 +66,29 @@ Protocol01 supervisor2288 timed out waitingfor sharedlock, no stage/test/guest/
 compiler/timing started. Bounded auditor compact-switch-admission/preserve.py
 closed and preserved terminal+source. Root98c34570 changes only next protocol
 name to compact-native-switch-screen-protocol-02 (qualify.py+benchmark.py).
-Protocol02 PASSED16controls and independently CLOSED74966. Current primary
-compact-native-switch-screen-token-01 RUNNING supervisor75171,sourcec99a82ac,
-started05:21:41. Controller benchmark.py --case token --run-id same. Do not
-modify frozen runtime/scripts/tests/controllers or sourcefre during run. Check
-exact terminal+rawrecords before action, no unchanged timing rerun. Expected40
-commands+2strict,12originaltests; all five arms, original/wrong/5valid/restored.
-Close with compact-native-switch-screen/close.py RUN after successful completion;
-retain failed/unmeasurableperformanceverdict without laterguards. If gatepasses,
-prepare full176-command token thenfolded/pgrust/rg guards and bothparser/Nushell
-checks with fresh source-bound currentcandidate proof; do not reuseparenttimings.
+Protocol02 PASSED16controls/CLOSED74966. Primary compact-native-switch-screen-
+token-01 sourcec99a82ac,75171/75174 is PASSED and CLOSED25706:40commands+2strict,
+12originaltests,alloutcomes/source/artifacts preserved;2057frozen196evidence.
+Wall/adopted.9284846884382567 +AA.02651916755409678=.9550038559923535.
+CPU/adopted.9141699125123719 +AA.03350712293126368=.9476770354436356.
+Nativewall1.5899161253916982,anchorwall.684761463627307. No switch-only gain
+inference against separately timed parent, no runtime adoption yet.
 
-Mainf1bf9da9 now carries all closedcompact-switchproofs/docs, preservespeer
-27c24fa5. Experimentalruntime still onlyrootbranch (lastpushedb8615090).
-Currentrootc99a82ac beforethischeckpoint. Candidate identitiesabove; resource
-last24.5GiB, two workers and8GiB childfloor; benchmarkinitial16GiB. All guest
-samples/censuses/qualification/replays/install are alreadycomplete; NEVERrepeat.
+Prepared compact-native-switch-guards atcb37c236: new portablecorestrict_probes
+from qualifiedpgrustfix; close JSON-normalizes case tuplesbeforecomparison.
+Fresh26control protocol (12accounting6command4controller+4std/no_std compiler
+rejections), run compact-native-switch-guard-protocol-01, NOT LAUNCHED because
+peer40573 owns sharedlock atlastcheck. No owncommandsactive. Onceavailable:
+qualify.py then qualify.py --close; then benchmark.py --case token --run-id
+compact-native-switch-edit-token-01 (176+2strict), close.py RUN. Tokenpassadmits
+folded thenpgrust using samegenericfolder andsuffix01. Newcandidatecc1ebf5e.
+All fullrun sources freeze throughclosure. Other large/parser/Nushell adapters
+are still to be prepared/qualified with newcandidate proofs after precedinggates.
+Never repeat parenttimings or any completedcapture/controlstage.
+
+Mainf1bf9da9 publishes compactcorrectnessproofs/preservespeer27c24fa5; primary
+publicationready. Rootcb37c236 beforedocs, lastpushed5d41c05d. Free22.0GiB;
+recheckadmission. Runtimequalified/installedidentitiesabove remainunchanged.
 
 ## Qualified candidate identities
 

@@ -33,10 +33,13 @@ Compact-switch candidate9bf97808 now fullyqualified:727Rust/profile19ignored,
 fre192/14575; all independentlyclosed. Installedcc1ebf5e (VM3d3512bd/server67a85808),
 unchangedadoptedcompiler. See STATE.md and COMPACT-NATIVE-SWITCH-20260919.md.
 Protocol01 emptylockadmission timeout is closed; no tests/timings began.
-Protocol02 now PASSED16controls/CLOSED74966. Primary40command changed-source
-run compact-native-switch-screen-token-01 RUNNING75171,sourcec99a82ac,05:21:41.
-Do not change frozenruntime/scripts/tests/controllers or fre source. Verify
-terminal/records then independentclose; do not rerun timing or widen gates.
-A primary failure stopslaterguards. Passrequiresfresh fullprojectguards/parser/
-Nushell before mainadoption. Mainf1bf9da9 publishesclosedcorrectnessproofs only,
-preservespeer27c24fa5. STATE.md has exactidentities/commands. Savedgoalpaused.
+Primary40commands+2strict PASSED and CLOSED25706,sourcec99a82ac.
+Wall/adopted.9284846884+AA.0265191676=.9550038560;CPU.9141699125+
+AA.0335071229=.9476770354;nativewall1.5899161254. All12tests/outcomes/restoration
+andartifactschecked. No adoption; no switch-only causalclaim againstoldparent.
+Next compact-native-switch-guards/qualify.py (RUN compact-native-switch-guard-
+protocol-01) then --close; then176command token run compact-native-switch-edit-
+token-01,close.py RUN; passadmitsfoldedthenpgrust. Controlleralreadyusesportable
+coreborrowprobe andJSON casecomparison. New26controls notlaunched; peer40573
+heldsharedlock lastcheck. No ownactivecommands. Rootcb37c236, mainf1bf9da9;
+primarypublicationpending. STATE.md has exactidentities. Savedgoalpaused.
