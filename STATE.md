@@ -282,3 +282,15 @@ worker median264.122→242.255ms; ownheavy198.176→221.008ms, so do not count t
 whole38.811ms preceding interval as a predicted gain. New actualsource primary06
 still required. No default adoption; sharedkeysOFF/literal-v1. Cleanup primary05
 closed41306/41310, neverrepeat.
+
+## 2026-09-19 duration primary06 passed; full guard admission
+
+Primary06 source80a5c78f completed30011/30014 andclosed88772:40commands plus strict
+type/borrow controls,114original outcomes/artifacts/source restoration exact.
+Wall0.9311698739+A/A0.0308233457=0.9619932196, CPU0.9104683898+0.0308595313
+=0.9413279211, PASS. Nativewall1.2718753876; notnativeparity/adoption. Fullguard02
+prepared with same tool60bc0046... and unchanged110command/15pair/22request protocol.
+Primary06 caches retired93584 source2838da6e, closed2706:15152files2991235289bytes,
+11413protected hashesunchanged. NEVERrepeat. Free23.82GiB still<24; exacttwo
+closed failedsetup caches are beingaudited for needed headroom, sourcebc52545f.
+No source changes/benchmark retries/peerwork; savedgoal remains paused.

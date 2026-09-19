@@ -60,6 +60,15 @@ worker assignment and cache warmth change with scheduling.
 
 The qualified normal binaries retain literal parameterization and key domain v1;
 shared key caching and instrumentation are disabled. Compiler, exporter, and
-wrapper binaries match the adopted baseline. The 40-command changed-source
-primary06 is running. Default behavior remains unchanged, and adoption still
-requires the full parser and remaining project guards.
+wrapper binaries match the adopted baseline. The [40-command changed-source screen](../results/cross-program-template-parser-screen-incremental-06/summary.json)
+passed, including both strict rejection controls, all original outcomes, artifact
+identity, source restoration, and complete session accounting. Its median edited
+candidate/adopted wall ratio is 0.93117; adding the maximum A/A deviation of 0.03082
+gives 0.96199, below the required 1.0. CPU ratio is 0.91047 and its corresponding
+sum is 0.94133. Candidate/native wall ratio remains 1.27188. Thus this screen shows
+a 6.9% wall improvement against the adopted custom runtime while still trailing
+native Rust on this workload.
+
+The next gate is the unchanged three-cycle, 110-command full parser protocol in
+fresh namespaces. Default behavior remains unchanged; adoption requires that guard
+and the remaining project comparisons.
