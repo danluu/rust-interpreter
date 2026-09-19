@@ -7,7 +7,7 @@ import focus
 ROOT=focus.ROOT
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='relocatable-immediate-census-01'
+RUN='relocatable-immediate-census-02'
 def read(p):return json.loads(p.read_text())
 def main():
     with (ROOT/'.work/benchmark.lock').open('a') as lock:

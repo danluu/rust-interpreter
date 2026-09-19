@@ -25,3 +25,7 @@ Retain all input/output identities and aggregate only the five valid edits.
 Two Cargo/testworkers; shared benchmark.lock45s; dedicatedtarget neverclean;
 buildfloor max(14GiB,8GiB+2*allocated target),child/closure8GiB. No goals/subagents/
 peerwork changes. Existing runtime evidence remains independently closed.
+
+Attempt01 failed before any test/guest: declaration was nested in link_tests and
+Rust looked for the module below that directory. Preserve its closed compiler
+failure. Attempt02 moves the declaration to the JIT module; no runtime change.

@@ -56,6 +56,8 @@ mod preparation_observer;
 #[cfg(test)]
 mod limit_tests;
 #[cfg(test)]
+mod relocatable_immediate_census;
+#[cfg(test)]
 mod scratch_locals;
 #[cfg(test)]
 mod flush_census;
@@ -996,9 +998,6 @@ fn patch_jump(words: &mut [u32], at: usize, target: usize) -> Result<(), EmitErr
 #[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
 mod link_tests {
 use super::*;
-
-#[cfg(test)]
-mod relocatable_immediate_census;
     use crate::{Slot, VERSION};
 
     #[test]
