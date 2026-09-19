@@ -195,3 +195,7 @@ Measures cyclic SCC direct-PC coverage, separately associated overhead and whole
 scalar spans, calls/effects/size/entry structure. Static normal-return CFG is an
 overapproximation and not a safety proof. Sources frozen through independent
 closure; preserve failure, no retrospective relaxation. RUNTIME-NEXT.md updated.
+
+Census01 sourcec0d4c95d failed on valid bare ResetThreadLocals after16controls
+passed. No completedcase/no guest. Independently failure-CLOSED14287. Immutable
+v2 continuation adds exact unit-variant handling and17thcontrol, run02.

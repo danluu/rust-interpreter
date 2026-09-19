@@ -4,9 +4,9 @@ Manual indefinite optimization; goal PAUSED. No subagents, goal tools or peer
 process control. Isolated compact-switch primary CLOSED45718, failed; all later
 guards cancelled/unstarted. Do not retime it. Main runtime remains adopted.
 
-New preregistered controller: benchmarks/experiments/adopted-hot-loop-census.
-Run adopted-hot-loop-census-01 under supervisor, then its independent --close.
-Freeze experiment sources through closure. Offline only: 16 controls, existing
+New preregistered controller: benchmarks/experiments/adopted-hot-loop-census-v2.
+Run adopted-hot-loop-census-02 under supervisor, then its independent --close.
+Freeze experiment sources through closure. Offline only: 17 controls, existing
 closed adopted normal-entropy native captures and separate fixed-entropy counts.
 Do not infer loop optimization safety or speedup from coverage. Next direction
 requires measured scope, typed correctness proof and complete-edit benchmarks.
@@ -24,3 +24,6 @@ Free~20GiB; no Rust build admitted under last dynamic~23GiB reserve. Recompute.
 Shared target NEVER CLEAN. All previous cleanup/compression operations CLOSED,
 never replay them. Shared lock45s, analysis12GiB/child8GiB, two build workers.
 Current paused goal remains untouched. Full state STATE.md.
+
+First census01 rejected valid bare ResetThreadLocals after16controls passed;
+failed attempt independently closed14287. v2 adds exact unit-variant control.
