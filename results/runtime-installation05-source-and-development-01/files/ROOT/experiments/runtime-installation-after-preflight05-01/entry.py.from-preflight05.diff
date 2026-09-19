@@ -1,0 +1,163 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/entry.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/entry.py
+@@ -1,7 +1,7 @@
+ """Concrete entry wiring; actual completed audits and a reviewed freeze required.
+ 
+-No work runs at import. The two phases retain separate evidence and exact child
+-recipes through the existing controller. Snapshot copies use the already
++No work runs at import. This installation-only successor retains separate
++preflight evidence and the exact existing installation recipe. Snapshot copies use the already
+ qualified bounded helper under the controller's canonical admission.
+ """
+ import argparse
+@@ -14,15 +14,23 @@
+ import sys
+ 
+ HERE=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-04')  # Immutable qualified52 source owner.
+-ATTEMPT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05')
++ATTEMPT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01')
+ ROUTES=ATTEMPT/'routes.json'
+-ROUTES_SHA256='893d6102741b5206a829e2f5e130614667140b1eacc09d0c55616f7311f82e6a'
++ROUTES_SHA256='789fbe817e19c886824cda20ad66fd020e57d7a862af627986cdad40bc07605f'
+ LOCK_SOURCE=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/stable-cgu/owned_stage.py')
+ RETRY_CONTROLS=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-controls-05')
+ RETRY_CONTROL_WORK=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime-preflight-retry-controls-05')
+ RETRY_CONTROL_AUDIT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime-preflight-retry-controls-independent-verification-05.json')
+ RETRY_CONTROL_COUNT=33  # Exact frozen test_retry.py suite; actual proof is still required.
+ RETRY_SOURCE_NAMES=('entry.py','controller.py','audit_owner.py','routes.json','prepare.py','prepare_once.py','launch.py')
++PREFLIGHT_SOURCE=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')/'experiments/runtime-preflight-retry-05'
++PREFLIGHT_ROUTES=PREFLIGHT_SOURCE/'routes.json'
++PREFLIGHT_ROUTES_SHA256='893d6102741b5206a829e2f5e130614667140b1eacc09d0c55616f7311f82e6a'
++INSTALLATION_CONTROLS=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')/'experiments/runtime-installation-controls-05'
++INSTALLATION_CONTROL_WORK=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')/'.work/runtime-installation-controls-05'
++INSTALLATION_CONTROL_AUDIT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')/'.work/runtime-installation-controls-independent-verification-05.json'
++INSTALLATION_CONTROL_COUNT=25  # Exact source-derived focused suite; actual proof remains required.
++INSTALLATION_SOURCE_NAMES=RETRY_SOURCE_NAMES
+ R=Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ ROOT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ HASH_SOURCE=ROOT/'experiments/hir-options-hash-driver-stage-03'
+@@ -116,7 +124,7 @@
+                     self.absent.add(name)
+                 self.hash_original=copy.deepcopy(full)
+                 return plan
+-            if source!=HERE/'preflight-plan-01':return super().inherit(source)
++            if source!=PREFLIGHT_SOURCE/'preflight-plan-01':return super().inherit(source)
+             wire=modules.collector.read(self.add(source/'inputs.json',snapshot=True))
+             self.add(FILE_TABLE_BASE['path'],FILE_TABLE_BASE,snapshot=True)
+             table=modules.stage.load_file_table(wire,self.comp)
+@@ -300,9 +308,10 @@
+ 
+ def preflight_catalog_owner(modules,plan,*,read_json,read_bytes,sha):
+     if plan['phase']!='installation':return None
+-    previous=HERE/'preflight-plan-01';work=R/'.work/hir-options-hash-runtime-preflight-04'
++    prior=preflight_routes(read_json=read_json,sha=sha)
++    previous=Path(prior['packet']);work=Path(prior['work'])
+     previous_plan=read_json(previous/'plan.json');candidate=read_json(previous_plan['specification']['path'])
+-    history=modules.preflight_history.validate(modules.q,modules.recipe,packet=previous,work=work,candidate=candidate,
++    history=completed_preflight(modules,candidate=candidate,
+         audit_reference=plan['source_preflight_readback']['audit'],read_json=read_json,read_bytes=read_bytes,sha=sha)
+     encoded=modules.hash_modules['snapshot_bindings'].encoded
+     same=lambda left,right:encoded(left)==encoded(right)
+@@ -324,28 +333,68 @@
+ def attempt_routes(*, read_json, sha):
+     require(sha(ROUTES)==ROUTES_SHA256,'exact reviewed retry routes required')
+     value=read_json(ROUTES)
+-    require(value['phase']=='preflight' and value['qualified_source']==str(HERE)
++    require(value['phase']=='installation' and value['qualified_source']==str(HERE)
+         and value['attempt_source']==str(ATTEMPT) and value['installation_entry_gib']==24,
+-        'preflight-only routing owner differs')
++        'installation-only routing owner differs')
+     return value
+ 
+ 
+ def retry_qualification(reader):
+     require(type(RETRY_CONTROL_COUNT) is int and RETRY_CONTROL_COUNT>0,
+         'focused retry controls have not been bound')
+-    return controls_qualification(reader,source=ATTEMPT/'entry.py',test=ATTEMPT/'test_retry.py',
++    return controls_qualification(reader,source=PREFLIGHT_SOURCE/'entry.py',test=PREFLIGHT_SOURCE/'test_retry.py',
+         controls=RETRY_CONTROLS,work=RETRY_CONTROL_WORK,audit_path=RETRY_CONTROL_AUDIT,
+-        count=RETRY_CONTROL_COUNT,additional_sources=[ATTEMPT/name for name in RETRY_SOURCE_NAMES if name!='entry.py'])
++        count=RETRY_CONTROL_COUNT,additional_sources=[PREFLIGHT_SOURCE/name for name in RETRY_SOURCE_NAMES if name!='entry.py'])
++
++
++def installation_qualification(reader):
++    require(type(INSTALLATION_CONTROL_COUNT) is int and INSTALLATION_CONTROL_COUNT>0,
++        'focused installation source/control count remains unbound')
++    return controls_qualification(reader,source=ATTEMPT/'entry.py',test=ATTEMPT/'test_installation.py',
++        controls=INSTALLATION_CONTROLS,work=INSTALLATION_CONTROL_WORK,audit_path=INSTALLATION_CONTROL_AUDIT,
++        count=INSTALLATION_CONTROL_COUNT,additional_sources=[ATTEMPT/name for name in INSTALLATION_SOURCE_NAMES if name!='entry.py'])
++
++
++def preflight_routes(*,read_json,sha):
++    require(sha(PREFLIGHT_ROUTES)==PREFLIGHT_ROUTES_SHA256,'exact preflight05 descriptor required')
++    prior=read_json(PREFLIGHT_ROUTES)
++    require(prior['phase']=='preflight' and prior['attempt_source']==str(PREFLIGHT_SOURCE)
++        and prior['qualified_source']==str(HERE) and prior['installation_entry_gib']==24,
++        'actual preflight05 route owner differs')
++    current=attempt_routes(read_json=read_json,sha=sha)
++    expected=dict(descriptor=dict(path=str(PREFLIGHT_ROUTES),sha256=PREFLIGHT_ROUTES_SHA256),
++        **{key:prior[key] for key in ['packet','work','supervisor','launcher_execution','preparation_execution','report']})
++    require(current['preflight']==expected,'selected predecessor must be exact preflight05')
++    return expected
++
++
++def completed_preflight(modules,*,candidate,audit_reference,read_json,read_bytes,sha):
++    prior=preflight_routes(read_json=read_json,sha=sha)
++    require(type(audit_reference) is dict and set(audit_reference)=={'path','sha256'}
++        and audit_reference['path']==prior['report'] and type(audit_reference['sha256']) is str
++        and re.fullmatch('[a-f0-9]{64}',audit_reference['sha256'])
++        and sha(audit_reference['path'])==audit_reference['sha256'],'explicit completed preflight05 audit required')
++    packet,work=Path(prior['packet']),Path(prior['work'])
++    audit=read_json(audit_reference['path'])
++    require(audit['status']=='verified' and audit['phase']=='preflight' and type(audit['actual_children']) is int
++        and audit['actual_children']==2 and audit['attempt']==dict(path=str(PREFLIGHT_ROUTES),sha256=PREFLIGHT_ROUTES_SHA256)
++        and audit['inputs_sha256']==sha(packet/'inputs.json') and audit['plan_sha256']==sha(packet/'plan.json')
++        and audit['receipt_sha256']==sha(work/'receipt.json') and audit['result_sha256']==sha(work/'source-probe/result.json')
++        and audit['outer_sha256']==sha(Path(prior['supervisor'])/'status.json')
++        and audit['launcher_record_sha256']==sha(Path(prior['launcher_execution'])/'record.json'),
++        'completed preflight05 owner/audit association differs')
++    return modules.preflight_history.validate(modules.q,modules.recipe,packet=packet,work=work,candidate=candidate,
++        audit_reference=audit_reference,read_json=read_json,read_bytes=read_bytes,sha=sha)
+ 
+ 
+ def execute(packet,inputs_sha256,snapshot_sha256):
+     require(Path.cwd()==R and sys.dont_write_bytecode and not sys.flags.optimize,'fixed R owner/Python flags required')
+-    require(packet==ATTEMPT/'preflight-plan-01','exact reviewed retry packet namespace required')
++    require(packet==ATTEMPT/'installation-plan-01','exact reviewed retry packet namespace required')
+     f=definition('frozen',HERE/'frozen.py')
+     require(f.digest(packet/'inputs.json')==inputs_sha256,'exact union freeze required')
+     wire=f.json_file(packet/'inputs.json');plan=f.json_file(packet/'plan.json')
+     require(f.digest(packet/'plan.json')==wire['plan_sha256'] and plan['hash_source']==str(HASH_SOURCE),'actual plan/source binding differs')
+-    require(plan['phase']=='preflight','retry is preflight-only; installation retains original24 policy')
++    require(plan['phase']=='installation','installation-only attempt required')
+     table=load_table(wire,f)
+     bound=f.Frozen(packet/'inputs.json',inputs_sha256,output_root=plan['work'],table=table,base=FILE_TABLE_BASE)
+     # Authenticate the exact existing lock helper before importing it. All
+@@ -358,7 +407,7 @@
+         'prepared retry routing differs')
+     early_owned=definition('early_owned',LOCK_SOURCE)
+     with early_owned.workload_lock(early_owned.CANONICAL_LOCK,600) as canonical_fd:
+-        early_owned.disk(R,16)
++        early_owned.disk(R,24)
+         _execute_admitted(packet,inputs_sha256,snapshot_sha256,f,plan,bound,canonical_fd)
+ 
+ 
+@@ -383,7 +432,8 @@
+     require(runtime_qualification(reader)==plan['runtime_adapter_qualification'],'actual runtime adapter qualification differs')
+     require(catalog_qualification(reader)==plan['catalog_qualification'],'actual catalog qualification differs')
+     require(retry_qualification(reader)==plan['retry_qualification'],'actual focused retry qualification differs')
+-    retry_controller=factory.load('preflight_retry_controller',ATTEMPT/'controller.py',bound.file)
++    require(installation_qualification(reader)==plan['installation_qualification'],'actual focused installation qualification differs')
++    installation_controller=factory.load('installation_after_preflight05_controller',ATTEMPT/'controller.py',bound.file)
+     catalog=factory.load('completed_catalog',CATALOG_SOURCE,bound.file)
+     snap_path=packet/'snapshot-plan.json'
+     require(f.digest(snap_path)==snapshot_sha256,'exact reviewed runtime snapshot projection required')
+@@ -431,7 +481,7 @@
+             controller.record.update(snapshot_plan_sha256=snapshot_sha256,source_snapshots_sha256=f.digest(controller.work/'source-snapshots.json'))
+             controller.save();controller.capacity(force=True)
+     with factory.aliases(modules.public_aliases):
+-        controller=retry_controller.Controller(plan=plan,inputs_sha256=inputs_sha256,q=modules.q,recipe=modules.recipe,
++        controller=installation_controller.Controller(plan=plan,inputs_sha256=inputs_sha256,q=modules.q,recipe=modules.recipe,
+             reader=reader,monitor=modules.monitor,check_frozen=check,read_json=bound.read_json,read_bytes=bound.read_bytes,sha=bound.sha,
+             canonical_fd=canonical_fd)
+         state['controller']=controller

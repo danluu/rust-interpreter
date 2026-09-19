@@ -1,0 +1,111 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-06/audit.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-07/audit.py
+@@ -1,4 +1,4 @@
+-"""Read-only preflight05 saved-evidence orchestration, awaiting source review.
++"""Read-only installation05 saved-evidence orchestration, awaiting source review.
+ 
+ This module has no CLI and publishes nothing. A separately reviewed bounded
+ entry must authenticate its own source, actual53/45 qualification, the complete
+@@ -19,11 +19,12 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+-HERE = ROOT/'experiments/hir-options-hash-runtime-audit-06'
++HERE = ROOT/'experiments/hir-options-hash-runtime-audit-07'
+ QUALIFIED_AUDIT = ROOT/'experiments/hir-options-hash-runtime-audit-05'
+-ATTEMPT = ROOT/'experiments/runtime-preflight-retry-05'
++ATTEMPT = ROOT/'experiments/runtime-installation-after-preflight05-01'
++PREFLIGHT_SOURCE = ROOT/'experiments/runtime-preflight-retry-05'
+ ROUTES_PATH = ATTEMPT/'routes.json'
+-ROUTES_SHA = '893d6102741b5206a829e2f5e130614667140b1eacc09d0c55616f7311f82e6a'
++ROUTES_SHA = '789fbe817e19c886824cda20ad66fd020e57d7a862af627986cdad40bc07605f'
+ PHASE_SOURCE = ROOT/'experiments/hir-options-hash-runtime-audit-04'
+ SOURCE = X/'experiments/hir-options-hash/runtime-installation-04'
+ HASH = ROOT/'experiments/hir-options-hash-driver-stage-03'
+@@ -43,6 +44,10 @@
+ RETRY_AUDIT = ROOT/'.work/runtime-preflight-retry-controls-independent-verification-05.json'
+ RETRY_COUNT = 33  # Source-derived count; separate actual frozen qualification is still required.
+ RETRY_FILES = ('entry.py','controller.py','audit_owner.py','routes.json','prepare.py','prepare_once.py','launch.py')
++INSTALLATION_CONTROL = ROOT/'experiments/runtime-installation-controls-05'
++INSTALLATION_WORK = ROOT/'.work/runtime-installation-controls-05'
++INSTALLATION_AUDIT = ROOT/'.work/runtime-installation-controls-independent-verification-05.json'
++INSTALLATION_COUNT = 25  # Source-derived; actual proof is required separately.
+ FAILED_REVIEW = dict(path=str(ROOT/'results/runtime04-preflight-capacity-failure-01/review.json'),
+     sha256='3d29955a0512ba66dd86da9f50c18c93a013cbb0e648f5a25ae378eaaf1afaa3')
+ HASH_PLAN = dict(path=str(HASH/'plan.json'),
+@@ -148,7 +153,7 @@
+ 
+ 
+ def verify(*, phase, expected, prepared, inspection, io, reader, recipe,
+-           preflight, final_runtime, factory, entry, actual53, startup_owner, actual39, actual_retry, guard):
++           preflight, final_runtime, factory, entry, actual53, startup_owner, actual39, actual_retry, actual_installation, guard):
+     """Verify one actual phase with an authenticated inspection context.
+ 
+     ``prepared`` is the original fully expanded runtime freeze. ``inspection``
+@@ -160,7 +165,7 @@
+     repeats their saved-evidence qualification before any producer Reader use.
+     """
+     started = time.time(); guard()
+-    require(phase in ['preflight'] and same(prepared, inspection['prepared'])
++    require(phase in ['installation'] and same(prepared, inspection['prepared'])
+             and same(io.files, inspection['value']['files']), 'exact original/inspection distinction required')
+     require(same({k:v for k,v in prepared.items() if k != 'files'},
+                  {k:v for k,v in inspection['value'].items() if k != 'files'}),
+@@ -191,8 +196,13 @@
+     require(type(RETRY_COUNT) is int and RETRY_COUNT > 0, 'retry qualification count remains unbound')
+     require(actual_retry['path'] == str(RETRY_AUDIT), 'exact retry control route required')
+     retry_controls = actual_controls(reader, io, actual_retry, source=RETRY_CONTROL, work=RETRY_WORK,
+-        modules=[ATTEMPT/name for name in RETRY_FILES], tests=[ATTEMPT/'test_retry.py'], count=RETRY_COUNT)
++        modules=[PREFLIGHT_SOURCE/name for name in RETRY_FILES], tests=[PREFLIGHT_SOURCE/'test_retry.py'], count=RETRY_COUNT)
+     retry_qualification = dict(retry_controls, source=str(RETRY_CONTROL), evidence=str(RETRY_WORK))
++    require(actual_installation['path'] == str(INSTALLATION_AUDIT), 'exact installation control route required')
++    installation_controls = actual_controls(reader, io, actual_installation,
++        source=INSTALLATION_CONTROL, work=INSTALLATION_WORK,
++        modules=[ATTEMPT/name for name in RETRY_FILES], tests=[ATTEMPT/'test_installation.py'], count=INSTALLATION_COUNT)
++    installation_qualification = dict(installation_controls, source=str(INSTALLATION_CONTROL), evidence=str(INSTALLATION_WORK))
+     require(io.sha(ROUTES_PATH) == ROUTES_SHA, 'exact reviewed attempt routes required')
+     routes = io.read_json(ROUTES_PATH)
+     require(routes['phase'] == phase and routes['qualified_source'] == str(SOURCE)
+@@ -203,6 +213,7 @@
+     plan = io.read_json(packet/'plan.json'); launch = io.read_json(packet/'launch.json')
+     require(same(plan['attempt'], dict(path=str(ROUTES_PATH), sha256=ROUTES_SHA)), 'actual plan route binding differs')
+     require(same(plan['retry_qualification'], retry_qualification), 'separate actual retry qualification differs')
++    require(same(plan['installation_qualification'], installation_qualification), 'separate actual installation qualification differs')
+     prior_failure = failed_predecessor(plan, routes, io)
+     terminal = io.read_json(work/'receipt.json'); supervisor = io.read_json(outer/'status.json')
+     launcher = io.read_json(expected['launcher_record']); snapshot = io.read_json(packet/'snapshot-plan.json')
+@@ -223,7 +234,8 @@
+     startup_owner.owner(plan, launch, terminal, supervisor, launcher, phase=phase, expected=expected,
+         sha=io.sha, read_json=io.read_json, original=reader, workload_environment=workload_environment,
+         validate_qualification=lambda given: same(given, startup_qualification),
+-        validate_retry_qualification=lambda given: same(given, retry_qualification))
++        validate_retry_qualification=lambda given: same(given, retry_qualification),
++        validate_installation_qualification=lambda given: same(given, installation_qualification))
+     require(plan['hash_source'] == str(HASH) and same(plan['independent_audits']['hash'], HASH_AUDIT),
+             'actual successful hash02 owner is required')
+ 
+@@ -257,11 +269,11 @@
+     state.reader.snapshot_qualification()
+     catalog = factory.load('completed_catalog', entry.CATALOG_SOURCE, io.file)
+     snapshots = factory.load('qualified_snapshots', modules.stage.SNAPSHOT_SOURCE, io.file)
+-    # This returns None for the first preflight; only later installation is
+-    # allowed to require the prior preflight's already published independent audit.
++    # Installation requires the already completed and independently audited
++    # preflight05 owner. Its full raw history is replayed by the unchanged reader.
+     previous = entry.preflight_catalog_owner(modules, plan,
+         read_json=io.read_json, read_bytes=io.read_bytes, sha=io.sha)
+-    require(phase != 'preflight' or previous is None, 'first preflight cannot require its own audit')
++    require(previous is not None, 'installation requires complete preflight05 catalog ownership')
+     lineage = entry.completed_catalog(modules, state, catalog, snapshots, plan['evidence_roots'],
+         read_json=io.read_json, read_bytes=io.read_bytes, sha=io.sha, file_record=io.record,
+         directory_record=io.directory_record, guard=guard, preflight_owner=previous)
+@@ -334,7 +346,8 @@
+         actual_children=len(desired), original_prepared_files=len(prepared['files']),
+         inspection_union=copy.deepcopy(inspection['report']), historical_copy_retirement=retired,
+         actual53=controls53, phase45=controls45, producer52=controls52, continuation70=controls70,
+-        startup39=controls39, retry_controls=retry_controls, attempt=copy.deepcopy(plan['attempt']),
++        startup39=controls39, retry_controls=retry_controls, installation_controls=installation_controls,
++        source_preflight_audit=copy.deepcopy(expected['source_preflight_audit']), attempt=copy.deepcopy(plan['attempt']),
+         failed_predecessor=prior_failure,
+         startup_environment=copy.deepcopy(plan['startup_environment']),
+         preparation=copy.deepcopy(expected['preparation']), preparation_launcher=copy.deepcopy(expected['preparation_launcher']),

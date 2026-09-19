@@ -1,0 +1,60 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-controls-05/prepare.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-controls-05/prepare.py
+@@ -11,16 +11,16 @@
+     here, source, owner = control.HERE, control.SOURCE, control.OWNER
+     assert Path.cwd() == owner and sys.dont_write_bytecode
+     assert not any((here / name).exists() for name in ['inputs.json', 'launch.json'])
+-    assert not control.WORK.exists() and not (owner / '.work/experiments/runtime-preflight-retry-controls-supervisor-05').exists()
++    assert not control.WORK.exists() and not (owner / '.work/experiments/runtime-installation-controls-supervisor-05').exists()
+     names = []
+-    modules = ['test_retry']
++    modules = ['test_installation']
+     for module in modules:
+         tree = ast.parse((source / (module + '.py')).read_text())
+         for node in tree.body:
+             if isinstance(node, ast.ClassDef):
+                 names.extend(module + '.' + node.name + '.' + child.name for child in node.body
+                              if isinstance(child, ast.FunctionDef) and child.name.startswith('test_'))
+-    assert len(names) == len(set(names)) == 33
++    assert len(names) == len(set(names)) == 25
+     files, routes = {}, {}
+     def add(path):
+         path = Path(path); resolved = path.resolve(strict=True)
+@@ -38,11 +38,10 @@
+         path = here / name
+         assert path.is_file() and not path.is_symlink()
+         add(path)
+-    for name in ['entry.py', 'controller.py', 'audit_owner.py', 'routes.json', 'prepare.py', 'prepare_once.py', 'launch.py', 'test_retry.py']:
++    for name in ['entry.py', 'controller.py', 'audit_owner.py', 'routes.json', 'prepare.py', 'prepare_once.py', 'launch.py', 'test_installation.py']:
+         add(source/name)
+     add(owner/'experiments/runtime04-environment-adapter-01/environment.py')
+-    for name in ['reader.py', 'test_reader.py']:
+-        add(owner/'experiments/hir-options-hash-runtime-audit-05'/name)
++    add(owner/'experiments/runtime-preflight-retry-05/routes.json')
+     python = Path(sys.executable).resolve(strict=True)
+     for path in [python, '/opt/homebrew/bin/python3', '/bin/ps', '/usr/sbin/lsof',
+                  owner / 'scripts/supervise_experiment.py', control.X / 'experiments/stable-cgu/owned_stage.py']:
+@@ -59,19 +58,19 @@
+                               maximum_writable_names=256, maximum_directory_names=2048,
+                               maximum_cumulative_child_file_payload_bytes=258 * 256 * 1024,
+                               maximum_retained_stage_file_bytes=2 * 2**20),
+-                  source_only_retry_owner_inherited_lock_controls=True, compiler_calls=0, provider_probes=0, B3_compositions=0)
++                  source_only_installation_route_phase_prerequisite_controls=True, compiler_calls=0, provider_probes=0, B3_compositions=0)
+     control.owned.write(here / 'inputs.json', freeze)
+     launch = dict(status='prepared-unrun-awaiting-review', owner=str(owner), environment=environment,
+                   command=[str(python), '-B', str(owner / 'scripts/supervise_experiment.py'), '--run-id',
+-                           'runtime-preflight-retry-controls-supervisor-05', '--', str(python), '-B',
++                           'runtime-installation-controls-supervisor-05', '--', str(python), '-B',
+                            str(here / 'run.py'), '--inputs-sha256', control.owned.sha(here / 'inputs.json')],
+                   inputs_sha256=control.owned.sha(here / 'inputs.json'), helper_sha256=control.owned.sha(here / 'run.py'),
+-                  expected_children=1, controls=33, capacity=freeze['capacity'], bounds=freeze['bounds'])
++                  expected_children=1, controls=25, capacity=freeze['capacity'], bounds=freeze['bounds'])
+     control.owned.write(here / 'launch.json', launch)
+     control.guard(freeze)
+     print(json.dumps(dict(status='prepared-unrun', launch_sha256=control.owned.sha(here / 'launch.json'),
+                          inputs_sha256=launch['inputs_sha256'], files=len(files),
+-                         bytes=sum(row['stamp'][3] for row in files.values()), controls=33), indent=2))
++                         bytes=sum(row['stamp'][3] for row in files.values()), controls=25), indent=2))
+ 
+ 
+ if __name__ == '__main__':

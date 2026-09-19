@@ -1,0 +1,71 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/controller.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/controller.py
+@@ -1,4 +1,4 @@
+-"""Preflight-only admission successor; original installation controller is unchanged.
++"""Installation-only admission successor; original controllers remain unchanged.
+ 
+ Construction requires the reviewed isolated modules, an exact prepared plan and
+ the complete union freeze. The eventual small launcher/preparer must bind this
+@@ -15,10 +15,10 @@
+ 
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ PREFIX = 'hir-options-hash-runtime-'
+-ATTEMPT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05')
++ATTEMPT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01')
+ ROUTES = ATTEMPT/'routes.json'
+-ROUTES_SHA256 = '893d6102741b5206a829e2f5e130614667140b1eacc09d0c55616f7311f82e6a'
+-CAPACITY = dict(entry_gib=16, stop_gib=9, floor_gib=8,
++ROUTES_SHA256 = '789fbe817e19c886824cda20ad66fd020e57d7a862af627986cdad40bc07605f'
++CAPACITY = dict(entry_gib=24, stop_gib=9, floor_gib=8,
+     combined_namespace_bytes=14*2**30, evidence_bytes=256*2**20)
+ 
+ 
+@@ -100,6 +100,20 @@
+     return private_monitor
+ 
+ 
++def phase_admission(plan,*,sha,read_json):
++    require(plan.get('attempt') == dict(path=str(ROUTES),sha256=ROUTES_SHA256)
++        and sha(ROUTES)==ROUTES_SHA256,'exact reviewed installation routes required')
++    routes=read_json(ROUTES)
++    require(routes['phase']==plan['phase']=='installation' and routes['attempt_source']==str(ATTEMPT)
++        and routes['work']==plan['work'] and routes['supervisor']==plan['supervisor_work']
++        and routes['capacity']==plan['capacity']==CAPACITY and routes['installation_entry_gib']==24,
++        'installation routing or phase policy differs')
++    work=Path(plan['work'])
++    require(Path(plan['owner'])==R and work.parent==R/'.work' and work.name.startswith(PREFIX),
++        'exact runtime installation scope')
++    return routes
++
++
+ class Controller:
+     def __init__(self, *, plan, inputs_sha256, q, recipe, reader, monitor,
+                  check_frozen, read_json, read_bytes, sha, canonical_fd):
+@@ -110,17 +124,8 @@
+         with inherited_admission(self.owned, canonical_fd):
+             pass  # The entry owns this open description through constructor and execute.
+         self.fd = canonical_fd
+-        require(plan.get('attempt') == dict(path=str(ROUTES), sha256=ROUTES_SHA256)
+-            and sha(ROUTES) == ROUTES_SHA256, 'exact reviewed retry routes required')
+-        routes = read_json(ROUTES)
+-        require(routes['phase'] == plan['phase'] == 'preflight'
+-            and routes['work'] == plan['work'] and routes['supervisor'] == plan['supervisor_work']
+-            and routes['capacity'] == CAPACITY and routes['installation_entry_gib'] == 24,
+-            'preflight-only retry routing or phase policy differs')
++        phase_admission(plan,sha=sha,read_json=read_json)
+         self.work = Path(plan['work']); self.phase = plan['phase']
+-        require(self.phase == 'preflight' and Path(plan['owner']) == R
+-                and self.work.parent == R/'.work' and self.work.name.startswith(PREFIX), 'exact runtime stage scope')
+-        require(plan['capacity'] == CAPACITY, 'preflight retry bounds changed')
+         require(monitor is not reader.reader.monitor, 'do not mutate historical shared monitor')
+         require(Path.cwd() == R and dict(os.environ) == plan['launch_environment'], 'exact runtime launch context required')
+         self.spec = read_json(plan['specification']['path'])
+@@ -215,7 +220,7 @@
+     def execute(self):
+         try:
+             with inherited_admission(self.owned, self.fd):
+-                self.record.update(status='running', admitted_at=time.time(), free_bytes_before=self.owned.disk(R, 16))
++                self.record.update(status='running', admitted_at=time.time(), free_bytes_before=self.owned.disk(R, 24))
+                 self.save(); self.full_guard()
+                 if self.phase == 'preflight':
+                     result = self.recipe.execute_preflight(self.q, self.spec, owner=R, work=self.work/'source-probe',

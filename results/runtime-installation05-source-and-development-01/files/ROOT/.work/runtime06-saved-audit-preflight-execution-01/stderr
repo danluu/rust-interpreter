@@ -1,0 +1,25 @@
+Traceback (most recent call last):
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-06/bootstrap.py", line 308, in <module>
+    main()
+    ~~~~^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-06/bootstrap.py", line 293, in main
+    result=audit.verify(phase=args.phase,expected=expected,prepared=prepared,inspection=inspection,io=io,
+        reader=reader,factory=factory,entry=entry,actual53=manifest['actual53'],
+        startup_owner=startup_owner,actual39=manifest['startup_controls'],actual_retry=manifest['retry_controls'],guard=guard,**phase_modules)
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-06/audit.py", line 236, in verify
+    current_guard(inspection['value'], io, guard, full=True)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-06/audit.py", line 92, in current_guard
+    guard(); identity = io.identity(name)
+                        ~~~~~~~~~~~^^^^^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-05/audit_io.py", line 259, in identity
+    with parent_descriptor(p) as (parent, leaf):
+         ~~~~~~~~~~~~~~~~~^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 141, in __enter__
+    return next(self.gen)
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-05/audit_io.py", line 141, in parent_descriptor
+    require(stat.S_ISDIR(named.st_mode), 'symlink or non-directory ancestor')
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-05/audit_io.py", line 25, in require
+    raise RuntimeError(message)
+RuntimeError: symlink or non-directory ancestor

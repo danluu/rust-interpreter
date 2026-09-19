@@ -1,0 +1,100 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/prepare.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/prepare.py
+@@ -1,7 +1,7 @@
+ """Read-only runtime discovery from four actual audits; no provider execution.
+ 
+-Source draft only. Canonical16/9 admission precedes all provider discovery and
+-proposal writes. This fresh attempt admits only preflight16/9/8; installation24 is unchanged.
++Source draft only. Canonical24/9 admission precedes all provider discovery and
++proposal writes. This fresh attempt admits only installation24/9/8; completed preflight05 remains immutable.
+ """
+ import argparse
+ import ast
+@@ -51,7 +51,7 @@
+ 
+ 
+ def main():
+-    parser=argparse.ArgumentParser();parser.add_argument('--phase',choices=['preflight'],required=True)
++    parser=argparse.ArgumentParser();parser.add_argument('--phase',choices=['installation'],required=True)
+     for role in ['beta','native','run-make','hash']:
+         parser.add_argument('--'+role+'-audit',type=Path,required=True);parser.add_argument('--'+role+'-audit-sha256',required=True)
+         parser.add_argument('--'+role+'-evidence',type=Path,required=True)
+@@ -60,6 +60,7 @@
+     parser.add_argument('--copy-retirement-audit-sha256',required=True)
+     parser.add_argument('--startup-audit-sha256',required=True)
+     parser.add_argument('--retry-audit-sha256',required=True)
++    parser.add_argument('--installation-audit-sha256',required=True)
+     parser.add_argument('--preparation-passed-environment-json',required=True)
+     parser.add_argument('--preparation-record',type=Path,required=True)
+     parser.add_argument('--startup-source-manifest',type=Path,required=True)
+@@ -103,7 +104,7 @@
+     f.require(works==expected_works,'explicit evidence differs from actual adopted hash prerequisite roles')
+     d=entry.discovery(modules)
+     with d.owned.workload_lock(d.owned.CANONICAL_LOCK,600):
+-        started=time.time();free_before=d.owned.disk(R,16)
++        started=time.time();free_before=d.owned.disk(R,24)
+         f.require(all(not p.exists() and not p.is_symlink() for p in [packet,work,supervisor,launcher_work]),'runtime namespace appeared during admission wait')
+         hash_plan=d.inherit(entry.HASH_SOURCE)
+         d.add(entry.HASH_SOURCE/'snapshot-plan.json',snapshot=True)
+@@ -188,7 +189,7 @@
+         d.add(source_manifest['path'],source_manifest,snapshot=True)
+         source_rows=read_json(source_manifest['path'])
+         f.require(set(source_rows)=={'status','files'}
+-            and source_rows['status']=='reviewed-runtime-preflight05-startup-source-closure'
++            and source_rows['status']=='reviewed-runtime-installation05-startup-source-closure'
+             and ({str(ADAPTER/name) for name in entry.RETRY_SOURCE_NAMES}
+                  | {str(STARTUP_SOURCE/name) for name in STARTUP_FILES})<=set(source_rows['files']),
+             'complete reviewed startup source closure required')
+@@ -198,12 +199,17 @@
+             d.add(name,row,snapshot=True)
+         f.require({p.name for p in STARTUP_SOURCE.iterdir()}==STARTUP_FILES,'exact qualified startup source membership required')
+         for name in sorted(STARTUP_FILES):d.add(STARTUP_SOURCE/name,snapshot=True)
+-        for name in entry.RETRY_SOURCE_NAMES:d.add(ADAPTER/name,snapshot=True)
++        for name in entry.RETRY_SOURCE_NAMES:d.add(entry.PREFLIGHT_SOURCE/name,snapshot=True)
++        for name in entry.INSTALLATION_SOURCE_NAMES:d.add(ADAPTER/name,snapshot=True)
+         for path in [entry.RETRY_CONTROLS/'inputs.json',entry.RETRY_CONTROLS/'launch.json',entry.RETRY_CONTROL_AUDIT]:
+             d.add(path,snapshot=True)
+         f.require(sha(entry.RETRY_CONTROL_AUDIT)==args['retry_audit_sha256'],'exact separately reviewed retry audit required')
+         for name,row in read_json(entry.RETRY_CONTROLS/'inputs.json')['files'].items():d.add(name,row,snapshot=True)
+         d.tree(entry.RETRY_CONTROL_WORK)
++        for path in [entry.INSTALLATION_CONTROLS/'inputs.json',entry.INSTALLATION_CONTROLS/'launch.json',entry.INSTALLATION_CONTROL_AUDIT]:d.add(path,snapshot=True)
++        f.require(sha(entry.INSTALLATION_CONTROL_AUDIT)==args['installation_audit_sha256'],'exact separately reviewed installation audit required')
++        for name,row in read_json(entry.INSTALLATION_CONTROLS/'inputs.json')['files'].items():d.add(name,row,snapshot=True)
++        d.tree(entry.INSTALLATION_CONTROL_WORK)
+         for path in [STARTUP_CONTROLS/'inputs.json',STARTUP_CONTROLS/'launch.json',STARTUP_AUDIT]:d.add(path,snapshot=True)
+         f.require(sha(STARTUP_AUDIT)==args['startup_audit_sha256'],'exact separately reviewed startup controls audit required')
+         for name,row in read_json(STARTUP_CONTROLS/'inputs.json')['files'].items():d.add(name,row,snapshot=True)
+@@ -230,6 +236,8 @@
+             additional_sources=[STARTUP_SOURCE/'audit_owner.py'],additional_tests=[STARTUP_SOURCE/'test_audit_owner.py'])
+         f.require(startup_qualification['audit']['sha256']==args['startup_audit_sha256'],
+             'startup qualification changed')
++        installation_qualification=entry.installation_qualification(reader)
++        f.require(installation_qualification['audit']['sha256']==args['installation_audit_sha256'],'installation qualification changed')
+         retry_qualification=entry.retry_qualification(reader)
+         f.require(retry_qualification['audit']['sha256']==args['retry_audit_sha256'],'retry qualification changed')
+         startup=factory.load('startup_environment',STARTUP_SOURCE/'environment.py',reader.reader.frozen)
+@@ -249,10 +257,12 @@
+         preflight=None
+         if phase=='installation':
+             f.require(args['source_preflight_audit'] is not None and args['source_preflight_audit_sha256'] is not None,'actual independent source-preflight audit required')
+-            previous=HERE/'preflight-plan-01';previous_work=R/'.work/hir-options-hash-runtime-preflight-04'
+-            d.inherit(previous);d.add(previous/'snapshot-plan.json',snapshot=True);d.tree(previous_work)
++            prior=entry.preflight_routes(read_json=read_json,sha=sha)
++            previous=Path(prior['packet']);previous_work=Path(prior['work'])
++            d.inherit(previous);d.tree(previous);d.tree(previous_work)
++            for key in ['supervisor','launcher_execution','preparation_execution']:d.tree(Path(prior[key]))
+             history=factory.load('preflight_history',HERE/'preflight_history.py',lambda p:d.add(p,snapshot=True))
+-            preflight=history.validate(modules.q,modules.recipe,packet=previous,work=previous_work,candidate=candidate,
++            preflight=entry.completed_preflight(modules,candidate=candidate,
+                 audit_reference=dict(path=str(args['source_preflight_audit']),sha256=args['source_preflight_audit_sha256']),
+                 read_json=read_json,read_bytes=read_bytes,sha=sha)
+         startup_observations['before_packet']=dict(os.environ)
+@@ -340,7 +350,7 @@
+             source_policy=dict(path=str(policy_path),sha256=sha(policy_path)),provider_comparison=provider_ref,
+             adapter_controls=dict(receipt=str(CONTROL_WORK/'receipt.json'),audit=str(CONTROL_AUDIT)),runtime_key=key,
+             catalog_qualification=catalog_qualification,
+-            runtime_adapter_qualification=runtime_qualification,retry_qualification=retry_qualification,
++            runtime_adapter_qualification=runtime_qualification,retry_qualification=retry_qualification,installation_qualification=installation_qualification,
+             attempt=dict(path=str(entry.ROUTES),sha256=entry.ROUTES_SHA256),failed_predecessor=failed_reference,
+             copy_retirement=retirement,
+             environment=environment,launch_environment=launch_environment,children=children,evidence_roots=sorted(map(str,roots)),

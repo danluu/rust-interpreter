@@ -1,0 +1,139 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-06/bootstrap.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-07/bootstrap.py
+@@ -21,11 +21,12 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-HERE = ROOT/'experiments/hir-options-hash-runtime-audit-06'
++HERE = ROOT/'experiments/hir-options-hash-runtime-audit-07'
+ QUALIFIED_AUDIT = ROOT/'experiments/hir-options-hash-runtime-audit-05'
+-ATTEMPT = ROOT/'experiments/runtime-preflight-retry-05'
++ATTEMPT = ROOT/'experiments/runtime-installation-after-preflight05-01'
++PREFLIGHT_SOURCE = ROOT/'experiments/runtime-preflight-retry-05'
+ ROUTES_PATH = ATTEMPT/'routes.json'
+-ROUTES_SHA = '893d6102741b5206a829e2f5e130614667140b1eacc09d0c55616f7311f82e6a'
++ROUTES_SHA = '789fbe817e19c886824cda20ad66fd020e57d7a862af627986cdad40bc07605f'
+ OLD = ROOT/'experiments/hir-options-hash-runtime-audit-04'
+ SOURCE = X/'experiments/hir-options-hash/runtime-installation-04'
+ CONTROL = ROOT/'experiments/runtime-saved-audit-controls-05'
+@@ -42,6 +43,10 @@
+ RETRY_AUDIT = ROOT/'.work/runtime-preflight-retry-controls-independent-verification-05.json'
+ RETRY_COUNT = 33  # Source-derived count; no future qualification digest is invented.
+ RETRY_FILES = ('entry.py','controller.py','audit_owner.py','routes.json','prepare.py','prepare_once.py','launch.py')
++INSTALLATION_CONTROL = ROOT/'experiments/runtime-installation-controls-05'
++INSTALLATION_WORK = ROOT/'.work/runtime-installation-controls-05'
++INSTALLATION_AUDIT = ROOT/'.work/runtime-installation-controls-independent-verification-05.json'
++INSTALLATION_COUNT = 25  # Source-derived; separate completed actual proof required.
+ BASE = dict(path='/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-native-controls-03/inputs.json',
+             sha256='8569abb81a61e34b6b5a892116af5218557ceb0436ab8dbf8a31f2aec55b1b1d')
+ CANONICAL = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+@@ -143,7 +148,7 @@
+ def load(name, p, rows, dependencies=None):
+     p=Path(p);require(str(p) in rows,'explicit authenticated source row required')
+     raw(p,rows[str(p)]['sha256']);require(same(OBSERVED[str(p)],rows[str(p)]),'source identity changed before import')
+-    spec=importlib.util.spec_from_file_location('_runtime05_audit_'+name,p)
++    spec=importlib.util.spec_from_file_location('_runtime07_audit_'+name,p)
+     module=importlib.util.module_from_spec(spec);sys.modules[spec.name]=module
+     with aliases(dependencies or {}):spec.loader.exec_module(module)
+     return module
+@@ -170,8 +175,9 @@
+ 
+ 
+ def main():
+-    parser=argparse.ArgumentParser();parser.add_argument('--phase',choices=['preflight'],required=True)
++    parser=argparse.ArgumentParser();parser.add_argument('--phase',choices=['installation'],required=True)
+     parser.add_argument('--canonical-fd',type=int,required=True)
++    parser.add_argument('--source-preflight-audit-sha256',required=True)
+     parser.add_argument('--source-manifest',type=Path,required=True);parser.add_argument('--source-manifest-sha256',required=True)
+     for name in ['launch','inputs','snapshot-plan','receipt','result','outer','launcher-record']:
+         parser.add_argument('--'+name+'-sha256',required=True)
+@@ -185,8 +191,8 @@
+     for key,value in vars(args).items():
+         if key.endswith('_sha256'):require(re.fullmatch('[a-f0-9]{64}',value),'concrete reviewed SHA required')
+     manifest=read(args.source_manifest,args.source_manifest_sha256)
+-    require(set(manifest)=={'policy','files','actual53','phase45','preparation','preparation_launcher','startup_controls','retry_controls'}
+-        and manifest['policy']=='runtime05-retry-saved-audit-source-manifest-v1'
++    require(set(manifest)=={'policy','files','actual53','phase45','preparation','preparation_launcher','startup_controls','retry_controls','installation_controls','source_preflight_audit'}
++        and manifest['policy']=='runtime05-installation-saved-audit-source-manifest-v1'
+         and type(manifest['files']) is dict and len(manifest['files'])<=256
+         and sum(row['size'] for row in manifest['files'].values())<=8*2**20,
+         'bounded separately reviewed audit source manifest required')
+@@ -196,14 +202,31 @@
+     require(routes['phase']==args.phase and routes['qualified_source']==str(SOURCE)
+         and routes['attempt_source']==str(ATTEMPT), 'attempt and qualified source routes differ')
+     preparation_root=Path(routes['preparation_execution'])
+-    for key in ['preparation','preparation_launcher','startup_controls','retry_controls']:
++    for key in ['preparation','preparation_launcher','startup_controls','retry_controls','installation_controls','source_preflight_audit']:
+         ref=manifest[key]
+         require(type(ref) is dict and set(ref)=={'path','sha256'} and str(ref['path']) in rows
+             and rows[ref['path']]['sha256']==ref['sha256'], 'complete explicit actual preparation/startup reference required')
+     require(manifest['preparation']['path']==str(preparation_root/'record.json')
+         and manifest['preparation_launcher']['path']==str(ATTEMPT/'prepare_once.py')
+         and manifest['startup_controls']['path']==str(STARTUP_AUDIT)
+-        and manifest['retry_controls']['path']==str(RETRY_AUDIT), 'exact phase-specific preparation/startup routes')
++        and manifest['retry_controls']['path']==str(RETRY_AUDIT)
++        and manifest['installation_controls']['path']==str(INSTALLATION_AUDIT), 'exact phase-specific preparation/startup routes')
++    prior=routes['preflight']
++    require(same(manifest['source_preflight_audit'],dict(path=prior['report'],sha256=args.source_preflight_audit_sha256)),
++        'externally pinned completed preflight05 reference differs')
++    predecessor=read(prior['descriptor']['path'],prior['descriptor']['sha256'])
++    require(prior['descriptor']['path']==str(PREFLIGHT_SOURCE/'routes.json')
++        and predecessor['phase']=='preflight' and predecessor['attempt_source']==str(PREFLIGHT_SOURCE)
++        and all(prior[key]==predecessor[key] for key in ['packet','work','supervisor','launcher_execution','preparation_execution','report']),
++        'exact completed preflight05 routes required')
++    prior_audit=read(prior['report'],args.source_preflight_audit_sha256)
++    require(prior_audit['status']=='verified' and prior_audit['phase']=='preflight'
++        and type(prior_audit['actual_children']) is int and prior_audit['actual_children']==2
++        and same(prior_audit['attempt'],prior['descriptor']), 'actual completed preflight05 independent audit required')
++    for field,path in [('inputs_sha256',Path(prior['packet'])/'inputs.json'),('plan_sha256',Path(prior['packet'])/'plan.json'),
++                       ('receipt_sha256',Path(prior['work'])/'receipt.json'),('result_sha256',Path(prior['work'])/'source-probe/result.json'),
++                       ('outer_sha256',Path(prior['supervisor'])/'status.json'),('launcher_record_sha256',Path(prior['launcher_execution'])/'record.json')]:
++        raw(path,prior_audit[field])
+     require(manifest['actual53']['path']==str(CONTROL_AUDIT)
+         and same(manifest['phase45'],dict(path=str(PHASE_AUDIT),sha256=PHASE_SHA)), 'exact qualification routes')
+     own=[HERE/name for name in ['bootstrap.py','audit.py']] + [QUALIFIED_AUDIT/name for name in ['audit_io.py','reader.py']]
+@@ -217,7 +240,9 @@
+     qualification(manifest['startup_controls'],STARTUP_CONTROL,STARTUP_WORK,39,
+         [STARTUP/name for name in ['environment.py','audit_owner.py','test_environment.py','test_audit_owner.py']],rows)
+     qualification(manifest['retry_controls'],RETRY_CONTROL,RETRY_WORK,RETRY_COUNT,
+-        [ATTEMPT/name for name in [*RETRY_FILES,'test_retry.py']],rows)
++        [PREFLIGHT_SOURCE/name for name in [*RETRY_FILES,'test_retry.py']],rows)
++    qualification(manifest['installation_controls'],INSTALLATION_CONTROL,INSTALLATION_WORK,INSTALLATION_COUNT,
++        [ATTEMPT/name for name in [*RETRY_FILES,'test_installation.py']],rows)
+     for name,row in rows.items():raw(name,row['sha256']);require(same(OBSERVED[name],row),'complete supplemental source closure changed')
+     io_module=load('io',QUALIFIED_AUDIT/'audit_io.py',rows)
+     io_module.table(rows)
+@@ -276,10 +301,16 @@
+         and same(startup_proof['audit'],manifest['startup_controls']), 'actual startup controls differ before import')
+     retry_proof=reader.controls(source=RETRY_CONTROL,work=RETRY_WORK,
+         audit_path=manifest['retry_controls']['path'],
+-        source_paths=[ATTEMPT/name for name in RETRY_FILES],test_paths=[ATTEMPT/'test_retry.py'],
++        source_paths=[PREFLIGHT_SOURCE/name for name in RETRY_FILES],test_paths=[PREFLIGHT_SOURCE/'test_retry.py'],
+         read_json=io.read_json,read_bytes=io.read_bytes,sha=io.sha,identity=io.identity)
+     require(type(retry_proof['controls']) is int and retry_proof['controls']==RETRY_COUNT
+         and same(retry_proof['audit'],manifest['retry_controls']), 'actual separate retry controls differ before import')
++    installation_proof=reader.controls(source=INSTALLATION_CONTROL,work=INSTALLATION_WORK,
++        audit_path=manifest['installation_controls']['path'],
++        source_paths=[ATTEMPT/name for name in RETRY_FILES],test_paths=[ATTEMPT/'test_installation.py'],
++        read_json=io.read_json,read_bytes=io.read_bytes,sha=io.sha,identity=io.identity)
++    require(type(installation_proof['controls']) is int and installation_proof['controls']==INSTALLATION_COUNT
++        and same(installation_proof['audit'],manifest['installation_controls']), 'actual separate installation controls differ before import')
+     environment=load('startup_environment',STARTUP/'environment.py',io.files)
+     startup_owner=load('startup_owner',ATTEMPT/'audit_owner.py',io.files,{'environment':environment})
+     audit=load('orchestration',HERE/'audit.py',io.files)
+@@ -288,11 +319,13 @@
+     expected=dict(launch=args.launch_sha256,inputs=args.inputs_sha256,snapshot_plan=args.snapshot_plan_sha256,
+         receipt=args.receipt_sha256,result=args.result_sha256,outer=args.outer_sha256,
+         launcher_record=str(launcher/'record.json'),launcher_record_sha256=args.launcher_record_sha256,
+-        preparation=manifest['preparation'],preparation_launcher=manifest['preparation_launcher'])
++        preparation=manifest['preparation'],preparation_launcher=manifest['preparation_launcher'],
++        source_preflight_audit=manifest['source_preflight_audit'])
+     report_path=Path(routes['report']);require(not os.path.lexists(report_path),'fresh independent report')
+     result=audit.verify(phase=args.phase,expected=expected,prepared=prepared,inspection=inspection,io=io,
+         reader=reader,factory=factory,entry=entry,actual53=manifest['actual53'],
+-        startup_owner=startup_owner,actual39=manifest['startup_controls'],actual_retry=manifest['retry_controls'],guard=guard,**phase_modules)
++        startup_owner=startup_owner,actual39=manifest['startup_controls'],actual_retry=manifest['retry_controls'],
++        actual_installation=manifest['installation_controls'],guard=guard,**phase_modules)
+     result.update(pid=os.getpid(),parent_pid=os.getppid(),source_manifest=dict(path=str(args.source_manifest),
+         sha256=args.source_manifest_sha256),source_rows=rows,samples=SAMPLES)
+     # Every initial source/packet observation is checked once more; no current

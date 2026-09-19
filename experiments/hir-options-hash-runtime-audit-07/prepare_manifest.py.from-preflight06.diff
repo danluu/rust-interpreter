@@ -1,0 +1,174 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-06/prepare_manifest.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-07/prepare_manifest.py
+@@ -20,11 +20,11 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-HERE = ROOT/'experiments/hir-options-hash-runtime-audit-06'
++HERE = ROOT/'experiments/hir-options-hash-runtime-audit-07'
+ QUALIFIED_AUDIT = ROOT/'experiments/hir-options-hash-runtime-audit-05'
+-ATTEMPT = ROOT/'experiments/runtime-preflight-retry-05'
++ATTEMPT = ROOT/'experiments/runtime-installation-after-preflight05-01'
+ ROUTES_PATH = ATTEMPT/'routes.json'
+-ROUTES_SHA = '893d6102741b5206a829e2f5e130614667140b1eacc09d0c55616f7311f82e6a'
++ROUTES_SHA = '789fbe817e19c886824cda20ad66fd020e57d7a862af627986cdad40bc07605f'
+ ADAPTER = ATTEMPT
+ STARTUP_SOURCE = ROOT/'experiments/runtime04-environment-adapter-01'
+ RUNTIME = X/'experiments/hir-options-hash/runtime-installation-04'
+@@ -36,18 +36,18 @@
+ OWNED_SHA = '7021a15d3b806ab908f03276051d9d9ca9c9e208bbf8933a60229c9fb35bb68e'
+ FIELDS = ('dev', 'ino', 'mode', 'nlink', 'size', 'mtime_ns', 'ctime_ns')
+ STAMP_FIELDS = ('dev', 'ino', 'mode', 'size', 'mtime_ns', 'ctime_ns', 'nlink')
+-POLICY = 'runtime05-retry-saved-audit-source-manifest-v1'
++POLICY = 'runtime05-installation-saved-audit-source-manifest-v1'
+ # Source routes only. Reviewed source digests and the future retry-control
+ # proof chain must be bound independently before this draft can run.
+ INTEGRATION_SOURCE_PATHS = [
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/entry.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/controller.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/audit_owner.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/routes.json',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/prepare.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/prepare_once.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/launch.py',
+-    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/test_retry.py',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/entry.py',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/controller.py',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/audit_owner.py',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/routes.json',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/prepare.py',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/prepare_once.py',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/launch.py',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/test_installation.py',
+     '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01/environment.py',
+ ]
+ CORE_PATHS = tuple(HERE/name for name in ['bootstrap.py','audit.py','prepare_manifest.py','execute.py']) + tuple(
+@@ -129,9 +129,26 @@
+ }
+ 
+ 
++INSTALLATION_CHAIN = {'count': 25,
++ 'namespace': 'runtime-installation-controls-05',
++ 'audit': 'runtime-installation-controls-independent-verification-05.json',
++ 'audit_sha256': None,
++ 'execution_sha256': None,
++ 'preparation_sha256': None,
++ 'supervisor': 'runtime-installation-controls-supervisor-05',
++ 'dispatcher': 'launch_runtime_installation_controls_05_bounded.py',
++ 'launcher': 'runtime-installation-controls-launcher-05',
++ 'verifier': 'verify_runtime_installation_controls_05.py',
++ 'executor': 'execute_runtime_installation_controls_audit_05.py',
++ 'execution': 'runtime-installation-controls-verification-execution-05',
++ 'preparation': 'runtime-installation-controls-preparation-execution-05',
++ 'preparation_wrapper': 'prepare_runtime_installation_controls_05_once.py',
++ 'tests': ['test_installation.py'],
++ 'tested_source': 'runtime-installation-after-preflight05-01'}
++
+ def output_root(phase):
+-    require(phase in ['preflight'], 'exact runtime phase')
+-    return ROOT/('.work/runtime06-saved-audit-'+phase+'-manifest-01')
++    require(phase in ['installation'], 'exact runtime phase')
++    return ROOT/('.work/runtime07-saved-audit-'+phase+'-manifest-01')
+ 
+ 
+ def require(value, message):
+@@ -344,7 +361,19 @@
+                 receipt_sha256=sha(work/'receipt.json'), result_sha256=sha(work/'result.json'))
+ 
+ 
+-def runtime_preparation(phase, record_sha, launcher_sha, startup, retry):
++def source_preflight_reference(expected_sha):
++    routes = read(ROUTES_PATH, ROUTES_SHA)
++    prior = routes['preflight']
++    reference = dict(path=prior['report'], sha256=sha_value(expected_sha))
++    audit = read(reference['path'], reference['sha256'])
++    require(audit['status'] == 'verified' and audit['phase'] == 'preflight'
++            and type(audit['actual_children']) is int and audit['actual_children'] == 2
++            and same(audit['attempt'], prior['descriptor']),
++            'actual separately audited source-preflight prerequisite required')
++    return reference
++
++
++def runtime_preparation(phase, record_sha, launcher_sha, startup, retry, installation, preflight):
+     """Bind a completed producer preparation, never its own future record.
+ 
+     The seven original packet rows remain in the original prepared scope. Their
+@@ -382,14 +411,16 @@
+     require(same(invocation, read(directory/'invocation.json')) and invocation['phase'] == phase,
+             'retained original preparation invocation differs')
+     adapter = invocation['adapter']
+-    require(set(adapter) == {'preparer', 'source_manifest', 'startup_controls', 'retry_controls'}
++    require(set(adapter) == {'preparer', 'source_manifest', 'startup_controls', 'retry_controls', 'installation_controls'}
+             and same(adapter['startup_controls'], startup['audit'])
+             and same(adapter['retry_controls'], retry['audit'])
++            and same(adapter['installation_controls'], installation['audit'])
++            and same(invocation['preflight'], preflight)
+             and same(adapter['preparer'], dict(path=str(ADAPTER/'prepare.py'), sha256=sha(ADAPTER/'prepare.py'))),
+             'actual preparation startup qualification/source association differs')
+     ref = adapter['source_manifest']; require(set(ref) == {'path', 'sha256'}, 'exact startup source manifest reference')
+     manifest = read(ref['path'], ref['sha256']); rows = read(directory/'source-rows.json')
+-    require(set(manifest) == {'status', 'files'} and manifest['status'] == 'reviewed-runtime-preflight05-startup-source-closure'
++    require(set(manifest) == {'status', 'files'} and manifest['status'] == 'reviewed-runtime-installation05-startup-source-closure'
+             and type(manifest['files']) is dict and type(rows) is dict and len(rows) <= 512
+             and sum(row['size'] for row in rows.values()) <= 8*2**20,
+             'bounded actual preparation source table required')
+@@ -428,12 +459,13 @@
+ 
+ def main():
+     parser = argparse.ArgumentParser()
+-    parser.add_argument('--phase', choices=['preflight'], required=True)
++    parser.add_argument('--phase', choices=['installation'], required=True)
+     parser.add_argument('--canonical-fd', type=int, required=True)
+     parser.add_argument('--source-inventory', type=Path, required=True)
+     parser.add_argument('--source-inventory-sha256', required=True)
+     parser.add_argument('--runtime-preparation-sha256', required=True)
+     parser.add_argument('--runtime-preparation-launcher-sha256', required=True)
++    parser.add_argument('--source-preflight-audit-sha256', required=True)
+     args = parser.parse_args()
+     output = output_root(args.phase)
+     require(Path.cwd() == R and sys.dont_write_bytecode and not sys.flags.optimize
+@@ -450,7 +482,7 @@
+         ['supervisor','dispatcher','launcher','verifier','executor','execution','preparation','preparation_wrapper']),
+         'actual retry proof routes remain unbound')
+     for name in ['audit_sha256', 'execution_sha256', 'preparation_sha256']:
+-        sha_value(STARTUP_CHAIN[name]); sha_value(RETRY_CHAIN[name])
++        sha_value(STARTUP_CHAIN[name]); sha_value(RETRY_CHAIN[name]); sha_value(INSTALLATION_CHAIN[name])
+     held = os.fstat(args.canonical_fd); named = CANONICAL.lstat()
+     require(stat.S_ISREG(named.st_mode) and named.st_nlink == held.st_nlink == 1
+             and (held.st_dev, held.st_ino) == (named.st_dev, named.st_ino), 'inherited canonical descriptor differs')
+@@ -458,7 +490,7 @@
+     resource.setrlimit(resource.RLIMIT_CPU, (900, 900)); resource.setrlimit(resource.RLIMIT_FSIZE, (4*2**20, 4*2**20))
+     require(not os.path.lexists(output), 'fresh phase-specific manifest output required')
+     inventory = read(args.source_inventory, sha_value(args.source_inventory_sha256))
+-    require(set(inventory) == {'policy', 'sources'} and inventory['policy'] == 'runtime06-reviewed-sources-v1'
++    require(set(inventory) == {'policy', 'sources'} and inventory['policy'] == 'runtime07-reviewed-sources-v1'
+             and type(inventory['sources']) is dict
+             and set(inventory['sources']) == ({str(path) for path in CORE_PATHS} | set(INTEGRATION_SOURCE_PATHS)),
+             'exact separately reviewed enclosing source inventory required')
+@@ -468,12 +500,15 @@
+     proofs = [control_chain(spec) for spec in CHAINS]
+     startup = control_chain(STARTUP_CHAIN)
+     retry = control_chain(RETRY_CHAIN)
++    installation = control_chain(INSTALLATION_CHAIN)
++    preflight = source_preflight_reference(args.source_preflight_audit_sha256)
+     preparation = runtime_preparation(args.phase, args.runtime_preparation_sha256,
+-                                      args.runtime_preparation_launcher_sha256, startup, retry)
++                                      args.runtime_preparation_launcher_sha256, startup, retry, installation, preflight)
+     rows = dict(sorted(OBSERVED.items()))
+     manifest = dict(policy=POLICY, files=rows, actual53=proofs[0]['audit'], phase45=proofs[1]['audit'],
+                     preparation=preparation['preparation'], preparation_launcher=preparation['preparation_launcher'],
+-                    startup_controls=startup['audit'], retry_controls=retry['audit'])
++                    startup_controls=startup['audit'], retry_controls=retry['audit'],
++                    installation_controls=installation['audit'], source_preflight_audit=preflight)
+     for name, row in rows.items():
+         sha(name, row['sha256']); require(same(OBSERVED[name], row), 'source changed before manifest publication')
+     guard(); output.mkdir(mode=0o700)
+@@ -482,7 +517,7 @@
+         sha(name, row['sha256']); require(same(OBSERVED[name], row), 'source changed after manifest publication')
+     summary = dict(status='prepared-audit-source-manifest', phase=args.phase, pid=os.getpid(), parent_pid=os.getppid(),
+                    source_inventory=dict(path=str(args.source_inventory), sha256=args.source_inventory_sha256),
+-                   manifest=dict(path=str(output/'manifest.json'), sha256=digest), controls=[*proofs, startup, retry],
++                   manifest=dict(path=str(output/'manifest.json'), sha256=digest), controls=[*proofs, startup, retry, installation], source_preflight_audit=preflight,
+                    runtime_preparation=preparation,
+                    files=len(rows), logical_bytes=sum(row['size'] for row in rows.values()),
+                    compiler_calls=0, provider_probes=0, process_signals=0, network_calls=0,
