@@ -125,3 +125,11 @@ retired (closed-composition-nushell-{native-lines,main-native}-retirement-01),
 The two runs recover about3.65/5.41GiB free respectively (not their logical
 8.0/17.3GB totals). Do not repeat them. Only the current Nu check cache remains
 for a future exact ownership/protection audit if needed.
+
+Reconstruction01 at1bec189d passed both commands under68671/68674:1050/1245
+ordinary functions,60/69 scalar bodies and11,313,812/13,757,056 codebytes exactly;
+full operation-map spans preserved. CLOSED93895 (child in receipt),76.42s setup.
+Build01 is prepared/current:615minimum workspace tests/profile,13ignored;
+456Pythondiscovered/22skip; ordinary releaseVM then compose with adoptedcompiler.
+No original guest/latency command yet. Sources stay frozen until build closure.
+Strict121 and a new genuine-edit primary remain required. Current free about21GiB.

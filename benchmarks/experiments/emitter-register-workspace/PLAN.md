@@ -73,3 +73,17 @@ maps/assertions, and equivalent entries/resumes between ordinary and diagnostic
 emission. Reuse the seven current controls without rerunning them. Two release
 ignored observer commands; no guest execution or code publication. Preserve
 reports before later validation, and close the original terminal before edits.
+
+Reconstruction01 passes both current adopted captures at1bec189d:1050/1245
+ordinary functions and60/69 scalar bodies;11,313,812/13,757,056 bytes exactly.
+No new guests or code publication. Preserve76.42seconds setup in its receipt.
+
+Next build01 runs the complete workspace in debug/release (minimum615 passing,
+13 ignored per profile), complete Python suite (minimum456 discovered,22 skipped)
+and the ordinary release VM build. Include the seven new named controls and
+existing exhaustive scalar-copy test in each workspace result. Freeze sources;
+retain all successful command logs and the built VM before publication. Compose
+that VM with the exact adopted exporter/wrapper, under the tool-publication lock,
+and record setup cost and immutable identities. No original workload latency
+measurement in this stage. Strict121 fixture/cache/checking commands follow only
+a closed successful build, before a prospective real-edit primary.
