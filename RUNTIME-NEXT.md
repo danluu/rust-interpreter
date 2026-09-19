@@ -1,4 +1,11 @@
-LATEST: install01 CLOSED success (50286/50290, source6e88d00c), close94690passed.
+LATEST: short-clear-tail-screen-protocol01 CLOSED14controls passed, sourcee3407d33,
+supervisor87214/controller87218, independentclose50065passed. Nextcommit/pushthen
+supervise short-clear-tail-screen-es8-01 absolute screen/benchmark.py. All40rows,
+2strictcandidateprobes; close.py afterterminal. Freeze screenfolder+sources/tools.
+No initialtimingrowsrun yet. Main53111ec8 publishedclosedprofiles/install; push
+session60130 pendingverification. Runtimecandidate remainsbranch-only.
+
+LATEST: install01 CLOSED success (50286/50330, source6e88d00c), close94690passed.
 Explicittool63578118a17b8bd63fbd84c2c63fef3d6f6a8a30713cda3d1fdd0899f6d06703,
 VM087792c85b0d4fba0605a8eab43dc41905f1a5b526acde55087b9aeb826210c9,
 unchangedfrontend+121closedchecks reverified. No defaultchange. Newshort-clear-
