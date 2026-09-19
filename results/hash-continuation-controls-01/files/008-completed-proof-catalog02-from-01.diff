@@ -1,0 +1,169 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/completed-proof-snapshot-catalog-01/catalog.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/completed-proof-snapshot-catalog-02/catalog.py
+@@ -3,14 +3,17 @@
+ Callbacks authenticate frozen ordinary files/directories and the owner's full
+ recipe/result. This module neither imports snapshot writers nor performs I/O.
+ The original v1 beta/native catalog and its producer remain unchanged.
++The separate failed-owner route never manufactures a successful result.
+ """
+ import hashlib
+ import json
++import math
+ from pathlib import PurePosixPath as Path
+ import re
+ import stat
+ 
+ POLICY = 'completed-proof-snapshot-catalog-v1'
++FAILED_POLICY = 'closed-failed-proof-snapshot-catalog-v2'
+ ANCESTOR_POLICY = 'hash-proof-reference-selection-v1'
+ SNAPSHOT_POLICY = 'bounded-gzip-proof-snapshots-v2'
+ FIELDS = {'dev', 'ino', 'mode', 'size', 'mtime_ns', 'ctime_ns', 'nlink'}
+@@ -87,15 +90,44 @@
+             'exact bounded compressed blob descriptor required')
+ 
+ 
++def failed_lineage(prior):
++    """The explicit failed association must survive later successful owners."""
++    failed = [row for row in prior['predecessors'] if 'completion' in row]
++    require((prior['policy'] == FAILED_POLICY) == bool(failed), 'failed lineage policy was omitted or relabelled')
++    fields = {'role', 'source', 'evidence', 'completion', 'inherited_catalog_sha256',
++              'receipt', 'audit', 'inputs', 'plan', 'projection', 'retained_projection',
++              'manifest', 'helper', 'snapshot_root'}
++    for row in failed:
++        require(row['completion'] == 'failed' and set(row) in [fields, fields | {'file_table_base'}]
++                and token(row['inherited_catalog_sha256']), 'complete explicit failed-owner association required')
++        for name in ['source', 'evidence', 'snapshot_root']:
++            path(row[name])
++        require(path(row['snapshot_root']) == path(row['evidence'])/'source-snapshots',
++                'failed snapshot root differs from its evidence owner')
++        for name in ['receipt', 'audit', 'inputs', 'plan', 'projection', 'retained_projection',
++                     'manifest', 'helper', *(['file_table_base'] if 'file_table_base' in row else [])]:
++            reference = row[name]
++            require(type(reference) is dict and set(reference) == {'path', 'sha256'}
++                    and token(reference['sha256']), 'exact failed-owner source/proof reference required')
++            path(reference['path'])
++        source, evidence = path(row['source']), path(row['evidence'])
++        for name, expected in [('receipt', evidence/'receipt.json'), ('inputs', source/'inputs.json'),
++                               ('plan', source/'plan.json'), ('projection', source/'snapshot-plan.json'),
++                               ('retained_projection', evidence/'snapshot-plan.json'),
++                               ('manifest', evidence/'source-snapshots.json')]:
++            require(row[name]['path'] == str(expected), 'failed-owner document route was relabelled')
++
++
+ def validate_catalog(prior, accounted_roots, limits, *, file_record, directory_record):
+     """Caller rebuilds original owner qualification; recheck all physical rows."""
+     bounded_limits(limits)
+     require(set(prior) == {'policy', 'priority', 'predecessors', 'records', 'evidence_roots'}
+-            and prior['policy'] in [ANCESTOR_POLICY, POLICY]
++            and prior['policy'] in [ANCESTOR_POLICY, POLICY, FAILED_POLICY]
+             and type(prior['priority']) is list and prior['priority']
+             and len(prior['priority']) == len(set(prior['priority']))
+             and [p['role'] for p in prior['predecessors']] == prior['priority'],
+             'complete authenticated predecessor catalog required')
++    failed_lineage(prior)
+     roots = prior['evidence_roots']; names = {}; inodes = set()
+     require(type(roots) is dict and len(roots) <= 32, 'bounded explicit physical roots required')
+     require(type(prior['records']) is list and len(prior['records']) <= 32*limits['maximum_files'],
+@@ -127,7 +159,8 @@
+ 
+ def select(records, catalog):
+     """Keep every logical alias; choose one physical row per requested digest."""
+-    require(catalog['policy'] in [ANCESTOR_POLICY, POLICY], 'unknown catalog policy')
++    require(catalog['policy'] in [ANCESTOR_POLICY, POLICY, FAILED_POLICY], 'unknown catalog policy')
++    failed_lineage(catalog)
+     wanted = {}; names = set()
+     for row in records:
+         ordinary(row, path(row['path']), single_link=False)
+@@ -194,6 +227,83 @@
+             and receipt['started_at'] <= receipt['admitted_at'] <= receipt['finished_at'], 'closed passed owner/audit/result required')
+     require(validate_owner(clone(owner), clone(receipt), clone(result), clone(audit)) is True,
+             'owner-specific completed recipe is not qualified')
++    return _snapshot_catalog(prior, owner, accounted_roots, limits, source=source, evidence=evidence,
++        association=association, receipt=receipt, wire=wire, input_file=input_file, plan=plan,
++        plan_file=plan_file, snapshot=snapshot, retained=retained, manifest=manifest,
++        read_json=read_json, file_record=file_record, directory_record=directory_record,
++        expand_inputs=expand_inputs)
++
++
++def extend_failed(prior, owner, accounted_roots, limits, *, read_json, file_record,
++                  directory_record, expand_inputs, validate_failure):
++    """Reuse retained bytes of one independently audited, closed failed owner.
++
++    owner has exactly role/source/evidence/audit. No result is read, synthesized,
++    passed to a callback, or appended to its association. validate_failure must
++    prove this owner's complete actual failed raw history and explicit outer /
++    launcher closure, including any owner-specific required absent outputs.
++    Generic snapshot readback and accounting are identical to successful extend.
++    """
++    require(type(accounted_roots) is list and accounted_roots == sorted(set(accounted_roots)),
++            'complete sorted counted evidence owners required')
++    for root in accounted_roots:
++        path(root)
++        require(not any(path(root) in path(other).parents for other in accounted_roots if root != other),
++                'overlapping aggregate evidence owners')
++    validate_catalog(prior, accounted_roots, limits, file_record=file_record, directory_record=directory_record)
++    require(type(owner) is dict and set(owner) == {'role', 'source', 'evidence', 'audit'}
++            and type(owner['role']) is str and re.fullmatch('[a-z][a-z0-9_-]{0,63}', owner['role'])
++            and owner['role'] not in prior['priority'], 'new explicit failed owner without result fields required')
++    require(type(owner['audit']) is dict and set(owner['audit']) == {'path', 'sha256'}
++            and token(owner['audit']['sha256']), 'exact independent failed audit reference required')
++    source, evidence = path(owner['source']), path(owner['evidence'])
++    require(str(evidence) in accounted_roots, 'failed owner is outside counted evidence')
++    association = dict(role=owner['role'], source=str(source), evidence=str(evidence),
++                       completion='failed', inherited_catalog_sha256=sha(prior))
++    held = {}
++    def load(name, p):
++        row = ordinary(file_record(p), p)
++        value = clone(read_json(p))
++        association[name] = dict(path=str(p), sha256=row['sha256'])
++        held[str(p)] = dict(record=clone(row), document=clone(value))
++        return value, row
++    receipt, receipt_file = load('receipt', evidence/'receipt.json')
++    audit, _ = load('audit', path(owner['audit']['path']))
++    wire, input_file = load('inputs', source/'inputs.json')
++    plan, plan_file = load('plan', source/'plan.json')
++    snapshot, _ = load('projection', source/'snapshot-plan.json')
++    retained, _ = load('retained_projection', evidence/'snapshot-plan.json')
++    manifest, _ = load('manifest', evidence/'source-snapshots.json')
++    require(same(association['audit'], owner['audit']) and audit['status'] == 'verified-retained-failure'
++            and receipt['status'] == 'failed' and type(receipt.get('error')) is str and bool(receipt['error'])
++            and all(type(receipt[key]) in [int, float] and math.isfinite(receipt[key])
++                    and receipt[key] >= 0 for key in ['started_at', 'admitted_at', 'finished_at'])
++            and receipt['started_at'] <= receipt['admitted_at'] <= receipt['finished_at'],
++            'closed failed owner and actual retained-failure audit required')
++    expected = dict(receipt_sha256=receipt_file['sha256'], inputs_sha256=input_file['sha256'],
++                    plan_sha256=plan_file['sha256'], snapshot_plan_sha256=association['projection']['sha256'],
++                    source_snapshots_sha256=association['manifest']['sha256'])
++    require(same({key:audit[key] for key in expected}, expected), 'failed audit source/snapshot association differs')
++    require(validate_failure(clone(owner), clone(receipt), clone(audit)) is True,
++            'owner-specific failed history and closure are not verified')
++    answer = _snapshot_catalog(prior, owner, accounted_roots, limits, source=source, evidence=evidence,
++        association=association, receipt=receipt, wire=wire, input_file=input_file, plan=plan,
++        plan_file=plan_file, snapshot=snapshot, retained=retained, manifest=manifest,
++        read_json=read_json, file_record=file_record, directory_record=directory_record,
++        expand_inputs=expand_inputs)
++    # Freeze callbacks may decode a compact plan to its authenticated full view.
++    # Recheck both the raw file record and that exact full view; neither receives
++    # authority to mutate an already closed owner while another callback runs.
++    for name, saved in held.items():
++        require(same(ordinary(file_record(path(name)), path(name)), saved['record'])
++                and same(read_json(path(name)), saved['document']), 'failed owner changed during catalog readback')
++    return answer
++
++
++def _snapshot_catalog(prior, owner, accounted_roots, limits, *, source, evidence, association,
++                      receipt, wire, input_file, plan, plan_file, snapshot, retained, manifest,
++                      read_json, file_record, directory_record, expand_inputs):
++    """Identical successful/failed full snapshot predicates; no status conversion."""
+     require(receipt['inputs_sha256'] == input_file['sha256'] == snapshot['inputs_sha256']
+             and wire['plan_sha256'] == plan_file['sha256']
+             and association['projection']['sha256'] == association['retained_projection']['sha256']
+@@ -294,7 +404,7 @@
+     require(all(len(encoded(v)) <= limits['maximum_manifest_bytes'] for v in [projection,manifest,snapshot]),
+             'completed snapshot manifest bound exceeded')
+     roots = dict(prior['evidence_roots']); roots[str(root)] = actual_directory['identity']
+-    answer = dict(policy=POLICY, priority=prior['priority']+[owner['role']],
++    answer = dict(policy=FAILED_POLICY if prior['policy'] == FAILED_POLICY or association.get('completion') == 'failed' else POLICY, priority=prior['priority']+[owner['role']],
+                   predecessors=prior['predecessors']+[association], records=prior['records']+current_records,
+                   evidence_roots=dict(sorted(roots.items())))
+     validate_catalog(answer, accounted_roots, limits, file_record=file_record, directory_record=directory_record)

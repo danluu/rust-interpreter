@@ -1,0 +1,53 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/completed-proof-snapshot-catalog-controls-01/child.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hash-continuation-controls-01/child.py
+@@ -1,4 +1,5 @@
+ """One bounded unittest process; no compiler, provider, network or child calls."""
++import importlib.util
+ import json
+ import os
+ from pathlib import Path
+@@ -8,10 +9,11 @@
+ import unittest
+ 
+ HERE = Path(__file__).resolve().parent
+-SOURCE = HERE.with_name('completed-proof-snapshot-catalog-01')
++SOURCE = HERE.with_name('completed-proof-snapshot-catalog-02')
++EXTRA_SOURCE = HERE.with_name('hir-options-hash-driver-stage-03')
+ OWNER = HERE.parents[1]
+-WORK = OWNER / '.work/completed-proof-snapshot-catalog-controls-01'
+-MODULES = ['test_catalog']
++WORK = OWNER / '.work/hash-continuation-controls-01'
++MODULES = ['test_catalog', 'test_failed_catalog', 'test_plan_reference']
+ MAX_FILE = 256 * 1024
+ 
+ 
+@@ -51,14 +53,18 @@
+             assert path.resolve(strict=False).is_relative_to(WORK / 'tmp')
+             directories.add(str(path)); assert len(directories) <= 2048, 'fixture directory cap exceeded'
+     sys.addaudithook(audit)
+-    sys.path.insert(0, str(SOURCE))
++    sys.path[:0] = [str(SOURCE), str(EXTRA_SOURCE)]
++    module_spec = importlib.util.spec_from_file_location('plan_reference', EXTRA_SOURCE/'plan_reference.py')
++    module = importlib.util.module_from_spec(module_spec)
++    sys.modules['plan_reference'] = module
++    module_spec.loader.exec_module(module)
+     suite = unittest.defaultTestLoader.loadTestsFromNames(MODULES)
+     expected = json.loads((HERE / 'inputs.json').read_bytes())['expected_names']
+     def names(item):
+         if isinstance(item, unittest.TestSuite):
+             return [name for test in item for name in names(test)]
+         return [item.id()]
+-    assert sorted(names(suite)) == expected and len(expected) == 33
++    assert sorted(names(suite)) == expected and len(expected) == 70
+     result = unittest.TextTestRunner(verbosity=2).run(suite)
+     freeze = json.loads((HERE / 'inputs.json').read_bytes())
+     for module in list(sys.modules.values()):
+@@ -72,7 +78,7 @@
+                   maximum_file_bytes=MAX_FILE, maximum_writable_names=256,
+                   maximum_directory_names=2048, child_processes=0, compiler_calls=0)
+     (WORK / 'result.json').write_text(json.dumps(report, sort_keys=True, indent=2) + '\n')
+-    assert result.wasSuccessful() and result.testsRun == 33 and not result.skipped
++    assert result.wasSuccessful() and result.testsRun == 70 and not result.skipped
+     assert not result.expectedFailures and not result.unexpectedSuccesses
+     signal.alarm(0)
+ 

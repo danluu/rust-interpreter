@@ -1,0 +1,26 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/launch_completed_proof_snapshot_catalog_controls_01_bounded.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/launch_hash_continuation_controls_01_bounded.py
+@@ -9,17 +9,18 @@
+ import time
+ 
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+-HERE = ROOT/'experiments/completed-proof-snapshot-catalog-controls-01'
++HERE = ROOT/'experiments/hash-continuation-controls-01'
+ LAUNCH = HERE/'launch.json'
+-EXPECTED = '685b17d1877aa7cbf1b9ed7af085040d70dd53b75d9a78e1fc7510eda2d8d233'
+-WORK = ROOT/'.work/completed-proof-snapshot-catalog-controls-launch-execution-01'
+-OUTER = ROOT/'.work/experiments/completed-proof-snapshot-catalog-controls-supervisor-01'
++EXPECTED = None  # Bind only the actual prepared/reviewed launch digest.
++WORK = ROOT/'.work/hash-continuation-controls-launch-execution-01'
++OUTER = ROOT/'.work/experiments/hash-continuation-controls-supervisor-01'
+ sha = lambda p: hashlib.sha256(Path(p).read_bytes()).hexdigest()
+ assert Path.cwd() == ROOT and sys.dont_write_bytecode and not sys.flags.optimize
++assert type(EXPECTED) is str and len(EXPECTED) == 64, 'unbound launch draft; no packet read or execution'
+ assert sha(LAUNCH) == EXPECTED
+ plan = json.loads(LAUNCH.read_bytes())
+ assert sha(HERE/'inputs.json') == plan['inputs_sha256'] and sha(HERE/'run.py') == plan['helper_sha256']
+-assert plan['owner'] == str(ROOT) and plan['controls'] == 33 and plan['expected_children'] == 1
++assert plan['owner'] == str(ROOT) and plan['controls'] == 70 and plan['expected_children'] == 1
+ assert shutil.disk_usage(ROOT).free >= 16*2**30
+ assert not WORK.exists() and not WORK.is_symlink() and not OUTER.exists() and not OUTER.is_symlink()
+ WORK.mkdir()
