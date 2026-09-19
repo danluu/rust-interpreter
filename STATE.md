@@ -132,3 +132,9 @@ CLOSED91948/91951. Diagnostic3cb83f0e passed1,824/16,244observedhits, CLOSED5661
 catalogvalidation.015ms vsprior8.602;input30.151vs37.273ms (separateruns,notE2Eclaim).
 Nextinstallcandidate thenaudited8retirednamespaces(primary03five+01/02/03strict).
 Cleanupcontrollerprepared,NOTstarted; floorsunchanged, primaryneeds24GiB.
+
+Digest install0df0d368 CLOSED20907/20912; tool66f56fdaa94e8ac7220acd6806da9c99dbc8e45cd67a52e381a39afc41390b46.
+Cachecleanupc1d93da2 completed25037/25040 CLOSED36634/36638:17,546files,
+3,635,477,875logicalbytes;13,912protectedhashesunchanged;8exactnamespaces. Norepeat.
+Free31GiB. Nextsourcefrozen primary04 unchanged40command5modeprotocol+2strict.
+Maina0605c71proofpushed (notruntimeadoption). Sourcekey/newcandidate bindingsupdated.

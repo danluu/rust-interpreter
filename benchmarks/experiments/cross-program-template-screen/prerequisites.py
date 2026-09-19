@@ -16,20 +16,22 @@ def load():
         assert t['owner']==str(ROOT) and t['status']=='finished' and t['returncode']==0
         paths.extend(folder/n for n in ['closure.json','summary.json','terminal.json'])
         return s
-    candidate=closed('session-large-function-tier-install-01')
-    replay=closed('session-large-function-tier-parser-client-01')
+    candidate=closed('session-artifact-digest-install-01')
+    replay=closed('session-artifact-digest-parser-client-01')
     protocol=closed('cross-program-template-parser-protocol-01')
     assert candidate['python']['passed']==442 and candidate['python']['skipped']==22
-    assert candidate['rust']==dict(passed=652,ignored=16)
+    assert candidate['rust']==dict(passed=656,ignored=16)
     assert replay['test_invocations']==1824 and replay['verified_cache_hits']>0 and replay['kernel_cpu_reconciled']
     assert protocol['tests']==7
+    assert candidate['composition']['artifact_digest_reuse'] is replay['artifact_digest_reuse'] is True
+    assert candidate['composition']['template_key_version']==3
     assert candidate['composition']['large_function_interpreter_threshold']==replay['large_function_interpreter_threshold']==65536
     assert candidate['composition']['diagnostic_feature'] is replay['diagnostic_feature'] is False
     for s in [candidate,replay,protocol]:
         plan_path=ROOT/s['raw']/'plan.json';assert sha(plan_path)==s['plan_sha256'];paths.append(plan_path)
         for path,h in read(plan_path)['frozen'].items():
             if path.startswith(('crates/','scripts/','tests/','benchmarks/experiments/cross-program-template-screen/',
-                    'benchmarks/experiments/session-large-function-tier/')) or path in ['Cargo.toml','Cargo.lock','rust-toolchain.toml']:
+                    'benchmarks/experiments/session-artifact-digest/')) or path in ['Cargo.toml','Cargo.lock','rust-toolchain.toml']:
                 assert sha(ROOT/path)==h,('qualified source changed',path);paths.append(ROOT/path)
     base_path=ROOT/'results/scratch-scalar-main-qualification-01/summary.json';base=read(base_path);paths.append(base_path)
     assert base['status']=='passed' and base['tool_key']==BASELINE
