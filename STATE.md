@@ -50,12 +50,24 @@ profiles have the same18-instruction drift. Current sysctl facts retained before
 andafter. Independently CLOSED29386;both qualification and originalfailure are
 preserved inresults. No timing or runtimegate tolerance used.
 
-Next install new VM with byte-identical adopted exporter/wrapper and closed121
-frontendcontrols. Controllercompact-switch-adopted-install is prepared, notrun.
-New ordinary40-command primary controllercompact-switch-adopted-screen is being
-prepared and still needs tests/protocolqualification; do NOTlaunch yet. No
-session/indirect/readonly/successor composition. Preserve strictE0308/E0499,
-native/adopted/A-A/anchor arms and originalwall/CPUgates. No timinghasstarted.
+Isolated candidate is now PARKED. Installation02 CLOSED79011, source15b38630,
+tool5c78115d5ce0888367256b35fc9543e21a0964f70fab6cd77420db4b7f86fe19.
+Attempt01 rejected historical frontend closure schema before any installation;
+retainedfailure, v2 explicitlyverifieslegacylogsand17Git/retainedbindings.
+Primaryprotocol17controls CLOSED84316. Primary40commands+2strict,
+source2fa7e187,supervisor87672, independently CLOSED45718. All12tests/wrongedits,
+source/artifact/catalogchecks pass. Wall/adopted1.0075768713+AA.0341175247
+=1.0416943960 FAIL;CPU1.0078635049+AA.0155656032=1.0234291081 butCPU<=1 fails.
+Nativewall1.6956241352. No causalregressionclaim; no unchangedretiming/adoption.
+Fullguarddrafts compact-switch-adopted-guards are CANCELLED, neverqualified or
+launched. Private/parser/Nushell alsoCANCELLED/UNSTARTED. Main runtime remainsdf.
+
+Next review the alreadyclosed adopted current native and fine-cost evidence,
+then choose a distinct mechanism. Do not repeat smallswitch/generaladdress/
+registercleanup/frameclear/scalarprivateeffects withknownnegative/lowcoverage.
+Currentread-only review is evaluating lifecycle versus guestwork in the closed
+composed histories before proposing generic runtime admission; no policy chosen.
+The installed oldtools andallrawrecords remain intact. No activecommand.
 
 ## Resource work completed this turn (NEVER repeat)
 
@@ -155,9 +167,9 @@ CLOSED60900/33463/30514/96652;olderNushellcachesalreadyretired. Currentparent
 session-runtime-composition-parser-incremental-01compiler caches now retired as above.
 Historydocs/history/STATE-20260919-before-switch-isolation.md hasexactolderdetails.
 
-Main51967bb2 publishesallfourfullhistories/failedgate, preservingpeerf040a175.
-Rootbranch experiment/compact-switch-adopted-20260919;cae542ff pushed.
-No active runtime command; preparing installation and ordinary primary. Private evidence stays local.
+Main5e733dda publishesisolatedcorrectnessandstorageproofs, preservingpeer86522166.
+Rootbranch experiment/compact-switch-adopted-20260919;2fa7e187 pushed.
+No active runtime command; primary is closed and failed; review next direction. Private evidence stays local.
 Cleanerreadonly:/usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status;
 PID29541; no competingcleanup/guard/processcontrol. Recheckdisk/memory/lock.
 suggestions.txtunmodified/untrackedSHA
