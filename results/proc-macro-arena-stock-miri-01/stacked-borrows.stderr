@@ -1,0 +1,31 @@
+error: Undefined Behavior: trying to retag from <133512> for SharedReadOnly permission at alloc42823[0xffb], but that tag does not exist in the borrow stack for this location
+    --> /Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/cmp.rs:2626:27
+     |
+2626 |             PartialEq::eq(*self, *other)
+     |                           ^^^^^ this error occurs as part of retag at alloc42823[0xffb..0x1000]
+     |
+     = help: this indicates a potential bug in the program: it performed an invalid operation, but the Stacked Borrows rules it violated are still experimental
+     = help: see https://github.com/rust-lang/unsafe-code-guidelines/blob/master/wip/stacked-borrows.md for further information
+help: <133512> was created by a Unique retag at offsets [0xffb..0x1000]
+    --> /Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-stock-miri-01/stock_test.rs:9:17
+     |
+   9 |     let first = shared.alloc_str("first");
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+help: <133512> was later invalidated at offsets [0x0..0x1000] by a SharedReadOnly retag
+    --> /Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-stock-miri-01/original_arena.rs:57:23
+     |
+  57 |             new_cap = last_chunk.len().min(HUGE_PAGE / 2);
+     |                       ^^^^^^^^^^
+     = note: this is on thread `live_disjoint_mutable_strings_survive_shared_growth`
+     = note: stack backtrace:
+             0: std::cmp::impls::<impl std::cmp::PartialEq<&str> for &mut str>::eq
+                 at /Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/cmp.rs:2626:27: 2626:32
+             1: live_disjoint_mutable_strings_survive_shared_growth
+                 at /Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/macros/mod.rs:47:21: 47:46
+             2: live_disjoint_mutable_strings_survive_shared_growth::{closure#0}
+                 at /Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-stock-miri-01/stock_test.rs:6:57: 6:57
+
+note: some details are omitted, run with `MIRIFLAGS=-Zmiri-backtrace=full` for a verbose backtrace
+
+error: aborting due to 1 previous error
+

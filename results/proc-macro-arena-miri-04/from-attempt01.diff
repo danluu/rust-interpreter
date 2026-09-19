@@ -1,0 +1,33 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-miri-03/run_once.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-miri-04/run_once.py
+@@ -4,7 +4,7 @@
+ 
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ RESULT = Path(__file__).resolve().parent
+-WORK = ROOT / '.work/proc-macro-arena-miri-01'
++WORK = ROOT / '.work/proc-macro-arena-miri-02'
+ SOURCE = ROOT / 'experiments/proc-macro-arena-reuse-03'
+ TOOLS = ROOT / '.work/proc-macro-miri-tools-01'
+ TC = Path('/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin')
+@@ -14,7 +14,8 @@
+ LOCK = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+ GIB = 1024**3
+ ACTIVE = {'addr2line', 'adler2', 'cfg-if', 'getopts', 'gimli', 'hashbrown', 'libc',
+-          'memchr', 'miniz_oxide', 'object', 'rustc-demangle', 'rustc-literal-escaper'}
++          'memchr', 'miniz_oxide', 'object', 'rustc-demangle', 'rustc-literal-escaper',
++          'foldhash', 'cc', 'find-msvc-tools', 'shlex', 'rand', 'rand_core', 'rand_xorshift'}
+ PINS = {
+     SOURCE / 'patched/arena.rs': '8466807f8c6602cdb20d81995ef50f26e8e1eeb48a97847825cd5b61a10c469b',
+     SOURCE / 'arena_unit_tests.rs': '14710e15921895bed5e67055099682f54b6af861c0717e6dd2b6c4a770fe5aad',
+@@ -137,9 +138,9 @@
+         copy(Path('index') / REGISTRY_ID / '.cache' / index)
+         if name in ACTIVE:
+             copy(Path('cache') / REGISTRY_ID / (name + '-' + package['version'] + '.crate'), package['checksum'])
+-    assert len(seed) == 44
++    assert len(seed) == 51
+     save('offline-seed.json', {'files': seed, 'registry_packages': 31,
+-                             'darwin_archive_packages': sorted(ACTIVE), 'network_permitted': False})
++                             'cached_lockfile_archive_packages': sorted(ACTIVE), 'network_permitted': False})
+     with LOCK.open('r+') as lock:
+         deadline = time.monotonic() + 600
+         while True:

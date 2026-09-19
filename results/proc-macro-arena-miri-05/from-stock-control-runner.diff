@@ -1,0 +1,61 @@
+--- stock01/run_once.py
++++ miri05/run_once.py
+@@ -1,11 +1,11 @@
+-"""Two alias checkers over one focused test including exact stock Arena."""
++"""Both alias checkers over ten actual corrected Arena04 tests."""
+ from pathlib import Path
+ import fcntl, hashlib, json, os, resource, shutil, subprocess, time, tomllib, traceback
+ 
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ RESULT = Path(__file__).resolve().parent
+-WORK = ROOT / '.work/proc-macro-arena-stock-miri-01'
+-SOURCE = RESULT
++WORK = ROOT / '.work/proc-macro-arena-miri-03'
++SOURCE = ROOT / 'experiments/proc-macro-arena-reuse-04'
+ SYSROOT = ROOT / '.work/proc-macro-arena-miri-02/sysroot'
+ TOOLS = ROOT / '.work/proc-macro-miri-tools-01'
+ TC = Path('/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin')
+@@ -14,7 +14,7 @@
+ REGISTRY_ID = 'index.crates.io-1949cf8c6b5b557f'
+ LOCK = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+ GIB = 1024**3
+-PINS = {Path(k): v for k, v in {'/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-03/original/arena.rs': 'ce4f02d336d885145e8bbe5770781ebf11af7ac2488d59c8d930fdab62e9376e', '/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/library/proc_macro/src/bridge/arena.rs': 'ce4f02d336d885145e8bbe5770781ebf11af7ac2488d59c8d930fdab62e9376e', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-stock-miri-01/original_arena.rs': 'ce4f02d336d885145e8bbe5770781ebf11af7ac2488d59c8d930fdab62e9376e', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-stock-miri-01/stock_test.rs': 'a4b0cdcd570b7db9abe22e338cb2809ac7cb299db86d65cb1eb1ed0de83ea39a', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-miri-tools-01/bin/miri': '8f20c45b352ceffd3495a23c90b62653ee46a671979e66a264ebcb4c6a25105f', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-miri-04/setup-record.json': 'ccf4049e269b2b41457bf50032cea72ea1f517dff8688206c0d458fafa453c00', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-miri-04/result.json': '5ae60bb920563e2face6157b81c3760ba10c81d7f80d5215727e939be49e98a8'}.items()}
++PINS = {Path(k): v for k, v in {'/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/patched/arena.rs': 'a2b05d25db81e5703fa5872e4b7961774a961a3360c0420daf8d2c740e4e5fa2', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/arena_unit_tests.rs': '8a35ff5739e53cb4984f56d299888ce1cf99ad03aff2a9211777438a4e0141d6', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-miri-tools-01/bin/miri': '8f20c45b352ceffd3495a23c90b62653ee46a671979e66a264ebcb4c6a25105f', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-miri-04/setup-record.json': 'ccf4049e269b2b41457bf50032cea72ea1f517dff8688206c0d458fafa453c00', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-miri-04/result.json': '5ae60bb920563e2face6157b81c3760ba10c81d7f80d5215727e939be49e98a8', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-stock-miri-01/result.json': '700fdc0db828a3ef85e89ea7cda9f4b41033dea1301488759d1e4b07490128ec'}.items()}
+ 
+ def sha(path):
+     return hashlib.sha256(path.read_bytes()).hexdigest()
+@@ -120,11 +120,11 @@
+         admitted = time.time()
+         save('admission.json', {'admitted_at': admitted, 'free_bytes': gate(), 'parent_pid': os.getpid()})
+         base = [str(TOOLS / 'bin/miri'), '--sysroot', str(SYSROOT), '--test', '--edition=2024']
+-        target = [str(SOURCE / 'stock_test.rs'), '--', '--test-threads=1']
++        target = [str(SOURCE / 'arena_unit_tests.rs'), '--', '--test-threads=1']
+         for label, flags in [('stacked-borrows', []), ('tree-borrows', ['-Zmiri-tree-borrows'])]:
+             record = run(label, base + flags + target, 180)
+             checker_passed[label] = (record['returncode'] == 0 and
+-                'test result: ok. 1 passed; 0 failed; 0 ignored;' in (RESULT / (label + '.stdout')).read_text())
++                'test result: ok. 10 passed; 0 failed; 0 ignored;' in (RESULT / (label + '.stdout')).read_text())
+     released = time.time()
+ except BaseException:
+     failure = traceback.format_exc()
+@@ -136,11 +136,11 @@
+     after = {str(p): row(p) for p in source_paths}
+     save('source-after.json', after)
+     unchanged = before == after
+-    result = {'status': 'completed' if failure is None and unchanged and len(commands) == 2 else 'failed',
++    result = {'status': 'passed' if failure is None and unchanged and len(commands) == 2 and all(checker_passed.values()) else 'failed',
+               'finished_at': time.time(), 'canonical_lock_admitted_at': admitted,
+               'canonical_lock_released_at': released, 'sources_unchanged': unchanged,
+               'reused_successful_sysroot': str(SYSROOT), 'both_checkers_observed': len(commands) == 2,
+-              'completed_commands': len(commands), 'arena_tests_per_checker': 1,
++              'completed_commands': len(commands), 'arena_tests_per_checker': 10,
+               'stacked_borrows_passed': checker_passed['stacked-borrows'],
+               'tree_borrows_passed': checker_passed['tree-borrows'],
+               'workspace_usage': disk_usage(WORK), 'free_bytes_after': shutil.disk_usage(ROOT).free,
+@@ -151,5 +151,5 @@
+     save('manifest.json', manifest)
+     print(json.dumps({'status': result['status'], 'result_sha256': sha(RESULT / 'result.json'),
+                       'work': str(WORK), 'usage': result['workspace_usage']}), flush=True)
+-    if result['status'] != 'completed':
++    if result['status'] != 'passed':
+         raise SystemExit(1)

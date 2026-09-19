@@ -1,0 +1,31 @@
+error: Undefined Behavior: trying to retag from <899122> for SharedReadOnly permission at alloc318603[0xffb], but that tag does not exist in the borrow stack for this location
+    --> /Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/cmp.rs:2626:27
+     |
+2626 |             PartialEq::eq(*self, *other)
+     |                           ^^^^^ this error occurs as part of retag at alloc318603[0xffb..0x1000]
+     |
+     = help: this indicates a potential bug in the program: it performed an invalid operation, but the Stacked Borrows rules it violated are still experimental
+     = help: see https://github.com/rust-lang/unsafe-code-guidelines/blob/master/wip/stacked-borrows.md for further information
+help: <899122> was created by a Unique retag at offsets [0xffb..0x1000]
+    --> /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-03/patched/arena.rs:246:21
+     |
+ 246 |         let first = shared.alloc_str("first");
+     |                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+help: <899122> was later invalidated at offsets [0x0..0x1000] by a SharedReadOnly retag
+    --> /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-03/patched/arena.rs:85:23
+     |
+  85 |             new_cap = last_chunk.len().min(HUGE_PAGE / 2);
+     |                       ^^^^^^^^^^
+     = note: this is on thread `arena::reuse_tests::retained_disjoint_mutable_strings_survive_s`
+     = note: stack backtrace:
+             0: std::cmp::impls::<impl std::cmp::PartialEq<&str> for &mut str>::eq
+                 at /Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/cmp.rs:2626:27: 2626:32
+             1: arena::reuse_tests::retained_disjoint_mutable_strings_survive_shared_growth
+                 at /Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/macros/mod.rs:47:21: 47:46
+             2: arena::reuse_tests::retained_disjoint_mutable_strings_survive_shared_growth::{closure#0}
+                 at /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-03/patched/arena.rs:241:65: 241:65
+
+note: some details are omitted, run with `MIRIFLAGS=-Zmiri-backtrace=full` for a verbose backtrace
+
+error: aborting due to 1 previous error
+

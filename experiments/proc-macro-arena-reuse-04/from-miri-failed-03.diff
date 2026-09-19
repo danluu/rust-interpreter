@@ -1,0 +1,103 @@
+--- proc-macro-arena-reuse-03/patched/arena.rs
++++ proc-macro-arena-reuse-04/patched/arena.rs
+@@ -9,7 +9,7 @@
+ use std::ops::Range;
+ use std::{cmp, ptr, slice};
+ 
+-// Keep grow's original PAGE constant and implementation unchanged.
++// Keep the original growth page size when selecting a retained chunk.
+ const RETAINED_PAGE: usize = 4096;
+ 
+ /// A minimal arena allocator inspired by `rustc_arena::DroplessArena`.
+@@ -24,6 +24,8 @@
+     start: Cell<*mut MaybeUninit<u8>>,
+     end: Cell<*mut MaybeUninit<u8>>,
+     chunks: RefCell<Vec<Box<[MaybeUninit<u8>]>>>,
++    // Read growth metadata without borrowing bytes containing live allocations.
++    chunk_capacity: Cell<usize>,
+ }
+ 
+ impl Arena {
+@@ -32,6 +34,7 @@
+             start: Cell::new(ptr::null_mut()),
+             end: Cell::new(ptr::null_mut()),
+             chunks: RefCell::new(Vec::new()),
++            chunk_capacity: Cell::new(0),
+         }
+     }
+ 
+@@ -41,6 +44,7 @@
+     /// reset. Shrinking the ownership vector may reallocate and is best-effort;
+     /// its capacity is not guaranteed to become exactly one.
+     pub(crate) fn reset(&mut self) {
++        self.chunk_capacity.set(0);
+         self.start.set(ptr::null_mut());
+         self.end.set(ptr::null_mut());
+ 
+@@ -54,6 +58,7 @@
+             let Range { start, end } = chunks[0].as_mut_ptr_range();
+             self.start.set(start);
+             self.end.set(end);
++            self.chunk_capacity.set(RETAINED_PAGE);
+         } else {
+             // An oversized first request retains neither its bytes nor vector.
+             *chunks = Vec::new();
+@@ -77,12 +82,13 @@
+             };
+ 
+         let mut chunks = self.chunks.borrow_mut();
++        let previous_capacity = self.chunk_capacity.get();
+         let mut new_cap;
+-        if let Some(last_chunk) = chunks.last_mut() {
++        if previous_capacity != 0 {
+             // If the previous chunk's len is less than HUGE_PAGE
+             // bytes, then this chunk will be least double the previous
+             // chunk's size.
+-            new_cap = last_chunk.len().min(HUGE_PAGE / 2);
++            new_cap = previous_capacity.min(HUGE_PAGE / 2);
+             new_cap *= 2;
+         } else {
+             new_cap = PAGE;
+@@ -94,6 +100,7 @@
+         let Range { start, end } = chunk.as_mut_ptr_range();
+         self.start.set(start);
+         self.end.set(end);
++        self.chunk_capacity.set(new_cap);
+     }
+ 
+     /// Allocates a byte slice with specified size from the current memory
+@@ -297,4 +304,34 @@
+         assert_reset_storage(&arena, true);
+         assert_eq!(arena.alloc_str("after panic"), "after panic");
+     }
++
++    #[test]
++    fn recorded_capacity_tracks_empty_growth_retention_and_oversized_reset() {
++        let mut arena = Arena::new();
++        assert_eq!(arena.chunk_capacity.get(), 0);
++        arena.alloc_str("");
++        assert_eq!(arena.chunk_capacity.get(), 0);
++        arena.alloc_str("seed");
++        assert_eq!(arena.chunk_capacity.get(), PAGE);
++        arena.reset();
++        assert_eq!(arena.chunk_capacity.get(), PAGE);
++        arena.alloc_str(&"a".repeat(PAGE));
++        assert_eq!(arena.chunk_capacity.get(), PAGE);
++        arena.alloc_str("b");
++        assert_eq!(arena.chunk_capacity.get(), PAGE * 2);
++        arena.alloc_str(&"c".repeat(PAGE * 4 + 19));
++        assert_eq!(arena.chunk_capacity.get(), PAGE * 4 + 19);
++        arena.reset();
++        assert_eq!(arena.chunk_capacity.get(), PAGE);
++
++        let mut oversized = Arena::new();
++        oversized.alloc_str(&"x".repeat(PAGE + 1));
++        assert_eq!(oversized.chunk_capacity.get(), PAGE + 1);
++        oversized.reset();
++        assert_eq!(oversized.chunk_capacity.get(), 0);
++        oversized.alloc_str("");
++        assert_eq!(oversized.chunk_capacity.get(), 0);
++        oversized.alloc_str("small");
++        assert_eq!(oversized.chunk_capacity.get(), PAGE);
++    }
+ }

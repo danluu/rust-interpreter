@@ -1,0 +1,49 @@
+error: Undefined Behavior: write access through <206406> at alloc43221[0xffb] is forbidden
+   --> /Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/mod.rs:790:9
+    |
+790 |         *self = self.to_ascii_lowercase();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Undefined Behavior occurred here
+    |
+    = help: this indicates a potential bug in the program: it performed an invalid operation, but the Tree Borrows rules it violated are still experimental
+    = help: see https://github.com/rust-lang/unsafe-code-guidelines/blob/master/wip/tree-borrows.md for further information
+    = help: the accessed tag <206406> is a child of the conflicting tag <131027>
+    = help: the conflicting tag <131027> has state Frozen which forbids this child write access
+help: the accessed tag <206406> was created here
+   --> /Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-stock-miri-01/stock_test.rs:17:5
+    |
+ 17 |     first.make_ascii_lowercase();
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: the conflicting tag <131027> was created here, in the initial state Reserved
+   --> /Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-stock-miri-01/stock_test.rs:9:17
+    |
+  9 |     let first = shared.alloc_str("first");
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+help: the conflicting tag <131027> later transitioned to Unique due to a child write access at offsets [0xffb..0xffc]
+   --> /Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-stock-miri-01/stock_test.rs:11:5
+    |
+ 11 |     first.make_ascii_uppercase();
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: this transition corresponds to the first write to a 2-phase borrowed mutable reference
+help: the conflicting tag <131027> later transitioned to Frozen due to a reborrow (acting as a foreign read access) at offsets [0x0..0x1000]
+   --> /Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-stock-miri-01/original_arena.rs:57:23
+    |
+ 57 |             new_cap = last_chunk.len().min(HUGE_PAGE / 2);
+    |                       ^^^^^^^^^^
+    = help: this transition corresponds to a loss of write permissions
+    = note: this is on thread `live_disjoint_mutable_strings_survive_shared_growth`
+    = note: stack backtrace:
+            0: core::num::<impl u8>::make_ascii_lowercase
+                at /Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/mod.rs:790:9: 790:42
+            1: core::slice::ascii::<impl [u8]>::make_ascii_lowercase
+                at /Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/slice/ascii.rs:212:13: 212:40
+            2: core::str::<impl str>::make_ascii_lowercase
+                at /Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/str/mod.rs:2969:9: 2969:34
+            3: live_disjoint_mutable_strings_survive_shared_growth
+                at /Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-stock-miri-01/stock_test.rs:17:5: 17:33
+            4: live_disjoint_mutable_strings_survive_shared_growth::{closure#0}
+                at /Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-stock-miri-01/stock_test.rs:6:57: 6:57
+
+note: some details are omitted, run with `MIRIFLAGS=-Zmiri-backtrace=full` for a verbose backtrace
+
+error: aborting due to 1 previous error
+

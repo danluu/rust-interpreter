@@ -1,0 +1,250 @@
+{
+  "aliasing_assessment": "Saved Miri specifically invalidated live mutable allocations when old grow called last_chunk.len(), creating a shared slice over that allocation. New grow does not acquire a reference to an old chunk; reading Cell touches only interior metadata. Existing Box ownership and push/new-chunk cursor operations remain. This removes the identified operation but is not a general alias-model soundness proof.",
+  "capacity_state": [
+    {
+      "reason": "Private Cell starts0; empty alloc_str returns without grow, preserving empty chunk ownership and null cursors.",
+      "transition": "new / zero-length allocation"
+    },
+    {
+      "reason": "Read only integer previous_capacity; same min(HUGE_PAGE/2)*2 and max(additional,cap) arithmetic. Nonzero first capacity remains PAGE or larger. Append the newly allocated Box, acquire its fresh cursor range, set both cursors, then record new_cap.",
+      "transition": "grow"
+    },
+    {
+      "reason": "RefCell borrow, allocation/layout or vector growth failure occurs before cursor/Cell writes. Prior successful capacity and cursors remain unchanged. No new destructor/user callback is introduced.",
+      "transition": "pre-append failure"
+    },
+    {
+      "reason": "Exclusive &mut Arena clears Cell and cursors first, retains only first4096-byte chunk, truncates/shrinks before acquiring new pointers, then restoresCell4096. No outstanding safe returned borrow can coexist with reset; Interner clears its extended-lifetime references first.",
+      "transition": "retained reset"
+    },
+    {
+      "reason": "Exclusive reset sets Cell0 and null cursors, replaces vector with emptyVec, and never restores capacity. Next nonempty allocation returns to first-page growth rule.",
+      "transition": "empty / oversized-first reset"
+    },
+    {
+      "reason": "Cell moves with the unchanged original Vec<Box> ownership representation. Existing caught-unwind and moved-arena test bodies remain exact; source inspection establishes no new reset path or destructor hook. Allocation-abort behavior and runtime aliasing still require actual qualification.",
+      "transition": "caught caller unwind / populated arena movement"
+    }
+  ],
+  "compiler_calls": 0,
+  "miri_calls": 0,
+  "performance_claim": false,
+  "required_next": "Parent-authorized native and Miri qualification of exact04; retain03 native success and Miri failure independently. Stock-control result remains a separate observation, not assumed here.",
+  "review_scope": "Exact successor03-to04 source delta, complete arena implementation/test functions, unchanged interner clear/source, and saved Stacked Borrows diagnostic. No compiler/import/Miri execution.",
+  "reviewed_at": 1789817749.967975,
+  "source_edits": 0,
+  "sources_and_evidence": {
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-03/patched/arena.rs": {
+      "bytes": 11072,
+      "identity": {
+        "ctime_ns": 1789817074412410872,
+        "dev": 16777229,
+        "ino": 1056580490,
+        "mode": 33152,
+        "mtime_ns": 1789817074412410872,
+        "nlink": 1,
+        "size": 11072
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-03/patched/arena.rs",
+      "sha256": "8466807f8c6602cdb20d81995ef50f26e8e1eeb48a97847825cd5b61a10c469b"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-03/patched/symbol.rs": {
+      "bytes": 9042,
+      "identity": {
+        "ctime_ns": 1789817005803799577,
+        "dev": 16777229,
+        "ino": 1056580489,
+        "mode": 33152,
+        "mtime_ns": 1789817005803799577,
+        "nlink": 1,
+        "size": 9042
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-03/patched/symbol.rs",
+      "sha256": "086c4712892a0377af36274941cce3585cf306290ebbb06158ccf4789bdbe3ba"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/README.md": {
+      "bytes": 2937,
+      "identity": {
+        "ctime_ns": 1789817678471617693,
+        "dev": 16777229,
+        "ino": 1056610590,
+        "mode": 33152,
+        "mtime_ns": 1789817678471617693,
+        "nlink": 1,
+        "size": 2937
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/README.md",
+      "sha256": "ef2327bc04b72a4ea564af1872969d1a24cc082738a2735be16d860f5e4447cc"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/arena-reuse.patch": {
+      "bytes": 12560,
+      "identity": {
+        "ctime_ns": 1789817678523373379,
+        "dev": 16777229,
+        "ino": 1056610593,
+        "mode": 33152,
+        "mtime_ns": 1789817678523373379,
+        "nlink": 1,
+        "size": 12560
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/arena-reuse.patch",
+      "sha256": "e95401b64ee6f5be07aa73f06c80d6709482471a1b7b6a58c07c6c62cfe07b6f"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/arena_unit_tests.rs": {
+      "bytes": 213,
+      "identity": {
+        "ctime_ns": 1789817614577982157,
+        "dev": 16777229,
+        "ino": 1056594492,
+        "mode": 33152,
+        "mtime_ns": 1789817614577982157,
+        "nlink": 1,
+        "size": 213
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/arena_unit_tests.rs",
+      "sha256": "8a35ff5739e53cb4984f56d299888ce1cf99ad03aff2a9211777438a4e0141d6"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/from-miri-failed-03.diff": {
+      "bytes": 3893,
+      "identity": {
+        "ctime_ns": 1789817678523435170,
+        "dev": 16777229,
+        "ino": 1056610594,
+        "mode": 33152,
+        "mtime_ns": 1789817678523435170,
+        "nlink": 1,
+        "size": 3893
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/from-miri-failed-03.diff",
+      "sha256": "03e86b204d82733eb53ce31a0a84d099384af606d43e2e0aa1e3c1b4cc3b5696"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/original/arena.rs": {
+      "bytes": 4384,
+      "identity": {
+        "ctime_ns": 1789817614577448906,
+        "dev": 16777229,
+        "ino": 1056594487,
+        "mode": 33152,
+        "mtime_ns": 1789817614577448906,
+        "nlink": 1,
+        "size": 4384
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/original/arena.rs",
+      "sha256": "ce4f02d336d885145e8bbe5770781ebf11af7ac2488d59c8d930fdab62e9376e"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/original/symbol.rs": {
+      "bytes": 6908,
+      "identity": {
+        "ctime_ns": 1789817614577653115,
+        "dev": 16777229,
+        "ino": 1056594488,
+        "mode": 33152,
+        "mtime_ns": 1789817614577653115,
+        "nlink": 1,
+        "size": 6908
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/original/symbol.rs",
+      "sha256": "75f80e816a8f4ded235d57b50914bc4f1854e8696a8dd160a75e4e0d46ae1869"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/patched/arena.rs": {
+      "bytes": 12636,
+      "identity": {
+        "ctime_ns": 1789817630476544713,
+        "dev": 16777229,
+        "ino": 1056594490,
+        "mode": 33152,
+        "mtime_ns": 1789817630476544713,
+        "nlink": 1,
+        "size": 12636
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/patched/arena.rs",
+      "sha256": "a2b05d25db81e5703fa5872e4b7961774a961a3360c0420daf8d2c740e4e5fa2"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/patched/symbol.rs": {
+      "bytes": 9042,
+      "identity": {
+        "ctime_ns": 1789817614577914990,
+        "dev": 16777229,
+        "ino": 1056594491,
+        "mode": 33152,
+        "mtime_ns": 1789817614577914990,
+        "nlink": 1,
+        "size": 9042
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/patched/symbol.rs",
+      "sha256": "086c4712892a0377af36274941cce3585cf306290ebbb06158ccf4789bdbe3ba"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/source-review.json": {
+      "bytes": 6027,
+      "identity": {
+        "ctime_ns": 1789817678526776427,
+        "dev": 16777229,
+        "ino": 1056610595,
+        "mode": 33152,
+        "mtime_ns": 1789817678526776427,
+        "nlink": 1,
+        "size": 6027
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-reuse-04/source-review.json",
+      "sha256": "49e5007ad5adddcf1f05eeb09e4348c169d4a7020e2638943f8d8700ccf6c6cf"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-miri-04/result.json": {
+      "bytes": 1132,
+      "identity": {
+        "ctime_ns": 1789817470801031463,
+        "dev": 16777229,
+        "ino": 1056590751,
+        "mode": 33152,
+        "mtime_ns": 1789817470801031463,
+        "nlink": 1,
+        "size": 1132
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-miri-04/result.json",
+      "sha256": "5ae60bb920563e2face6157b81c3760ba10c81d7f80d5215727e939be49e98a8"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-miri-04/stacked-borrows.stderr": {
+      "bytes": 2404,
+      "identity": {
+        "ctime_ns": 1789817470650634540,
+        "dev": 16777229,
+        "ino": 1056590736,
+        "mode": 33152,
+        "mtime_ns": 1789817470650634540,
+        "nlink": 1,
+        "size": 2404
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-miri-04/stacked-borrows.stderr",
+      "sha256": "1d4d68d8b4ec020fbdb04b2db4070424dce8a73c98cf4c4dc1042614d237fd08"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-miri-04/stacked-borrows.stdout": {
+      "bytes": 659,
+      "identity": {
+        "ctime_ns": 1789817470094672020,
+        "dev": 16777229,
+        "ino": 1056590735,
+        "mode": 33152,
+        "mtime_ns": 1789817470094672020,
+        "nlink": 1,
+        "size": 659
+      },
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-miri-04/stacked-borrows.stdout",
+      "sha256": "cde7c4874ab44956088e5d954fb3eb94a7f39ed48d29c7ce235b14b765001317"
+    }
+  },
+  "status": "clear-source-review-runtime-qualification-pending",
+  "test_calls": 0,
+  "tests": {
+    "executed_by_reviewer": 0,
+    "new_case": "recorded_capacity_tracks_empty_growth_retention_and_oversized_reset",
+    "standalone": 10,
+    "whole_proc_macro": 13
+  },
+  "verified_preservation": {
+    "interner_source_and_three_tests_exact": true,
+    "new_invariant_test_reads_only_Cell_not_payload": true,
+    "nine_prior_test_bodies_exact": true,
+    "no_new_unsafe_block": true,
+    "regenerated_delta_exact": true,
+    "three_original_allocation_write_bodies_exact": true
+  }
+}
