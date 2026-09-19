@@ -49,14 +49,18 @@ integer proof passes8 controls/profile and6 traffic controls, including3,800
 actual integer-semantic comparisons. It covers33/1,933 and13/1,429 upper-store
 samples. Defer a consumer-only emitter; both studies and sources are retained.
 
-Current diagnostic: `benchmarks/experiments/narrow-register-storage`. Size an
+Closed diagnostic: `benchmarks/experiments/narrow-register-storage`. It sized an
 implicit-zero backing representation using the unchanged whole-function width
 proof, exact native high-word traffic and a conservative repair cost from current
 interpreted-PC counts. Native high reads would need to synthesize zero and VM
 reads would need logical-value restoration; simply omitting stores is unsafe.
 No representation, native emission, interpreter or initialization change exists.
-The new typed observer and3 cost controls remain test-only;4 existing width tests
-and6 traffic controls qualify the census before any decision.
+Seven commands pass:7Rustcontrols/profile and6trafficcontrols. Exact native
+high-word traffic covers126/1,933 and119/1,429samples, against6.54M/8.51M
+conservative interpreted-read repairs. No guest was rerun. Initial admission
+failed45seconds waiting for peer8767; admission02 completed normally79763/79766.
+Next implement the bounded read/repair contract in
+`docs/IMPLICIT-ZERO-REGISTER-DESIGN-20260918.md`, then qualify before timing.
 
 [Build](results/shared-cold-tail-build-01/ASSESSMENT.md),
 [strict/cache](results/shared-cold-tail-qualification-01/ASSESSMENT.md),
@@ -107,7 +111,7 @@ is limited to correctness profiles; all end-to-end timings use normal entropy.
  admission and safe closed-cache retirement only after preceding guards pass.
 -Do not signal/control any peer/user-owned process, terminal, agent or worktree.
  Compiler/Cargo/parser-exporter and application-admission work belongs to peers.
- Root publication worktree `.work/publication-main` was clean at1dec3a58; fetch
+ Root publication worktree `.work/publication-main` was clean at a77505f5; fetch
  before publishing, preserve concurrent main commits and never force-push.
 -No new AWS service/model/subscription/purchase or billing fallback. No browser.
 -The saved goal remains paused. Continue manually without goal tools.

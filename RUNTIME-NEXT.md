@@ -11,14 +11,15 @@ The private host-frame pairing census is closed and deferred: its two potential
 memory instructions together cover only9/1,933 and9/1,429 generated samples.
 No runtime prototype or timing follows. [Census](results/native-frame-access-census-01/ASSESSMENT.md).
 
-Next inspect a bounded typed proof that a virtual register's high64bits are never
-read by any operation in its function. Start with explicit low-only address and
-length consumers; treat all other roles conservatively as full-width. Include
-unreachable operations, aliased operand roles and unknown uses. This must not
-assume reused storage contains zero, and cannot change indirect-function-pointer
-validation, full-width assertions or control values. Census actual saved upper
-stores before designing a runtime change. Preserve initialization, VM boundaries,
-error order and all existing budgets. No production omission is admitted yet.
+The consumer-only upper-store proof is closed and deferred (33/13samples).
+The broader logical-width census covers126/1,933 and119/1,429 generated samples,
+with conservative6.54M/8.51M interpreter read repairs. Its7commands,7Rustcontrols
+per profile and6trafficcontrols pass; both current profiles and retained captures
+reconcile exactly. Prototype implicit-zero high words with a complete native
+and interpreter read contract. Preserve stale-storage safety, initial-zero
+semantics, all budgets/faults and strict checking. Main remains unchanged.
+[Contract](docs/IMPLICIT-ZERO-REGISTER-DESIGN-20260918.md),
+[census](results/narrow-register-storage-census-01/ASSESSMENT.md).
 
 The previous indirect/readonly/successor composition is rejected after its
 parser CPU margin failed1.05. The narrower address/budget/spill/scalar variants
