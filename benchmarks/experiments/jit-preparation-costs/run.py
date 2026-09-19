@@ -12,7 +12,7 @@ from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
 from interpreter import installed_tools
 from measure import BASELINE,measure
-RUN='jit-preparation-costs-01'
+RUN='jit-preparation-costs-02'
 SOURCE='fca687ebac0ea9374a1426addd01169fe707f608'
 
 
@@ -29,6 +29,11 @@ def main():
             name=str(path.relative_to(ROOT));assert name not in frozen or frozen[name]==digest
             frozen[name]=digest
             return read(path) if path.suffix=='.json' else digest
+        failed_path=ROOT/'results/jit-preparation-costs-01/summary.json'
+        failed_closed=bind(failed_path.with_name('closure.json'))
+        failed=bind(failed_path,failed_closed['summary_sha256'])
+        assert failed_closed['status']=='closed' and failed_closed['all_hashes_verified']
+        assert failed['status']=='observer-failed' and failed['new_guest_commands']==0
         adopted=bind(ROOT/'results/scratch-scalar-main-qualification-01/summary.json')
         assert adopted['status']=='passed' and adopted['tool_key']==BASELINE
         tools,key=installed_tools(BASELINE);assert key==BASELINE
@@ -80,7 +85,7 @@ def main():
         raw=ROOT/'.work'/RUN;raw.mkdir(exist_ok=False)
         write(raw/'plan.json',dict(owner=str(ROOT),source_revision=revision,frozen=frozen,
             controller_command=[sys.executable,*sys.argv],required_free_gib=12,minimum_child_gib=8,
-            adopted_tool_key=BASELINE,restored_rust_source=SOURCE,expected_controls=6,
+            adopted_tool_key=BASELINE,restored_rust_source=SOURCE,expected_controls=7,
             retained_edited_receipts=95,new_guest_commands=0,compiler_build_commands=0,
             performance_measurement=False))
         require_space(ROOT,8)
@@ -89,7 +94,7 @@ def main():
         (raw/'controls.stdout').write_text(out);(raw/'controls.stderr').write_text(err)
         write(raw/'controls.json',dict(pid=child.pid,returncode=child.returncode,
             stdout_sha256=sha(raw/'controls.stdout'),stderr_sha256=sha(raw/'controls.stderr')))
-        assert child.returncode==0 and 'Ran 6 tests' in err and err.rstrip().endswith('OK'),err
+        assert child.returncode==0 and 'Ran 7 tests' in err and err.rstrip().endswith('OK'),err
         cases=[]
         fields=['command_seconds','execution_seconds','suite_seconds','compile_interval_sum_seconds',
             'largest_worker_compile_seconds','compile_interval_sum_over_command','compile_interval_sum_over_execution',
@@ -102,12 +107,12 @@ def main():
         assert sum(c['receipts'] for c in cases)==95
         assert all(sha(ROOT/p)==h for p,h in frozen.items())
         result=ROOT/'results'/RUN;result.mkdir(exist_ok=False)
-        write(result/'summary.json',dict(status='passed',source_revision=revision,cases=cases,controls=6,
+        write(result/'summary.json',dict(status='passed',source_revision=revision,cases=cases,controls=7,
             retained_edited_receipts=95,adopted_tool_key=BASELINE,new_guest_commands=0,compiler_build_commands=0,
             production_runtime_changes=0,private_details_redacted=True,performance_measurement=False,
             interval_scope='Nested elapsed compilation and constructor intervals; worker sums overlap, are not CPU time and are not measured command savings.',
             raw=str(raw.relative_to(ROOT)),plan_sha256=sha(raw/'plan.json'),controls_sha256=sha(raw/'controls.json')))
-        print('PASS six controls and95 retained edited receipts; zero new guests/builds',flush=True)
+        print('PASS seven controls and95 retained edited receipts; zero new guests/builds',flush=True)
         for case in cases:print(case['case'],json.dumps(case['medians'],sort_keys=True),flush=True)
 
 

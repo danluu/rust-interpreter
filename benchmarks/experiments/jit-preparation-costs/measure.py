@@ -32,7 +32,9 @@ def measure(row,suite):
     assert len({t['name'] for t in tests})==len(tests)
     assert sorted(row['outcomes'])==sorted([[t['name'],'passed'] for t in tests])
     workers=integer(suite['workers']);assert 1<=workers<=2 and launch['suite_workers']==workers
-    assert suite['requested_workers']==2 and workers==min(2,len(tests))
+    requested=integer(suite['requested_workers'])
+    assert 1<=requested<=2 and launch['suite_workers_requested']==requested
+    assert workers==min(requested,len(tests))
     wall=seconds(row['wall_seconds'] if 'wall_seconds' in row else row['seconds'])
     execution=seconds(launch['execution_seconds']);suite_time=seconds(suite['seconds_before_report_write'])
     assert 0<suite_time<=execution+1e-6 and execution<=wall+1e-6

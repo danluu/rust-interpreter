@@ -12,7 +12,7 @@ def fixture():
         jit_code_limit_bytes=1000)
     launch=dict(tool_key=BASELINE,isolated_batch='prepared',jit_scalar_calls=True,
         jit_resumable_calls=True,jit_persistent_registers=True,jit_indirect_calls=False,
-        jit_native_calls=False,jit_native_call_stubs=False,suite_workers=2,execution_seconds=1.)
+        jit_native_calls=False,jit_native_call_stubs=False,suite_workers=2,suite_workers_requested=2,execution_seconds=1.)
     row=dict(mode='baseline',cycle=0,state=1,returncode=0,source_sha256='new',previous_source_sha256='old',
         launch=launch,seconds=2.,outcomes=[[t['name'],'passed'] for t in tests])
     return row,suite
@@ -33,6 +33,15 @@ class Measurements(unittest.TestCase):
         row['outcomes']=row['outcomes'][:1];suite['tests'][0]['jit_compile_ns']=0
         row['wall_seconds']=row.pop('seconds')
         self.assertEqual(measure(row,suite)['compile_interval_sum_seconds'],0)
+
+    def test_original_single_worker_request_is_retained_and_must_match_launcher(self):
+        row,suite=fixture();suite['tests']=suite['tests'][:1]
+        suite.update(passed=1,workers=1,requested_workers=1)
+        row['launch'].update(suite_workers=1,suite_workers_requested=1)
+        row['outcomes']=row['outcomes'][:1]
+        self.assertEqual(measure(row,suite)['tests'],1)
+        row['launch']['suite_workers_requested']=2
+        with self.assertRaises(AssertionError):measure(row,suite)
 
     def test_invalid_numeric_values_and_timer_domains_are_rejected(self):
         for field,value in [('jit_compile_ns',-1),('jit_compile_ns',True),('jit_compile_ns',.2),

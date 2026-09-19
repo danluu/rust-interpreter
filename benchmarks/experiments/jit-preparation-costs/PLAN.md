@@ -8,7 +8,7 @@ selective-repair primary:95 receipts. No source or test workload changes.
 
 Verify each closed summary, records hash, selected suite hash, tool identity,
 flags, expected source transitions and complete original outcomes. No new guest
-or compiler command runs. Six independent controls check worker overlap,
+or compiler command runs. Seven independent controls check worker overlap,
 cumulative counters, zero compile deltas, invalid timers, scope and drift.
 Keep private test names and paths out of the public summary; aggregates identify
 only the already authorized benchmark case.
@@ -29,3 +29,9 @@ counter-defining Rust sources, analysis/controller, helpers and all used receipt
 After terminal completion, close all hashes without rerunning successful work.
 Choose the next direction from the observed scale and workload mix; this audit
 does not admit production native caching or replace edited-source acceptance gates.
+
+Audit01 passed six controls then rejected the historical one-test private
+receipt because its explicit worker request was1. Its failure is closed.
+Audit02 accepts original requests1or2 only when launcher/report agree, retains
+the original effective worker count and adds a regression control. No benchmark
+is changed or rerun; all95receipts remain included.
