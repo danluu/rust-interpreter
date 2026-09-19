@@ -151,6 +151,17 @@ class DeadlineControls(unittest.TestCase):
         self.assertEqual(result['reason'], 'execution deadline exceeded')
         self.assertEqual(stops, [])
 
+    def test_exit_during_identity_check_does_not_claim_a_signal(self):
+        clock = Clock(); child = Child(clock)
+        def stop(signum, reason):
+            child.returncode = 0
+            return False
+        result = deadline.monitor(child, heartbeat=lambda: 'capacity', stop_owned=stop,
+            publish=lambda event: None, clock=clock, sleep=clock.sleep)
+        self.assertEqual(result['status'], 'stopped')
+        self.assertIn('stop-not-needed', [event['kind'] for event in result['events']])
+        self.assertNotIn('stop-sent', [event['kind'] for event in result['events']])
+
     def test_invalid_limits_rejected_without_wait(self):
         for bad in [0, -1, float('inf'), float('nan'), True]:
             with self.subTest(bad=bad), self.assertRaises(ValueError):

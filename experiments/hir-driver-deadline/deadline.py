@@ -63,12 +63,15 @@ def monitor(child, *, heartbeat, stop_owned, publish, timeout=120.0,
     def request_stop(signum):
         event('stop-request', signal=signum.name, reason=reason)
         try:
-            stop_owned(signum, reason)
+            sent = stop_owned(signum, reason)
         except Exception as error:
             errors.append(dict(operation='stop_owned', error=repr(error), elapsed=clock()-started))
             event('stop-refused', signal=signum.name)
             return False
-        event('stop-sent', signal=signum.name)
+        # A concrete caller can observe exit during fresh ownership checks.
+        # False means it sent no signal; None preserves the original callback
+        # convention, while new adapters return an explicit boolean.
+        event('stop-not-needed' if sent is False else 'stop-sent', signal=signum.name)
         return True
 
     def observed_poll():
