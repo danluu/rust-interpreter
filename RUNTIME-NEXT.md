@@ -17,9 +17,10 @@ Historical folded MIR locals observation at.work/mir-scalar-promotion-observatio
 mayguide scope butisnotcurrentartifactproof. Existing scalar_promote transform
 alreadyhandles8bytevalues; runtime/emitterneednotchange for this direction.
 
-RootRuststillisolated3cf176ed. Onnewexperimentbranch restoreONLY the3compact-switch
-Rustfiles toadoptedfca687eb beforefurtherimplementation, preservingallcompiler/
-diagnosticwork andpeer main. Need dynamicdiskadmission beforebuilding anyRust.
+Rootbranch experiment/private-pointer-promotion-20260919. RestoredONLY3switch
+Rustfiles; entirebytecodecrate nowexactadoptedfca687eb. Parkedvariant38c51f5d
+retainedonoldbranch; installedVMdfunchanged. No frontendoptimizationyet.
+Need dynamicdiskadmission beforebuilding anyRust.
 Free~20GiB; floorlast~23GiB. SharedtargetNEVERclean. Exactclosedisolatedprimary
 compiler caches are possible nextretirement, butnoinventory/deletionstarted.
 Lock45s,analysis12GiB/child8GiB,twobuildworkers. Cleanerread-only,peersuntouched.

@@ -245,3 +245,12 @@ Usefulhistoricalscopeonly, notcurrentartifactproof. Pinnedrustcvisitor source
 /Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/rustc-src/rust/compiler/rustc_middle/src/mir/visit.rs.
 Needbuildadmission beforetypedexporterbuild; free~20.1GiB<~23GiBfloor. Ownclosed
 isolatedprimarycompiler caches remainpotentialretirement, noinventory/mutationyet.
+
+Newbranch experiment/private-pointer-promotion-20260919. RestoredONLY3compact
+switchRustfiles toadoptedfca687eb; entirecrates/bytecode nowexactfca. Parkedvariant
+retained38c51f5d onoldbranch andinstalledbinary unchanged. No freshbuildneededfor
+thisrestoration; useinstalledadoptedVMdf. No frontendchange implemented yet.
+Pinned MIR visitor changesany projectedplacebase toProjection; custom first-Deref
+visitor maytreat pointerbaseasvalueCopy whilestillrejectingborrowofslot. Existing
+byte_writes::ByteUses alreadydistinguishespointeeuses/readslot, usefulreviewbut
+its any-Deref ruleisbroader thanproposedthin-pointer first-Deref admission.
