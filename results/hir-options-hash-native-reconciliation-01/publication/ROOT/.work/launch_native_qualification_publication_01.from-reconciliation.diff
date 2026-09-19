@@ -1,0 +1,67 @@
+--- /Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/launch_native_reconciliation_01.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/launch_native_qualification_publication_01.py
+@@ -1,7 +1,7 @@
+-"""Launch the reviewed zero-command native reconciliation proposal and observe its detached supervisor to closure.
++"""Launch the reviewed zero-command native evidence publication proposal and observe its detached supervisor to closure.
+ 
+ The exact launch digest is bound after concrete packet preparation and before separate launch review. No provider,
+-compiler or controller starts before the unchanged fresh 16 GiB entry check.
++compiler or controller starts before the unchanged fresh 9GiB+416MiB entry check.
+ An observation timeout preserves the running task and reports it as unclosed.
+ """
+ import argparse
+@@ -15,12 +15,12 @@
+ import sys
+ import time
+ 
+-ROOT = Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918')
+-HERE = ROOT/'experiments/hir-options-hash-native-reconciliation-01'
++ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
++HERE = ROOT/'experiments/native-qualification-publication-01'
+ LAUNCH = HERE / 'launch.json'
+-WORK = ROOT / '.work/native-reconciliation-launch-execution-01'
+-OUTER = ROOT / '.work/experiments/hir-options-hash-native-controls-reconciliation-supervisor-01'
+-CONTROLLER = ROOT / '.work/hir-options-hash-native-controls-reconciliation-01'
++WORK = ROOT / '.work/native-qualification-publication-launch-execution-01'
++OUTER = ROOT / '.work/experiments/native-qualification-publication-supervisor-01'
++CONTROLLER = ROOT / '.work/native-qualification-publication-01'
+ MAXIMUM_OBSERVATION_SECONDS = 1800
+ MAXIMUM_WRAPPER_SECONDS = 30
+ 
+@@ -40,7 +40,7 @@
+ 
+ 
+ def main():
+-    expected = '39b3e356ea457250f9658250aeb2799170600a8038f02d41b0e2757977fb8491'
++    expected = None  # Bound only after reviewed publication packet exists.
+     require(Path.cwd() == ROOT and sys.dont_write_bytecode and not sys.flags.optimize,
+             'fixed owner and unoptimized Python -B required')
+     require(isinstance(expected,str) and re.fullmatch('[a-f0-9]{64}', expected) and sha(LAUNCH) == expected,
+@@ -49,20 +49,20 @@
+     frozen = read(HERE / 'inputs.json')
+     python = str(Path(sys.executable).resolve(strict=True))
+     command = [python, '-B', str(ROOT / 'scripts/supervise_experiment.py'),
+-               '--run-id', OUTER.name, '--', python, '-B', str(HERE / 'run.py'),
++               '--run-id', OUTER.name, '--', python, '-B', str(HERE / 'retain.py'),
+                '--inputs-sha256', proposal['inputs_sha256']]
+     require(proposal['owner'] == str(ROOT) and proposal['command'] == command
+-            and frozen['python'] == python and type(proposal['expected_children']) is int
+-            and proposal['expected_children'] == 0 and proposal['read_only_reconciliation'] is True,
+-            'exact reviewed zero-command reconciliation proposal required')
++            and frozen['python'] == python and type(proposal['expected_workload_children']) is int
++            and proposal['expected_workload_children'] == 0 and proposal['bounds'] == frozen['bounds'],
++            'exact reviewed zero-command publication proposal required')
+     require(sha(HERE / 'inputs.json') == proposal['inputs_sha256']
+-            and sha(HERE / 'run.py') == frozen['files'][str(HERE/'run.py')]['sha256'],
++            and sha(HERE / 'retain.py') == frozen['files'][str(HERE/'retain.py')]['sha256'],
+             'reviewed proposal/source bindings changed')
+-    require(proposal['environment'] == frozen['launch_environment'], 'launch environment differs')
++    require(proposal['environment'] == frozen['environment'], 'launch environment differs')
+     require(all(not p.exists() and not p.is_symlink() for p in [WORK, OUTER, CONTROLLER]),
+             'fresh launch and workload namespaces required')
+     free = shutil.disk_usage(ROOT).free
+-    require(free >= 16 * 2**30, 'fresh 16 GiB required before controller or WORK')
++    require(free >= 9 * 2**30 + 416 * 2**20, 'fresh 9 GiB plus416MiB reserve required before archive controller or WORK')
+     WORK.mkdir()
+     record = dict(status='starting', launch_path=str(LAUNCH), launch_sha256=expected,
+                   launcher_source_path=str(Path(__file__).resolve()),

@@ -1,0 +1,20 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/launch_native_qualification_publication_01.draft-01.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/launch_native_qualification_publication_01.py
+@@ -21,6 +21,8 @@
+ WORK = ROOT / '.work/native-qualification-publication-launch-execution-01'
+ OUTER = ROOT / '.work/experiments/native-qualification-publication-supervisor-01'
+ CONTROLLER = ROOT / '.work/native-qualification-publication-01'
++RESULT = ROOT / 'results/hir-options-hash-native-reconciliation-01'
++SOURCES = ROOT / 'experiments/native-qualification-source-01'
+ MAXIMUM_OBSERVATION_SECONDS = 1800
+ MAXIMUM_WRAPPER_SECONDS = 30
+ 
+@@ -59,7 +61,7 @@
+             and sha(HERE / 'retain.py') == frozen['files'][str(HERE/'retain.py')]['sha256'],
+             'reviewed proposal/source bindings changed')
+     require(proposal['environment'] == frozen['environment'], 'launch environment differs')
+-    require(all(not p.exists() and not p.is_symlink() for p in [WORK, OUTER, CONTROLLER]),
++    require(all(not p.exists() and not p.is_symlink() for p in [WORK, OUTER, CONTROLLER, RESULT, SOURCES]),
+             'fresh launch and workload namespaces required')
+     free = shutil.disk_usage(ROOT).free
+     require(free >= 9 * 2**30 + 416 * 2**20, 'fresh 9 GiB plus416MiB reserve required before archive controller or WORK')

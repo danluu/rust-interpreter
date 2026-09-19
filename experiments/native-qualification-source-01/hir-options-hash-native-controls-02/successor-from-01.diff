@@ -1,0 +1,143 @@
+--- 01/prepare.py
++++ 02/prepare.py
+@@ -88,7 +88,15 @@
+         for name in frozen['absent_paths']:
+             n.require(not Path(name).exists() and not Path(name).is_symlink(), 'qualified absence changed')
+             self.absent.append(name)
++        old_freeze = self.load(n.previous_attempt.SOURCE/'inputs.json')
++        for name, row in old_freeze['files'].items(): self.inherited(name, row)
++        n.require(all(self.links.get(name) == row for name,row in old_freeze['links'].items())
++                  and set(old_freeze['absent_paths']) <= set(self.absent), 'original native route closure differs')
++        prior_attempt = n.previous_attempt.validate(lambda p:self.add(p,snapshot=Path(p).suffix!='.gz' and Path(p).stat().st_size<=64*2**20), self.files)
++        controls = n.stock_controls.validate(lambda p:self.add(p,snapshot=True),self.files)
+         paths = n.recipe.paths(n.N)
++        source = self.add(paths['source']/'compiler/rustc/src/main.rs',snapshot=True)
++        _, derivation = n.stock_source.derive(source.read_bytes(),source,paths['stock_source'])
+         n.require(not paths['root'].exists() and not paths['root'].is_symlink(), 'fresh native fixture namespace required')
+         previous = terminal['admitted_at']; outputs = []
+         for index, (ref, declaration) in enumerate(zip(terminal['commands'], prior['children'], strict=True)):
+@@ -168,6 +176,9 @@
+             canonical_lock=str(n.owned.CANONICAL_LOCK),wait_seconds=600,
+             monitor_source=str(n.A/'experiments/hir-options-hash-stage-monitor/monitor.py'),
+             interpretation='Native20 only; no hash-driver, run-make or application execution.')
++        plan['prior_failed_attempt']=prior_attempt
++        plan['stock_source_derivation']=derivation
++        plan['stock_source_controls']=controls
+         plan['children']=desired_commands(plan)
+         for row in plan['children']:
+             path=Path(row['argv'][0])
+@@ -229,7 +240,7 @@
+         probe.plan,probe.freeze=plan,freeze
+         probe.inputs_sha256=n.owned.sha(n.HERE/'inputs.json')
+         probe.snapshot_plan_file=n.comp.check_file(dict(path=str(n.HERE/'snapshot-plan.json'),sha256=n.owned.sha(n.HERE/'snapshot-plan.json')))
+-        probe.environment=plan['environment'];probe.stock=None
++        probe.environment=plan['environment'];probe.stock=None;probe.stock_source=None
+         probe.paths=n.recipe.paths(n.N)
+         probe.evidence_roots=tuple(map(Path,plan['evidence_roots']))
+         saved=dict(os.environ);os.environ.clear();os.environ.update(probe.environment)
+@@ -241,7 +252,7 @@
+         write(n.HERE/'metadata-preflight.json',dict(status='passed',started_at=started,finished_at=time.time(),
+             workload_children=0,work_created=False,capacity=capacity,inputs_sha256=probe.inputs_sha256))
+         launch=dict(owner=str(n.A),environment=plan['environment'],expected_children=20,capacity=plan['capacity'],
+-            command=[freeze['python'],'-B',str(n.A/'scripts/supervise_experiment.py'),'--run-id','hir-options-hash-native-controls-supervisor-01',
++            command=[freeze['python'],'-B',str(n.A/'scripts/supervise_experiment.py'),'--run-id','hir-options-hash-native-controls-supervisor-02',
+                 '--',freeze['python'],'-B',str(n.HERE/'run.py'),'--inputs-sha256',n.owned.sha(n.HERE/'inputs.json'),
+                 '--snapshot-plan-sha256',n.owned.sha(n.HERE/'snapshot-plan.json')],
+             inputs_sha256=n.owned.sha(n.HERE/'inputs.json'),snapshot_plan_sha256=n.owned.sha(n.HERE/'snapshot-plan.json'),review_required_before_launch=True)
+--- 01/recipe.py
++++ 02/recipe.py
+@@ -15,9 +15,9 @@
+ def paths(namespace):
+     n = Path(namespace)
+     s = n / 'source'
+-    root = n / 'native-controls'
++    root = n / 'native-controls-02'
+     return dict(source=s, build=s/'build'/HOST/'stage0', runtime=s/'build'/HOST/'stage1',
+-                beta=n/'beta-sysroot', root=root, stock=root/'smoke-rustc',
++                beta=n/'beta-sysroot', root=root, stock=root/'smoke-rustc', stock_source=root/'stock-main.rs',
+                 fixture=root/'fixture/main.rs', program=root/'fixture/program',
+                 wrong_source=root/'wrong-role/main.rs', wrong_output=root/'wrong-role/program')
+ 
+@@ -37,7 +37,7 @@
+     assert len(pair) == 2 and pair[0].endswith('.dylib')
+     assert pair[1] == str(Path(pair[0]).with_suffix('.rmeta'))
+     add([p['build']/'bin/rustc', '--sysroot='+str(p['beta']), '--edition=2024',
+-         '--crate-name', 'rustc_main', '--print=link-args', p['source']/'compiler/rustc/src/main.rs',
++         '--crate-name', 'rustc_main', '--print=link-args', p['stock_source'],
+          '--extern', 'rustc_driver='+str(p['beta']/pair[0]),
+          '--extern', 'rustc_driver='+str(p['beta']/pair[1]),
+          '-Lnative='+str(p['runtime']/'lib'), '-Clinker='+clang,
+--- 01/run.py
++++ 02/run.py
+@@ -16,13 +16,16 @@
+ 
+ import recipe
+ import observations as observed
++import stock_source
++import previous_attempt
++import stock_controls
+ 
+ HERE = Path(__file__).resolve().parent
+ A = HERE.parents[1]
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ N = X/'.work/hir-options-hash-compiler-01'
+-WORK = A/'.work/hir-options-hash-native-controls-01'
++WORK = A/'.work/hir-options-hash-native-controls-02'
+ COMPOSITION = A/'experiments/hir-options-hash-beta-composition-08'
+ ASSEMBLY = A/'.work/hir-options-hash-beta-composition-08'
+ REVISION = '4de35bdacef0e3cd18a66bc30b5459c19e09b118'
+@@ -148,6 +151,7 @@
+                 'fresh native evidence required')
+         WORK.mkdir(); (WORK/'commands').mkdir(); (WORK/'artifacts').mkdir(); (WORK/'tmp').mkdir()
+         self.stock = None
++        self.stock_source = None
+         self.record = dict(status='waiting', pid=os.getpid(), parent_pid=os.getppid(), started_at=time.time(),
+             inputs_sha256=inputs_sha256, snapshot_plan_sha256=snapshot_plan_sha256, candidate_revision=REVISION, commands=[], fixture_compilations=[],
+             native_executions=[], hits=[], source_restored=False, hash_driver_qualified=False,
+@@ -193,6 +197,8 @@
+             path = getattr(imported, '__file__', None)
+             if path and path.startswith('/Users/danluu/dev/'):
+                 require(str(Path(path).resolve(strict=True)) in self.freeze['files'], 'unfrozen local imported source')
++        if self.stock_source is not None:
++            require(self.file(self.paths['stock_source']) == self.stock_source, 'private stock source changed')
+         if self.stock is not None:
+             require(comp.ordinary(self.paths['stock']) == self.stock['identity'], 'stock executable changed')
+             if full:
+@@ -205,6 +211,8 @@
+         routes. No old failure is relabeled passed, and no implicit re-admission
+         of a changed provider is available here.
+         """
++        require(stock_controls.validate(self.frozen, self.freeze['files']) == self.plan['stock_source_controls'], 'actual derivation controls differ')
++        require(previous_attempt.validate(self.frozen, self.freeze['files']) == self.plan['prior_failed_attempt'], 'original native failure proof differs')
+         source = self.plan['assembly']['source']
+         evidence = self.plan['assembly']['evidence']
+         require(source == str(COMPOSITION) and evidence == str(ASSEMBLY), 'source08 B3 route required')
+@@ -284,6 +292,16 @@
+         require(not root.exists() and not root.is_symlink() and root.parent.resolve(strict=True) == root.parent,
+                 'fresh native artifacts required after canonical admission')
+         root.mkdir()
++        source = self.frozen(self.plan['stock_source_derivation']['source'])
++        data, proof = stock_source.derive(source.read_bytes(), source, self.paths['stock_source'])
++        require(proof == self.plan['stock_source_derivation'], 'stock source derivation differs')
++        with self.paths['stock_source'].open('xb') as stream:
++            stream.write(data); stream.flush(); os.fsync(stream.fileno())
++        self.stock_source = self.file(self.paths['stock_source'])
++        require(self.stock_source['sha256'] == proof['derived_sha256'] and self.stock_source['size'] == len(data), 'private stock source readback differs')
++        self.record['stock_source_derivation'] = proof
++        self.record['stock_source'] = self.stock_source
++        self.save()
+ 
+     def retain_sources(self):
+         snapshot_qualification(self.freeze)
+@@ -435,7 +453,9 @@
+                 'incomplete original/error/restored history')
+         result = dict(status='native-roles-and-behavior-qualified', candidate_revision=REVISION,
+             source_identity=self.plan['source_identity'], assembly=self.plan['assembly'], compiler=self.plan['compiler'],
+-            stock=self.stock, ordered_driver_destinations=self.plan['ordered_driver_destinations'],
++            stock=self.stock, stock_source=self.stock_source, stock_source_derivation=self.plan['stock_source_derivation'],
++            prior_failed_attempt=self.plan['prior_failed_attempt'], total_actual_native_children=25, qualified_native_children=20,
++            ordered_driver_destinations=self.plan['ordered_driver_destinations'],
+             static_loader=self.record['static_loader'], actual_loader=self.record['actual_loader'],
+             runtime_closure=self.plan['runtime_closure'], source_restored=True,
+             history=self.record['commands'][:18], wrong_B3_commands=self.record['commands'][18:],

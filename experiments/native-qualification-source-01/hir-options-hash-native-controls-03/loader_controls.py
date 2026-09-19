@@ -1,0 +1,71 @@
+"""Read-only binding of nine actual canonical-loader-route controls."""
+import hashlib
+import json
+from pathlib import Path
+
+A=Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918')
+CONTROL=A/'experiments/native-loader-route-controls-01'
+WORK=A/'.work/native-loader-route-controls-01'
+OUTER=A/'.work/experiments/native-loader-route-controls-supervisor-01'
+LAUNCHER=A/'.work/native-loader-route-controls-launch-execution-01'
+AUDIT=A/'.work/native-loader-route-controls-independent-verification-01.json'
+AUDIT_SHA='2aa407e52e482c97949d0ff533a9c27024c895c84ce29a3b0ae522ac3e9d761d'
+INPUTS_SHA='f212b8c31f6189124a19e263ae8c77be3a1bbbd5c3f971ba758f490670b2af51'
+LAUNCH_SHA='5f268084151a5d7cc98caa34998d2d7da9b0bce52e5b8f7f1b3b0898246bf69d'
+
+
+def require(ok,message):
+    if not ok:raise ValueError(message)
+
+
+def validate(check,files):
+    def read(path,expected=None):
+        path=Path(check(Path(path)));require(path.stat().st_size<=2*2**20,'bounded loader-control proof')
+        raw=path.read_bytes();require(expected is None or hashlib.sha256(raw).hexdigest()==expected,'loader control proof digest differs')
+        return json.loads(raw)
+    audit=read(AUDIT,AUDIT_SHA);freeze=read(CONTROL/'inputs.json',INPUTS_SHA);launch=read(CONTROL/'launch.json',LAUNCH_SHA)
+    require(audit['status']=='verified' and audit['controls']==9 and audit['input_files']==14,'actual nine-control audit required')
+    for name,row in freeze['files'].items():
+        check(Path(name));current=files[name]
+        stamp=[current['identity'][key] for key in ['dev','ino','mode','size','mtime_ns','ctime_ns','nlink']]
+        require(stamp==row['stamp'] and current['sha256']==row['sha256'],'tested loader source/fixture/runner changed')
+    members=[]
+    execution_root=A/'.work/native-loader-route-controls-verification-execution-01'
+    for root in [WORK,OUTER,LAUNCHER,execution_root]:
+        for path in sorted(root.rglob('*')):
+            require(not path.is_symlink() and (path.is_file() or path.is_dir()),'indirect closed loader control evidence')
+            if path.is_file():check(path);members.append(str(path))
+    require(len(members)<=64,'bounded loader-control evidence membership')
+    launcher=A/'.work/launch_native_loader_route_controls_01.py';verifier=A/'.work/verify_native_loader_route_controls_01.py'
+    for path in [launcher,verifier]:check(path)
+    terminal=read(WORK/'receipt.json',audit['receipt_sha256']);result=read(WORK/'result.json',audit['result_sha256'])
+    outer=read(OUTER/'status.json');dispatcher=read(LAUNCHER/'record.json');execution=read(execution_root/'record.json')
+    require(terminal['status']==result['status']=='passed' and terminal['controls_passed']==result['tests_run']==9
+        and terminal['inputs_sha256']==INPUTS_SHA and terminal['result_sha256']==audit['result_sha256']
+        and len(terminal['commands'])==1 and result['expected_names']==freeze['expected_names']==audit['exact_names'],'actual nine-control result differs')
+    require(all(result[k]==0 for k in ['failures','errors','skipped','expected_failures','unexpected_successes','child_processes','compiler_calls']),
+        'nine controls not completely passed')
+    child_path=WORK/'command/receipt.json';child=read(child_path);ref=terminal['commands'][0]
+    require(ref==dict(path=str(child_path),pid=child['pid'],sha256=files[str(child_path)]['sha256'])
+        and child['status']=='finished' and child['returncode']==0 and child['command']==freeze['command']
+        and child['environment']==freeze['environment'] and child['supervisor_pid']==terminal['pid']
+        and child['parent_pid']==terminal['parent_pid'],'actual loader test-child association differs')
+    require(outer['status']=='finished' and outer['returncode']==0 and outer['command']==launch['command'][6:]
+        and outer['child_pid']==terminal['pid'] and outer['supervisor_pid']==terminal['parent_pid']
+        and outer['child_started_at']<=terminal['started_at']<=terminal['admitted_at']<=child['started_at']
+        <=child['finished_at']<=terminal['finished_at']<=outer['finished_at'],'actual loader-control outer differs')
+    require(dispatcher['status']=='terminal-observed' and dispatcher['returncode']==0 and dispatcher['launcher_returncode']==0
+        and dispatcher['outer_status']=='finished' and dispatcher['outer_sha256']==files[str(OUTER/'status.json')]['sha256']
+        and dispatcher['command']==launch['command'] and dispatcher['environment']==launch['environment']
+        and dispatcher['launch_sha256']==LAUNCH_SHA and dispatcher['launcher_source_sha256']==files[str(launcher)]['sha256']
+        and dispatcher['controller_pid']==terminal['pid'] and dispatcher['supervisor_pid']==outer['supervisor_pid']
+        and outer['finished_at']<=dispatcher['terminal_observed_at']==dispatcher['finished_at'],'actual bounded loader-control launcher differs')
+    require(execution['returncode']==0 and execution['source_sha256']==audit['verifier_sha256']==files[str(verifier)]['sha256'],
+        'loader-control audit execution differs')
+    for stream in ['stdout','stderr']:
+        require(files[str(WORK/'command'/stream)]['sha256']==child[stream+'_sha256']==audit['raw_sha256'][stream]
+            and files[str(LAUNCHER/stream)]['sha256']==dispatcher[stream+'_sha256'],'actual loader-control raw differs')
+    require(not list((WORK/'tmp').iterdir()),'loader-control fixtures remain')
+    return dict(source=str(CONTROL),evidence=str(WORK),launch_sha256=LAUNCH_SHA,inputs_sha256=INPUTS_SHA,
+        receipt_sha256=audit['receipt_sha256'],result_sha256=audit['result_sha256'],
+        audit=dict(path=str(AUDIT),sha256=AUDIT_SHA),controls=9,closed_members=members)

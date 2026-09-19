@@ -1,0 +1,332 @@
+--- experiments/hir-options-hash-native-controls-02/observations.py
++++ experiments/hir-options-hash-native-controls-03/observations.py
+@@ -109,6 +109,47 @@
+     require(len(positions) == 1 and positions[0]+1 < len(words) and words[positions[0]+1] == str(output), 'linker output differs')
+     require('-Wl,-rpath,'+str(runtime_lib) in words, 'runtime rpath not passed to actual linker')
+     return dict(argv=words, environment=environment, removed=removed, stdout_sha256=digest(raw))
++
++
++def qualified_provider_routes(libraries, *, driver, runtime_lib):
++    """Validate the full admitted row list before adding canonical self-routes.
++
++    Logical paths retain the actual E2 loader's ../ spellings. Equal resolved
++    paths must describe the same bytes; duplicate logical rows are rejected
++    before any dict conversion. The caller still binds every provider identity,
++    byte hash, search observation and original loader row in its full freeze.
++    """
++    def token(value):
++        require(type(value) is str and value and all(ord(c)>=32 and ord(c)!=127 for c in value),
++                'invalid qualified private path')
++        path=Path(value)
++        require(path.is_absolute() and str(path)==value, 'qualified private path syntax differs')
++        return path
++    def resolve(path):
++        try:return path.resolve(strict=True)
++        except (OSError,RuntimeError) as error:raise ValueError('qualified private route unavailable') from error
++    runtime=token(str(runtime_lib));required=token(str(driver))
++    require('..' not in runtime.parts and resolve(runtime)==runtime and runtime.is_dir(), 'runtime library directory is not canonical')
++    require('..' not in required.parts and required.parent==runtime and resolve(required)==required
++            and re.fullmatch(r'librustc_driver-[a-f0-9]+\.dylib',required.name), 'qualified driver route differs')
++    require(type(libraries) is list and 0<len(libraries)<=4096, 'complete qualified private row list required')
++    routes,providers={},{}
++    for row in libraries:
++        require(type(row) is dict and set(row)=={'logical','resolved','bytes','sha256'}, 'qualified private row schema differs')
++        logical=token(row['logical']);resolved=token(row['resolved'])
++        require(str(logical) not in routes, 'duplicate qualified logical route')
++        require('..' not in resolved.parts and resolved.parent==runtime and resolve(resolved)==resolved
++                and resolved.is_file() and resolve(logical)==resolved, 'forged or foreign qualified private route')
++        require(type(row['bytes']) is int and 0<row['bytes']<=2*2**30
++                and type(row['sha256']) is str and re.fullmatch('[a-f0-9]{64}',row['sha256']), 'qualified provider byte identity differs')
++        identity=(row['bytes'],row['sha256'])
++        require(str(resolved) not in providers or providers[str(resolved)]==identity, 'ambiguous qualified canonical provider')
++        providers[str(resolved)]=identity;routes[str(logical)]=str(resolved)
++    require(str(required) in providers, 'qualified driver absent from provider closure')
++    for resolved in providers:
++        require(resolved not in routes or routes[resolved]==resolved, 'conflicting qualified canonical self-route')
++        routes[resolved]=resolved
++    return routes
+ 
+ 
+ def stock_macho(data, raw_otool, *, stock, driver, runtime_lib, qualified_private):
+@@ -160,18 +201,24 @@
+         require(match is not None, 'unknown actual otool dependency line')
+         tokens.append(match[1])
+     require(tokens == loads and loads, 'actual otool dependencies differ from binary commands')
++    for token in loads:
++        if token.startswith('/'):
++            require(str(Path(token))==token and '..' not in Path(token).parts, 'unsafe absolute loader token')
+     private = [x for x in loads if not x.startswith(('/usr/lib/', '/System/Library/'))]
+     resolved = []
+-    require(type(qualified_private) is dict and str(driver) in set(qualified_private.values()), 'qualified E2 provider routes required')
++    routes=qualified_provider_routes(qualified_private,driver=driver,runtime_lib=runtime_lib)
+     for token in private:
+         if token.startswith('@rpath/'):
+-            path = Path(runtime_lib)/token.removeprefix('@rpath/')
++            suffix=token.removeprefix('@rpath/')
++            require(re.fullmatch(r'lib[A-Za-z_0-9.-]+\.dylib',suffix), 'unsafe stock rpath dependency token')
++            path = Path(runtime_lib)/suffix
+         else:
+             path = Path(token)
+-        require(path.is_absolute() and '..' not in path.parts and str(path) in qualified_private,
++            require(str(path)==token, 'unsafe stock absolute dependency token')
++        require(path.is_absolute() and '..' not in path.parts and str(path) in routes,
+                 'stock direct private edge is outside exact E2 closure')
+         target = str(path.resolve(strict=True))
+-        require(target == qualified_private[str(path)], 'unqualified stock private alias')
++        require(target == routes[str(path)], 'unqualified stock private alias')
+         resolved.append(target)
+     require(str(driver) in resolved, 'stock direct driver edge is absent')
+     return dict(stock=str(stock), file_sha256=digest(data), rpaths=rpaths, loads=loads,
+--- experiments/hir-options-hash-native-controls-02/prepare.py
++++ experiments/hir-options-hash-native-controls-03/prepare.py
+@@ -94,6 +94,7 @@
+                   and set(old_freeze['absent_paths']) <= set(self.absent), 'original native route closure differs')
+         prior_attempt = n.previous_attempt.validate(lambda p:self.add(p,snapshot=Path(p).suffix!='.gz' and Path(p).stat().st_size<=64*2**20), self.files)
+         controls = n.stock_controls.validate(lambda p:self.add(p,snapshot=True),self.files)
++        loader_proof = n.loader_controls.validate(lambda p:self.add(p,snapshot=True),self.files)
+         paths = n.recipe.paths(n.N)
+         source = self.add(paths['source']/'compiler/rustc/src/main.rs',snapshot=True)
+         _, derivation = n.stock_source.derive(source.read_bytes(),source,paths['stock_source'])
+@@ -176,9 +177,10 @@
+             canonical_lock=str(n.owned.CANONICAL_LOCK),wait_seconds=600,
+             monitor_source=str(n.A/'experiments/hir-options-hash-stage-monitor/monitor.py'),
+             interpretation='Native20 only; no hash-driver, run-make or application execution.')
+-        plan['prior_failed_attempt']=prior_attempt
++        plan['prior_failed_attempts']=prior_attempt
+         plan['stock_source_derivation']=derivation
+         plan['stock_source_controls']=controls
++        plan['loader_route_controls']=loader_proof
+         plan['children']=desired_commands(plan)
+         for row in plan['children']:
+             path=Path(row['argv'][0])
+@@ -252,7 +254,7 @@
+         write(n.HERE/'metadata-preflight.json',dict(status='passed',started_at=started,finished_at=time.time(),
+             workload_children=0,work_created=False,capacity=capacity,inputs_sha256=probe.inputs_sha256))
+         launch=dict(owner=str(n.A),environment=plan['environment'],expected_children=20,capacity=plan['capacity'],
+-            command=[freeze['python'],'-B',str(n.A/'scripts/supervise_experiment.py'),'--run-id','hir-options-hash-native-controls-supervisor-02',
++            command=[freeze['python'],'-B',str(n.A/'scripts/supervise_experiment.py'),'--run-id','hir-options-hash-native-controls-supervisor-03',
+                 '--',freeze['python'],'-B',str(n.HERE/'run.py'),'--inputs-sha256',n.owned.sha(n.HERE/'inputs.json'),
+                 '--snapshot-plan-sha256',n.owned.sha(n.HERE/'snapshot-plan.json')],
+             inputs_sha256=n.owned.sha(n.HERE/'inputs.json'),snapshot_plan_sha256=n.owned.sha(n.HERE/'snapshot-plan.json'),review_required_before_launch=True)
+--- experiments/hir-options-hash-native-controls-02/previous_attempt.py
++++ experiments/hir-options-hash-native-controls-03/previous_attempt.py
+@@ -1,72 +1,78 @@
+-"""Read-only binding of the original failed five-row native qualification.
+-
+-The old stock binary remains unqualified and is never executed or overwritten.
+-This reader cannot reinterpret the failed terminal as a successful prerequisite.
+-"""
++"""Read-only ordered bindings for both failed native attempts; no qualification."""
+ import hashlib
+ import json
+ from pathlib import Path
+ 
+-A = Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918')
+-SOURCE = A/'experiments/hir-options-hash-native-controls-01'
+-WORK = A/'.work/hir-options-hash-native-controls-01'
+-AUDIT = A/'.work/native-controls-failure-verification-01.json'
+-AUDIT_SHA256 = 'af25ceeda3cf32cf63d73b3fd2cee05726267166e0babd58587b884815256f3e'
+-INPUTS_SHA256 = 'edb807bfe3d24db7ea327750e57bf6034b1a2a42eb36acc6a59f5f4efbdf17fd'
+-DIAGNOSIS = Path('/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/native-stock-wrapper-lint-source-review-01.json')
+-DIAGNOSIS_SHA256 = 'db4f73adb8985b96a6219d375c5e3994af4973e2c54038965e0e65d42d8ebf08'
++A=Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918')
++O=Path('/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918')
++SOURCE=A/'experiments/hir-options-hash-native-controls-02'
++ATTEMPTS=[
++    ('01',5,'af25ceeda3cf32cf63d73b3fd2cee05726267166e0babd58587b884815256f3e',
++     'edb807bfe3d24db7ea327750e57bf6034b1a2a42eb36acc6a59f5f4efbdf17fd',
++     "ValueError('stock build emitted diagnostics')",'native-stock-wrapper-lint-source-review-01.json',
++     'db4f73adb8985b96a6219d375c5e3994af4973e2c54038965e0e65d42d8ebf08'),
++    ('02',6,'c5f873179ed772de997771fd1c89f409876a79ca520d01ff5f8a288c2f6c879f',
++     '33958301017e8d2107ee94dbe431fb4402deabd1d4a1fa8b2298038e4a2b1b0c',
++     "ValueError('stock direct private edge is outside exact E2 closure')",'native02-loader-edge-diagnosis-01.json',
++     'dc77f0b49bb29d3f37635ab5f159e3a2cab21b38480c917eb8d443f27774482b')]
+ 
+ 
+-def require(ok, message):
+-    if not ok: raise ValueError(message)
++def require(ok,message):
++    if not ok:raise ValueError(message)
+ 
+ 
+-def validate(check, files):
+-    """check freezes or verifies each exact path; files is the full new closure."""
+-    def data(path, expected=None):
+-        path = Path(check(Path(path)))
+-        require(path.stat().st_size <= 64*2**20, 'bounded prior proof required')
+-        raw = path.read_bytes()
+-        digest = hashlib.sha256(raw).hexdigest()
+-        require(expected is None or digest == expected, 'prior proof digest differs')
++def validate(check,files):
++    def data(path,expected=None):
++        path=Path(check(Path(path)));require(path.stat().st_size<=64*2**20,'bounded prior proof required')
++        raw=path.read_bytes();require(expected is None or hashlib.sha256(raw).hexdigest()==expected,'prior proof digest differs')
+         return json.loads(raw)
+-    audit = data(AUDIT, AUDIT_SHA256)
+-    old = data(SOURCE/'inputs.json', INPUTS_SHA256)
+-    require(all(files.get(name) == row for name,row in old['files'].items()), 'original native full closure omitted or changed')
+-    require(audit['status'] == 'verified-retained-failure' and audit['children'] == 5
+-            and audit['intended_children'] == 20 and audit['unexecuted_indices'] == list(range(5,20))
+-            and audit['all_child_returncodes_zero'] is True and audit['fixture_never_created'] is True
+-            and audit['native_roles_and_behavior_qualified'] is False
+-            and audit['inputs_sha256'] == INPUTS_SHA256,
+-            'honest failed-five audit required')
+-    for name, row in audit['evidence_files'].items():
+-        check(Path(name))
+-        require(files[name] == row, 'closed original evidence changed')
+-    stock = audit['unqualified_stock']; check(Path(stock['path']))
+-    require(stock['qualified'] is False and files[stock['path']] == {key:stock[key] for key in ['identity','sha256','size']},
+-            'original unqualified stock changed')
+-    terminal = data(WORK/'receipt.json', audit['receipt_sha256'])
+-    require(terminal['status'] == 'failed' and terminal['error'] == "ValueError('stock build emitted diagnostics')"
+-            and len(terminal['commands']) == 5 and terminal['source_restored'] is False
+-            and all(terminal[k] == [] for k in ['fixture_compilations','native_executions','hits']),
+-            'original failure was changed or relabeled')
+-    for index,ref in enumerate(terminal['commands']):
+-        child = data(ref['path'],ref['sha256'])
+-        require(Path(ref['path']) == WORK/'commands'/f'{index:03}'/'receipt.json'
+-                and child['status'] == 'finished' and child['returncode'] == 0, 'original five-row outcome differs')
+-    for name in ['plan.json','launch.json','snapshot-plan.json','metadata-preflight.json']:
+-        data(SOURCE/name)
+-    data(DIAGNOSIS,DIAGNOSIS_SHA256)
+-    for path in [A/'.work/verify_native_controls_failure_01.py',
+-                 *[A/'.work/native-controls-failure-verification-execution-01'/name for name in ['record.json','stdout','stderr']]]:
+-        check(path)
+-    execution=data(A/'.work/native-controls-failure-verification-execution-01/record.json')
+-    require(execution['returncode']==0 and execution['source_sha256']==files[str(A/'.work/verify_native_controls_failure_01.py')]['sha256'],
+-            'failed-attempt audit execution differs')
+-    root=Path(stock['path']).parent
+-    require(set(p.name for p in root.iterdir()) == {'smoke-rustc'}, 'old failed native root membership changed')
+-    require(set(p.name for p in (WORK/'commands').iterdir()) == {f'{i:03}' for i in range(5)}, 'old failed command membership changed')
+-    return dict(source=str(SOURCE),evidence=str(WORK),receipt_sha256=audit['receipt_sha256'],
+-        inputs_sha256=INPUTS_SHA256,audit=dict(path=str(AUDIT),sha256=AUDIT_SHA256),
+-        diagnosis=dict(path=str(DIAGNOSIS),sha256=DIAGNOSIS_SHA256),
+-        actual_children=5,qualified_children=0,unqualified_stock=stock,fixture_never_created=True)
++    proofs=[]
++    for number,count,audit_sha,inputs_sha,error,diagnosis_name,diagnosis_sha in ATTEMPTS:
++        source=A/('experiments/hir-options-hash-native-controls-'+number)
++        work=A/('.work/hir-options-hash-native-controls-'+number)
++        audit_path=A/('.work/native-controls-failure-verification-'+number+'.json')
++        audit=data(audit_path,audit_sha);old=data(source/'inputs.json',inputs_sha)
++        require(all(files.get(name)==row for name,row in old['files'].items()),'complete old native closure omitted or changed')
++        require(audit['status']=='verified-retained-failure' and audit['children']==count and audit['intended_children']==20
++            and audit['unexecuted_indices']==list(range(count,20)) and audit['all_child_returncodes_zero'] is True
++            and audit['fixture_never_created'] is True and audit['native_roles_and_behavior_qualified'] is False
++            and audit['inputs_sha256']==inputs_sha and audit['error']==error,'honest failed native audit required')
++        for name,row in audit['evidence_files'].items():
++            check(Path(name));require(files[name]==row,'closed prior evidence changed')
++        stock=audit['unqualified_stock'];check(Path(stock['path']))
++        require(stock['qualified'] is False and files[stock['path']]=={key:stock[key] for key in ['identity','sha256','size']},
++            'unqualified prior stock changed')
++        terminal=data(work/'receipt.json',audit['receipt_sha256'])
++        require(terminal['status']=='failed' and terminal['error']==error and len(terminal['commands'])==count
++            and terminal['source_restored'] is False and all(terminal[k]==[] for k in ['fixture_compilations','native_executions','hits']),
++            'old failure changed or relabeled')
++        for index,ref in enumerate(terminal['commands']):
++            child=data(ref['path'],ref['sha256'])
++            require(Path(ref['path'])==work/'commands'/f'{index:03}'/'receipt.json' and child['status']=='finished'
++                and child['returncode']==0,'old actual command outcome differs')
++        for name in ['plan.json','launch.json','snapshot-plan.json','metadata-preflight.json']:data(source/name)
++        diagnosis=O/'.work'/diagnosis_name;data(diagnosis,diagnosis_sha)
++        verifier=A/('.work/verify_native_controls_failure_'+number+'.py')
++        execution_root=A/('.work/native-controls-failure-verification-execution-'+number)
++        for path in [verifier,*[execution_root/name for name in ['record.json','stdout','stderr']]]:check(path)
++        execution=data(execution_root/'record.json')
++        require(execution['returncode']==0 and execution['source_sha256']==files[str(verifier)]['sha256']==audit['verifier_sha256'],
++            'prior audit execution differs')
++        root=Path(stock['path']).parent
++        expected={'smoke-rustc'} if number=='01' else {'smoke-rustc','stock-main.rs'}
++        require(set(p.name for p in root.iterdir())==expected and not root.is_symlink(),'old native root membership changed')
++        require(set(p.name for p in (work/'commands').iterdir())=={f'{i:03}' for i in range(count)},'old command membership changed')
++        require(not (work/'native-controls.json').exists() and not list((work/'artifacts').iterdir()),'old failure gained qualification evidence')
++        if number=='02':
++            derived=audit['private_stock_source'];check(Path(derived['path']))
++            require(files[derived['path']]=={key:derived[key] for key in ['identity','sha256','size']}
++                and derived==terminal['stock_source'] and derived['sha256']=='2830149bab94db375ec164229320f060096bd5c1ba2576045148bfc090fdcd68'
++                and audit['historical_failed_children']==5 and audit['total_actual_native_children']==11
++                and audit['qualified_native_children']==0,'second failure derivation or scope differs')
++        proofs.append(dict(source=str(source),evidence=str(work),status='verified-retained-failure',
++            receipt_sha256=audit['receipt_sha256'],inputs_sha256=inputs_sha,audit=dict(path=str(audit_path),sha256=audit_sha),
++            diagnosis=dict(path=str(diagnosis),sha256=diagnosis_sha),actual_children=count,qualified_children=0,
++            unqualified_stock=stock,fixture_never_created=True))
++    require([row['actual_children'] for row in proofs]==[5,6] and sum(row['actual_children'] for row in proofs)==11,
++        'ordered prior failed11 scope differs')
++    return proofs
+--- experiments/hir-options-hash-native-controls-02/recipe.py
++++ experiments/hir-options-hash-native-controls-03/recipe.py
+@@ -15,7 +15,7 @@
+ def paths(namespace):
+     n = Path(namespace)
+     s = n / 'source'
+-    root = n / 'native-controls-02'
++    root = n / 'native-controls-03'
+     return dict(source=s, build=s/'build'/HOST/'stage0', runtime=s/'build'/HOST/'stage1',
+                 beta=n/'beta-sysroot', root=root, stock=root/'smoke-rustc', stock_source=root/'stock-main.rs',
+                 fixture=root/'fixture/main.rs', program=root/'fixture/program',
+--- experiments/hir-options-hash-native-controls-02/run.py
++++ experiments/hir-options-hash-native-controls-03/run.py
+@@ -19,13 +19,14 @@
+ import stock_source
+ import previous_attempt
+ import stock_controls
++import loader_controls
+ 
+ HERE = Path(__file__).resolve().parent
+ A = HERE.parents[1]
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ N = X/'.work/hir-options-hash-compiler-01'
+-WORK = A/'.work/hir-options-hash-native-controls-02'
++WORK = A/'.work/hir-options-hash-native-controls-03'
+ COMPOSITION = A/'experiments/hir-options-hash-beta-composition-08'
+ ASSEMBLY = A/'.work/hir-options-hash-beta-composition-08'
+ REVISION = '4de35bdacef0e3cd18a66bc30b5459c19e09b118'
+@@ -211,8 +212,9 @@
+         routes. No old failure is relabeled passed, and no implicit re-admission
+         of a changed provider is available here.
+         """
++        require(loader_controls.validate(self.frozen, self.freeze['files']) == self.plan['loader_route_controls'], 'actual loader route controls differ')
+         require(stock_controls.validate(self.frozen, self.freeze['files']) == self.plan['stock_source_controls'], 'actual derivation controls differ')
+-        require(previous_attempt.validate(self.frozen, self.freeze['files']) == self.plan['prior_failed_attempt'], 'original native failure proof differs')
++        require(previous_attempt.validate(self.frozen, self.freeze['files']) == self.plan['prior_failed_attempts'], 'original native failure proof differs')
+         source = self.plan['assembly']['source']
+         evidence = self.plan['assembly']['evidence']
+         require(source == str(COMPOSITION) and evidence == str(ASSEMBLY), 'source08 B3 route required')
+@@ -375,7 +377,7 @@
+     def static_stock(self, raw):
+         self.record['static_loader'] = observed.stock_macho(self.paths['stock'].read_bytes(), raw,
+             stock=self.paths['stock'], driver=self.plan['runtime_driver']['path'], runtime_lib=self.paths['runtime']/'lib',
+-            qualified_private={row['logical']: row['resolved'] for row in self.plan['runtime_closure']['libraries']})
++            qualified_private=self.plan['runtime_closure']['libraries'])
+         self.save()
+ 
+     def loaded_stock(self, raw, child):
+@@ -454,7 +456,7 @@
+         result = dict(status='native-roles-and-behavior-qualified', candidate_revision=REVISION,
+             source_identity=self.plan['source_identity'], assembly=self.plan['assembly'], compiler=self.plan['compiler'],
+             stock=self.stock, stock_source=self.stock_source, stock_source_derivation=self.plan['stock_source_derivation'],
+-            prior_failed_attempt=self.plan['prior_failed_attempt'], total_actual_native_children=25, qualified_native_children=20,
++            prior_failed_attempts=self.plan['prior_failed_attempts'], loader_route_controls=self.plan['loader_route_controls'], total_actual_native_children=31, qualified_native_children=20,
+             ordered_driver_destinations=self.plan['ordered_driver_destinations'],
+             static_loader=self.record['static_loader'], actual_loader=self.record['actual_loader'],
+             runtime_closure=self.plan['runtime_closure'], source_restored=True,
+--- experiments/hir-options-hash-native-controls-02/test_observations.py
++++ experiments/hir-options-hash-native-controls-03/test_observations.py
+@@ -146,7 +146,7 @@
+         self.driver = self.lib / 'librustc_driver-abcd.dylib'; self.driver.write_bytes(b'synthetic driver')
+         self.llvm = self.lib / 'libLLVM.dylib'; self.llvm.write_bytes(b'synthetic LLVM')
+         self.stock = self.base / 'stock'
+-        self.private = {str(path): str(path) for path in [self.driver, self.llvm]}
++        self.private = [dict(logical=str(path),resolved=str(path),bytes=path.stat().st_size,sha256=observed.digest(path.read_bytes())) for path in [self.driver,self.llvm]]
+         self.loads = ['@rpath/' + self.driver.name, '@rpath/libLLVM.dylib', '/usr/lib/libSystem.B.dylib']
+ 
+     def commands(self, loads=None):
+@@ -170,7 +170,7 @@
+         for loads in [self.loads[1:], self.loads + ['@rpath/libforeign.dylib']]:
+             with self.subTest(loads=loads), self.assertRaises(ValueError):
+                 self.check(commands=self.commands(loads), raw=self.otool(loads))
+-        wrong = self.private | {str(self.llvm): str(self.base / 'foreign')}
++        wrong = [dict(row,resolved=str(self.base/'foreign')) if row['resolved']==str(self.llvm) else row for row in self.private]
+         with self.assertRaises(ValueError):
+             self.check(private=wrong)
+ 

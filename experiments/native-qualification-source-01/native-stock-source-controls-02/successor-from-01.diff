@@ -1,0 +1,61 @@
+--- rejected01/child.py
++++ successor02/child.py
+@@ -10,7 +10,7 @@
+ HERE = Path(__file__).resolve().parent
+ SOURCE = HERE.with_name('hir-options-hash-native-controls-02')
+ OWNER = HERE.parents[1]
+-WORK = OWNER / '.work/native-stock-source-controls-01'
++WORK = OWNER / '.work/native-stock-source-controls-02'
+ MODULES = ['test_stock_source']
+ MAX_FILE = 256 * 1024
+ 
+--- rejected01/run.py
++++ successor02/run.py
+@@ -14,7 +14,7 @@
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ sys.path.insert(0, str(X / 'experiments/stable-cgu'))
+ import owned_stage as owned
+-WORK = OWNER / '.work/native-stock-source-controls-01'
++WORK = OWNER / '.work/native-stock-source-controls-02'
+ 
+ 
+ def read(path):
+@@ -46,7 +46,7 @@
+     if '__CF_USER_TEXT_ENCODING' in os.environ:
+         parts = os.environ['__CF_USER_TEXT_ENCODING'].split(':')
+         assert len(parts) == 3 and all(re.fullmatch(r'(?:0[xX][0-9a-fA-F]{1,8}|[0-9]{1,10})', value) for value in parts)
+-        assert int(parts[0], 16 if parts[0].lower().startswith('0x') else 10) == os.getuid() == 401
++        assert int(parts[0], 16 if parts[0].lower().startswith('0x') else 10) == os.getuid() == 501
+     guard(freeze)
+     assert not WORK.exists() and not WORK.is_symlink() and WORK.parent.resolve(strict=True) == WORK.parent
+     WORK.mkdir()
+--- rejected01/prepare.py
++++ successor02/prepare.py
+@@ -11,7 +11,7 @@
+     here, source, owner = control.HERE, control.SOURCE, control.OWNER
+     assert Path.cwd() == owner and sys.dont_write_bytecode
+     assert not any((here / name).exists() for name in ['inputs.json', 'launch.json'])
+-    assert not control.WORK.exists() and not (owner / '.work/experiments/native-stock-source-controls-supervisor-01').exists()
++    assert not control.WORK.exists() and not (owner / '.work/experiments/native-stock-source-controls-supervisor-02').exists()
+     names = []
+     modules = ['test_stock_source']
+     for module in modules:
+@@ -39,6 +39,9 @@
+     for name in ['stock_source.py', 'test_stock_source.py']:
+         add(source/name)
+     add(control.X / '.work/hir-options-hash-compiler-01/source/compiler/rustc/src/main.rs')
++    for path in (here.with_name('native-stock-source-controls-01')).iterdir():
++        assert path.is_file() and not path.is_symlink();add(path)
++    add(owner/'.work/native-stock-source-controls-prelaunch-rejection-01.json')
+     python = Path(sys.executable).resolve(strict=True)
+     for path in [python, '/opt/homebrew/bin/python3', '/bin/ps', '/usr/sbin/lsof',
+                  owner / 'scripts/supervise_experiment.py', control.X / 'experiments/stable-cgu/owned_stage.py']:
+@@ -59,7 +62,7 @@
+     control.owned.write(here / 'inputs.json', freeze)
+     launch = dict(status='prepared-unrun-awaiting-review', owner=str(owner), environment=environment,
+                   command=[str(python), '-B', str(owner / 'scripts/supervise_experiment.py'), '--run-id',
+-                           'native-stock-source-controls-supervisor-01', '--', str(python), '-B',
++                           'native-stock-source-controls-supervisor-02', '--', str(python), '-B',
+                            str(here / 'run.py'), '--inputs-sha256', control.owned.sha(here / 'inputs.json')],
+                   inputs_sha256=control.owned.sha(here / 'inputs.json'), helper_sha256=control.owned.sha(here / 'run.py'),
+                   expected_children=1, controls=4, capacity=freeze['capacity'], bounds=freeze['bounds'])

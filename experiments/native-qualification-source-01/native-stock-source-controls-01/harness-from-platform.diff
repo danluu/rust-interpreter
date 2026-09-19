@@ -1,0 +1,138 @@
+--- platform/child.py
++++ stock/child.py
+@@ -8,10 +8,10 @@
+ import unittest
+ 
+ HERE = Path(__file__).resolve().parent
+-SOURCE = HERE.with_name('runtime-application-admission')
++SOURCE = HERE.with_name('hir-options-hash-native-controls-02')
+ OWNER = HERE.parents[1]
+-WORK = OWNER / '.work/runtime-platform-controls-01'
+-MODULES = ['test_runtime_platform']
++WORK = OWNER / '.work/native-stock-source-controls-01'
++MODULES = ['test_stock_source']
+ MAX_FILE = 256 * 1024
+ 
+ 
+@@ -50,7 +50,7 @@
+         if isinstance(item, unittest.TestSuite):
+             return [name for test in item for name in names(test)]
+         return [item.id()]
+-    assert sorted(names(suite)) == expected and len(expected) == 5
++    assert sorted(names(suite)) == expected and len(expected) == 4
+     result = unittest.TextTestRunner(verbosity=2).run(suite)
+     freeze = json.loads((HERE / 'inputs.json').read_bytes())
+     for module in list(sys.modules.values()):
+@@ -64,7 +64,7 @@
+                   maximum_file_bytes=MAX_FILE, maximum_writable_names=256,
+                   maximum_directory_names=2048, child_processes=0, compiler_calls=0)
+     (WORK / 'result.json').write_text(json.dumps(report, sort_keys=True, indent=2) + '\n')
+-    assert result.wasSuccessful() and result.testsRun == 5 and not result.skipped
++    assert result.wasSuccessful() and result.testsRun == 4 and not result.skipped
+     assert not result.expectedFailures and not result.unexpectedSuccesses
+     signal.alarm(0)
+ 
+--- platform/run.py
++++ stock/run.py
+@@ -10,11 +10,11 @@
+ 
+ HERE = Path(__file__).resolve().parent
+ OWNER = HERE.parents[1]
+-SOURCE = HERE.with_name('runtime-application-admission')
++SOURCE = HERE.with_name('hir-options-hash-native-controls-02')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ sys.path.insert(0, str(X / 'experiments/stable-cgu'))
+ import owned_stage as owned
+-WORK = OWNER / '.work/runtime-platform-controls-01'
++WORK = OWNER / '.work/native-stock-source-controls-01'
+ 
+ 
+ def read(path):
+@@ -46,7 +46,7 @@
+     if '__CF_USER_TEXT_ENCODING' in os.environ:
+         parts = os.environ['__CF_USER_TEXT_ENCODING'].split(':')
+         assert len(parts) == 3 and all(re.fullmatch(r'(?:0[xX][0-9a-fA-F]{1,8}|[0-9]{1,10})', value) for value in parts)
+-        assert int(parts[0], 16 if parts[0].lower().startswith('0x') else 10) == os.getuid() == 501
++        assert int(parts[0], 16 if parts[0].lower().startswith('0x') else 10) == os.getuid() == 401
+     guard(freeze)
+     assert not WORK.exists() and not WORK.is_symlink() and WORK.parent.resolve(strict=True) == WORK.parent
+     WORK.mkdir()
+@@ -71,10 +71,10 @@
+             stderr = (WORK / 'command/stderr').read_text()
+             names = re.findall(r'^test_[A-Za-z0-9_]+ \(([^)]+)\) \.\.\. ok$', stderr, re.M)
+             assert sorted(names) == freeze['expected_names']
+-            assert re.search(r'^Ran 5 tests in [0-9.]+s\n\nOK\n$', stderr, re.M)
++            assert re.search(r'^Ran 4 tests in [0-9.]+s\n\nOK\n$', stderr, re.M)
+             assert not (WORK / 'command/stdout').read_bytes()
+             result = read(WORK / 'result.json')
+-            assert result['status'] == 'passed' and result['tests_run'] == 5 and result['expected_names'] == freeze['expected_names']
++            assert result['status'] == 'passed' and result['tests_run'] == 4 and result['expected_names'] == freeze['expected_names']
+             assert all(result[name] == 0 for name in ['failures', 'errors', 'skipped', 'expected_failures', 'unexpected_successes', 'child_processes', 'compiler_calls'])
+             assert not list((WORK / 'tmp').iterdir()), 'synthetic fixture cleanup incomplete'
+             total = 0
+@@ -87,7 +87,7 @@
+                     assert path.is_dir()
+             assert total <= 2 * 1024 * 1024, 'retained pure-control output cap exceeded'
+             guard(freeze)
+-            receipt.update(status='passed', controls_passed=5, result_sha256=owned.sha(WORK / 'result.json'),
++            receipt.update(status='passed', controls_passed=4, result_sha256=owned.sha(WORK / 'result.json'),
+                            retained_file_bytes=total, free_bytes_after=owned.disk(OWNER, 9))
+     except BaseException as error:
+         receipt.update(status='failed', error=repr(error)); raise
+--- platform/prepare.py
++++ stock/prepare.py
+@@ -11,16 +11,16 @@
+     here, source, owner = control.HERE, control.SOURCE, control.OWNER
+     assert Path.cwd() == owner and sys.dont_write_bytecode
+     assert not any((here / name).exists() for name in ['inputs.json', 'launch.json'])
+-    assert not control.WORK.exists() and not (owner / '.work/experiments/runtime-platform-controls-supervisor-01').exists()
++    assert not control.WORK.exists() and not (owner / '.work/experiments/native-stock-source-controls-supervisor-01').exists()
+     names = []
+-    modules = ['test_runtime_platform']
++    modules = ['test_stock_source']
+     for module in modules:
+         tree = ast.parse((source / (module + '.py')).read_text())
+         for node in tree.body:
+             if isinstance(node, ast.ClassDef):
+                 names.extend(module + '.' + node.name + '.' + child.name for child in node.body
+                              if isinstance(child, ast.FunctionDef) and child.name.startswith('test_'))
+-    assert len(names) == len(set(names)) == 5
++    assert len(names) == len(set(names)) == 4
+     files, routes = {}, {}
+     def add(path):
+         path = Path(path); resolved = path.resolve(strict=True)
+@@ -36,8 +36,9 @@
+     for path in sorted(here.iterdir()):
+         assert path.is_file() and not path.is_symlink()
+         add(path)
+-    for name in ['runtime_platform.py', 'test_runtime_platform.py', 'runtime_admission_v3.py']:
++    for name in ['stock_source.py', 'test_stock_source.py']:
+         add(source/name)
++    add(control.X / '.work/hir-options-hash-compiler-01/source/compiler/rustc/src/main.rs')
+     python = Path(sys.executable).resolve(strict=True)
+     for path in [python, '/opt/homebrew/bin/python3', '/bin/ps', '/usr/sbin/lsof',
+                  owner / 'scripts/supervise_experiment.py', control.X / 'experiments/stable-cgu/owned_stage.py']:
+@@ -54,19 +55,19 @@
+                               maximum_writable_names=256, maximum_directory_names=2048,
+                               maximum_cumulative_child_file_payload_bytes=258 * 256 * 1024,
+                               maximum_retained_stage_file_bytes=2 * 2**20),
+-                  source_only_platform_policy_controls=True, compiler_calls=0, provider_probes=0, B3_compositions=0)
++                  source_only_stock_source_controls=True, compiler_calls=0, provider_probes=0, B3_compositions=0)
+     control.owned.write(here / 'inputs.json', freeze)
+     launch = dict(status='prepared-unrun-awaiting-review', owner=str(owner), environment=environment,
+                   command=[str(python), '-B', str(owner / 'scripts/supervise_experiment.py'), '--run-id',
+-                           'runtime-platform-controls-supervisor-01', '--', str(python), '-B',
++                           'native-stock-source-controls-supervisor-01', '--', str(python), '-B',
+                            str(here / 'run.py'), '--inputs-sha256', control.owned.sha(here / 'inputs.json')],
+                   inputs_sha256=control.owned.sha(here / 'inputs.json'), helper_sha256=control.owned.sha(here / 'run.py'),
+-                  expected_children=1, controls=5, capacity=freeze['capacity'], bounds=freeze['bounds'])
++                  expected_children=1, controls=4, capacity=freeze['capacity'], bounds=freeze['bounds'])
+     control.owned.write(here / 'launch.json', launch)
+     control.guard(freeze)
+     print(json.dumps(dict(status='prepared-unrun', launch_sha256=control.owned.sha(here / 'launch.json'),
+                          inputs_sha256=launch['inputs_sha256'], files=len(files),
+-                         bytes=sum(row['stamp'][3] for row in files.values()), controls=5), indent=2))
++                         bytes=sum(row['stamp'][3] for row in files.values()), controls=4), indent=2))
+ 
+ 
+ if __name__ == '__main__':
