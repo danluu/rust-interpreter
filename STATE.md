@@ -139,3 +139,11 @@ COUNTERS CLOSED/PUBLISHED maincd4b2ab6 preservingpeer9ee4b793. All12guests,
 Processaggregateonly notspeedup. Newordinary-dead-scratch01 registerssavedcode
 withinspan pureoverwrittentemporary census usingexactclosedscalarworddecoder;
 no build/guest/optimization. Nineold+sevennewcontrols beforeanalysis, thenclose.
+
+ORDINARY DEAD SCRATCH01 CLOSED/PUBLISHED main8b293640. 16controls include1000
+oraclecases;22346/27009staticdeadwords but4/1933and8/1429Cast samples =>DEFER.
+Newbranchadopted-es8-workflow registers current matched32sourceeditcommands
+(native/custom/duplicate/check),2workers,unchangedoriginal345372comparisons.
+Onlyprotocol/model/commonwritten sofar; benchmark/closer stillrequired.
+Preflight1670bindingspassed, freoriginalclean; nextcommitthenprotocol6controls
+withsupervisor+independentclose. ReadRUNTIME-NEXT for exactpendingsteps.
