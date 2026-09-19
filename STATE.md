@@ -360,3 +360,16 @@ floor. Registered closed-public-profile-compression01: explicit23closed owned
 public profile runs; read-only preflight176JSONfiles6.109GiB allocation, each
 already hash-bound by originalclosure. Reusequalifiedexactbirthtime helper;
 no deletion, no private/peer/sharedtarget mutation. No Rustbuild admitted.
+
+Public-profilecompression01 supervisor51607/controller51610 finished0:176files
+across23closedpublicruns, allocation6559932416→1018576896bytes (5.161GiB saved),
+all plaintext and exact creationtime preserved. Independentclosure attempt
+exec17273 failed45s lockadmission beforechecks; receiptinrawclosure-admission01.
+Peer53069 Ruffscreen holdslock; untouched. Re-admit identicalclose.py afterrelease.
+No completedclosure yet, so no subsequentbuild/cleanup admitted. Registered exact
+closed isolated-switch cache retirement at5b29f4d4; sixroots only, notstarted.
+Typedplanner qualification controllerb4614ce4 registered, notstarted. Free22.71GiB
+below23.004GiB buildfloor afterpeerallocation; same sharedtargetNEVERCLEAN.
+Unappliednativeintegration draft preservedinbenchmarks/experiments/branch-budget-
+native-draft (patch/receipt/UNBUILT.md),7authored nativecontrols, no build/execution.
+Actualcrate stillonly825fe65b typedplanner/default-offfeature; no emitterchanges.
