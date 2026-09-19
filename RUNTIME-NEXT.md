@@ -4,7 +4,12 @@ Current branch experiment/shared-literal-keys-20260919. Newprototype prepared,
 not tested: immutable perrequest Function digest cache shared via OnceLock across
 workers,4MiB/65536functionbound+uncachedfallback,newliteral-v2domain;currentcallee/
 context inputs still perowner, fullnormalizedpreimagecharged against4MiB.
-Five newtests;focused39/profile+31featureoff ready. See shared-literal-keys/PLAN.
+Five newtests;focused01source8ded298b completed25265/25284 CLOSED40033:
+39/profile+31featureoff passed. Full01sourcec029ed04 ACTIVE45587/controller45610,
+678Rust/profile17ignored+33diag+10offsession31offmodel/defaultVM;Python442+22skip
+hashboundreuse. Freeze crates/scripts/tests andshared-literal-keys-workspace until
+closure. Replay/phase/install controllersprepared newshared-keynames;notrunyet.
+See docs/SHARED-LITERAL-KEYS-20260919.md.
 Parent parameterized-literals candidate remains experimental and primary05failed. Explicit selected large
 literals are opaque to folding/range/call-slot analyses; checked native relocation
 sites and a separate emission manifest carry their current values. Preserve small
