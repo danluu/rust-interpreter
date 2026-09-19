@@ -83,7 +83,7 @@ with ExitStack() as stack:
     from benchmark import case_states,native_outcomes
     from accounting import MODES,SESSION_MODES,ratios,schedule
     from commands import command,validate_options
-    from workflow_cases import WORKFLOWS
+    from workflow_cases import WORKFLOW_VARIANTS
     require_space(ROOT,8)
     target=ROOT/'.work/fixed-frame-clear-combined-build-01/target'
     allocated=int(subprocess.check_output(['du','-sk',str(target)],text=True).split()[0])*1024
@@ -112,7 +112,7 @@ with ExitStack() as stack:
             else:
                 data=subprocess.check_output(['git','show',plan['source_revision']+':'+path],cwd=ROOT)
                 assert hashlib.sha256(data).hexdigest()==digest,path
-        case=WORKFLOWS['fre'];assert plan['case']==case
+        case=WORKFLOW_VARIANTS['fre','token-phrase-allocation'];assert plan['case']==case
         source=source_pin('fre',plan['revision'],case['file'],plan['original_source_sha256'])
         assert plan['revision']=='e0df0b010b156b030a02f073588d28703f4267f3'
         assert schedule(case_states((source/case['file']).read_bytes(),case))==plan['schedule']
