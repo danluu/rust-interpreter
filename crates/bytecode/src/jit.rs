@@ -49,6 +49,7 @@ mod values;
 mod transfers;
 mod guarded_ranges;
 mod scratch_values;
+mod compact_switch;
 #[cfg(feature = "jit-parameterized-literals")]
 mod parameterized_literals;
 #[cfg(any(test, feature = "jit-template-session"))]
@@ -1347,22 +1348,7 @@ impl Assembler<'_> {
                 if !cases.is_empty() {
                     self.get(9,*value,false);
                     self.get(10,*value,true);
-                    // Compare both halves and retain first-match ordering,
-                    // including when cases contain duplicate values.
-                    for (case,target) in cases {
-                        self.imm(11,*case as u64);
-                        self.cmp(9,11);
-                        let low=self.words.len();
-                        self.emit(0x54000001); // b.ne next_case
-                        self.imm(11,(*case>>64) as u64);
-                        self.cmp(10,11);
-                        let high=self.words.len();
-                        self.emit(0x54000001);
-                        self.successor(*target);
-                        let next=self.words.len();
-                        self.patch_conditional(low,next)?;
-                        self.patch_conditional(high,next)?;
-                    }
+                    self.switch_cases(cases)?;
                 }
                 self.successor(*otherwise);
                 Ok(())

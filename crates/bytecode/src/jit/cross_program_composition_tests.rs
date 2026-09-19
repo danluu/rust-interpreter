@@ -11,6 +11,27 @@ fn indirect_fixture()->Program {
 fn indirect_owner(p:&Program)->Jit<'_> {let mut j=owner(p);j.enable_indirect_calls();j}
 
 #[test]
+fn compact_switch_templates_bind_case_values_and_preserve_exact_reuse() {
+    let mut p=fixture();p.functions.truncate(1);
+    p.functions[0].code=vec![Op::Local{dst:0,offset:0},Op::Load{dst:1,address:0,size:16},
+        Op::Switch{value:1,cases:vec![(0,3),(4095,4),(0,4)],otherwise:4},
+        Op::Assert{value:1,expected:false,message:"zero branch".into()},Op::Return];
+    let a=owner(&p);let c=Checked::new(&p).unwrap();
+    for rebind in [false,true] {
+        let t=Template::capture_mode(&c,&a,0,EMITTER,&stage(&a,0),MAX_RETAINED,rebind).unwrap();
+        let q=p.clone();let b=owner(&q);let d=Checked::new(&q).unwrap();
+        same(&stage(&b,0),&t.restore(&d,&b,0,&EMITTER,MAX_CODE_BYTES/4).unwrap());
+        for change in 0..3 {
+            let mut q=p.clone();let Op::Switch{cases,..}=&mut q.functions[0].code[2] else {panic!()};
+            match change {0=>cases[1].0=4094,1=>cases[1].0=1<<64,_=>cases[0].1=4}
+            let b=owner(&q);let d=Checked::new(&q).unwrap();
+            assert!(t.restore(&d,&b,0,&EMITTER,MAX_CODE_BYTES/4).is_none());
+        }
+    }
+    assert!(a.code.is_none());
+}
+
+#[test]
 fn session_composition_keys_bind_changed_indirect_signature_ordinals_and_missing_targets() {
     let p=indirect_fixture();let a=indirect_owner(&p);let checked=Checked::new(&p).unwrap();
     for rebind in [false,true] {

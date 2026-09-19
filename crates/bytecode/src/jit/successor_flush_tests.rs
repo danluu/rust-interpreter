@@ -3,7 +3,7 @@ use crate::{Engine, Limits, Slot, execute_profiled, execute_with_engine};
 
 const WIDE: u128 = 0xfedc_ba98_7654_3210_0123_4567_89ab_cdef;
 
-fn program(code: Vec<Op>, registers: usize, args: usize) -> Program {
+pub(super) fn program(code: Vec<Op>, registers: usize, args: usize) -> Program {
     Program { version:crate::VERSION,target:"aarch64-apple-darwin".into(),entry:0,
         data:vec![0;16],statics:vec![],thread_locals:vec![],
         functions:vec![Function {name:"successor flush".into(),frame_size:256,frame_align:16,registers,
@@ -11,7 +11,7 @@ fn program(code: Vec<Op>, registers: usize, args: usize) -> Program {
             result:Slot {offset:0,size:16},code}] }
 }
 
-fn compare(p: &Program, args: &[u128], expected: u128) {
+pub(super) fn compare(p: &Program, args: &[u128], expected: u128) {
     crate::validate(p).unwrap();
     let reference=execute_with_engine(p,args,Limits::default(),Engine::Interpreter).unwrap();
     assert_eq!(reference.value,expected);
