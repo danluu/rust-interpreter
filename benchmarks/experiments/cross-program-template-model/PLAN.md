@@ -51,3 +51,30 @@ Close actual terminals and source bindings before further changes. Persistence,
 production integration, full correctness qualification and a new genuine-edit
 comparison remain separate later stages. Never relax failed gates or rerun an
 unchanged parked candidate to seek a favorable sample.
+
+## Model02: explicit relocations across checked programs
+
+Keep all eight strict controls and add four rebinding controls. The emitter
+records scalar-target and assertion-code immediate spans under cfg(test), with
+the scalar callee and exact caller PC, or the local assertion index. The model
+requires sorted, nonoverlapping, one-to-four-word spans, original immediate
+encodings and associated BLR instructions. Compare the full ordered set against
+every current eligible scalar Call and every assertion; incomplete or duplicated
+ledgers decline. Capturing also requires the original owner's actual targets and
+assertion codes. This remains trusted in-memory staging, not a native-file trust
+or authenticity check.
+
+A separate keyed mode omits only scalar target addresses and the assertion base.
+All caller operands, numeric callee IDs, layouts, scalar admission and step/byte
+shape, options and checked-owner requirements remain. Restore patches only the
+recorded spans, requires identical instruction widths, keeps branch positions
+fixed, and rebuilds assertion strings from the current Program. A width change
+declines. The ledger is charged within the unchanged64MiB retained-storage cap.
+
+New controls compare all words and metadata across distinct programs, multiple
+calls/callees and assertion bases, and round-trip recapture. They cover width
+changes, missing/overlapping/wrong-site/wrong-callee/wrong-immediate ledgers,
+body/layout/admission/step changes and exact/insufficient code budgets. Require
+all arenas to stay absent. The two profiles now each expect12 focused tests.
+Close this run before modifying the sources; no production integration, native
+execution, storage, guest commands or timing claim follows from these tests.

@@ -8,6 +8,18 @@ const MAX_KEY_BYTES:usize=4*1024*1024;
 const MAX_CALL_SITES:usize=16_384;
 const MAX_RETAINED:usize=64*1024*1024;
 
+#[derive(Clone,Copy,Debug,PartialEq,Eq)]
+pub(super) enum Kind { Assertion(usize), Scalar{function:usize,pc:usize} }
+#[derive(Clone,Debug,PartialEq,Eq)]
+pub(super) struct Relocation {pub word:usize,pub words:usize,pub value:u64,pub kind:Kind}
+pub(super) fn append(out:&mut Vec<Relocation>,relocations:Vec<Relocation>,base:usize) {
+    out.extend(relocations.into_iter().map(|mut r|{r.word+=base;r}));
+}
+fn immediate(kind:Kind,value:u64)->Vec<u32> {
+    let mut a=Assembler::default();
+    a.imm(match kind {Kind::Assertion(_)=>0,Kind::Scalar{..}=>16},value);a.words
+}
+
 struct Checked<'p>(&'p Program);
 impl<'p> Checked<'p> {
     fn new(p:&'p Program)->Option<Self> {
@@ -31,6 +43,9 @@ struct CallInput<'a> {
     scalar:Option<(usize,usize,Option<usize>,usize)>,
 }
 fn identity(checked:&Checked<'_>,jit:&Jit<'_>,id:usize,emitter:&[u8;32],limit:usize)->Option<[u8;32]> {
+    identity_mode(checked,jit,id,emitter,limit,false)
+}
+fn identity_mode(checked:&Checked<'_>,jit:&Jit<'_>,id:usize,emitter:&[u8;32],limit:usize,rebind:bool)->Option<[u8;32]> {
     if !std::ptr::eq(checked.0,jit.program) || jit.profiled || jit.native_call_stubs
         || jit.trees.is_some() || jit.resumable.is_none() || limit>MAX_KEY_BYTES {return None;}
     let f=jit.program.functions.get(id)?;
@@ -47,23 +62,52 @@ fn identity(checked:&Checked<'_>,jit:&Jit<'_>,id:usize,emitter:&[u8;32],limit:us
     for id in ids {
         let c=jit.program.functions.get(id)?;
         calls.push(CallInput{id,frame_size:c.frame_size,frame_align:c.frame_align,registers:c.registers,
-            args:&c.args,result:&c.result,scalar:jit.scalar_entry(id).map(|e|e.template_model_identity())});
+            args:&c.args,result:&c.result,scalar:jit.scalar_entry(id).map(|e|{
+                let (bytes,maximum,success,target)=e.template_model_identity();
+                (bytes,maximum,success,if rebind {0} else {target})
+            })});
     }
-    let assertion_base=f.code.iter().any(|op|matches!(op,Op::Assert{..})).then_some(jit.assertions.len());
+    let assertion_base=(!rebind && f.code.iter().any(|op|matches!(op,Op::Assert{..}))).then_some(jit.assertions.len());
     let test_flags=[jit.disable_call_slot_hints,jit.observe_guarded_local_retention,jit.observe_static_local_facts,
         jit.observe_scalar_copy,jit.observe_scratch_locals,jit.scratch_values_enabled,jit.observe_flush,jit.observe_memory_parts];
     let context=(jit.program.version,&jit.program.target,jit.program.functions.len(),jit.uses_heap,
         jit.persistent_registers,jit.scalar.is_some(),test_flags,assertion_base);
     let mut sink=BoundedHash{hash:Sha256::new(),bytes:0,limit};
-    bincode::serialize_into(&mut sink,&("cross-program-staging-model-v1",emitter,context,id,f,calls)).ok()?;
+    bincode::serialize_into(&mut sink,&("cross-program-staging-model-v2",rebind,emitter,context,id,f,calls)).ok()?;
     Some(sink.hash.finalize().into())
 }
 
 struct Template {
     key:[u8;32],emitter:[u8;32],words:Vec<u32>,entries:Vec<Option<Block>>,resumes:Vec<Option<usize>>,
     assertion_pcs:Vec<usize>,operations:usize,register_pairs:usize,liveness_declined:bool,
+    relocations:Vec<Relocation>,assertion_base:usize,rebind:bool,
 }
 impl Template {
+    fn valid_relocations(&self,f:&Function,jit:&Jit<'_>,capture:bool)->Option<()> {
+        // Expected sites come from the complete checked caller and current scalar
+        // admission. Per-call PCs reject missing/duplicated/misassociated sites.
+        let mut expected=f.code.iter().enumerate().filter_map(|(pc,op)|match op {
+            Op::Call{function,..} if jit.scalar_entry(*function).is_some()=>Some((pc,*function)),_=>None,
+        });
+        let mut assertion=0;let mut end=0;
+        for r in &self.relocations {
+            if r.word<end || !(1..=4).contains(&r.words) {return None;}
+            end=r.word.checked_add(r.words)?;
+            if self.words.get(r.word..end)?!=immediate(r.kind,r.value) {return None;}
+            match r.kind {
+                Kind::Assertion(index)=>{
+                    if index!=assertion || index>=self.assertion_pcs.len()
+                        || assertion_code(self.assertion_base,index).ok()?!=r.value {return None;}
+                    assertion+=1;
+                },
+                Kind::Scalar{function,pc}=>{
+                    if expected.next()!=Some((pc,function)) || *self.words.get(end)?!=0xd63f0200 {return None;}
+                    if capture && jit.scalar_entry(function)?.template_model_identity().3 as u64!=r.value {return None;}
+                },
+            }
+        }
+        (assertion==self.assertion_pcs.len() && expected.next().is_none()).then_some(())
+    }
     fn valid(&self,f:&Function)->bool {
         if self.words.is_empty() || self.words.len()>MAX_CODE_BYTES/4 || self.entries.len()!=f.code.len()
             || self.resumes.len()!=f.code.len()+1 {return false;}
@@ -75,18 +119,23 @@ impl Template {
     fn charge(&self)->Option<usize> {
         [self.words.capacity().checked_mul(4)?,self.entries.capacity().checked_mul(std::mem::size_of::<Option<Block>>())?,
             self.resumes.capacity().checked_mul(std::mem::size_of::<Option<usize>>())?,
-            self.assertion_pcs.capacity().checked_mul(std::mem::size_of::<usize>())?]
-            .into_iter().try_fold(std::mem::size_of::<Self>()+4*64,usize::checked_add)
+            self.assertion_pcs.capacity().checked_mul(std::mem::size_of::<usize>())?,
+            self.relocations.capacity().checked_mul(std::mem::size_of::<Relocation>())?]
+            .into_iter().try_fold(std::mem::size_of::<Self>()+5*64,usize::checked_add)
     }
     fn capture(checked:&Checked<'_>,jit:&Jit<'_>,id:usize,emitter:[u8;32],staged:&CompiledFunction<'_>,limit:usize)->Option<Self> {
+        Self::capture_mode(checked,jit,id,emitter,staged,limit,false)
+    }
+    fn capture_mode(checked:&Checked<'_>,jit:&Jit<'_>,id:usize,emitter:[u8;32],staged:&CompiledFunction<'_>,limit:usize,rebind:bool)->Option<Self> {
         if limit>MAX_RETAINED {return None;}
-        let key=identity(checked,jit,id,&emitter,MAX_KEY_BYTES)?;
+        let key=identity_mode(checked,jit,id,&emitter,MAX_KEY_BYTES,rebind)?;
         let f=jit.program.functions.get(id)?;
         let minimum=staged.words.len().checked_mul(4)?
             .checked_add(staged.entries.len().checked_mul(std::mem::size_of::<Option<Block>>())?)?
             .checked_add(staged.resumes.len().checked_mul(std::mem::size_of::<Option<usize>>())?)?
             .checked_add(staged.assertions.len().checked_mul(std::mem::size_of::<usize>())?)?
-            .checked_add(std::mem::size_of::<Self>()+4*64)?;
+            .checked_add(staged.model_relocations.len().checked_mul(std::mem::size_of::<Relocation>())?)?
+            .checked_add(std::mem::size_of::<Self>()+5*64)?;
         if minimum>limit {return None;}
         let mut pcs=vec![];pcs.try_reserve_exact(staged.assertions.len()).ok()?;
         for (pc,op) in f.code.iter().enumerate() {
@@ -101,14 +150,17 @@ impl Template {
             let mut out=vec![];out.try_reserve_exact(items.len()).ok()?;out.extend_from_slice(items);Some(out)
         }
         let result=Self{key,emitter,words:copy(&staged.words)?,entries:copy(&staged.entries)?,resumes:copy(&staged.resumes)?,
-            assertion_pcs:pcs,operations:staged.operations,register_pairs:staged.register_pairs,liveness_declined:staged.liveness_declined};
+            assertion_pcs:pcs,operations:staged.operations,register_pairs:staged.register_pairs,liveness_declined:staged.liveness_declined,
+            relocations:copy(&staged.model_relocations)?,assertion_base:jit.assertions.len(),rebind};
+        result.valid_relocations(f,jit,true)?;
         (result.valid(f) && result.charge()?<=limit).then_some(result)
     }
     fn restore<'p>(&self,checked:&Checked<'p>,jit:&Jit<'p>,id:usize,emitter:&[u8;32],word_budget:usize)->Option<CompiledFunction<'p>> {
-        if *emitter!=self.emitter || identity(checked,jit,id,emitter,MAX_KEY_BYTES)?!=self.key {return None;}
+        if *emitter!=self.emitter || identity_mode(checked,jit,id,emitter,MAX_KEY_BYTES,self.rebind)?!=self.key {return None;}
         let f=jit.program.functions.get(id)?;
         if !self.valid(f) || self.words.len()>word_budget || self.words.len()>jit.capacity.checked_sub(jit.bytes)?/4
             || !jit.resumable.as_ref()?.fits(f.code.len()) {return None;}
+        self.valid_relocations(f,jit,false)?;
         let mut assertions=vec![];assertions.try_reserve_exact(self.assertion_pcs.len()).ok()?;
         for &pc in &self.assertion_pcs {
             let Op::Assert{message,..}=&f.code[pc] else {return None;};
@@ -117,7 +169,18 @@ impl Template {
         fn copy<T:Clone>(items:&[T])->Option<Vec<T>> {
             let mut out=vec![];out.try_reserve_exact(items.len()).ok()?;out.extend_from_slice(items);Some(out)
         }
-        Some(CompiledFunction{words:copy(&self.words)?,entries:copy(&self.entries)?,resumes:copy(&self.resumes)?,assertions,
+        let mut words=copy(&self.words)?;let mut model_relocations=copy(&self.relocations)?;
+        for r in &mut model_relocations {
+            let value=match r.kind {
+                Kind::Assertion(index)=>assertion_code(jit.assertions.len(),index).ok()?,
+                Kind::Scalar{function,..}=>jit.scalar_entry(function)?.template_model_identity().3 as u64,
+            };
+            if !self.rebind && value!=r.value {return None;}
+            let replacement=immediate(r.kind,value);
+            if replacement.len()!=r.words {return None;}
+            words[r.word..r.word+r.words].copy_from_slice(&replacement);r.value=value;
+        }
+        Some(CompiledFunction{words,model_relocations,entries:copy(&self.entries)?,resumes:copy(&self.resumes)?,assertions,
             operations:self.operations,register_pairs:self.register_pairs,liveness_declined:self.liveness_declined,
             local_forwarding:vec![],local_fact_events:vec![],scratch_hits:vec![],scratch_copy_hits:vec![],
             flush_spans:vec![],memory_spans:vec![],retained_local_writes:vec![]})
@@ -142,6 +205,7 @@ fn stage<'p>(j:&Jit<'p>,id:usize)->CompiledFunction<'p> {j.emit_function(&j.prog
 fn template(c:&Checked<'_>,j:&Jit<'_>,id:usize)->Template {Template::capture(c,j,id,EMITTER,&stage(j,id),MAX_RETAINED).unwrap()}
 fn same(a:&CompiledFunction<'_>,b:&CompiledFunction<'_>) {
     assert_eq!(a.words,b.words);assert_eq!(a.resumes,b.resumes);assert_eq!(a.assertions,b.assertions);
+    assert_eq!(a.model_relocations,b.model_relocations);
     assert_eq!((a.operations,a.register_pairs,a.liveness_declined),(b.operations,b.register_pairs,b.liveness_declined));
     let entries=|e:&[Option<Block>]|e.iter().map(|b|b.map(|b|(b.offset,b.end))).collect::<Vec<_>>();
     assert_eq!(entries(&a.entries),entries(&b.entries));
@@ -196,11 +260,14 @@ fn cross_program_template_key_storage_and_code_budgets_decline_before_publicatio
     assert!(identity(&Checked::new(&many).unwrap(),&b,0,&EMITTER,MAX_KEY_BYTES).is_none());
 }
 fn scalar(j:&mut Jit<'_>,base:usize) {
-    j.enable_scalar_calls();let mut work=crate::proof::MAX_GLOBAL_WORK;
-    let memory=crate::proof::memory_plan(j.program,1,&mut work);
-    let plan=crate::scalar_ir::lower(&j.program.functions[1],&memory,250_000).unwrap();
+    j.enable_scalar_calls();scalar_at(j,1,base);
+}
+fn scalar_at(j:&mut Jit<'_>,id:usize,base:usize) {
+    let mut work=crate::proof::MAX_GLOBAL_WORK;
+    let memory=crate::proof::memory_plan(j.program,id,&mut work);
+    let plan=crate::scalar_ir::lower(&j.program.functions[id],&memory,250_000).unwrap();
     let emitted=crate::scalar_ir::native_leaf::emit_call(&plan,false).unwrap();
-    j.observe_saved_scalar_entry(1,0,emitted.words.len()*4,base);
+    j.observe_saved_scalar_entry(id,0,emitted.words.len()*4,base);
 }
 #[test]
 fn cross_program_template_scalar_target_admission_and_step_shape_are_identity_inputs() {
@@ -247,5 +314,92 @@ fn cross_program_template_branches_loops_and_persistent_options_match_fresh_stag
         let mut q=p.clone();q.data[0]=7;let b=Jit::new_resumable(&q,false,MAX_CODE_BYTES,persistent).unwrap();let d=Checked::new(&q).unwrap();
         same(&stage(&b,0),&t.restore(&d,&b,0,&EMITTER,MAX_CODE_BYTES/4).unwrap());assert!(a.code.is_none() && b.code.is_none());
     }}
+}
+
+fn relocatable(c:&Checked<'_>,j:&Jit<'_>)->Template {
+    Template::capture_mode(c,j,0,EMITTER,&stage(j,0),MAX_RETAINED,true).unwrap()
+}
+fn prior_assertions(j:&mut Jit<'_>,count:usize) {
+    for _ in 0..count {j.assertions.push(Assertion{message:"prior",function:"other",kind:FaultKind::Assertion});}
+}
+#[test]
+fn cross_program_template_rebinding_records_every_site_and_matches_fresh_staging() {
+    let mut p=fixture();p.functions.push(p.functions[1].clone());p.functions[2].name="second leaf".into();
+    p.functions[0].code.pop();
+    p.functions[0].code.extend([Op::Assert{value:0,expected:false,message:"second assertion".into()},
+        Op::Call{function:2,args:vec![],destination:1},Op::Call{function:1,args:vec![],destination:1},Op::Return]);
+    let mut a=owner(&p);scalar(&mut a,0x123456780000);scalar_at(&mut a,2,0x123456780000);prior_assertions(&mut a,2);
+    let c=Checked::new(&p).unwrap();let t=relocatable(&c,&a);assert_eq!(t.relocations.len(),5);
+    let mut q=p.clone();q.data[0]=8;q.statics[0]=9;q.functions[1].code[0]=Op::Imm{dst:0,value:8};
+    let mut b=owner(&q);scalar(&mut b,0x234567890000);scalar_at(&mut b,2,0x3456789a0000);prior_assertions(&mut b,7);
+    let d=Checked::new(&q).unwrap();let fresh=stage(&b,0);
+    let restored=t.restore(&d,&b,0,&EMITTER,MAX_CODE_BYTES/4).unwrap();same(&fresh,&restored);
+    assert_ne!(t.words,restored.words);
+    for (i,(&old,&new)) in t.words.iter().zip(&restored.words).enumerate() {
+        if old!=new {assert!(t.relocations.iter().any(|r|r.word<=i && i<r.word+r.words));}
+    }
+    for (&pc,assertion) in t.assertion_pcs.iter().zip(&restored.assertions) {
+        let Op::Assert{message,..}=&q.functions[0].code[pc] else {panic!()};
+        assert!(std::ptr::eq(message.as_ptr(),assertion.message.as_ptr()));
+    }
+    let recaptured=Template::capture_mode(&d,&b,0,EMITTER,&restored,MAX_RETAINED,true).unwrap();
+    same(&stage(&a,0),&recaptured.restore(&c,&a,0,&EMITTER,MAX_CODE_BYTES/4).unwrap());
+    assert!(a.code.is_none() && b.code.is_none());assert_eq!(a.bytes+b.bytes,0);
+}
+#[test]
+fn cross_program_template_rebinding_width_changes_decline_without_mutating_template() {
+    let p=fixture();let mut a=owner(&p);scalar(&mut a,0x10000000);
+    let t=relocatable(&Checked::new(&p).unwrap(),&a);let before=t.words.clone();
+    let q=p.clone();let mut b=owner(&q);scalar(&mut b,0x123456780000);let c=Checked::new(&q).unwrap();
+    assert_eq!(identity_mode(&c,&b,0,&EMITTER,MAX_KEY_BYTES,true).unwrap(),t.key);
+    assert!(t.restore(&c,&b,0,&EMITTER,MAX_CODE_BYTES/4).is_none());assert_eq!(t.words,before);
+    assert!(a.code.is_none() && b.code.is_none());assert_eq!(b.bytes,0);
+}
+#[test]
+fn cross_program_template_rebinding_rejects_incomplete_overlapping_and_wrong_ledgers() {
+    let mut p=fixture();p.functions.push(p.functions[1].clone());
+    let mut a=owner(&p);scalar(&mut a,0x123456780000);scalar_at(&mut a,2,0x123456780000);
+    let c=Checked::new(&p).unwrap();let original=stage(&a,0);assert_eq!(original.model_relocations.len(),2);
+    for which in 0..9 {
+        let mut t=relocatable(&c,&a);
+        match which {
+            0=>{t.relocations.pop();},1=>{t.relocations.remove(0);},
+            2=>t.relocations[1].word=t.relocations[0].word,
+            3=>t.relocations[1].value^=0x10000,
+            4=>{let end=t.relocations[1].word+t.relocations[1].words;t.words[end]=0;},
+            5=>t.relocations[1].kind=Kind::Scalar{function:2,pc:4},
+            6=>t.relocations[1].kind=Kind::Scalar{function:1,pc:5},
+            7=>t.relocations[0].kind=Kind::Assertion(1),
+            _=>t.relocations[1].words=usize::MAX,
+        }
+        assert!(t.restore(&c,&a,0,&EMITTER,MAX_CODE_BYTES/4).is_none(),"case {which}");
+        let mut staged=stage(&a,0);staged.model_relocations=t.relocations;staged.words=t.words;
+        assert!(Template::capture_mode(&c,&a,0,EMITTER,&staged,MAX_RETAINED,true).is_none(),"capture {which}");
+    }
+    // A self-consistent immediate for a different target is still not an
+    // admissible capture from this owner, even if the instruction width agrees.
+    let mut staged=stage(&a,0);let r=&mut staged.model_relocations[1];r.value=0x234567890000;
+    staged.words[r.word..r.word+r.words].copy_from_slice(&immediate(r.kind,r.value));
+    assert!(Template::capture_mode(&c,&a,0,EMITTER,&staged,MAX_RETAINED,true).is_none());
+    assert!(a.code.is_none());
+}
+#[test]
+fn cross_program_template_rebinding_keeps_body_layout_admission_and_budget_dependencies() {
+    let p=fixture();let mut a=owner(&p);scalar(&mut a,0x123456780000);
+    let c=Checked::new(&p).unwrap();let t=relocatable(&c,&a);
+    assert_ne!(t.key,identity(&c,&a,0,&EMITTER,MAX_KEY_BYTES).unwrap());
+    for which in 0..5 {
+        let mut q=p.clone();match which {
+            0=>q.functions[0].code[0]=Op::Imm{dst:0,value:2},
+            1=>q.functions[1].frame_size=32,2=>q.functions[1].registers=5,
+            3=>q.functions[1].code.insert(0,Op::Imm{dst:1,value:2}),_=>(),
+        }
+        let mut b=owner(&q);if which==4 {b.enable_scalar_calls();} else {scalar(&mut b,0x234567890000);}
+        let d=Checked::new(&q).unwrap();assert!(t.restore(&d,&b,0,&EMITTER,MAX_CODE_BYTES/4).is_none());
+    }
+    let q=p.clone();let mut b=owner(&q);scalar(&mut b,0x234567890000);let d=Checked::new(&q).unwrap();
+    assert!(t.restore(&d,&b,0,&EMITTER,t.words.len()-1).is_none());
+    same(&stage(&b,0),&t.restore(&d,&b,0,&EMITTER,t.words.len()).unwrap());
+    b.bytes=b.capacity;assert!(t.restore(&d,&b,0,&EMITTER,MAX_CODE_BYTES/4).is_none());assert!(b.code.is_none());
 }
 }

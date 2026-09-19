@@ -322,6 +322,8 @@ pub(crate) const MAX_CODE_BYTES: usize = 16 * 1024 * 1024;
 
 struct CompiledFunction<'a> {
     #[cfg(test)]
+    model_relocations: Vec<cross_program_templates::Relocation>,
+    #[cfg(test)]
     local_forwarding: Vec<(usize, &'static str)>,
     #[cfg(test)]
     local_fact_events: Vec<(usize, &'static str, &'static str)>,
@@ -522,6 +524,8 @@ impl<'a> Jit<'a> {
         let resumable = self.resumable.is_some();
         let mut words = vec![];
         #[cfg(test)]
+        let mut model_relocations = vec![];
+        #[cfg(test)]
         let mut local_forwarding = vec![];
         #[cfg(test)]
         let (mut local_fact_events, mut retained_local_writes) = (vec![], vec![]);
@@ -700,6 +704,11 @@ impl<'a> Jit<'a> {
                 for (at, code) in std::mem::take(&mut a.assertions) {
                     let target = a.words.len();
                     a.imm(0, code);
+                    #[cfg(test)]
+                    a.model_relocations.push(cross_program_templates::Relocation {
+                        word: target, words: a.words.len() - target, value: code,
+                        kind: cross_program_templates::Kind::Assertion((ASSERTION_FAILURE_BASE - code) as usize - assertion_base),
+                    });
                     a.return_to_vm();
                     span!(AssertionTail, None);
                     a.patch_conditional(at, target)?;
@@ -739,6 +748,7 @@ impl<'a> Jit<'a> {
                         memory_spans.push(span);
                     }
                     retained_local_writes.extend(a.retained_local_writes);
+                    cross_program_templates::append(&mut model_relocations, a.model_relocations, words.len());
                 }
                 words.extend(a.words);
                 entries[start] = Some(Block { offset, end: pc });
@@ -759,6 +769,8 @@ impl<'a> Jit<'a> {
                         let fallback = *a.scalar_fallbacks.get(&at).ok_or(EmitError::InvalidRelocation("missing scalar successor fallback"))?;
                         links.push((words.len() + at, successor, words.len() + fallback));
                     }
+                    #[cfg(test)]
+                    cross_program_templates::append(&mut model_relocations, a.model_relocations, words.len());
                     words.extend(a.words);
                 }
                 if self.native_call_stubs {
@@ -787,6 +799,7 @@ impl<'a> Jit<'a> {
             patch_jump(&mut words, at, target)?;
         }
         Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
+            #[cfg(test)] model_relocations,
             #[cfg(test)] memory_spans,
             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
             liveness_declined: self.persistent_registers && values.is_none(),
@@ -1067,6 +1080,8 @@ enum Fact {
 
 #[cfg_attr(not(test), derive(Default))]
 struct Assembler<'a> {
+    #[cfg(test)]
+    model_relocations: Vec<cross_program_templates::Relocation>,
     scalar_fallbacks: BTreeMap<usize, usize>,
     #[cfg(test)]
     observe_guarded_local_retention: bool,
@@ -1122,6 +1137,7 @@ struct Assembler<'a> {
 impl Default for Assembler<'_> {
     fn default() -> Self {
         Self {
+            model_relocations: vec![],
             observe_guarded_local_retention: true,
             observe_static_local_facts: true,
             observe_scalar_copy: true,

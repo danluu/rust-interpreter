@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='cross-program-template-model-01'
+RUN='cross-program-template-model-02'
 def read(p):return json.loads(p.read_text())
 
 def main():
@@ -17,7 +17,7 @@ def main():
         paths=[ROOT/p for p in subprocess.check_output(['git','ls-files','crates','Cargo.toml','Cargo.lock','rust-toolchain.toml'],cwd=ROOT,text=True).splitlines()]
         paths += [p for p in Path(__file__).parent.iterdir() if p.suffix in ['.py','.md']]
         paths += [ROOT/'scripts'/p for p in ['compare_saved_runtime.py','workflow_io.py']]
-        for run in ['cross-edit-emission-weight-01']:
+        for run in ['cross-edit-emission-weight-01','cross-program-template-model-01']:
             prior=ROOT/'results'/run;closed=read(prior/'closure.json')
             assert closed['status']=='closed' and closed['all_hashes_verified'] and sha(prior/'summary.json')==closed['summary_sha256']
             paths += [prior/'closure.json',prior/'summary.json']
@@ -28,7 +28,7 @@ def main():
         write(raw/'plan.json',dict(owner=str(ROOT),source_revision=revision,frozen=frozen,
             controller_command=[sys.executable,*sys.orig_argv[1:]],target=str(target.relative_to(ROOT)),
             required_free_bytes=needed,allocated_target_bytes=allocated,minimum_child_gib=8,expected_commands=2,
-            tests_per_profile=8,original_project_guest_commands=0,native_fixture_execution=False,
+            tests_per_profile=12,original_project_guest_commands=0,native_fixture_execution=False,
             executable_code_publication=False,production_runtime_changes=0,performance_measurement=False))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_','CARGO_'))
             and k not in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER','RUST_TEST_THREADS','PYTHONPATH']}
@@ -46,11 +46,11 @@ def main():
             records.append(dict(label=label,command=command,pid=child.pid,returncode=child.returncode,seconds=time.time()-start,
                 stdout_sha256=sha(raw/(label+'.stdout')),stderr_sha256=sha(raw/(label+'.stderr'))))
             write(raw/'records.json',records);assert child.returncode==0,(out+err)[-6000:]
-            assert 'test result: ok. 8 passed; 0 failed; 0 ignored;' in out
+            assert 'test result: ok. 12 passed; 0 failed; 0 ignored;' in out
             assert all(sha(ROOT/p)==h for p,h in frozen.items());print(label,'passed',flush=True)
         out=ROOT/'results'/RUN;out.mkdir(exist_ok=False)
         write(out/'summary.json',dict(status='passed',source_revision=revision,raw=str(raw.relative_to(ROOT)),
-            plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),tests_per_profile=8,commands=2,
+            plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),tests_per_profile=12,commands=2,
             setup_seconds=sum(r['seconds'] for r in records),original_project_guest_commands=0,native_fixture_execution=False,
             executable_code_publication=False,production_runtime_changes=0,performance_measurement=False))
 
