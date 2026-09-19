@@ -1,0 +1,47 @@
+"""Qualify all actual large/private controller bindings before any guest timing."""
+import json,os,subprocess,sys,time
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[3]
+sys.path.insert(0,str(ROOT/'scripts'))
+sys.path.insert(0,str(ROOT/'benchmarks/experiments/cross-program-template-model'))
+import focus
+from compare_saved_runtime import acquire_lock,sha
+from workflow_io import capture,require_space,write_json as write
+from admission import components
+from context import context
+from strict_probe_evidence import verified_paths
+RUN='compact-native-switch-large-protocol-01'
+def main():
+    with (ROOT/'.work/benchmark.lock').open('a') as lock:
+        acquire_lock(lock,45);require_space(ROOT,12)
+        builds,paths=components();paths+=verified_paths()
+        for project in ['rg-aot','nushell']:
+            _,_,_,bound,_=context(project);paths+=bound
+        paths += [p for p in Path(__file__).parent.iterdir() if p.suffix in ['.py','.md']]
+        paths += [Path(focus.__file__),ROOT/'benchmarks/experiments/cross-program-template-screen/session_owner.py',
+            ROOT/'benchmarks/experiments/runtime-composition-screen/screen.py']
+        frozen={str(p.relative_to(ROOT)):sha(p) for p in paths}
+        assert not subprocess.check_output(['git','diff','--name-only','HEAD'],cwd=ROOT).strip()
+        revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
+        raw=ROOT/'.work'/RUN;raw.mkdir(exist_ok=False)
+        write(raw/'plan.json',dict(owner=str(ROOT),source_revision=revision,frozen=frozen,
+            controller_command=[sys.executable,*sys.orig_argv[1:]],expected_commands=3,
+            original_project_guest_commands=0,performance_measurement=False))
+        records=[];write(raw/'records.json',records)
+        for label,count in [('accounting',12),('commands',7),('controller',4)]:
+            require_space(ROOT,8)
+            command=[sys.executable,'-B','-m','unittest','discover','-s',str(Path(__file__).parent),'-p','test_'+label+'.py','-v']
+            started=time.time();child,out,err=capture(command,cwd=ROOT,env=dict(os.environ,PYTHONDONTWRITEBYTECODE='1'),
+                receipt_path=raw/'active.json',receipt=dict(label=label))
+            for stream,value in [('stdout',out),('stderr',err)]:(raw/(label+'.'+stream)).write_text(value)
+            records.append(dict(label=label,command=command,pid=child.pid,returncode=child.returncode,seconds=time.time()-started,
+                stdout_sha256=sha(raw/(label+'.stdout')),stderr_sha256=sha(raw/(label+'.stderr'))));write(raw/'records.json',records)
+            assert child.returncode==0 and f'Ran {count} tests in ' in err and '\nOK\n' in err,(out+err)[-5000:]
+            assert all(sha(ROOT/p)==h for p,h in frozen.items());print(label,count,'passed',flush=True)
+        out=ROOT/'results'/RUN;out.mkdir(exist_ok=False)
+        write(out/'summary.json',dict(status='passed',source_revision=revision,raw=str(raw.relative_to(ROOT)),
+            plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),tests=23,commands=3,
+            original_project_guest_commands=0,candidate_key=builds['candidate']['tool_key'],performance_measurement=False,default_runtime_adoption=False,portable_probe_source_verified=True,portable_probe_proof='compact-native-switch-guard-protocol-02'))
+if __name__=='__main__':
+    if sys.argv[1:]==['--close']:focus.RUN=RUN;focus.close()
+    else:assert len(sys.argv)==1;main()
