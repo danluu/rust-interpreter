@@ -34,3 +34,16 @@ Cargo/test workers. Use only the existing root target; never clean it. Initial
 build floor max(14GiB,8GiB+2*allocated target),8GiB before every child. Freeze
 sources before running and close every attempt before correction. Preserve all
 successful commands if later observation or bookkeeping fails.
+
+Stage2 instruments only feature-enabled builds and adds a dedicated binary.
+Eight focused controls/profile include the six recorder controls plus real
+native scalar/ordinary staging, capacity decline, preparation once per owner,
+constructor scope identity, and exact success/error/recovery outcomes. Retain
+the release observer from Cargo's explicit executable message and check an
+ordinary no-feature lib/VM build separately. No original workload is run here.
+The observer accepts only prepared suites with at most two workers. Report
+serialization failure is separate from original test outcomes; incomplete traces
+cannot support optimization inference. Per-function prepared/no-entry facts do
+not claim exact decline identity; aggregate compiled/declined counts remain
+available. Ordinary publication includes final admission and decline handling.
+Successful commands and a copied observer survive any later-stage failure.

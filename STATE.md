@@ -52,7 +52,11 @@ large declined bodies dominate just because there are two declines.
 Recorder focused01 under65651/65654 timed out45seconds on the shared lock
 before any plan, build or test. The zero-command admission failure is CLOSED
 againstc3012e01. Focused02 retries only this unstarted work after fresh admission.
-The Stage1 recorder is prepared in preparation_observation.rs and
+Focused02 passed six controls/profile under88348/88351 and is CLOSED
+39950/39955 at source834339fe. Stage2 integrates cfg-only timers and a
+standalone observer with eight controls/profile, a retained release binary,
+and an ordinary no-feature compilation check. Original workloads are not yet
+admitted. The Stage1 recorder is prepared in preparation_observation.rs and
 benchmarks/experiments/preparation-phases: six controls/profile,65,536bucket
 cap, separate nested phases, incomplete/overflow flags, Rc confinement and
 owned snapshots. It is compiled only for tests/explicit feature and is not yet
@@ -84,7 +88,7 @@ zero unassigned. Preserve every successful capture without reruns.
   `acquire_lock(lock,45)`. Two Cargo/test workers. Only root target is
   `.work/fixed-frame-clear-combined-build-01/target`; NEVER clean it.
 - Build floor max(14GiB,8GiB+2*allocated target); analysis12GiB; children8GiB;
-  primary14GiB; closures8–10GiB as declared. Current free space about27.5GiB;
+  primary14GiB; closures8–10GiB as declared. Current free space about22.8GiB;
   admit every stage freshly. Nushell real six-cache reservation is about47GiB.
 - Independent cleaner read-only status:
   `/usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status`.

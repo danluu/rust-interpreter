@@ -39,8 +39,13 @@ fn selected_entries(program: &Program) -> Result<Vec<(&str, usize)>, String> {
     Ok(entries)
 }
 
+#[cfg(not(feature = "preparation-observer"))]
+type WorkerResult = (u128, Vec<(usize, Value)>);
+#[cfg(feature = "preparation-observer")]
+type WorkerResult = (u128, Vec<(usize, Value)>, Value);
+
 fn worker(program: &Program, mode: Mode, limits: &Limits, entries: &[(&str, usize)],
-          next: &AtomicUsize, worker: usize) -> Result<(u128, Vec<(usize, Value)>), String> {
+          next: &AtomicUsize, worker: usize) -> Result<WorkerResult, String> {
     // The JIT is born, used and dropped on this worker. Only immutable Program
     // data and completed JSON outcomes cross thread boundaries.
     let mut shared = match mode { Mode::Fresh => None, Mode::Prepared => Some(PreparedJit::new(program, limits)?) };
@@ -71,6 +76,15 @@ fn worker(program: &Program, mode: Mode, limits: &Limits, entries: &[(&str, usiz
         outcome["worker"] = json!(worker);
         tests.push((index, outcome));
     }
+    #[cfg(feature = "preparation-observer")]
+    {
+        let observation = match shared.as_ref().unwrap().preparation_observation() {
+            Ok(value) => json!({"worker":worker,"status":"observed","observation":value}),
+            Err(error) => json!({"worker":worker,"status":"diagnostic_failed","error":error.to_string()}),
+        };
+        Ok((preparation_nanos, tests, observation))
+    }
+    #[cfg(not(feature = "preparation-observer"))]
     Ok((preparation_nanos, tests))
 }
 
@@ -78,6 +92,10 @@ pub fn run(program: &Program, mode: Mode, limits: &Limits, path: &str,
            catalog: Option<&EntryCatalog>, bytes: &[u8], requested_workers: usize) -> Result<(), Box<dyn std::error::Error>> {
     let started = Instant::now();
     if !(1..=64).contains(&requested_workers) { return Err("suite workers must be in 1..64".into()); }
+    #[cfg(feature = "preparation-observer")]
+    if !matches!(mode, Mode::Prepared) || requested_workers > 2 {
+        return Err("preparation observer requires a prepared suite with at most two workers".into());
+    }
     let entries = match catalog {
         Some(catalog) => catalog.validated_entries(program, bytes)?,
         None => selected_entries(program)?,
@@ -108,7 +126,17 @@ pub fn run(program: &Program, mode: Mode, limits: &Limits, path: &str,
     };
     let mut preparation_nanos = 0;
     let mut ordered = vec![];
-    for (preparation, tests) in results { preparation_nanos += preparation; ordered.extend(tests); }
+    #[cfg(feature = "preparation-observer")]
+    let mut observations = vec![];
+    for result in results {
+        #[cfg(not(feature = "preparation-observer"))]
+        let (preparation, tests) = result;
+        #[cfg(feature = "preparation-observer")]
+        let (preparation, tests, observation) = result;
+        #[cfg(feature = "preparation-observer")]
+        observations.push(observation);
+        preparation_nanos += preparation; ordered.extend(tests);
+    }
     ordered.sort_unstable_by_key(|(index, _)| *index);
     let tests: Vec<Value> = ordered.into_iter().map(|(_, outcome)| outcome).collect();
     let failures = tests.iter().filter(|test| test["status"] == "failed").count();
@@ -125,6 +153,13 @@ pub fn run(program: &Program, mode: Mode, limits: &Limits, path: &str,
         "seconds_before_report_write":started.elapsed().as_secs_f64(),
         "preparation_ns":preparation_nanos,"preparation_scope":"sum of constructor durations, which can overlap across workers; included in per-test seconds for fresh mode; each prepared worker constructs before its tests",
         "passed":tests.len()-failures,"failed":failures,"tests":tests});
+    #[cfg(feature = "preparation-observer")]
+    let report = {
+        let mut report = report;
+        report["preparation_observations"] = json!({"schema_version":1,"workers":observations,
+            "scope":"diagnostic overhead included; one cumulative trace per owner; nested elapsed phases and overlapping workers are not additive or end-to-end savings"});
+        report
+    };
     let mut output = std::io::BufWriter::new(file);
     serde_json::to_writer_pretty(&mut output, &report)?;
     output.write_all(b"\n")?;

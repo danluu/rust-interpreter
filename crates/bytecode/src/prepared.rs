@@ -25,10 +25,28 @@ impl<'program> PreparedJit<'program> {
     /// The code budget and persistent-register option are fixed for this owner.
     pub fn new(program: &'program Program, limits: &Limits) -> Result<Self, String> {
         let started = std::time::Instant::now();
-        Self::check_mode(limits)?;
-        crate::validate(program)?;
-        let jit = crate::create_jit::<false, true, false, true>(program, limits)?;
-        let metadata = ExecutionMetadata::new(program, jit.as_ref(), true, limits.memory)?;
+        #[cfg(feature = "preparation-observer")]
+        let observation = crate::preparation_observation::Trace::default();
+        #[cfg(feature = "preparation-observer")]
+        let _constructor = observation.span(None, crate::preparation_observation::Phase::Constructor);
+        {
+            #[cfg(feature = "preparation-observer")]
+            let _span = observation.span(None, crate::preparation_observation::Phase::Validation);
+            Self::check_mode(limits)?;
+            crate::validate(program)?;
+        }
+        let jit = {
+            #[cfg(feature = "preparation-observer")]
+            let _span = observation.span(None, crate::preparation_observation::Phase::JitMetadata);
+            crate::create_jit::<false, true, false, true>(program, limits)?
+        };
+        #[cfg(feature = "preparation-observer")]
+        let jit = jit.map(|mut jit| { jit.observation = observation; jit });
+        let metadata = {
+            #[cfg(feature = "preparation-observer")]
+            let _span = jit.as_ref().unwrap().observation.span(None, crate::preparation_observation::Phase::ExecutionMetadata);
+            ExecutionMetadata::new(program, jit.as_ref(), true, limits.memory)?
+        };
         Ok(Self { program, jit, metadata, code_bytes: limits.jit_code_bytes,
             persistent_registers: limits.jit_persistent_registers,
             scalar_calls: limits.jit_scalar_calls,
@@ -45,6 +63,12 @@ impl<'program> PreparedJit<'program> {
     /// Constructor cost, including validation and immutable analysis metadata.
     /// Include this cost when measuring the complete test-suite command.
     pub fn preparation_nanos(&self) -> u128 { self.preparation_nanos }
+
+    /// Diagnostic-only cumulative owner snapshot. Nested phases are not additive.
+    #[cfg(feature = "preparation-observer")]
+    pub fn preparation_observation(&self) -> Result<serde_json::Value, serde_json::Error> {
+        self.jit.as_ref().unwrap().preparation_observation()
+    }
 
     /// Run the program's original entry with fresh guest state.
     pub fn execute(&mut self, arguments: &[u128], limits: Limits) -> Result<Execution, String> {
