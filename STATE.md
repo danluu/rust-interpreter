@@ -153,3 +153,16 @@ serveroutside29.520ms. Durations overlap andmediansarenotadditive. Next verified
 fre token artifactreplay, then remainingprojectguards; runtime/defaultunchanged.
 Additionalclosedsetupcachecleanup941files438200579bytes,2209protectedhashes
 unchanged andindependentlyclosed. Neverrepeatretirement; nopeerworktouched.
+
+## 2026-09-19 fre session correctness and comparison controls
+
+Fre token replay is closed:192originaltestinvocations acrosssavedrealedits with
+14892templatehits independentlyregenerated, originalfailuretext/limits/kernelCPU.
+Publicproject guard controller retains originalsourceedits/assertions/anchor/
+nativelines/check and adds same-runtimehistoryoff:176commands,3cycles/15validpairs.
+Originalproject acceptance rules remain, with complete sessionstartup/request/tail
+CPU andwall accounting.22controls qualified (12retainedaccounting+10newcommand/
+source checks), including refusal afterfailedpriorguards. Native/Cargo workers2,
+publicinitialfloorsraised16GiBfre/12pgrust foraddednamespace. Tokenhistory currently
+running underrootbranch; bothstrictcontrols rejectedbefore anysessioncontact.
+No timingverdict or adoption yet; private/Nushelladapters stillpending.
