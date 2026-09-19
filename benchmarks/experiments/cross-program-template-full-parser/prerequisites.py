@@ -18,7 +18,7 @@ def load():
         return s
     candidate=closed('session-duration-order-install-01')
     replay=closed('session-duration-order-parser-client-01')
-    protocol=closed('cross-program-template-parser-full-protocol-01')
+    protocol=closed('cross-program-template-parser-full-protocol-02')
     primary=closed('cross-program-template-parser-screen-incremental-06')
     assert primary['measurement']['gate_passed'] and primary['measurement']['verdict']=='passed'
     assert primary['tool_keys']['candidate']==candidate['tool_key']
