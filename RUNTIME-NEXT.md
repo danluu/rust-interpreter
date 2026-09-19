@@ -34,3 +34,9 @@ Do notrepeat completedcache retirement: primary01/02,03+strict01/02/03,
 primary04+strict, recenttoken02, frecustom01. Preserve all proofs/binaries/sources
 and sharedbuildtarget. Closed fullparser01 caches may be audited if needed.
 Main71c31879 pushed phaseproofs, preservingpeer8de038df. Buffered evidence to publish.
+
+Narrow immediate census345a7bba CLOSED91218/91222:5controls/profile,154shape matches/5.166ms total.
+Parknarrow. Attempt01 moduleplacementcompileerror closed25730/25760. Next explicit
+large-literal parameterization prototype, opaque facts/derivedanalyses+complete
+relocation ledger; retain smallconstantfolding and exact allotherinputs. Noactive
+experiment; main398a7cb8 pushedmisshistoryevidence preservingpeer0dda92e2.

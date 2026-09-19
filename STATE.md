@@ -216,3 +216,9 @@ Causejoin4d3e8e1e87791/87794 CLOSED94281/94290: valid
 changedkeys3462/214.939ms;firstworker1770/66.085ms;evicted22/1.421ms. Bytecodeonly
 immediates2563/152.106ms dominate; next conservative relocation eligibility census.
 No runtimeadoption, noactiveexperiment. Main29b8801d pushedbufferedevidence.
+
+Narrow immediatecensus345a7bba28226/28229 complete,5controls/profile+savedcensus.
+154matches/5.166ms istoo small:parknarrow. Attempt01 compiler-moduleplacement
+failedbeforetests closed25730/25760. Next explicitlarge-literal parameterization
+withopaquefacts/range/call-slot analyses andcompletecheckedrelocations. Noactive
+experiment; main398a7cb8 pushedmisshistory, preservingpeer0dda92e2.
