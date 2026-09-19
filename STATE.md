@@ -43,6 +43,16 @@ Median compiler-interval sums are258ms token,73ms folded,4.7ms pgrust,2.5ms
 private,15ms Nushell types,214ms parser and255ms recent token. These overlap
 across workers and are not promised savings. Next typed identity feasibility
 uses saved artifacts; no cache/runtime implementation is admitted yet.
+An unexecuted integration-test observer is prepared at
+`crates/bytecode/tests/native_reuse_inputs.rs` with7controls and1ignored census.
+Its plan is `benchmarks/experiments/native-reuse-inputs/PLAN.md`. It hashes
+complete Function bodies plus direct-callee bodies and a conservative program
+namespace, preserves numeric IDs, validates full artifacts, and emits no code.
+Bounds:128artifacts,128MiB/artifact,4GiB total input,2million function records,
+512MiB total output. No controller, tests or artifact census has run yet.
+Prepare the bounded controller and chronological analyzer next. The old
+preparation audit freezes only4Rust counter sources, none changed by this new
+integration-test module; its closure must still finish before new execution.
 
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally
