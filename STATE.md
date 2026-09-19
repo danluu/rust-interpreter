@@ -292,3 +292,11 @@ fixtures to currentcheckout results, preserving fixedhashes and actualrawchecks;
 productioncompiler code and peerworktrees unchanged. Controller verifies exact
 2line additions and allother Rust/script/testhashes, carries439passed+22skipped,
 then runs only two repaired tests and unstarted defaultVM build/toolcomposition.
+
+Launcher02 source21ee5a94 passes22894/22897, CLOSED23723/23726. Two exact
+archivefixture fixes pass; effectivePython441passed/22skipped with439priorpasses
+preserved. Default feature-off releaseVM built SHA0790d3a245c7132c3fcea1ca0e3667fc88c8c98da60fd959c925f8bf9c9383bd.
+Installed experimentalclient tool9f7aa601253a6817745070cf16a5122282d4fd9f70b33a14b625ee7a09a4a30b:
+VMd84f7bc7b125ff5eaa15407ec2e5f80edb4180ca07ac8caf52a2132bad05a7e7,
+exactadoptedexporter/wrapper; serverc17f9eeb1b022f62ba5149cc425a2bbc9a67d0edca1f7e2bbc7aa8cfe6b8110b.
+This is unadopted candidate only. No activeexperiment afterclosure.
