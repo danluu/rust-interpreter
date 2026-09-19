@@ -108,8 +108,10 @@ Strict121commands are closed atf13370dc,50389/50392 with all outcomes passing.
 Profile01 retained one successful original guest60173, then its observer
 failed to recognize operand-rendered Call labels;60138/60168 finished nonzero.
 The complete first capture is closed and must never be repeated. Corrected
-profile02 will revalidate it offline and run only the two unstarted guests,
-with7observer controls. The runtime binary is unchanged; no timing has started. See `benchmarks/experiments/selective-narrow-repair/focus.py`
+profile02 is closed atbe693980,90401/90404:7controls and only2newguests.
+All original assertions/counts/memory/entropy match adopted; all layouts/native
+bytes match parked3e53b127 except validated addresses at427/532/21scalar sites.
+The closure verifies98frozen inputs/27artifacts. No timing has started. See `benchmarks/experiments/selective-narrow-repair/focus.py`
 and `docs/SELECTIVE-NARROW-REPAIR-20260918.md`. Main ccb3b465 contains only the
 closed conservative-primary outcome; root owns this new experimental branch.
 
