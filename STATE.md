@@ -86,8 +86,14 @@ All fullrun sources freeze throughclosure. Other large/parser/Nushell adapters
 are still to be prepared/qualified with newcandidate proofs after precedinggates.
 Never repeat parenttimings or any completedcapture/controlstage.
 
-Mainf1bf9da9 publishes compactcorrectnessproofs/preservespeer27c24fa5; primary
-publicationready. Rootcb37c236 beforedocs, lastpushed5d41c05d. Free22.0GiB;
+Main59db6951 publishes the closed passing primary and preservespeer1b9f458b.
+Prepared large/parser adapters199894c0 (NOT qualified/launched); they bind new
+public26control portableproof and pgrust01. Prepared exactprimarycache retirement
+0654b553 (NOT launched, only if later admission needs it). Currentroot0654b553,
+lastpushed72acf8d1. No ownactivecommands; peer40573/86617 hold/waitsharedlock.
+Sampled switchsite duplicate/default-target removal has no eligible sites; old
+implicit-zero/selective-narrow-register variants alreadyfailed, do not repeat.
+Freeabout22.0GiB;
 recheckadmission. Runtimequalified/installedidentitiesabove remainunchanged.
 
 ## Qualified candidate identities

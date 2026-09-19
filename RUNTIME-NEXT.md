@@ -41,5 +41,5 @@ Next compact-native-switch-guards/qualify.py (RUN compact-native-switch-guard-
 protocol-01) then --close; then176command token run compact-native-switch-edit-
 token-01,close.py RUN; passadmitsfoldedthenpgrust. Controlleralreadyusesportable
 coreborrowprobe andJSON casecomparison. New26controls notlaunched; peer40573
-heldsharedlock lastcheck. No ownactivecommands. Rootcb37c236, mainf1bf9da9;
-primarypublicationpending. STATE.md has exactidentities. Savedgoalpaused.
+heldsharedlock lastcheck. No ownactivecommands. Root0654b553; main59db6951 publishes the passing primary. Large/parser adapters
+prepared199894c0, exactprimary-cache retirement prepared0654b553 (none launched). STATE.md has exactidentities. Savedgoalpaused.
