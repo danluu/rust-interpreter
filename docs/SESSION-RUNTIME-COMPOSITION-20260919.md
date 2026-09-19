@@ -32,7 +32,14 @@ cached edits. The [primary protocol](../results/session-runtime-composition-scre
 has16 controls covering complete session CPU accounting, option isolation,
 source transitions and original native outcomes.
 
-Next verify every template hit on saved parser and fre edits, then run one fresh
-40-command fre primary with strict unreachable type/borrow rejection controls.
+[Parser replay](../results/session-runtime-composition-parser-replay-01/summary.json)
+passes1824 original invocations with19815 independently regenerated hits.
+[Fre replay](../results/session-runtime-composition-fre-replay-01/summary.json)
+passes192 invocations with14548 verified hits. Both preserve original failures,
+resource limits, bounded storage and full server CPU accounting and are closed.
+The exact normal binaries are installed as experimental tool3ebea1cd.
+
+A fresh40-command fre primary is now running with strict unreachable type/borrow
+rejection controls. Performance is still undecided.
 No timing retries or main runtime adoption follow a failed gate. The experimental
 sources are retained on `experiment/session-runtime-composition-20260919`.

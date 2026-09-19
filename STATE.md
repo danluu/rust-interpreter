@@ -50,18 +50,24 @@ fault/replay and private memory; call/branch/resource controls retained.
   unchanged. Controller benchmarks/experiments/session-runtime-composition-screen.
 - Parser verified replay01 c411265e:85874; all16 suites/1824 invocations pass,
   19815 independently regenerated hits, original errors/limits/CPU correct.
-  Closure91007 LAUNCHED; verify finished before proceeding. No timing claim.
-- Fre verified replay, immutable installation and primary timing remain UNSTARTED.
-  Prepared replay folder session-runtime-composition-replay (fre.py/parser.py),
-  install folder session-runtime-composition-install, timing folder above.
+  CLOSED91007:507 frozen inputs/116 evidence files. No timing claim.
+- Fre verified replay01 b318df6d:2863/controller2867; all16 suites/192 invocations,
+  14548 independently regenerated hits, original errors/limits/CPU; CLOSED12775.
+  Immutable install01 source28c4c6a2:19116 CLOSED25894. Tool key
+  3ebea1cdc1a521169df8bba1ca139df97759aaf200798c2bcb91bef4cba3c5ad.
+- Primary session-runtime-composition-screen-token-01 source15261907 is ACTIVE:
+  supervisor29647/controller29683, launched03:25:20. Strict controls precede40
+  changed-source commands. Controller session-runtime-composition-screen/benchmark.py.
+  Keep every frozen runtime/script/controller and owned fre source untouched.
+  Wait for terminal and independent close.py before interpreting the result.
   Any active run freezes its inputs until independent closure. Preserve prefixes.
 
 ## Next actions
 
-Close parser, run and close fre verified replay. Only then install normal runtime
-with unchanged adopted compiler tools and close installation. Run fresh40-command
-fre primary with strict type/borrow controls, source restoration, native outcomes
-and exactly bound runtime options. Independent closure is prepared close.py.
+Finish the active40-command fre primary and independently close it. Strict
+checks, source restoration, original native outcomes and exact bound runtime
+options are required independently of the performance verdict. Primary protocol
+and both verified replays are already closed. No source/benchmark edits mid-run.
 A pass admits full project/parser guards; failure stops them, no unchanged retry.
 No adoption before qualified current-main integration preserving peer changes.
 
@@ -86,8 +92,8 @@ suggestions.txt remains user-owned/untracked, SHA256
 4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f;
 reread this turn. Detailed dispositions docs/SUGGESTIONS-REVIEW-20260913-1245.md.
 
-Main publication47b3d98e pushed closed memory evidence, preserving peerf5cd5619.
-Experimental branch pushed throughd293d909; push newer qualification evidence
-regularly. Publish exact proof/docs paths on main, fetch/ff first; do not copy
+Main publication1ba3d6da pushed closed qualification/parser/protocol and cache
+retirement evidence, preserving peerc8ebf5aa. Experimental branch pushed through
+b318df6d; newer fre/install proofs are committed through15261907. Publish regularly. Publish exact proof/docs paths on main, fetch/ff first; do not copy
 experimental runtime or overwrite compiler work. Prior detail archived at
  docs/history/STATE-20260919-before-session-runtime-composition.md.

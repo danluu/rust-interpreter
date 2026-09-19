@@ -3,8 +3,9 @@
 New session/indirect/readonly/spill composition has passed full qualification:
 720 Rust tests per profile,446 Python passes/22 skips,52 owned servers/108 clients.
 Parser replay passed1824 original invocations and19815 verified template hits;
-check its independent closure, then run the prepared fre replay, install and
-fresh40-command changed-source fre primary. See STATE.md for exact paths and PIDs.
+fre replay passed192 invocations/14548 verified hits; both are closed. Installed
+tool3ebea1cd and launched fresh40-command fre primary29647/29683 at03:25:20.
+Finish and independently close it before interpreting results. See STATE.md for exact paths and PIDs.
 
 Both parent experiments remain failed; no combined speedup is inferred. The new
 cache key binds indirect signature ordinals, and session options are explicitly
