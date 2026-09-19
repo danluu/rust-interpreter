@@ -328,3 +328,17 @@ peredge knownrefund; conservativelycharge2wordsthunk pernonzeroedge refund.
 Classify potentialsamples byallnormalCFGpredecessorscertified vsmixed; external
 VM entries remainpossible inboth. Usesclosedlinear02. NoRust/nativeimplementation.
 Freeze newmodel/scope/controller until independentclosure.
+
+Branch-reservation01 source5bf42ae4 supervisor37098/controller37101 passed14
+controls,cases,independentclosure56bindings. Potentialbudget116/1933(6.00%),
+59/1429(4.13%); allnormalpredecessorscertified80/40, mixed36/19. Externalentry
+stillpossible. Conservative nominalwordupperdeltas -191334482/-386436268
+after2words perpossiblyrefundingedge. Notlatency/retiredinstructions. Proceed
+to isolated typedruntimeprototype thenqualifiedrealE2E; no runtimecoded yet.
+Native integrationreview: prepareexactregion/rangeplansonceinoriginalorder;
+checkedentry reservecredit, fastentry AFTERdebit BEFOREprofile, onlytarget
+withoutguard; sourcetaglinkrecords; positiveedge refundADDx22+branchthunk.
+Fault/Assertion/SuccessorFallback refundremainingSuffix, BudgetFallback refunds
+NONE (guard/range declines predebit). Newcode-mapkindneededforedgerefundthunks.
+Mainadd1ee72 publishesclosedlinearresults preservingpeer295da6cd; branchresult
+notyetmain. Allsources/resultsrootpushedatnextcommit; no activecommand.

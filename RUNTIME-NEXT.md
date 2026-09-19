@@ -21,14 +21,14 @@ CLOSED47849: actual removable LDR samples2/2; specific narrow design parked.
 Isolated compact switch failed full primary, archived old branch38c51f5d.
 No unchanged retiming or cancelled guards. All raw failures retained.
 
-Next: execute/close registered branch-budget-reservation-01,14controls.
-Branch-aware reservation with explicit per-edge refunds,
-extra branch costs and entry-path uncertainty. Linear-reservation02 CLOSED12
-controls/56bindings, potential39/23 samples (2.02/1.61%); standalone version
-deferred. Native budget samples are mainly first MOV174/77, not SUB7/0. Do not
-infer instruction latency or subtraction dependency from sampled PC buckets.
-Both occupied-lock first attempts preserved/closed with zero work. No active
-command; runtime and installed tool unchanged. New model would precede code.
+Next: implement isolated typed branch-budget reservation prototype, then qualify
+before the existing real source-edit primary. Diagnostic01 CLOSED14controls,
+56bindings: potential116/59 samples (6.0/4.1%), allnormalpredecessors80/40.
+Conservative nominal cost remains favorable including2words perrefundedge.
+This is scope, NOT a measured gain; externalentry and sample-PC bias remain.
+See results/branch-budget-reservation-01/assessment.md and STATE implementation
+review. Preserve old narrow models; new production source has not been edited.
+No active command, Rust build, guest execution or cleanup this turn.
 No Rust build admitted
 until disk reserve recomputed: max(14GiB,8GiB+2*allocated shared target), last23GiB.
 Free~19.9GiB. Shared .work/fixed-frame-clear-combined-build-01/target NEVER CLEAN.
