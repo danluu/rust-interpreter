@@ -182,3 +182,12 @@ Templatephases qualificatione3feaebf completedall5testcommands:22models+33integr
 perprofile,32featureoff (not33:oneobserveronlytest). Harnesscountfailedafterallpassed,
 CLOSED90083/90086. No runtimefixneeded. qualify_completed.py preparedtoreuseall5
 hash-boundtests andonlybuild/copydiagnosticreleasebinary; replayrequiresqualified02.
+
+Templatephases qualification03 source52d0d158 complete13211/13214 CLOSED14683/14686:
+reused5passedcommands22models+33integrations/profile,32featureoff; newbuildonly.
+Prior01countmetadatafail CLOSED90083/90086;02malformedfixtureparse bookkeeping
+failedprebuild/preserved; no runtime/testredo. Parser7db32707 complete16413/16416
+CLOSED26524/26527:1824invocations16,333observedhits, phases/kernelCPUallmatch.
+Medianperworker key8.883ms,lookup.426,restore1.463,miss25.681,capture1.186,verify0;
+ordinary37.913. Next boundedbufferedSHAkey writes preservingexactbytes/keyv3/limits,
+fullchecks unchanged. No activeexperiment. Main7a8e8c83 pushed preservingpeer9dc7d17f.
