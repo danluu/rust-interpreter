@@ -49,6 +49,9 @@ not the parked template candidate. Establish actual cost before designing a
 negative cache, shared scalar preparation or metadata reuse. Do not infer that
 large declined bodies dominate just because there are two declines.
 
+Recorder focused01 under65651/65654 timed out45seconds on the shared lock
+before any plan, build or test. The zero-command admission failure is CLOSED
+againstc3012e01. Focused02 retries only this unstarted work after fresh admission.
 The Stage1 recorder is prepared in preparation_observation.rs and
 benchmarks/experiments/preparation-phases: six controls/profile,65,536bucket
 cap, separate nested phases, incomplete/overflow flags, Rc confinement and
