@@ -1,90 +1,56 @@
 # Current state — September18,2026
 
-Manual optimization continues indefinitely; the saved goal stays PAUSED.
-No goal tools, subagents or independent model calls. Root owns
-`/Users/danluu/dev/rust-interp`, branch
-`experiment/shared-emission-templates-20260918`, private repository
-`danluu/rust-interpreter`. Push qualified work regularly; do not stop at a milestone.
+Continue manual optimization indefinitely; saved goal stays PAUSED. No goal
+calls, subagents or independent model calls. Root owns /Users/danluu/dev/rust-interp.
+Private repository danluu/rust-interpreter. Push qualified work regularly; main
+must preserve peer commits. Do not stop at milestones.
 
-## Current experiment
+## Next direction
 
-Shared immutable emission templates between prepared suite workers, explicit
-`--jit-shared-templates`, default OFF. This is different from existing per-worker
-PreparedJit reuse and does not introduce persistent native files or skip checking.
-Owners borrow the same checked Program but keep independent native arenas,
-scalar admission/budgets/targets, assertion indices and all mutable guest state.
-Ordinary finish_preparation alone publishes rebound code. Rebinding that would
-change immediate instruction width misses. Store retains at most64MiB with one
-variant per numeric function ID, short mutex operations and poison/full misses.
-One effective worker uses ordinary preparation. Counters are hits/misses/restored
-bytes, never a claim of time saved. Compiler intervals include cache overhead.
+Shared emission templates are PARKED after the completed32-command pgrust parser
+primary (71290/71293, source82ef7c10), closed13381/13384:5316frozen inputs,
+112evidencefiles. All114 outcomes and source/artifact restoration pass, but
+wallratio0.999311805 + A/A0.044733804 =1.044045609 FAILS. CPU0.997671428 +
+0.045325435 =1.042996863 passes. Candidate/nativewall1.332915272. Cancel larger
+comparisons; no unchanged retry or gate changes. Experiment branch
+experiment/shared-emission-templates-20260918 retains all source and evidence.
 
-Stages1–3 are CLOSED:6/12/17 focused controls per profile, including exact native
-words/entry metadata and real separate native arena execution with budgets,
-faults, static/TLS reset, fallback, concurrency and scope controls. Stage4 adds
-production API/CLI/lazy path and bounded capture. Focused04 never acquired lock;
-closed43862/43905. First closer89522/89598 also timed out. Focused05 controller
-syntax failed before admission; closed before correction. Focused06 under
-72299/72302 passes16Python controls then compile-fails an old test closure because
-Mutex makes Jit invariant. Closed83483/83595 before adjusting the test to read
-its function through jit.program; assertions unchanged. Focused07 under2155/2173
-passes20Rust controls/profile, reuses the16closed Python controls and retains a
-non-test release VM; closure38245/38249. Every attempt remains in results.
+Candidate tool7a4e2bc034fc55c0ca89e174b0d403d0af8174eb8046443e09b11311d52af4ca,
+VMd071c9123c40cd9ee9ad4dd1bb13faed046373a7d743ebc85919b08c029e8ebd.
+Qualified635Rust/profile14ignored;434Pythonpass22skip;121strict/cache commands;
+13originalsuite/CLI checks;19protocol controls. Suite qualification hits797on
+original parser and53on wrong source; one-worker/one-entry fallback inactive.
+Production option remained defaultoff, same checked Program, independent arenas/
+state/budgets,64MiB store. No runtime merged to main. Docs/results were pushed
+maine7ffb8dc, retaining peers throughba0972f3; latest cost-audit publication is
+pending/check push session94221 completion already proved prior publication.
 
-Full build01 under52151/52154 passes635Rust tests per profile,14ignored, and
-434Python tests/22skipped (456discovered). Exact retained VM installed with the
-unchanged adopted exporter/wrapper. Closed by40140/40144.
-Tool `7a4e2bc034fc55c0ca89e174b0d403d0af8174eb8046443e09b11311d52af4ca`.
-VM `d071c9123c40cd9ee9ad4dd1bb13faed046373a7d743ebc85919b08c029e8ebd`.
-Build sourcef90e816e, runtime sourceef50023f; setup105.17s plus focused28.02s.
-Strict qualification121 commands passed under56495/56498 and is CLOSED by
-61762/61805: native/reference/cache agreement, unreachable type/borrow errors,
-actual partial artifact rejection and source restoration all pass.
-Suite01 passes13 commands under67799/67802 and is CLOSED75018/75021.
-All114 original parser outcomes and wrong-edit failures match. Actual two-worker
-sharing records797hits/3,799,956restored bytes (37,929,344charged store bytes)
-on original,53hits/151,512bytes on wrong source. One-worker and private one-entry
-fallback stay inactive; all six invalid/partial modes reject before execution.
-No performance command has run for this candidate.
-No template runtime has been merged to main.
+Saved preparation audit shared-template-costs01 under66923/66952 is CLOSED
+80552/80555, source045376fb:10controls,15existing edited receipts, no new guest
+or build. Median compiler sums209.8ms adopted/211.9duplicate/200.9candidate;
+largestworker122.5/123.0/116.8ms; constructors44.0/44.2/43.7ms; new store5.6ms.
+Worker intervals overlap, scalar work is nested, independent medians are not
+additive or causal savings. Two declined function owners persist, but names
+and their cost are not in these receipts. Removing just5.6ms store construction
+is not enough justification for another timing attempt.
 
-Completed suite.py/close_suite.py: six full pgrust parser
-runs (original/wrong edit × ordinary-two/shared-one/shared-two), one private
-rg-aot one-entry run and six mode/partial rejection commands. Actual shared hits
-must occur on both parser states before timing; zero hits cancel timing, not
-trigger reruns. All114 original parser assertions/outcomes stay intact. Saved
-original artifacts are bound to prior closed native histories; ordinary entropy.
+Next branch experiment/jit-preparation-phases-20260918; restore Rust/Cargo
+production sources exactly to adoptedfca687eb before adding a diagnostic.
+Keep all failed candidate source/evidence on its pushed branch. Build an explicit
+feature-gated standalone preparation observer (existing indirect observer warns
+that libtest cannot supply the required main thread). Record per-function and
+phase elapsed intervals for constructor validation/JIT/metadata, scalar proof,
+lowering/emission, ordinary emission and publication. Bound diagnostic storage,
+report dropped/overflowed observations, preserve nested timer scope and normal
+checks/admission/budgets. Ordinary builds must have no diagnostic fields/calls.
+Use original pgrust/fre artifacts and assertions; observe the adopted runtime,
+not the parked template candidate. Establish actual cost before designing a
+negative cache, shared scalar preparation or metadata reuse. Do not infer that
+large declined bodies dominate just because there are two declines.
 
-The primary protocol is CLOSED:82684/82687
-passes19controls; closer89745/89793 binds492inputs. The primary is prepared in
-`benchmarks/experiments/shared-emission-templates-screen`:32commands,8states ×
-4rotating modes (native/adopted/adopted duplicate/candidate). Five valid edited
-pairs only enter the wall/CPU gates; anchors, wrong edit and restoration remain
-mandatory. Full native/custom workflows,2Cargo workers/2native test threads/
-2suite workers, ordinary entropy. Require24GiB initial/8GiB child disk admission.
-Its19protocol controls and original-source schedule have passed and closed. Primary choice was
-frozen before candidate timing; gate and qualification contract in
-`benchmarks/experiments/shared-emission-templates/QUALIFICATION.md`. A failed
-wall or CPU gate cancels larger comparisons; do not retime unchanged failures.
-
-## Why this direction
-
-Closed jit-preparation-costs02 audits95saved adopted changed-source receipts:
-compiler-interval medians258ms token,73folded,4.7small pgrust,2.5private,15types,
-214full parser,255recent token. These worker durations overlap and are not CPU
-or critical-path savings. Input census02 checks54artifacts/194171function rows;
-namespace changes invalidate the conservative whole-program keys on most edits.
-Scope01 separates that churn: original-token arenas retain only11.60%/11.13%
-body/callee-stable bytes; parser bytecode-op stability99.28%. These are bounded
-identity ceilings, not actual hits or savings. Persistent cross-edit reuse is
-deferred; sharing the exact immutable Program is a narrower first contract.
-
-The old internal label `nushell-parser-incremental` is WRONG: it is pgrust
-`gram_core`. Retain closed hashes/labels but use correct prose/future names.
-Actual Nushell type-relations is a different case. All audits closed and pushed;
-preparation-cost documentation/results are on mainbb0d32f0. Scope details,
-identity controls, old ownership and every failed stage are archived in
-[previous state](docs/history/STATE-20260918-before-shared-template-qualification.md).
+No preparation-phase implementation/build/guest has started yet. Exact old
+candidate qualification, failed attempts, audit details and ownership are in
+[previous state](docs/history/STATE-20260918-before-preparation-phases.md).
 
 ## Adopted identities
 
@@ -144,8 +110,3 @@ retired (closed-composition-nushell-{native-lines,main-native}-retirement-01),
 The two runs recover about3.65/5.41GiB free respectively (not their logical
 8.0/17.3GB totals). Do not repeat them. Only the current Nu check cache remains
 for a future exact ownership/protection audit if needed.
-
-ACTIVE: shared-emission-templates-parser-screen-incremental-01 launched under
-71290/71293 after a fresh24GiB admission, source82ef7c10. Its initial native
-and baseline commands have validated; recheck terminal before any continuation. All runtime/suite/
-protocol inputs are fixed; no successful command needs repeating.
