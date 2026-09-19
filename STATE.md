@@ -122,8 +122,10 @@ private caches, shared target and peer work. Current composition Nu native_lines
 retired (closed-composition-nushell-{native-lines,main-native}-retirement-01),
 71,976nonexecutable intermediates each; every8,659protected hash unchanged.
 The two runs recover about3.65/5.41GiB free respectively (not their logical
-8.0/17.3GB totals). Do not repeat them. Only the current Nu check cache remains
-for a future exact ownership/protection audit if needed.
+8.0/17.3GB totals). Do not repeat them. Nu check attempt02 also completed:
+2,687nonexecutable intermediates removed,1.49GiB free recovered,9,647protected
+hashes unchanged. Its closer87209/87213 is pending shared-lock admission.
+Do not rerun the completed retirement.
 
 Reconstruction01 at1bec189d passed both commands under68671/68674:1050/1245
 ordinary functions,60/69 scalar bodies and11,313,812/13,757,056 codebytes exactly;
@@ -138,6 +140,7 @@ partial controls under43404/43408 and is CLOSED80833. Parser protocol01 at
 cleanup both timed out before lock admission; terminals are preserved and
 admission-only closures succeeded under69900/69940. No successful command was
 repeated. Protocol closer02 is75915/75918; cleanup attempt02 is77691/77718,
-sourceafa80866. Recheck terminal receipts before proceeding. The genuine-edit
+sourceafa80866. Protocol closer02 completed successfully; cleanup02 also passed.
+Recheck cleanup closer87209/87213 before proceeding. The genuine-edit
 primary is unstarted and still requires24GiB initially. Candidate/runtime remains
 unadopted; no performance measurement yet. Saved pause/ownership boundaries hold.
