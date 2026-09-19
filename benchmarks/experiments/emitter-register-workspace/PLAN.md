@@ -64,3 +64,12 @@ formatting. Do not derive storage/capacity equality or weaken the existing test.
 The model's membership control now also compares dense and sparse sets directly.
 Integrated02 repeats the failed compilation and unstarted release; no successful
 guest or staging command is repeated.
+
+Integrated02 passes seven controls per profile under38657/38661 at545a2cfd,
+CLOSED58801 (child in terminal). Next reconstruct the two exact current adopted
+unprofiled block/exhaustive captures via the existing saved-memory observer.
+Verify all ordinary and scalar words against saved arenas, original operation
+maps/assertions, and equivalent entries/resumes between ordinary and diagnostic
+emission. Reuse the seven current controls without rerunning them. Two release
+ignored observer commands; no guest execution or code publication. Preserve
+reports before later validation, and close the original terminal before edits.

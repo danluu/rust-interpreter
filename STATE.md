@@ -34,29 +34,31 @@ owner reports one decline. Broad/conditional demand candidates already failed;
 see conditional-demand-parser-screen-incremental01 and old jit-emission-stages01.
 Do not reimplement demand or liveness-only changes from these observations.
 
-The model02 passed five/profile under49716/49719. Closer02 timed out45seconds
-on the peer lock; closer03 CLOSED6688/6693 without changing original sources.
-Staged integration drafts were applied only after closure. Current integrated01
-controller tests seven/profile: five models, combined4MiB payload bound, and
-exact sparse/dense staging across joins/loops/long regions, profile/register/heap
-modes and six code capacities. No guest execution or native publication yet.
+The register workspace is now wired only into ordinary-region host preparation.
+Each function owns three dense map/set buffers when their combined actual Vec
+payload fits4MiB and registers<=65,536; other cases retain sparse defaults.
+Clearing touched slots resets facts and membership between regions. Filtering
+preserves ascending visitation and flush order. Guest code/options/checks stay
+unchanged. Transition and other emitter paths retain sparse defaults. This is
+an experimental source revision, not adopted and not performance qualified.
 
-Next bounded register workspace model lives in jit/register_workspace.rs under
-cfg(test) only, unused by runtime. Replaces temporary BTree map/set storage in a
-future prototype using per-function dense slots and touched resets, preserving
-sorted flush order and exact emitted code. Stage1 tests five model properties
-per profile with no guest/native publication. Per-map65,536register/4MiB actual
-Vec payload caps are not combined/RSS promises; future integration must bound
-aggregate workspace. Optional allocation/outside-range fallback is sparse.
-Model01 under36347/36352 failed a reversed test assertion after four debug
-controls passed (the sparse set also rejects that incorrect expectation). CLOSED
-45127/45141 before correction. Implementation unchanged; model02 checks all
-members absent after clear, also asserts sorted filter callback visitation, and
-runs debug plus previously unstarted release.
-Current model controller benchmarks/experiments/emitter-register-workspace/model.py
-uses only root target and freezes/ closes before changes. After passing model,
-wire only ordinary regions, qualify exact emission and full runtime checks,
-then a new real edited primary. No unchanged retry or gate relaxation.
+Model01's reversed empty-set test assertion is preserved/CLOSED45127/45141.
+Model02 passes five/profile under49716/49719. Closer02 timed out45seconds on the
+peer lock; closer03 CLOSED6688/6693. Historical staged patches were prepared
+without changing frozen sources, then applied only after closure. Integrated01
+under24839/24865 failed debug compilation because an existing memory-operand
+assertion requires Set equality/debug. CLOSED33381/33384; cfg(test)-only semantic
+contents equality/debug restored that interface without weakening the test.
+
+Integrated02 at545a2cfd passes seven controls/profile under38657/38661 and is
+CLOSED58801 (child in terminal). The two new controls check combined bounds and
+exact sparse/dense staging across joins/loops/long regions, memory/assertions,
+profile/persistent/heap options and six code capacities. No native/guest execution.
+Next reconstruction01 reuses these controls and reconstructs the two exact
+current adopted unprofiled fre block/exhaustive arenas, scalar targets, assertions
+and operation maps. Two ignored saved-code observers; no native publication or
+guest execution. Keep Rust/controller sources frozen until closure. Then full
+workspace/Python/strict qualification and a new real-edit primary are required.
 
 Shared templates remain PARKED: completed32-command parser primary under71290/
 71293 passed114 outcomes but wallratio0.999311805 + A/A0.044733804 fails. CPU
@@ -123,11 +125,3 @@ retired (closed-composition-nushell-{native-lines,main-native}-retirement-01),
 The two runs recover about3.65/5.41GiB free respectively (not their logical
 8.0/17.3GB totals). Do not repeat them. Only the current Nu check cache remains
 for a future exact ownership/protection audit if needed.
-
-Integration01 under24839/24865 failed debug compilation before tests: existing
-memory_operand_tests compares Set equality/debug. CLOSED33381 (child in receipt).
-Added cfg(test)-only semantic contents equality and debug, preserving that test;
-model Set control checks dense/sparse equality too. Integrated02 is next/current,
-seven focused tests/profile. No native/guest code executed yet. Root HEAD retains
-all failed attempts; stage patches are historical drafts already applied after
-model closure. Main/pushed publication5c4885ad preserves peer7ec18d38.
