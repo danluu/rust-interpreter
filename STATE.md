@@ -111,3 +111,19 @@ optimization continues.
 The September 13 12:45 suggestions were re-read on September 18 and their SHA
 remains unchanged: 4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f.
 [Review and dispositions](docs/SUGGESTIONS-REVIEW-20260913-1245.md).
+
+## 2026-09-19 runtime scheduler qualification (experimental branch)
+
+Duration-based session ordering remains on experiment/session-duration-order-20260919.
+Full qualification passes679Rust/profile17ignored,39diagnostic,10feature-off
+session,31ordinary-model/defaultVM and hash-boundPython442+22skip. A disk stop
+after the two full profiles was preserved; recovery reused the completed commands.
+Actual parser replay passes1824invocations with19597independently regenerated hits.
+Diagnostic replay passes1824/19964observedhits. Independent saved-report audit
+checks prior-duration ordering and exactcoverage on16requests. The longest test
+starts first in all ten valid edited reports; cached worker median264.122→242.255ms
+in separate instrumented observations. Its own interval increases, so this is only
+mechanism evidence. No command speedup or default adoption; changed-source primary06
+remains required. Runtime source is deliberately retained on its experimental branch.
+Exact primary05 retired compiler intermediates cleaned15152files/2,991,235,194bytes;
+11410protected hashes unchanged, independent closure complete. Neverrepeatcleanup.
