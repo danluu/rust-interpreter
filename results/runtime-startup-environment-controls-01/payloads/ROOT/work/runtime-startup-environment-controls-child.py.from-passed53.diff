@@ -1,0 +1,34 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-saved-audit-controls-05/child.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-startup-environment-controls-01/child.py
+@@ -8,10 +8,10 @@
+ import unittest
+ 
+ HERE = Path(__file__).resolve().parent
+-SOURCE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-05')
++SOURCE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01')
+ OWNER = HERE.parents[1]
+-WORK = OWNER / '.work/runtime-saved-audit-controls-05'
+-MODULES = ['test_reader', 'test_audit_io']
++WORK = OWNER / '.work/runtime-startup-environment-controls-01'
++MODULES = ['test_environment', 'test_audit_owner']
+ MAX_FILE = 256 * 1024
+ 
+ 
+@@ -58,7 +58,7 @@
+         if isinstance(item, unittest.TestSuite):
+             return [name for test in item for name in names(test)]
+         return [item.id()]
+-    assert sorted(names(suite)) == expected and len(expected) == 53
++    assert sorted(names(suite)) == expected and len(expected) == 39
+     result = unittest.TextTestRunner(verbosity=2).run(suite)
+     freeze = json.loads((HERE / 'inputs.json').read_bytes())
+     for module in list(sys.modules.values()):
+@@ -72,7 +72,7 @@
+                   maximum_file_bytes=MAX_FILE, maximum_writable_names=256,
+                   maximum_directory_names=2048, child_processes=0, compiler_calls=0)
+     (WORK / 'result.json').write_text(json.dumps(report, sort_keys=True, indent=2) + '\n')
+-    assert result.wasSuccessful() and result.testsRun == 53 and not result.skipped
++    assert result.wasSuccessful() and result.testsRun == 39 and not result.skipped
+     assert not result.expectedFailures and not result.unexpectedSuccesses
+     signal.alarm(0)
+ 

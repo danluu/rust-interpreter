@@ -1,0 +1,163 @@
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/runtime04-startup-before-preparation-chronology-01/audit_owner.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01/audit_owner.py
+@@ -12,7 +12,7 @@
+ 
+ 
+ def startup_admission(plan, launch, *, phase, expected, sha, read_json, original,
+-                      workload_environment, validate_qualification):
++                      workload_environment, validate_qualification, runtime_started_at):
+     require, same = original.require, original.same
+     proof = plan['startup_environment']
+     require(type(proof) is dict and set(proof) == {'derivation', 'policy', 'qualification',
+@@ -64,7 +64,7 @@
+         and observed['parent_pid'] == record['parent_pid'] and observed['blocked_events'] == []
+         and same(observed['command'], record['producer_command']), 'actual preparation child observation differs')
+     require(record['started_at'] <= record['child_started_at'] <= observed['started_at']
+-        <= observed['finished_at'] <= record['finished_at'] <= record['readback_finished_at'],
++        <= observed['finished_at'] <= record['finished_at'] <= record['readback_finished_at'] <= runtime_started_at,
+         'actual preparation chronology differs')
+     maps = observed['environments']
+     require(same(maps['passed'], record['environment']), 'child passed environment differs')
+@@ -113,7 +113,8 @@
+             and sha(packet/'snapshot-plan.json') == expected['snapshot_plan']
+             and sha(work/'receipt.json') == expected['receipt'], 'actual packet/terminal association differs')
+     startup_admission(plan, launch, phase=phase, expected=expected, sha=sha, read_json=read_json,
+-        original=original, workload_environment=workload_environment, validate_qualification=validate_qualification)
++        original=original, workload_environment=workload_environment, validate_qualification=validate_qualification,
++        runtime_started_at=terminal['started_at'])
+     require(launch['cwd'] == str(R) and launch['environment'] == plan['launch_environment']
+             and launch['capacity'] == plan['capacity'] == dict(entry_gib=24, stop_gib=9, floor_gib=8,
+                 combined_namespace_bytes=14*2**30, evidence_bytes=256*2**20), 'runtime context or limits changed')
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/runtime04-startup-before-preparation-chronology-01/test_audit_owner.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01/test_audit_owner.py
+@@ -135,6 +135,14 @@
+             f=fixture();f.observation[key]=value;f.refresh()
+             with self.subTest(key=key),self.assertRaises(RuntimeError):f.check()
+ 
++    def test_preparation_must_finish_before_runtime_owner_starts(self):
++        f=fixture()
++        for key in ['started_at','child_started_at','finished_at','readback_finished_at']:
++            f.record[key]+=100
++        for key in ['started_at','finished_at']:f.observation[key]+=100
++        f.refresh()
++        with self.assertRaisesRegex(RuntimeError,'preparation chronology'):f.check()
++
+     def test_source_manifest_invocation_and_source_bytes_are_bound(self):
+         for path in [owner.ADAPTER/'environment.py',owner.ADAPTER/'prepare.py',Path('/fixture/adapter-sources.json'),
+                      Path('/fixture/invocation.json'),Path('/fixture/prepare_once.py')]:
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/runtime04-startup-before-preparation-chronology-01/prepare.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01/prepare.py
+@@ -37,7 +37,7 @@
+ STARTUP_CONTROLS=ROOT/'experiments/runtime-startup-environment-controls-01'
+ STARTUP_WORK=ROOT/'.work/runtime-startup-environment-controls-01'
+ STARTUP_AUDIT=ROOT/'.work/runtime-startup-environment-controls-independent-verification-01.json'
+-STARTUP_CONTROL_COUNT=38  # 24 startup/Controller admission + 14 complete owner controls; actual proof required.
++STARTUP_CONTROL_COUNT=39  # 24 startup/Controller admission + 15 complete owner controls; actual proof required.
+ ADAPTER_FILES={'environment.py','prepare.py','test_environment.py','audit_owner.py',
+     'test_audit_owner.py','source-bindings.json','README.md'}
+ 
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/runtime04-startup-before-preparation-chronology-01/source-bindings.json
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01/source-bindings.json
+@@ -4,6 +4,7 @@
+     "scope": "Passed read-only preparation; later actual Reader02 failed from missing completed-owner inputs, not from the recorded environment",
+     "sha256": "272c9b599227f5499c9ae881fdeb9b9adbb03d1033f7d9a9e2efa39a32af3383"
+   },
++  "chronology_review_correction": "Actual preparation readback must precede original runtime terminal.started_at; explicit negative fixture preserves internal prep order while placing all its times after runtime.",
+   "control_local_imports": [
+     "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01/environment.py",
+     "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01/audit_owner.py",
+@@ -32,6 +33,7 @@
+       "test_audit_owner.Owner.test_original_terminal_and_packet_predicates_are_retained",
+       "test_audit_owner.Owner.test_plain_exact_launch_without_cf_remains_valid",
+       "test_audit_owner.Owner.test_preparation_child_parent_time_and_command_are_bound",
++      "test_audit_owner.Owner.test_preparation_must_finish_before_runtime_owner_starts",
+       "test_audit_owner.Owner.test_preparation_reference_and_observation_hash_are_required",
+       "test_audit_owner.Owner.test_source_manifest_invocation_and_source_bytes_are_bound",
+       "test_audit_owner.Owner.test_unqualified_or_mutated_control_proof_is_rejected",
+@@ -315,16 +317,16 @@
+   "source_files": {
+     "audit_owner.py": {
+       "identity": {
+-        "ctime_ns": 1789812325201642391,
++        "ctime_ns": 1789812754256651903,
+         "dev": 16777229,
+         "ino": 1056332762,
+         "mode": 33152,
+-        "mtime_ns": 1789812325201642391,
+-        "nlink": 1,
+-        "size": 11277
+-      },
+-      "sha256": "9f49411c72dbe8816bd03c6c7534b8da113ac7f098ade71a882c6a7ca3160ff3",
+-      "size": 11277
++        "mtime_ns": 1789812754256651903,
++        "nlink": 1,
++        "size": 11370
++      },
++      "sha256": "f93dd25d4d58e3133d2737c718f6b4e41d1f37ad788f914f9ed2adf268fca595",
++      "size": 11370
+     },
+     "environment.py": {
+       "identity": {
+@@ -341,29 +343,29 @@
+     },
+     "prepare.py": {
+       "identity": {
+-        "ctime_ns": 1789812460672002377,
++        "ctime_ns": 1789812754257824171,
+         "dev": 16777229,
+         "ino": 1056332230,
+         "mode": 33152,
+-        "mtime_ns": 1789812460672002377,
++        "mtime_ns": 1789812754257824171,
+         "nlink": 1,
+         "size": 27184
+       },
+-      "sha256": "dedc0a2be5d036f4f561449595e611aa63d0aa3f84980e9fbc95ffd68ef6d28e",
++      "sha256": "f385f0aeebe29630aada118264e1b9b5ea280c4e52e3914cda3fe4a3e3cc8d13",
+       "size": 27184
+     },
+     "test_audit_owner.py": {
+       "identity": {
+-        "ctime_ns": 1789812375385578609,
++        "ctime_ns": 1789812754257738961,
+         "dev": 16777229,
+         "ino": 1056332971,
+         "mode": 33152,
+-        "mtime_ns": 1789812375385578609,
+-        "nlink": 1,
+-        "size": 11131
+-      },
+-      "sha256": "d66a3cb374f09c3a000ded9ef3effc636420cd45ff213d7e265ec959e25356c5",
+-      "size": 11131
++        "mtime_ns": 1789812754257738961,
++        "nlink": 1,
++        "size": 11523
++      },
++      "sha256": "c157b2723a0dd32b96762c77cac3bccd201a4b113ebaf2785cfc9799892527aa",
++      "size": 11523
+     },
+     "test_environment.py": {
+       "identity": {
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/runtime04-startup-before-preparation-chronology-01/README.md
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01/README.md
+@@ -2,8 +2,8 @@
+ 
+ This is an unexecuted source proposal. It leaves the qualified runtime04
+ directory, original01 Controller, and all four qualified audit05 reader/IO/test
+-files unchanged. Its 38 controls are written but unrun: 20 pure environment
+-cases, four early admission checks through the unchanged Controller, and 14
++files unchanged. Its 39 controls are written but unrun: 20 pure environment
++cases, four early admission checks through the unchanged Controller, and 15
+ complete saved owner fixtures for both runtime phases and negative mutations.
+ 
+ The read-only rehearsal02 preparation actually passed an environment without
+@@ -87,7 +87,8 @@
+ `preparation_passed: true`, correct source/invocation/command, and plan/inputs/
+ launch output hashes. The wrapper must retain `child_observation_sha256` in its
+ final record. The owner compares that raw observation's passed and observed
+-environments and checks its actual child identity and chronology. The plan
++environments and checks its actual child identity and chronology, including completion before
++the original runtime owner starts. The plan
+ contains the future record path only, avoiding a self-referential plan digest.
+ 
+ Root owns `runtime04-prepare-launch-01/prepare_once.py`, which consumes
