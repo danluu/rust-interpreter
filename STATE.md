@@ -35,7 +35,14 @@ two workers for the historical one-test private case, which requested one.
 Audit02 preserves each original1or2-worker request and adds a seventh control.
 The95-receipt audit and7controls are prepared in
 `benchmarks/experiments/jit-preparation-costs`, including the incremental parser
-and latest primary baseline. Close the finished audit before changing its inputs.
+and latest primary baseline. Audit02 passes7controls and95receipts under33033/33036, source272e041d.
+Its direct closer and named retry69934/69938 both timed out45seconds waiting
+for the shared lock; neither reran analysis. Keep all frozen inputs unchanged
+until closure succeeds. Root production source remains exactly adopted.
+Median compiler-interval sums are258ms token,73ms folded,4.7ms pgrust,2.5ms
+private,15ms Nushell types,214ms parser and255ms recent token. These overlap
+across workers and are not promised savings. Next typed identity feasibility
+uses saved artifacts; no cache/runtime implementation is admitted yet.
 
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally
