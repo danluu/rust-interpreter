@@ -199,3 +199,12 @@ closure; preserve failure, no retrospective relaxation. RUNTIME-NEXT.md updated.
 Census01 sourcec0d4c95d failed on valid bare ResetThreadLocals after16controls
 passed. No completedcase/no guest. Independently failure-CLOSED14287. Immutable
 v2 continuation adds exact unit-variant handling and17thcontrol, run02.
+
+Census02 source982e1e07 passed17controls andbothsavedcaptures,supervisor15748.
+First closure17200 rejected Python executable alias afterbothrecomputations;
+sourceunchanged. Separateclosure5e573ab8 resolvespaths andbindsoriginalfailure,
+CLOSED25261. All42bindingsverified,bothfullresultsrecomputed. Directcyclicsamples
+503/1933 and304/1429; callfree35/120;withcalls468/184. Associatedoverhead130/98
+reportedseparately. No performanceinference. docs/ADOPTED-HOT-LOOPS-20260919.md.
+Next measure bounded local-memory equality for redundant copies in ordinary
+regions, including call-containing functions; no typed/runtimeproof claimedyet.
