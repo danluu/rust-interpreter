@@ -69,6 +69,27 @@ sum is 0.94133. Candidate/native wall ratio remains 1.27188. Thus this screen sh
 a 6.9% wall improvement against the adopted custom runtime while still trailing
 native Rust on this workload.
 
-The next gate is the unchanged three-cycle, 110-command full parser protocol in
-fresh namespaces. Default behavior remains unchanged; adoption requires that guard
-and the remaining project comparisons.
+The [full three-cycle parser guard](../results/cross-program-template-parser-full-incremental-03/summary.json)
+also passed: 110 changed-source commands, two strict rejection controls, and 15
+valid edited pairs. Median candidate/adopted wall ratio is 0.92440; its maximum
+A/A deviation is 0.04593 and their sum is 0.97032. CPU ratio is 0.90271, with a
+corresponding sum of 0.94219. Candidate/native wall ratio is 1.24998. These results
+support a 7.6% wall improvement against the adopted interpreter on this workload,
+while remaining about 25% slower than native Rust.
+
+A prior full-guard attempt collected no commands: its historical protocol receipt
+rejected the changed candidate-selection file. That admission failure is retained.
+The same eight accounting controls were qualified against the current selection
+before the fresh full run. No performance sample was repeated.
+
+Saved full-history intervals put the candidate's median build-to-ready time at
+1,223.803 ms and execution at 267.423 ms. The longest test begins first in all
+session reports, with a median 210.638 ms interval; work outside the worker interval
+within the server request is 29.520 ms. Compilation-duration sums can overlap, and
+medians are not additive. The remaining gap is largely before execution, while the
+long test still dominates the guest interval.
+
+Default behavior remains unchanged. Before adoption, validate the same binaries
+on fre token/folded, pgrust's smaller control, private rg-aot, and Nushell with their
+original assertions and complete changed-source/session accounting. The next step
+is a verified fre token replay from closed real-edit artifacts.
