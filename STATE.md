@@ -124,12 +124,21 @@ fault/replay and private memory; call/branch/resource controls retained.
 All four full project guards are CLOSED. Parser incremental and repository
 profiles then Nushell remain required before current-main integration/adoption.
 Both parser and large protocol02 qualifications are CLOSED. Parser needs24GiB;
-Nushell needs66.54872655GiB for nine namespaces. Last free17.6GiB, so no parser
-workload is admitted yet. Inventory exact manifest-listed completed public raw
-files with benchmarks/experiments/closed-evidence-inventory; read-only, no real
-compression authorized by the inventory itself. A separate exact-path protocol
-and full hash/metadata/open-file checks are required before any storage mutation.
-Do not compress sources/tools/live/private caches or alter benchmark bytes.
+Nushell needs66.54872655GiB for nine namespaces. Transparent compression of373
+exact completed public artifact copies is CLOSED52338 in
+results/closed-public-artifact-compression-02. Allocated bytes10960859136->3113185280
+(about7.31GiB less); all plaintext hashes, paths, mode, owner, mtime and creation
+time preserved. Inode/ctime/compression flags intentionally change. No source,
+compiler cache, installed tool, private or peer data changed. NEVER rerun the
+mutating compression01/02 or their consumed inventories.
+Compression01 stopped after132 replacements on a creation-time mismatch before
+replacement133; original intact. That partial result and a disposable write-open
+failure are CLOSED in the recovery02 proof. Native creation metadata copying
+using a read-only descriptor passed and CLOSED66894 before completing241 entries.
+Inventory01/02, both probes and every original failure remain preserved.
+Current free24.7GiB; recheck before admitting parser incremental. Descriptive
+saved-history costs62497 are independently CLOSED70818:240 reports, four original
+verdicts reproduced, no new timings. See docs/SESSION-RUNTIME-COSTS-20260919.md.
 New folded compiler caches could also be retired after exact proof verification;
 primary/token and older Nushell caches are already retired: NEVER repeat.
 No unchanged timing retry. A failed gate stops later guards. Preserve strict
@@ -142,7 +151,7 @@ Shared .work/benchmark.lock,45s admission; two Cargo/test workers. Shared target
 .work/fixed-frame-clear-combined-build-01/target MUST NEVER be cleaned. Builds
 require max(14GiB,8GiB+2*current allocated target), re-evaluated before each child.
 Replay/analysis12GiB, closure/children8GiB; fre16GiB, parser24GiB plus namespace
-allowance, pgrust12GiB, Nushell66.54872655GiB. Last free~17.6GiB; recheck continuously.
+allowance, pgrust12GiB, Nushell66.54872655GiB. Last free~24.7GiB; recheck continuously.
 Cleaner read-only: /usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status.
 Never compete with it, repair it, signal peers or use broad cleanup.
 
@@ -157,10 +166,10 @@ suggestions.txt remains user-owned/untracked, SHA256
 4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f;
 reread this turn. Detailed dispositions docs/SUGGESTIONS-REVIEW-20260913-1245.md.
 
-Main publicationfb594d1d includes closed folded, token retirement and portable
-pgrust strict-probe qualification. Closed pgrust02/private guard, parser/large
-protocol02 and storage compatibility proof publication are pending. Experimental
-branch remote last2b8add9c; push current commits regularly. Runtime stays df4006e0.
+Main publicationc08fb7ce includes closed pgrust02/private guards and corrected
+parser/large protocol02. Publication worktree is now fast-forwarded to peer
+dfc0b83e; storage/cost proof publication is pending. Runtime stays df4006e0.
+Experimental remote72fa82b0; push newer commits regularly.
 Publish exact proof/docs paths on main, fetch/ff first; do not copy experimental
 runtime or overwrite compiler work. Prior detail archived at
  docs/history/STATE-20260919-before-session-runtime-composition.md.

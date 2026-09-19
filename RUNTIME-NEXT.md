@@ -25,11 +25,14 @@ lock before work; both preserved. Actual rg-aot176 commands+2strict passed and
 CLOSED94315 under outer suffix-admitted-02. Wall margin1.0308613865 and CPU
 margin1.0375064256 pass; nativewall.5910980861. No clear gain versus adopted.
 
-Next: parser incremental, parser repository defaults, Nushell last. Current free
-17.6GiB is below parser24GiB and Nushell66.54872655GiB. Disposable transparent
-compression probe02 CLOSED4233; no existing evidence changed. Read-only exact
-public evidence inventory is prepared. Only separate verified exact-path storage
-work can reclaim space; no broad cleanup, shared target or peer/private changes.
+Next: parser incremental, parser repository defaults, Nushell last. Transparent
+compression of373 closed public bytecode copies is independently CLOSED52338,
+saving7.31GiB allocated blocks while preserving every original plaintext hash
+and required metadata. Partial conversion and both disposable metadata probes
+are retained; continuation02 finished only241 uncompleted entries. Never rerun
+these mutations or old stat inventories. Free24.7GiB now meets parser24GiB;
+recheck at admission. Nushell66.54872655GiB remains unmet. Saved-history cost
+analysis is independently CLOSED70818; no new timings. Main proof publicationc08fb7ce.
 
 Both parents failed. Main runtime stays scratch/scalar df4006e0 until every guard
 and current-main integration passes. No unchanged timing retries. No subagents
