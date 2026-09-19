@@ -167,3 +167,11 @@ controllers prepared, not yet started. Main8567ce51 pushed closed diagnostic and
 cleanup evidence, preserving peer f83ae5dc; experimental runtime remains unadopted.
 Additional bounded fre custom-cache retirement prepared/notstarted;16 exact roots
 from fourcompleted154-command cases, no native/sharedtarget/peerwork.
+
+Size-tierparser replay86a38c47 completed74700/74704 andCLOSED79099/controllerreceipt;
+16commands1,824originaltests and17,150verifiedtemplatehits, actualoutcomes/kernelCPU
+match, diagnosticsOFF. Install83903/83906 toolc3bd08d4e9e139fa91b22b9e10168cf216a7a1193538db4654e8b512f2fd7ef8;
+CLOSED90547/checkterminal. Candidate VM69df85c19b20497dbcaadf2b056481354ed2fab9d0defa2ebb5632f2d8acdaba,
+server6fb64de9a2e09ab0bc725d56f6963d07383f2b3be474822e3a37011454ed29d2.
+Primary03 prerequisites now target size-tierclosedproofs; sameprotocol/gates.
+Run boundedcompleted-frecustom retirement next to meet24GiB primaryfloor.
