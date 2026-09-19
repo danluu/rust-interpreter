@@ -22,7 +22,7 @@ def normalized(mapping, code, profile):
             if span['kind'] != 'transition':
                 continue
             op = profile['functions'][function['function']]['operations'][span['pc']]
-            if op != 'Call':
+            if op.split(' ',1)[0] != 'Call':
                 continue
             start, end = span['offset']//4, span['end']//4
             assert 0 <= start < end <= len(words)

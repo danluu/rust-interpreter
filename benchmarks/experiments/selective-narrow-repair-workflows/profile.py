@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+from types import SimpleNamespace
 ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
@@ -18,7 +19,8 @@ def read(p):return json.loads(p.read_text())
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id',required=True);parser.add_argument('--build',type=Path,required=True)
-    parser.add_argument('--qualification',type=Path,required=True);args=parser.parse_args()
+    parser.add_argument('--qualification',type=Path,required=True)
+    parser.add_argument('--retained-profile',type=Path,required=True);args=parser.parse_args()
     assert re.fullmatch(r'selective-narrow-repair-profile-\d{2}',args.run_id)
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45);require_space(ROOT,12)
@@ -55,6 +57,18 @@ def main():
         for p,h in read(pb)['artifacts'].items():assert sha(ROOT/p)==h;paths.append(ROOT/p)
         parked_rows={r['index']:r for r in parked['comparisons'] if r['mode']=='candidate'}
         assert set(parked_rows)=={0,1,2}
+        retained_path=args.retained_profile.resolve(strict=True);retained=read(retained_path)
+        retained_closed=retained_path.with_name('closure.json');rc=read(retained_closed)
+        assert retained['status']=='observer-failed' and retained['tool_key']==key and retained['commands']==1
+        assert rc['status']=='closed' and rc['all_hashes_verified'] and sha(retained_path)==rc['summary_sha256']
+        rb=ROOT/rc['bindings'];assert sha(rb)==rc['bindings_sha256']
+        rb_data=read(rb);paths += [retained_path,retained_closed,rb]
+        for category in ['evidence','artifacts']:
+            for p,h in rb_data[category].items():assert sha(ROOT/p)==h;paths.append(ROOT/p)
+        retained_raw=ROOT/retained['raw'];retained_records=read(retained_raw/'records.json')
+        assert sha(retained_raw/'records.json')==retained['records_sha256']
+        assert len(retained_records)==1 and retained_records[0]['index']==0
+        assert retained_records[0]['returncode']==0 and retained_records[0]['stdout']=='0\n'
         for summary in [build_path,qualification_path]:
             proof=summary.with_name('closure.json');closed=read(proof)
             assert closed['status']=='closed' and sha(summary)==closed['summary_sha256']
@@ -94,7 +108,7 @@ def main():
         assert not subprocess.check_output(['git','diff','--name-only','HEAD']).strip()
         work=ROOT/'.work'/args.run_id;work.mkdir(exist_ok=False)
         write(work/'plan.json',dict(owner=str(ROOT),source_revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
-            frozen=frozen,expected_guest_commands=3,reused_control_profiles=3,python_controls=6,launcher_controls_reused=0,
+            frozen=frozen,expected_guest_commands=2,reused_candidate_profiles=1,reused_control_profiles=3,python_controls=7,launcher_controls_reused=0,
             controller_command=[sys.executable,*sys.argv],
             tool_key=key,matched_control_key=BASELINE,minimum_child_gib=8,performance_measurement=False))
         require_space(ROOT,8)
@@ -105,21 +119,27 @@ def main():
         (work/'controls.stdout').write_text(stdout);(work/'controls.stderr').write_text(stderr)
         write(work/'controls.json',dict(command=control_command,pid=child.pid,returncode=child.returncode,
             stdout_sha256=sha(work/'controls.stdout'),stderr_sha256=sha(work/'controls.stderr')))
-        assert child.returncode==0 and 'Ran 6 tests' in stderr and stderr.rstrip().endswith('OK'),stderr
+        assert child.returncode==0 and 'Ran 7 tests' in stderr and stderr.rstrip().endswith('OK'),stderr
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_'))}
         assert not any(k.startswith('DYLD_') for k in env)
         env.update(DYLD_INSERT_LIBRARIES=str(library),RUST_INTERP_ENTROPY_MODE='replay',RUST_INTERP_VM_STATS='1')
         records=[];comparisons=[]
         for item,prior in cases:
             require_space(ROOT,8);index=item['index'];previous=read(ROOT/prior['profile_path'])
-            profile_path=work/f'candidate-{index}-profile.json';dump_path=work/f'candidate-{index}-code'
+            capture_root=retained_raw if index==0 else work
+            profile_path=capture_root/f'candidate-{index}-profile.json';dump_path=capture_root/f'candidate-{index}-code'
             command=list(map(str,[tools/'rust-interp-vm','--engine','jit','--jit-resumable-calls','--jit-persistent-registers','--jit-scalar-calls',
                 '--jit-code-dump',dump_path,'--jit-operation-map','--profile',profile_path,'--profile-test',item['name'],
                 '--suite-catalog',ROOT/item['catalog'],'--instruction-limit',item['limits']['instructions'],
                 '--allocation-limit',item['limits']['allocations'],ROOT/item['artifact']]))
-            child,out,err=capture(command,cwd=ROOT,env=dict(env,RUST_INTERP_ENTROPY_TAPE=str(raw/f'{index}.tape')),
-                receipt_path=work/'active.json',receipt=dict(index=index,mode='candidate'))
-            records.append(dict(index=index,mode='candidate',command=command,pid=child.pid,returncode=child.returncode,stdout=out,stderr=err))
+            if index==0:
+                saved=retained_records[0];assert saved['command']==command
+                child=SimpleNamespace(pid=saved['pid'],returncode=saved['returncode'])
+                out,err=saved['stdout'],saved['stderr']
+            else:
+                child,out,err=capture(command,cwd=ROOT,env=dict(env,RUST_INTERP_ENTROPY_TAPE=str(raw/f'{index}.tape')),
+                    receipt_path=work/'active.json',receipt=dict(index=index,mode='candidate'))
+            records.append(dict(index=index,mode='candidate',reused_capture=index==0,command=command,pid=child.pid,returncode=child.returncode,stdout=out,stderr=err))
             write(work/'records.json',records);assert child.returncode==0 and out=='0\n',err
             selection,=[json.loads(line.split(': ',1)[1]) for line in err.splitlines() if line.startswith('rust-interp-profile-selection: ')]
             for n in ['name','artifact_sha256','catalog_sha256']:assert selection[n]==item[n]
@@ -146,7 +166,7 @@ def main():
             assert len(bodies)==prior['scalar_bodies']
             assert sum(f['end']-f['offset'] for f in bodies)==prior['scalar_code_bytes']
             comparisons.append(dict(prior,mode='control',reused=True,tool_key=BASELINE))
-            comparisons.append(dict(index=index,mode='candidate',reused=False,name=item['name'],statistics=stats,logical_counts=totals,
+            comparisons.append(dict(index=index,mode='candidate',reused=False,retained_capture=index==0,name=item['name'],statistics=stats,logical_counts=totals,
                 native_identity_vs_parked=native_identity,
                 scalar_calls=scalar_calls,scalar_functions_executed=scalar_functions,scalar_bodies=len(bodies),
                 scalar_code_bytes=sum(f['end']-f['offset'] for f in bodies),current_native_bytes=len(code),
@@ -157,10 +177,11 @@ def main():
             assert all(sha(ROOT/p)==h for p,h in frozen.items())
             print(index,'original assertions/counts/peak/entropy/map PASS;',scalar_calls,'scalar Calls',flush=True)
         out=ROOT/'results'/args.run_id;out.mkdir(exist_ok=False)
-        write(out/'summary.json',dict(status='passed',tool_key=key,matched_control_key=BASELINE,commands=3,reused_control_profiles=3,
-            python_controls=6,launcher_controls_reused=0,comparisons=comparisons,control_vm_matches_adopted=True,
+        write(out/'summary.json',dict(status='passed',tool_key=key,matched_control_key=BASELINE,commands=3,new_guest_commands=2,reused_candidate_profiles=1,reused_control_profiles=3,
+            python_controls=7,launcher_controls_reused=0,comparisons=comparisons,control_vm_matches_adopted=True,
             exact_logical_counts_memory_and_entropy=True,exact_per_pc_counts=True,exact_operation_map_reconstruction=True,
             exact_native_bytes_except_checked_scalar_addresses=True,exact_parked_execution_distribution=True,
+            retained_profile_summary=str(retained_path.relative_to(ROOT)),retained_profile_summary_sha256=sha(retained_path),
             parked_profile_summary=str(parked_path.relative_to(ROOT)),parked_profile_summary_sha256=sha(parked_path),
             raw=str(work.relative_to(ROOT)),plan_sha256=sha(work/'plan.json'),records_sha256=sha(work/'records.json'),
             controls_sha256=sha(work/'controls.json'),performance_measurement=False))

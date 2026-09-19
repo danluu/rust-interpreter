@@ -36,6 +36,13 @@ class NativeIdentity(unittest.TestCase):
         self.assertEqual(result['native_bytes'],28)
         self.assertEqual(compare_native(*a,*a)['normalized_sha256'],result['normalized_sha256'])
 
+    def test_actual_operand_rendering_still_requires_checked_relocation(self):
+        a,b=fixture(0x123456780000),fixture(0x234567890000)
+        for item in [a,b]:item[2]['functions'][0]['operations']=['Call { function: 1, args: [2], destination: 3 }']
+        self.assertEqual(compare_native(*a,*b)['scalar_target_sites'],1)
+        word_change(a,1,0xd2800010 | (24<<5))
+        with self.assertRaises(AssertionError):compare_native(*a,*b)
+
     def test_unknown_or_different_body_targets_and_noncanonical_sequences_fail(self):
         for index, word in [(1,0xd2800010 | (21<<5)), (1,0xd2800010 | (24<<5)),
                             (2,0xf2c00010 | (0x5678<<5)), (2,0xf2a00010),

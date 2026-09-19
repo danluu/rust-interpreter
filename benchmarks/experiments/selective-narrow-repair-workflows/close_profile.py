@@ -24,16 +24,18 @@ def main():
                 assert hashlib.sha256(data).hexdigest()==digest,path
                 bindings[path]=dict(kind='git',revision=plan['source_revision'],sha256=digest)
         records=read(work/'records.json');assert len(records)==3 and all(r['returncode']==0 for r in records)
+        assert summary['new_guest_commands']==2 and summary['reused_candidate_profiles']==1
+        assert [r['reused_capture'] for r in records]==[True,False,False]
         assert [(r['index'],r['mode']) for r in records]==[(i,'candidate') for i in range(3)]
         artifacts={}
         controls=read(work/'controls.json')
         assert sha(work/'controls.json')==summary['controls_sha256']
-        assert controls['returncode']==0 and summary['python_controls']==6
+        assert controls['returncode']==0 and summary['python_controls']==7
         for stream in ['stdout','stderr']:
             path=work/('controls.'+stream)
             assert sha(path)==controls[stream+'_sha256']
             artifacts[str(path.relative_to(ROOT))]=sha(path)
-        assert 'Ran 6 tests' in (work/'controls.stderr').read_text()
+        assert 'Ran 7 tests' in (work/'controls.stderr').read_text()
         artifacts[str((work/'controls.json').relative_to(ROOT))]=sha(work/'controls.json')
         for row in summary['comparisons']:
             for key in ['profile','code','operations']:

@@ -54,7 +54,7 @@ def main():
                 assert hashlib.sha256(subprocess.check_output(['git', 'show', spec], cwd=ROOT)).hexdigest() == digest
                 bindings[path] = dict(sha256=digest, git_source=spec)
         build = read(ROOT / 'results/selective-narrow-repair-build-01/summary.json')
-        profile = read(ROOT / 'results/selective-narrow-repair-profile-01/summary.json')
+        profile = read(ROOT / 'results/selective-narrow-repair-profile-02/summary.json')
         assert screen.validate_matched_profile(build, profile)
         assert result['tool_keys']['candidate'] == build['tool_key']
         assert result['tool_keys']['baseline'] == result['tool_keys']['duplicate'] == build['matched_control']['tool_key']

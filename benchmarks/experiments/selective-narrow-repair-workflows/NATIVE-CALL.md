@@ -26,6 +26,12 @@ all successful stages and peer workloads. No new timing is admitted by this file
 
 The three original profiles additionally compare native layouts and all bytes
 against the closed3e53b127 prototype, permitting only validated scalar target
-address immediates. Six Python controls cover ordinary maps, logical counts and
+address immediates. Seven Python controls cover ordinary maps, logical counts and
 this relocation check. Every interpreted/native PC counter must also match the
 prototype. A comparison failure preserves the completed guest capture.
+
+Profile01 retained one successful guest before the observer rejected Call
+operand renderings. Its closed capture is mandatory input to profile02: seven
+updated controls, offline revalidation of the first capture and only two new
+guests. Both the observer failure and the successful original capture stay
+visible. No JIT runtime, gate or timing input changes in this recovery.

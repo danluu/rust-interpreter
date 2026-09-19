@@ -28,7 +28,7 @@ source on all ordinary controller exits. Do not disrupt other work.
 Before timing, run 13 protocol controls and three operation-map controls.
 Reuse the complete 449-test Python build qualification (427 passed, 22 skipped)
 only through exact scripts/tests/source/log bindings; do not report reused
-tests as newly executed. Require three new candidate diagnostic profiles to match three closed adopted
+tests as newly executed. Require three distinct candidate diagnostic profiles to match three closed adopted
 profiles, including logical counts, memory and entropy, before timing.
 
 Candidate prerequisite: closed634-test debug/release build,121 strict/cache
@@ -39,7 +39,12 @@ qualified VM are included. The shared16MiB arena and all test limits stay fixed.
 
 The profile prerequisite also compares generated code against parked3e53b127
 with exact layouts, all execution counters and every byte except validated
-scalar target address immediates. Its three address-comparison controls run
+scalar target address immediates. Its four address-comparison controls run
 in the profile stage in addition to the three ordinary map controls. The
 primary compares only against adopted df4006e0; the failed conservative repair
 primary supplies neither timing pairs nor a passing prerequisite.
+
+The closed profile02 prerequisite includes the preserved successful first
+capture from profile01 and only two new captures. The earlier observer failed
+to recognize operand-rendered Call labels; its failure is retained. Do not
+repeat a successful guest to repair this bookkeeping error.
