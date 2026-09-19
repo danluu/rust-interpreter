@@ -8,7 +8,7 @@ import sys
 import time
 ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
-from ordinary_padding_model import controls, matches, classify_layout
+from ordinary_padding_model import controls, matches, classify_layout, prefix_matches
 sys.path.insert(0,str(ROOT/'benchmarks/experiments/cross-program-template-model'))
 import focus
 from compare_saved_runtime import acquire_lock,sha
@@ -20,7 +20,8 @@ from native_observation import validate,locate
 sys.path.insert(0,str(ROOT/'benchmarks/experiments/short-clear-tails'))
 from qualify import admission,TARGET,BUILD
 read = focus.read
-RUN = 'ordinary-padding-scope-01'
+RUN = 'ordinary-padding-scope-02'
+FIRST = 'ordinary-padding-scope-01'
 TEST = 'jit::code_spans::ordinary_padding_scope::observe_saved_ordinary_call_layouts'
 
 
@@ -54,9 +55,8 @@ def derive(case, path):
         site['layout'] = layout
         site['padding_offset'] = site['offset'] + offsets[0] if dynamic else None
         if dynamic:
-            # clear_call_frame starts with this prefix; any future setup change
-            # requires an explicit matcher update, never an inferred match.
-            assert offsets == [0]
+            # The span owns four caller setup words before clear_call_frame.
+            assert prefix_matches(site, code[site['offset']:site['end']])
         layouts[layout] += 1
         static_words[layout] += (site['end'] - site['offset'])//4
     fine = dict(rows=protocol['spans'], starts=[r['offset'] for r in protocol['spans']])
@@ -140,6 +140,35 @@ def main():
             cases.append(dict(case,index=i,artifact=str(artifact.relative_to(ROOT)),protocol=str(protocol.relative_to(ROOT)),
                 expected_clear_samples=previous['comparisons'][i]['fine_samples']['Call/call_frame_clear']))
         assert len(cases) == 4
+        first_folder = ROOT/'results'/FIRST
+        first_closed = bind(first_folder/'closure.json')
+        assert first_closed['status'] == 'closed' and first_closed['all_hashes_verified']
+        failed = bind(first_folder/'summary.json', first_closed['summary_sha256'])
+        first_terminal = bind(first_folder/'terminal.json', first_closed['terminal_sha256'])
+        assert first_terminal['returncode'] == 1 and failed['status'] == 'focused-failed'
+        assert failed['commands'] == 1 and failed['returncodes'] == [0]
+        for key in ['source_bindings', 'evidence']:
+            data = bind(ROOT/first_closed[key], first_closed[key+'_sha256'])
+            for p, h in data.items():
+                if key == 'evidence': bind(ROOT/p,h)
+                else:
+                    import hashlib
+                    blob = subprocess.check_output(['git','show',h['revision']+':'+p],cwd=ROOT)
+                    assert hashlib.sha256(blob).hexdigest() == h['sha256']
+        first_raw = ROOT/failed['raw']
+        first_plan = bind(first_raw/'plan.json', failed['plan_sha256'])
+        first_records = bind(first_raw/'records.json', failed['records_sha256'])
+        first_record, = first_records
+        assert first_plan['cases'] == cases
+        assert first_record['label'] == '0' and first_record['returncode'] == 0
+        first_child = bind(first_raw/'0-child.json')
+        assert first_child['status'] == 'finished' and first_child['returncode'] == 0
+        assert first_child['pid'] == first_record['pid'] and first_child['parent_pid'] == first_terminal['child_pid']
+        assert first_child['command'] == first_record['command']
+        assert TEST+' ... ok' in (first_raw/'0.stdout').read_text()
+        reused = first_raw/'0-scope.json'
+        bind(reused)
+
         paths = [ROOT/p for p in subprocess.check_output(['git','ls-files','crates','Cargo.toml','Cargo.lock','rust-toolchain.toml'],cwd=ROOT,text=True).splitlines()]
         paths += [*HERE.glob('*.py'),*HERE.glob('*.md'),Path(focus.__file__),BUILD/'owner.json',
             ROOT/'benchmarks/experiments/short-clear-tails/qualify.py',
@@ -151,7 +180,8 @@ def main():
         revision = subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
         raw = ROOT/'.work'/RUN;raw.mkdir(exist_ok=False);write(raw/'records.json',[])
         write(raw/'plan.json',dict(owner=str(ROOT),source_revision=revision,frozen=frozen,cases=cases,
-            controller_command=[sys.executable,*sys.orig_argv[1:]],expected_commands=4,controls=model_controls,target=str(TARGET),
+            controller_command=[sys.executable,*sys.orig_argv[1:]],expected_commands=3,controls=model_controls,target=str(TARGET),
+            reused_metadata=str(reused.relative_to(ROOT)),reused_closed_run=FIRST,
             target_purpose='typed ordinary-call layouts and padding scope only; no guest code execution',
             original_project_guest_commands=0,executable_code_publications=0,performance_measurement=False))
         env = {k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_','CARGO_','PROTOCOL_','ENTRY_','PADDING_')) and k not in
@@ -161,12 +191,14 @@ def main():
             CARGO_PROFILE_TEST_DEBUG='0',RUST_TEST_THREADS='2',CARGO_TERM_COLOR='never',PYTHONDONTWRITEBYTECODE='1')
         common = ['--locked','--offline','--jobs','2','--manifest-path',str(ROOT/'Cargo.toml'),'--target-dir',str(TARGET),'-p','rust-interp-bytecode','--lib']
         commands = []
-        for case in cases:
+        for case in cases[1:]:
             output = raw/(str(case['index'])+'-scope.json')
             commands.append((str(case['index']),['cargo','+nightly-2026-09-08','test','--release',*common,TEST,'--','--ignored','--exact','--test-threads=2'],
                 dict(PADDING_ARTIFACT=str(ROOT/case['artifact']),PADDING_PROTOCOL=str(ROOT/case['protocol']),PADDING_OUTPUT=str(output))))
 
-        records,comparisons = [],[]
+        records,comparisons = [],[derive(cases[0],reused)]
+        write(raw/'attribution.json',comparisons)
+        print('0 closed metadata reused; corrected attribution passed',flush=True)
         for label,cmd,extra in commands:
             current = admission();require_space(ROOT,8)
             assert all(sha(ROOT/p) == h for p,h in frozen.items())
@@ -182,14 +214,14 @@ def main():
             write(raw/'records.json',records);assert child.returncode == 0,(out+err)[-6000:]
             assert 'test result: ok. 1 passed; 0 failed; 0 ignored;' in out
             assert TEST+' ... ok' in out
+            records[-1]['after'] = admission();write(raw/'records.json',records)
             comparisons.append(derive(cases[int(label)],raw/(label+'-scope.json')))
             write(raw/'attribution.json',comparisons)
-            records[-1]['after'] = admission();write(raw/'records.json',records)
             print(label,'ordinary padding metadata and attribution passed',flush=True)
         assert all(sha(ROOT/p) == h for p,h in frozen.items())
         result = ROOT/'results'/RUN;result.mkdir(exist_ok=False)
         write(result/'summary.json',dict(status='passed',source_revision=revision,raw=str(raw.relative_to(ROOT)),
-            plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),commands=4,controls=model_controls,
+            plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),commands=3,controls=model_controls,reused_metadata=str(reused.relative_to(ROOT)),
             outputs={str((raw/'attribution.json').relative_to(ROOT)):sha(raw/'attribution.json')},
             comparisons=comparisons,setup_seconds=sum(r['seconds'] for r in records),setup_cpu_seconds=sum(r['cpu']['total_seconds'] for r in records),
             original_project_guest_commands=0,executable_code_publications=0,performance_measurement=False))
@@ -200,9 +232,11 @@ def close():
     assert terminal['status'] == 'finished'
     if terminal['returncode'] == 0:
         plan,records,summary = read(raw/'plan.json'),read(raw/'records.json'),read(ROOT/'results'/RUN/'summary.json')
-        assert summary['commands'] == len(records) == 4
+        assert summary['commands'] == len(records) == 3
+        assert [r['label'] for r in records] == ['1','2','3']
+        assert summary['reused_metadata'] == plan['reused_metadata']
         assert summary['controls'] == plan['controls'] == controls()
-        assert [derive(c,raw/(str(c['index'])+'-scope.json')) for c in plan['cases']] == summary['comparisons']
+        assert [derive(c,ROOT/plan['reused_metadata'] if c['index'] == 0 else raw/(str(c['index'])+'-scope.json')) for c in plan['cases']] == summary['comparisons']
         for r in records:
             for receipt in [r['admission'],r['after']]:
                 assert receipt['allocated_target_bytes'] <= 3*1024**3

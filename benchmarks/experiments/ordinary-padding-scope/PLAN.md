@@ -30,3 +30,10 @@ metadata commands, two Cargo/test workers, locked offline inputs, shared lock45s
 Qualify pure matcher controls before reading captures. Freeze sources/controllers
 through terminal and independent closure. Preserve all prefixes; no guest replay
 for reporting. Protected target, other sessions and paused goal remain untouched.
+
+Scope01 closed after one successful metadata child and an attribution assertion
+failure: the protocol span starts four setup words before the helper. Scope02
+qualifies those exact four words (including the typed payload immediate), binds
+the entire closed failure and its successful child, reuses capture0 metadata,
+and extracts only captures1/2/3. No successful child or guest is replayed.
+All four attributions are recomputed independently at closure.
