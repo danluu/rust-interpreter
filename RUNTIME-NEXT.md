@@ -41,3 +41,10 @@ no experimental runtime adopted. Fetch/merge preserving peer work before publica
 Adopted tool df4006e03daad7dd008eab34c24a03390d892ec14e55154c43e2d5568c0bba62,
 VM6ac4dd9e964e0ebb0a050f8412c8ec8877bd197e8ad7876832db378ed03ca7cf,
 proof results/scratch-scalar-main-qualification-01/summary.json.
+
+Fullparser guard e4e3809a ACTIVE supervisor39944/controller39947:
+.work/experiments/cross-program-template-parser-full-incremental-01/status.json.
+24GiB admissionpassed,2strictrejectionscorrect,53/110commandsvalidated atlastread.
+Freeze crates/scripts/tests andcross-program-template-full-parser+screen source
+until independentclosure. Nootherexperimentactive. Main22048b98 pushed allclosed
+proof/protocol/cleanup, noadoption. Resources~21.5GiB free,8GiBperchildfloor.
