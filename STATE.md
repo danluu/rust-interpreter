@@ -90,8 +90,12 @@ The Stage1 prototype is now prepared entirely under cfg(test), with precise
 assertion/scalar immediate relocation records and6staging controls. Nothing
 is connected to guest execution or CLI options. Source module
 `jit/emission_templates.rs`; controller/plan
-`benchmarks/experiments/shared-emission-templates`. Next run focused01 in
-debug/release, preserving failures and source before correction.
+`benchmarks/experiments/shared-emission-templates`. Focused01 passes6controls
+per profile under91727/91773, sourcef89ba1e2, and is CLOSED by20954/20958
+(verify child in terminal if needed):223inputs,221source bindings,11evidence.
+No guest or executable code publication. The full native words/entry metadata
+match fresh emission after assertion/scalar rebinding. Next add bounded shared
+storage and concurrency/lifetime controls before connecting guest execution.
 
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally
