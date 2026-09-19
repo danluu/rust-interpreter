@@ -43,3 +43,7 @@ build01 controller now registered UNRUN. No activeowned command at checkpoint.
 Compression02 now CLOSED:55files saved1.23GiB, allbytes/requiredmetadata identical.
 Firstfailedadmission remainsretained. Free24.10GiB vsfloor23.90GiB, narrowmargin.
 Nextlaunchregistered slotbuild01; per-childfloorchecks mandatory. Neverreplaycleanup.
+Slotbuild01 now CLOSED18debug+18release, analysis5468functions, only2neweligibility
+(352,3376), noloss; oldproof reproducedexactly. Nextregisteredslot-coverage01:
+savedadoptedtyped Call/profile/sample join; no runtime/timingproposalyet. Main
+storagepublicationda13cab4 pushed. Sourceef0dbc05 build; closureexec53987.

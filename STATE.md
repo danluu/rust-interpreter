@@ -488,3 +488,11 @@ closeexec67524 exit0.55publicbytecode/JSONfiles1798995968->478756864allocatedbyt
 preinventoryfailure retained. NEVER replay mutationinventory. Free25884495872bytes,
 buildfloor25664249856 (sharedtarget8537157632), narrow~210MiBheadroom: controller
 recomputesfloorbeforeeachcompilercommand. Slotbuild01 now readyto launch.
+
+Slotbuild01 sourceef0dbc05 supervisor97343/controller97346 finished0:18controls
+perdebug/release incl6400mask/19584bytecopycases, standalonebuild, savedanalysis.
+Independentcloseexec53987 passed. Oldproofresults andalltypedcalls exactlyreproduce.
+Newconfined671vs669;initialized1152vs1150;gainsfunctions352and3376, nolosteligibility.
+No runtimechange/guest/timing. Nextregistered frame-initialization-slot-coverage01
+joinscurrent89/62clearsamples tothetypedcalls; separatecloseddf logicalprofiles.
+Main da13cab4 publishedclosedcompressionwithbothattempts. No activeownedcommands.
