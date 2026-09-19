@@ -10,11 +10,12 @@ representation. Diagnostic re-emission uses the exact retained proof even if
 later functions exhaust metadata admission. Ordinary native/tree modes and
 scalar bodies keep their current representation. All initialization remains.
 
-Seven focused controls exercise dirty high backing at small/large offsets,
+Nine focused controls exercise dirty high backing at small/large offsets,
 actual persistent-pair reloads and the host ABI, read/write aliases and uncommon
 read roles, metadata/code admission, exact re-emission after admission fills,
 wide/narrow callee reuse, skipped initial definitions, all budget prefixes,
-original-PC profiles, interpreter reentry and intentional assertion faults.
+original-PC profiles, interpreter reentry, intentional assertion faults, TLS
+callback reuse and valid/invalid indirect handles.
 The arithmetic control independently evaluates19binary operations,5widths,
 2signedness choices and64operand pairs through actual VM arithmetic.
 

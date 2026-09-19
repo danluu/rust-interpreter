@@ -11,7 +11,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='implicit-zero-storage-focused-01'
+RUN='implicit-zero-storage-focused-02'
 BASE='fca687ebac0ea9374a1426addd01169fe707f608'
 
 
@@ -44,7 +44,7 @@ def main():
             controller_command=[sys.executable,*sys.argv],
             adopted_rust_base=BASE,modified_rust_inputs=modified,target=str(target.relative_to(ROOT)),
             allocated_target_bytes=allocated,required_free_bytes=needed,minimum_child_gib=8,
-            expected_commands=2,tests_per_profile=7,original_project_guest_commands=0,
+            expected_commands=2,tests_per_profile=9,original_project_guest_commands=0,
             native_fixture_execution=True,performance_measurement=False))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_','CARGO_'))
             and k not in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER','RUST_TEST_THREADS']}
@@ -64,12 +64,12 @@ def main():
                 seconds=time.time()-start,stdout_sha256=sha(raw/(profile+'.stdout')),stderr_sha256=sha(raw/(profile+'.stderr'))))
             write(raw/'records.json',records)
             assert child.returncode==0,(out+err)[-5000:]
-            assert 'test result: ok. 7 passed; 0 failed; 0 ignored;' in out,out[-3000:]
+            assert 'test result: ok. 9 passed; 0 failed; 0 ignored;' in out,out[-3000:]
             assert all(sha(ROOT/p)==h for p,h in frozen.items())
-            print(profile,'7 focused implicit-zero-storage controls passed',flush=True)
+            print(profile,'9 focused implicit-zero-storage controls passed',flush=True)
         destination=ROOT/'results'/RUN;destination.mkdir(exist_ok=False)
         write(destination/'summary.json',dict(status='passed',source_revision=revision,
-            tests=dict(debug=7,release=7),commands=2,raw=str(raw.relative_to(ROOT)),
+            tests=dict(debug=9,release=9),commands=2,raw=str(raw.relative_to(ROOT)),
             plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),
             setup_seconds=sum(r['seconds'] for r in records),original_project_guest_commands=0,
             production_runtime_changes=1,performance_measurement=False))

@@ -44,7 +44,8 @@ fn narrow_storage_native_reads_and_spills_keep_poisoned_backing_unobservable() {
 #[test]
 fn narrow_storage_persistent_reload_synthesizes_zero_and_preserves_host_registers() {
     let f=function("persistent",vec![Op::Imm{dst:0,value:0},Op::Jump{target:2},
-        Op::Assert{value:0,expected:false,message:"zero".into()},Op::Jump{target:2}],1);
+        Op::Assert{value:0,expected:false,message:"zero".into()},
+        Op::Assert{value:0,expected:false,message:"again".into()},Op::Jump{target:2}],1);
     let allocation=values::analyze(&f).unwrap();assert_eq!(allocation.registers,vec![0]);
     let narrow=[true];let reads=read_registers(&f);
     let mut a=Assembler{narrow_registers:Some(&narrow),values:Some(&allocation),reads:&reads,..Assembler::default()};
@@ -178,5 +179,39 @@ fn narrow_storage_arithmetic_proof_matches_actual_masked_and_comparison_values()
                 }
             }}
         }}
+    }
+}
+
+#[test]
+fn narrow_storage_tls_callbacks_reuse_root_backing_and_keep_handle_validation() {
+    for invalid in [false,true] {
+        let handle=u128::from(crate::FUNCTION_POINTER_TAG|2)|if invalid {1u128<<100} else {0};
+        let root=function("tls root",vec![Op::Imm{dst:0,value:handle},Op::Imm{dst:1,value:7},
+            Op::RegisterTlsDestructor{callback:0,argument:1},Op::Local{dst:0,offset:0},
+            Op::Imm{dst:1,value:u128::MAX},Op::Jump{target:6},
+            Op::Store{address:0,src:1,size:16},Op::Return],6);
+        let mut callback=function("tls narrow callback",vec![Op::Local{dst:0,offset:8},
+            Op::Load{dst:1,address:0,size:8},Op::Jump{target:3},
+            Op::Binary{dst:2,overflow:3,op:Binary::Mul,a:1,b:1,bits:128,signed:false},
+            Op::Imm{dst:4,value:49},Op::Binary{dst:2,overflow:3,op:Binary::Eq,a:2,b:4,bits:128,signed:false},
+            Op::Assert{value:2,expected:true,message:"callback value".into()},Op::Return],6);
+        callback.args=vec![Slot{offset:8,size:8}];callback.result.size=0;
+        assert!(!crate::registers::needs_initial_zeroes(&callback));
+        check(&program(vec![root,callback]),24);
+    }
+}
+
+#[test]
+fn narrow_storage_indirect_reentry_repairs_narrow_handles_but_rejects_wide_handles() {
+    for invalid in [false,true] {
+        let mut p=reused(false,false,false);
+        let handle=u128::from(crate::FUNCTION_POINTER_TAG|4)|if invalid {1u128<<100} else {0};
+        let code=&mut p.functions[2].code;code.pop();
+        code.push(Op::Imm{dst:1,value:handle});let target=code.len()+1;
+        code.extend([Op::Jump{target},Op::CallIndirect{callee:1,args:vec![],arg_sizes:vec![],
+            destination:0,result_size:16},Op::Return]);
+        p.functions.push(function("indirect target",vec![Op::Local{dst:0,offset:0},
+            Op::Imm{dst:1,value:99},Op::Store{address:0,src:1,size:16},Op::Return],2));
+        check(&p,40);
     }
 }
