@@ -12,8 +12,11 @@ CPU margin.9629909017, nativewall1.5806520070. Exact closed-primary compiler-cac
 retirement is CLOSED60900. Parser14 controls and large/private23 controls are
 closed. Folded176-command regression guard passed and CLOSED95676 (wall change
 within A/A). Full-token cache retirement CLOSED33463 preserves3759hashes.
-Pgrust176-command history is ACTIVE39230/39298. Finish/close it before private
-rg-aot. All parser/Nushell gates remain required. See STATE.md for paths.
+Pgrust01 failed before timings: its borrow fixture used std in a no_std crate.
+Two compiler errors,zero server requests; source restored and failure CLOSED97727.
+Dedicated pgrust02 uses core and fresh namespaces. Its26-control protocol passed
+(four real std/no_std compiler probes); independent closure is active. Finish it,
+then run pgrust02 and requalify later admission bindings. See STATE.md.
 
 Both parent experiments remain failed; no combined speedup is inferred. The new
 cache key binds indirect signature ordinals, and session options are explicitly

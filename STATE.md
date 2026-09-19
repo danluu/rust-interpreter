@@ -82,13 +82,25 @@ fault/replay and private memory; call/branch/resource controls retained.
 - Full token cache retirement sourcebb657235:6128/6131, independently CLOSED33463.
   Nine exact completed token namespaces,13399files/3949807963logical bytes;
   3759 protected hashes unchanged, about2.39GiB reclaimed. NEVER REPEAT.
-- Full pgrust01 sourced6ef6474 is ACTIVE:39230/39298, launched03:51:48.
-  Same public controller,176commands+2strict; freeze inputs/source through closure.
+- Pgrust01 sourced6ef6474:39230/39298 FAILED its second strict control before
+  any timed/guest command. The hashfn crate is no_std; std::hint::black_box caused
+  E0433, not the required E0499. Two compiler errors,2ownedservers/0requests;
+  source restored. Independently CLOSED97727 by session-runtime-pgrust-probe-failure.
+- Dedicated pgrust02 controller prepared in session-runtime-composition-pgrust-guard:
+  same176-state/arm/gate protocol, only borrow probe now core::hint::black_box.
+  Original public controller and all old results remain unchanged. Fresh namespaces.
+- Portable pgrust protocol01 sourcead446618:24770 passed26controls (18 exact
+  retained accounting/command controls,4 fresh source/outcome controls and4 real
+  pinned-rustc std/no_std type/borrow rejections). No metadata/code emitted; no
+  shared target used. Close ACTIVE; see experiment status. Do not change this
+  new controller folder until closure. Then admit pgrust02, not a repeated timing.
 
 ## Next actions
 
-Finish and independently close pgrust. A pass admits private rg-aot via the
-qualified large-project controller. A failure stops every later guard. The private/Nushell adapters and both parser guards
+Finish portable-protocol closure and commit its proof, then run fresh pgrust02
+using the dedicated corrected controller. Requalify large/parser admission to
+require pgrust02 rather than failed01 before either can run. Those updates are
+NOT YET MADE. Keep all old protocol receipts; no guest/runtime change. The private/Nushell adapters and both parser guards
 remain required before integration. Their controllers are prepared in
 session-runtime-composition-large-guards and session-runtime-composition-parser-guards;
 parser and large protocols are independently closed; timing is
