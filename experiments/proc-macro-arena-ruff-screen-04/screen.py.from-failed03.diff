@@ -1,0 +1,73 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-ruff-screen-03/screen.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-ruff-screen-04/screen.py
+@@ -4,7 +4,7 @@
+ HERE=Path(__file__).absolute().parent
+ # All local executable source bytes are authenticated before importing common.
+ def bootstrap(sha):
+-    route=HERE.parents[1]/'.work/proc-macro-arena-ruff-screen-invocation-03.json'
++    route=HERE.parents[1]/'.work/proc-macro-arena-ruff-screen-invocation-04.json'
+     raw=route.read_bytes();assert len(raw)<=2**20 and hashlib.sha256(raw).hexdigest()==sha
+     invocation=json.loads(raw);source=HERE/'source-manifest.json';payload=source.read_bytes()
+     assert len(payload)<=2**20 and hashlib.sha256(payload).hexdigest()==invocation['source_manifest_sha256']
+@@ -317,23 +317,19 @@
+     route=dict(setup['top'],forwarded_arguments=argv,forwarded_environment=environment)
+     proof=dependency_proof(route,invocation,arm)
+     c.require(c.WORK.as_posix()+'/source/'+plan['source_edit']['relative'] in proof['paths'],'replay dependency proof includes actually edited production file')
+-    # Rustc emits success artifact events alongside JSON diagnostics; keep both raw.
+-    diagnostics=[]
+-    for raw in (c.OUT/'replays'/label/'stderr').read_text().splitlines():
+-        item=json.loads(raw);kind=item.get('$message_type')
+-        c.require(kind in ['diagnostic','artifact'],'unexpected rustc message kind')
+-        if kind=='diagnostic':
+-            c.require(item.get('level') not in ['error','failure-note'],'unexpected compiler failure diagnostic')
+-            diagnostics.append(item)
++    # Keep all checks selected by Cargo, including unused-extern/future reports.
++    messages=c.replay_messages((c.OUT/'replays'/label/'stderr').read_text(),argv,setup['top']['cwd'])
++    diagnostics=messages['diagnostics']
+     c.require(record['stdout']['bytes']==0,'unexpected compiler stdout')
+     table_guard(original);table_guard(copied);inputs_guard(dependencies);c.overlay_guard(invocation)
+     verified=dict(arm=arm,label=label,timed=timed,record=dict(path=str(c.OUT/'replays'/label/'record.json'),**c.file(c.OUT/'replays'/label/'record.json')),
+         wall_seconds=record['elapsed_seconds'],cpu_user_seconds=record['cpu_user_seconds'],cpu_system_seconds=record['cpu_system_seconds'],
+-        jobserver_substitution=substitutions,jobserver_transport=transport,dependency_proof=proof,diagnostics=diagnostics)
++        jobserver_substitution=substitutions,jobserver_transport=transport,dependency_proof=proof,diagnostics=diagnostics,check_messages=messages['check_messages'],artifacts=messages['artifacts'])
+     path=c.OUT/'replays'/label/'verification.json';c.write(path,verified)
+     return dict(arm=arm,label=label,timed=timed,verification=dict(path=str(path),**c.file(path)),
+         wall_seconds=record['elapsed_seconds'],cpu_user_seconds=record['cpu_user_seconds'],cpu_system_seconds=record['cpu_system_seconds'],
+-        normalized_diagnostics_sha256=c.digest(normalize(diagnostics).encode()))
++        normalized_diagnostics_sha256=c.digest(normalize(diagnostics).encode()),
++        normalized_check_messages_sha256=c.digest(normalize(messages['check_messages']).encode()))
+ 
+ 
+ def prerequisites(plan,invocation):
+@@ -347,11 +343,11 @@
+     c.require(audit['status']=='verified' and audit['command_count']==20 and audit['stable_caller_pairs']==9 and audit['default_discovery_qualified'] is True,'independent actual semantic proof')
+     c.require(audit['result']==invocation['overlay_proofs']['result.json'] and audit['execution']==invocation['overlay_proofs']['execution.json'],'independent same actual closure')
+     c.require(proof==plan['overlay_independent_readback'] and invocation['overlay_proofs']['result.json']['sha256']==plan['overlay_result_sha256'],'exact reviewed actual prerequisite')
+-    for previous in [plan['earlier_failed_predecessor'],plan['failed_predecessor']]:
++    for previous in plan['failed_predecessors']:
+         failure=c.read(previous['independent_readback']['path'],previous['independent_readback']['sha256'])
+         failed=c.read(previous['execution']['path'],previous['execution']['sha256'])
+-        c.require(failure['status']==previous['readback_status'] and failure['crate_compilations']==previous['crate_compilations'] and failure['timed_calls']==failure['source_edits']==0,'actual failed predecessor scope')
+-        c.require(failure['execution']['sha256']==previous['execution']['sha256'] and failed['status']=='failed' and failed['samples']==failed['edits']==[],'same preserved failed execution')
++        c.require(failure['status']==previous['readback_status'] and failure['crate_compilations']==previous['crate_compilations'] and failure['timed_calls']==0 and failure['source_edits']==previous['source_edits'],'actual failed predecessor scope')
++        c.require(failure['execution']['sha256']==previous['execution']['sha256'] and failed['status']=='failed' and failed['samples']==[] and len(failed['edits'])==previous['source_edits'],'same preserved failed execution')
+     invocation=dict(invocation,overlay_data=data,overlay_work=plan['overlay_work'],runtime_root=str(Path(plan['compiler']).parent.parent))
+     c.require(c.file(plan['cargo'])==invocation['cargo'],'exact installed Cargo bytes and current identity')
+     c.overlay_guard(invocation,True);return invocation
+@@ -364,7 +360,7 @@
+     c.require(not os.path.lexists(c.WORK) and not os.path.lexists(c.OUT),'fresh owned work/results')
+     c.require(plan['actual_result'] is None and len(plan['schedule'])==36,'fixed unrun screen')
+     SOURCE_CURRENT={str(HERE/name):c.file(HERE/name) for name in [*manifest['files'],'source-manifest.json']}
+-    for ref in [*plan['probe_source_references'],*plan['probe_sources'].values()]:
++    for ref in [*plan['probe_source_references'],*plan['probe_sources'].values(),*plan['json_contract_sources']]:
+         row=c.file(ref['path']);c.require(row['sha256']==ref['sha256'] and row['bytes']==ref['bytes'],'source-read probe implementation unchanged')
+         SOURCE_CURRENT[ref['path']]=row
+     c.disk(True);c.OUT.mkdir();c.WORK.mkdir();(c.WORK/'contexts').mkdir();(c.OUT/'wrapper-attempts').mkdir()
+@@ -413,6 +409,7 @@
+         for index in range(18):
+             pair=[x for x in summary['samples'] if x['pair']==index];c.require(len(pair)==2 and [x['position'] for x in pair]==[0,1],'fixed pair order')
+             c.require(pair[0]['normalized_diagnostics_sha256']==pair[1]['normalized_diagnostics_sha256'],'paired diagnostics changed')
++            c.require(pair[0]['normalized_check_messages_sha256']==pair[1]['normalized_check_messages_sha256'],'paired complete selected JSON checks changed')
+             if pair[0]['kind']=='aa':ratio=pair[1]['wall_seconds']/pair[0]['wall_seconds']
+             else:ratio=next(x['wall_seconds'] for x in pair if x['arm']=='candidate')/next(x['wall_seconds'] for x in pair if x['arm']=='stock')
+             pairs.append(dict(pair=index,kind=pair[0]['kind'],ratio=ratio))

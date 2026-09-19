@@ -1,0 +1,61 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-ruff-screen-03/common.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-ruff-screen-04/common.py
+@@ -2,9 +2,9 @@
+ from pathlib import Path
+ import fcntl, hashlib, json, os, re, resource, shutil, stat, subprocess, threading, time
+ ROOT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+-SOURCE=ROOT/'experiments/proc-macro-arena-ruff-screen-03'
+-WORK=ROOT/'.work/proc-macro-arena-ruff-screen-03'
+-OUT=ROOT/'results/proc-macro-arena-ruff-screen-03'
++SOURCE=ROOT/'experiments/proc-macro-arena-ruff-screen-04'
++WORK=ROOT/'.work/proc-macro-arena-ruff-screen-04'
++OUT=ROOT/'results/proc-macro-arena-ruff-screen-04'
+ LOCK=Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+ FIELDS=('dev','ino','mode','nlink','size','mtime_ns','ctime_ns')
+ 
+@@ -264,3 +264,45 @@
+         require((Path(cwd)/source).resolve(strict=True).is_relative_to(manifest_dir.resolve(strict=True)),'build-script source belongs to actual package')
+     crate_types(args);cargo_depinfo_path(args,cwd)
+     return dict(kind='cargo-crate',expected_exit_set=[0])
++
++
++def replay_messages(raw,argv,cwd):
++    """Retain complete selected JSON checks; artifacts have invocation-specific paths."""
++    require(option(argv,'--emit')=='dep-info,metadata','exact frontend output kinds')
++    selected=set((option(argv,'--json') or '').split(','))
++    require(selected=={'diagnostic-rendered-ansi','artifacts','future-incompat','unused-externs-silent'},'exact captured frontend JSON selection')
++    output=Path(option(argv,'--out-dir'))
++    diagnostics=[];checks=[];artifacts=[]
++    def diagnostic(value,tagged,depth=0):
++        require(depth<=64 and type(value) is dict,'bounded complete diagnostic tree')
++        fields={'message','code','level','spans','children','rendered'}|({'$message_type'} if tagged else set())
++        require(set(value)==fields and (not tagged or value['$message_type']=='diagnostic'),'exact compiler diagnostic schema')
++        require(type(value['message']) is str and type(value['level']) is str and type(value['spans']) is list and type(value['children']) is list,'diagnostic field types')
++        require(value['rendered'] is None or type(value['rendered']) is str,'diagnostic rendered text')
++        code=value['code'];require(code is None or type(code) is dict and set(code)=={'code','explanation'} and type(code['code']) is str and (code['explanation'] is None or type(code['explanation']) is str),'diagnostic code fields')
++        require(value['level'] not in ['error','failure-note'] and not value['level'].startswith('error:'),'compiler failure diagnostic')
++        for child in value['children']:diagnostic(child,False,depth+1)
++    for line in raw.splitlines():
++        item=json.loads(line);require(type(item) is dict,'rustc JSON object');kind=item.get('$message_type')
++        if kind=='diagnostic':diagnostic(item,True);diagnostics.append(item);checks.append(item)
++        elif kind=='artifact':
++            require(set(item)=={'$message_type','artifact','emit'} and type(item['artifact']) is str and item['emit'] in ['dep-info','metadata'],'selected artifact record schema')
++            path=Path(item['artifact']);require(path.is_absolute() and path.parent==output,'artifact belongs to exact replay output')
++            require(path.suffix==('.d' if item['emit']=='dep-info' else '.rmeta'),'artifact extension matches emission')
++            if item['emit']=='dep-info':require(path==cargo_depinfo_path(argv,cwd),'artifact is the captured crate dependency output')
++            artifacts.append(item)
++        elif kind=='unused_extern':
++            require('unused-externs-silent' in selected and '--force-warn=unused_crate_dependencies' in argv,'actual selected unused-extern lint contract')
++            require(set(item)=={'$message_type','lint_level','unused_extern_names'} and item['lint_level']=='force-warn','exact unused-extern fields/lint level')
++            # rustc renders Symbol names through to_ident_string(), which can
++            # add r# syntax. Preserve the serializer's ordered string list.
++            names=item['unused_extern_names'];require(type(names) is list and all(type(n) is str for n in names),'complete unused extern name strings')
++            checks.append(item)
++        elif kind=='future_incompat':
++            require(set(item)=={'$message_type','future_incompat_report'} and type(item['future_incompat_report']) is list and item['future_incompat_report'],'complete nonempty future-incompat report')
++            for entry in item['future_incompat_report']:
++                require(type(entry) is dict and set(entry)=={'diagnostic'},'complete future-incompat entry');diagnostic(entry['diagnostic'],True)
++            checks.append(item)
++        else:raise RuntimeError('unexpected rustc message kind')
++    require(len(artifacts)==2 and {x['emit'] for x in artifacts}=={'dep-info','metadata'},'both selected frontend artifact records')
++    return dict(diagnostics=diagnostics,check_messages=checks,artifacts=artifacts)

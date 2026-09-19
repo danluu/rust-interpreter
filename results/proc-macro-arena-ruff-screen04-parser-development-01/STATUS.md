@@ -1,0 +1,1 @@
+Pure parser development checks passed: three unchanged saved compiler JSON streams and five explicit valid fixtures, plus 29 rejection cases. Complete nonartifact checks survive ordered cross-arm comparison. No compiler, Cargo, application test, or performance run occurred. Native frontend replay does not include Cargo manifest-level lint postprocessing.

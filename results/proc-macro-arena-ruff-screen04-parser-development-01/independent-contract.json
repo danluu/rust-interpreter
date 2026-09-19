@@ -1,0 +1,470 @@
+{
+  "cargo_semantics": [
+    "N rustc only counts unused extern error severity as a compiler error in loud mode. unused-externs-silent therefore prevents deriving arbitrary Cargo success from rustc rc0 alone.",
+    "The captured force-warn flag is sticky and fixes the native record level here. Accepting a deny/forbid record under that fixed command would conceal a contract change.",
+    "Reviewed Cargo source separately aggregates unused dependencies and applies manifest-level Cargo lints after child completion; deny/forbid can contribute an overall Cargo failure even when an individual rustc exited zero.",
+    "A nonempty force-warn list remains legitimate frontend output to preserve and compare; it is not automatically an end-to-end Cargo success result."
+  ],
+  "cargo_source": {
+    "commit": "3c0b534756e166d12eb9fd2e1abfe5b42ac6101e",
+    "limitation": "Pinned previously reviewed Cargo source explains postprocessing. It is not asserted to be source proof for the installed Cargo executable; no Cargo version probe was run.",
+    "sources": [
+      {
+        "bytes": 101981,
+        "obligation": "2410-2419 parses unused names and forwards state; this reviewed source does not use the incoming lint_level",
+        "sha256": "8b59007751a0b2c9525bbfa061d56ce04667a7615a4d3a1d3aaae23c6e6cd42f",
+        "url": "https://raw.githubusercontent.com/rust-lang/cargo/3c0b534756e166d12eb9fd2e1abfe5b42ac6101e/src/compiler/mod.rs"
+      },
+      {
+        "bytes": 6011,
+        "obligation": "100-123 intersects unused names across units",
+        "sha256": "c0e4e7001efc321d7881d5c6e5b87f5e0461bf9e213f2c6df7d5ded2f6f9d2ea",
+        "url": "https://raw.githubusercontent.com/rust-lang/cargo/3c0b534756e166d12eb9fd2e1abfe5b42ac6101e/src/compiler/unused_deps.rs"
+      },
+      {
+        "bytes": 53736,
+        "obligation": "844-850 performs package unused-dependency lint after children and adds errors to final count",
+        "sha256": "de00d75a4d38d3e063e5487279a12502c8e5543a93e340a9bdd649ed7fd77205",
+        "url": "https://raw.githubusercontent.com/rust-lang/cargo/3c0b534756e166d12eb9fd2e1abfe5b42ac6101e/src/compiler/job_queue/mod.rs"
+      },
+      {
+        "bytes": 14187,
+        "obligation": "166-219 derives separate Cargo manifest lint level; 345 records emitted severity",
+        "sha256": "710406a3a37f387d3a30b47fc7d2ce9cea8eddeabd294c6144ea7aa016ab98b6",
+        "url": "https://raw.githubusercontent.com/rust-lang/cargo/3c0b534756e166d12eb9fd2e1abfe5b42ac6101e/src/diagnostics/rules/unused_dependencies.rs"
+      },
+      {
+        "bytes": 8651,
+        "obligation": "108-117 errors fail; 145-154 deny/forbid increment error count",
+        "sha256": "dede3899945fb9f26606f4721e6e764a8d011033859b8db8d802049c0435b2dc",
+        "url": "https://raw.githubusercontent.com/rust-lang/cargo/3c0b534756e166d12eb9fd2e1abfe5b42ac6101e/src/diagnostics/mod.rs"
+      }
+    ]
+  },
+  "contract": {
+    "artifact": "Exact artifact path and emit fields; one dep-info and one metadata for the selected fixed output. Check each against the actual owned output directory, selected emitted extension and existing dep-info proof. Preserve full raw paths, but do not compare invocation-specific paths without an explicit path mapping.",
+    "diagnostic": "Keep full message/code/level/spans/children/rendered. Child diagnostics are untagged; future item diagnostics are tagged. Preserve warning/note/help; reject error, error: internal compiler error and failure-note recursively. Do not discard spanless diagnostics.",
+    "future_incompat": "Exact tagged outer key future_incompat_report, nonempty list of exact {diagnostic: tagged Diagnostic}. Preserve every nested field and reject failure diagnostics. Its presence is legitimate even with rc0.",
+    "parity": "Retain ordered complete nonartifact check_messages and compare normalized full values across matched arms, including nonempty names and future reports. Keep all raw records. Old normalization does not map replay labels; artifacts need separate exact ownership checks or an explicit per-invocation relative mapping.",
+    "roles": "Compare like source states. Original setup/restoration and edited warmup/timed calls are distinct roles; a change in source state is not automatically a parity defect.",
+    "selected_kinds": [
+      "diagnostic",
+      "artifact",
+      "unused_extern",
+      "future_incompat"
+    ],
+    "unexpected_kinds": "Reject unknown kinds and section_timing because timings is not selected.",
+    "unused_extern": "Exact tagged keys lint_level and unused_extern_names. This fixed command requires force-warn and ordered list[str], accepting empty/nonempty lists. Do not sort, deduplicate, impose identifier regex or raw --extern name membership: to_ident_string can add raw syntax."
+  },
+  "created_at": 1789828876.0074508,
+  "local_sources": {
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_errors/src/json.rs": [
+      "93-101 EmitTyped variants",
+      "136-160 future wrapper/upgraded allow or expect",
+      "182-252 recursive diagnostic schema",
+      "257-296 artifact/future/unused schema"
+    ],
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_errors/src/lib.rs": [
+      "891-926 nonempty future emission and loud-only unused error accounting",
+      "1675 Level text"
+    ],
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_interface/src/passes.rs": [
+      "775 dep-info artifact notification"
+    ],
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_lint/src/levels.rs": [
+      "550-552 and 655-662 sticky force-warn"
+    ],
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_lint_defs/src/lib.rs": [
+      "189 Level strings"
+    ],
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_metadata/src/creader.rs": [
+      "316-333 selected unused report",
+      "1226-1250 unused names derived from extern options"
+    ],
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_metadata/src/fs.rs": [
+      "97 metadata artifact notification"
+    ],
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_session/src/config.rs": [
+      "2260-2304 exact --json selectors"
+    ],
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_session/src/session.rs": [
+      "492-508 selected future-report finish"
+    ],
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_span/src/symbol.rs": [
+      "2709 to_ident_string raw identifier rendering"
+    ]
+  },
+  "observed": [
+    {
+      "directory": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-ruff-screen-03/capture/stock/97243-1789828160854290000",
+      "messages": [
+        {
+          "$message_type": "artifact",
+          "artifact": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-ruff-screen-03/target/stock/debug/build/ruff_linter/2a08803a217d9726/out/ruff_linter-2a08803a217d9726.d",
+          "emit": "dep-info"
+        },
+        {
+          "$message_type": "unused_extern",
+          "lint_level": "force-warn",
+          "unused_extern_names": []
+        },
+        {
+          "$message_type": "artifact",
+          "artifact": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-ruff-screen-03/target/stock/debug/build/ruff_linter/2a08803a217d9726/out/libruff_linter-2a08803a217d9726.rmeta",
+          "emit": "metadata"
+        }
+      ],
+      "parent_pid": 97243,
+      "pid": 97244,
+      "returncode": 0,
+      "selected_flags": [
+        "--error-format=json",
+        "--json=diagnostic-rendered-ansi,artifacts,future-incompat,unused-externs-silent",
+        "--emit=dep-info,metadata",
+        "--force-warn=unused_crate_dependencies"
+      ]
+    },
+    {
+      "directory": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-ruff-screen-03/capture/candidate/42380-1789828305523669000",
+      "messages": [
+        {
+          "$message_type": "artifact",
+          "artifact": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-ruff-screen-03/target/candidate/debug/build/ruff_linter/2a08803a217d9726/out/ruff_linter-2a08803a217d9726.d",
+          "emit": "dep-info"
+        },
+        {
+          "$message_type": "unused_extern",
+          "lint_level": "force-warn",
+          "unused_extern_names": []
+        },
+        {
+          "$message_type": "artifact",
+          "artifact": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-ruff-screen-03/target/candidate/debug/build/ruff_linter/2a08803a217d9726/out/libruff_linter-2a08803a217d9726.rmeta",
+          "emit": "metadata"
+        }
+      ],
+      "parent_pid": 42380,
+      "pid": 42381,
+      "returncode": 0,
+      "selected_flags": [
+        "--error-format=json",
+        "--json=diagnostic-rendered-ansi,artifacts,future-incompat,unused-externs-silent",
+        "--emit=dep-info,metadata",
+        "--force-warn=unused_crate_dependencies"
+      ]
+    },
+    {
+      "directory": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-ruff-screen-03/replays/b0-warm-stock",
+      "messages": [
+        {
+          "$message_type": "artifact",
+          "artifact": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-ruff-screen-03/replays/b0-warm-stock/ruff_linter-2a08803a217d9726.d",
+          "emit": "dep-info"
+        },
+        {
+          "$message_type": "unused_extern",
+          "lint_level": "force-warn",
+          "unused_extern_names": []
+        },
+        {
+          "$message_type": "artifact",
+          "artifact": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-ruff-screen-03/replays/b0-warm-stock/libruff_linter-2a08803a217d9726.rmeta",
+          "emit": "metadata"
+        }
+      ],
+      "parent_pid": 56126,
+      "pid": 51003,
+      "returncode": 0,
+      "selected_flags": [
+        "--error-format=json",
+        "--json=diagnostic-rendered-ansi,artifacts,future-incompat,unused-externs-silent",
+        "--emit=dep-info,metadata",
+        "--force-warn=unused_crate_dependencies"
+      ]
+    }
+  ],
+  "proposed_focused_fixtures": [
+    "Actual saved 2-artifact/empty-force-warn stream accepted.",
+    "Nonempty string names including a raw identifier preserved exactly and parity changes detected.",
+    "Nonempty future report with tagged warning, nested untagged help and span data retained.",
+    "Nested/top error, ICE and failure-note rejected; unexpected section_timing rejected.",
+    "Wrong lint level, wrong field types, missing/foreign artifact and mismatched emit rejected."
+  ],
+  "read_rows": {
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_errors/src/json.rs": {
+      "bytes": 20456,
+      "identity": {
+        "ctime_ns": 1789775930033874802,
+        "dev": 16777229,
+        "ino": 1054607829,
+        "mode": 33152,
+        "mtime_ns": 1789775930033874802,
+        "nlink": 1,
+        "size": 20456
+      },
+      "sha256": "b282ec38a29469ad86b28e473191d9e27ed3111c3c2512c91f9b9d0fe32e3591"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_errors/src/lib.rs": {
+      "bytes": 67983,
+      "identity": {
+        "ctime_ns": 1789775930034106553,
+        "dev": 16777229,
+        "ino": 1054607832,
+        "mode": 33152,
+        "mtime_ns": 1789775930034106553,
+        "nlink": 1,
+        "size": 67983
+      },
+      "sha256": "af979e7daecd51b8731f131b257b6e00d3824ab295f3c17851e720ef0b5ed5ac"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_interface/src/passes.rs": {
+      "bytes": 57887,
+      "identity": {
+        "ctime_ns": 1789775930057631534,
+        "dev": 16777229,
+        "ino": 1054608133,
+        "mode": 33152,
+        "mtime_ns": 1789775930057631534,
+        "nlink": 1,
+        "size": 57887
+      },
+      "sha256": "694f94777b777832f9877f0253a9ccb9239344f01ebbe272e1d4cdd012d88079"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_lint/src/levels.rs": {
+      "bytes": 40408,
+      "identity": {
+        "ctime_ns": 1789775930060710042,
+        "dev": 16777229,
+        "ino": 1054608174,
+        "mode": 33152,
+        "mtime_ns": 1789775930060710042,
+        "nlink": 1,
+        "size": 40408
+      },
+      "sha256": "4258f81f55c354ee3419ee23839a9af4af3952bcf8c31ad353cd1e319cf32639"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_lint_defs/src/lib.rs": {
+      "bytes": 32701,
+      "identity": {
+        "ctime_ns": 1789775930063892759,
+        "dev": 16777229,
+        "ino": 1054608214,
+        "mode": 33152,
+        "mtime_ns": 1789775930063892759,
+        "nlink": 1,
+        "size": 32701
+      },
+      "sha256": "fdbdae1a4fe9a6f6760f988abfad54abed3de67fd38c577d4197bad92e180d86"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_metadata/src/creader.rs": {
+      "bytes": 56249,
+      "identity": {
+        "ctime_ns": 1789775930067079643,
+        "dev": 16777229,
+        "ino": 1054608267,
+        "mode": 33152,
+        "mtime_ns": 1789775930067079643,
+        "nlink": 1,
+        "size": 56249
+      },
+      "sha256": "3ba58b929070fbd422f210274db47bf4741bf408b7a92192434b5508a5275be1"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_metadata/src/fs.rs": {
+      "bytes": 6196,
+      "identity": {
+        "ctime_ns": 1789775930067420977,
+        "dev": 16777229,
+        "ino": 1054608272,
+        "mode": 33152,
+        "mtime_ns": 1789775930067420977,
+        "nlink": 1,
+        "size": 6196
+      },
+      "sha256": "212c90c2cda7a18b8a194e97a00ac08e35d8ca05494ca00667015461e402d413"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_session/src/config.rs": {
+      "bytes": 132279,
+      "identity": {
+        "ctime_ns": 1789775930114838814,
+        "dev": 16777229,
+        "ino": 1054608893,
+        "mode": 33152,
+        "mtime_ns": 1789775930114838814,
+        "nlink": 1,
+        "size": 132279
+      },
+      "sha256": "cc8aabed39476b0e599787682f1190d393294670d9a1ab9a58efdfd177bcab58"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_session/src/session.rs": {
+      "bytes": 73441,
+      "identity": {
+        "ctime_ns": 1789775930116243568,
+        "dev": 16777229,
+        "ino": 1054608914,
+        "mode": 33152,
+        "mtime_ns": 1789775930116243568,
+        "nlink": 1,
+        "size": 73441
+      },
+      "sha256": "cf97f7f09462161a6ec2e864bf379acdf5385f834f3078d2813b24858db413a8"
+    },
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_span/src/symbol.rs": {
+      "bytes": 86478,
+      "identity": {
+        "ctime_ns": 1789775930117838572,
+        "dev": 16777229,
+        "ino": 1054608936,
+        "mode": 33152,
+        "mtime_ns": 1789775930117838572,
+        "nlink": 1,
+        "size": 86478
+      },
+      "sha256": "7c7dd62f206aaf9754d639f5f3659bb7efa27ec0e70e35f4329aa5e5420d8c75"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-ruff-screen-03/common.py": {
+      "bytes": 18437,
+      "identity": {
+        "ctime_ns": 1789827819444006639,
+        "dev": 16777229,
+        "ino": 1057136082,
+        "mode": 33152,
+        "mtime_ns": 1789827731198528218,
+        "nlink": 1,
+        "size": 18437
+      },
+      "sha256": "b911630c2e8fa59e867abd3368b3e93c81d20aae78b243bf900ad77ba7e38bde"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-ruff-screen-03/screen.py": {
+      "bytes": 33503,
+      "identity": {
+        "ctime_ns": 1789827819443854348,
+        "dev": 16777229,
+        "ino": 1057136083,
+        "mode": 33152,
+        "mtime_ns": 1789827636005236932,
+        "nlink": 1,
+        "size": 33503
+      },
+      "sha256": "57f5002fa55ebd1cf1d97f7f2eecdc4fa9b770b276ad8584f7af52c3e3b8dab1"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-ruff-screen-03/capture/candidate/42380-1789828305523669000/record.json": {
+      "bytes": 52485,
+      "identity": {
+        "ctime_ns": 1789828312440857568,
+        "dev": 16777229,
+        "ino": 1057172978,
+        "mode": 33152,
+        "mtime_ns": 1789828312440734485,
+        "nlink": 1,
+        "size": 52485
+      },
+      "sha256": "f1445afd011779b755c053c3c7205d8ec2279829625d65ee718dfa203bde6f21"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-ruff-screen-03/capture/candidate/42380-1789828305523669000/stderr": {
+      "bytes": 582,
+      "identity": {
+        "ctime_ns": 1789828312352017138,
+        "dev": 16777229,
+        "ino": 1057172905,
+        "mode": 33152,
+        "mtime_ns": 1789828312352017138,
+        "nlink": 1,
+        "size": 582
+      },
+      "sha256": "b9e587abc0e96f52369eae9f687f935ef844e8353f24efe6ef770e08b90ae7b2"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-ruff-screen-03/capture/candidate/42380-1789828305523669000/stdout": {
+      "bytes": 0,
+      "identity": {
+        "ctime_ns": 1789828305719527201,
+        "dev": 16777229,
+        "ino": 1057172904,
+        "mode": 33152,
+        "mtime_ns": 1789828305719527201,
+        "nlink": 1,
+        "size": 0
+      },
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-ruff-screen-03/capture/stock/97243-1789828160854290000/record.json": {
+      "bytes": 51527,
+      "identity": {
+        "ctime_ns": 1789828167431417094,
+        "dev": 16777229,
+        "ino": 1057163432,
+        "mode": 33152,
+        "mtime_ns": 1789828167431334846,
+        "nlink": 1,
+        "size": 51527
+      },
+      "sha256": "f16fa26b355dbf7b4a7b8d282cba22a830f6d647f553b106f1dc37bce6ddf594"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-ruff-screen-03/capture/stock/97243-1789828160854290000/stderr": {
+      "bytes": 574,
+      "identity": {
+        "ctime_ns": 1789828167331133690,
+        "dev": 16777229,
+        "ino": 1057163372,
+        "mode": 33152,
+        "mtime_ns": 1789828167331133690,
+        "nlink": 1,
+        "size": 574
+      },
+      "sha256": "425409473422ef4fec74dbee6afd7a75505674a1d4bc94f6eb27b075e6f1b310"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-ruff-screen-03/capture/stock/97243-1789828160854290000/stdout": {
+      "bytes": 0,
+      "identity": {
+        "ctime_ns": 1789828160991779725,
+        "dev": 16777229,
+        "ino": 1057163371,
+        "mode": 33152,
+        "mtime_ns": 1789828160991779725,
+        "nlink": 1,
+        "size": 0
+      },
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-ruff-screen-03/replays/b0-warm-stock/record.json": {
+      "bytes": 51477,
+      "identity": {
+        "ctime_ns": 1789828333481599067,
+        "dev": 16777229,
+        "ino": 1057173553,
+        "mode": 33152,
+        "mtime_ns": 1789828333481519650,
+        "nlink": 1,
+        "size": 51477
+      },
+      "sha256": "f2747f163dd078db5d2b98a91ec2cdd7b22c2a956034e98280b9bf2d72ddd5cc"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-ruff-screen-03/replays/b0-warm-stock/stderr": {
+      "bytes": 502,
+      "identity": {
+        "ctime_ns": 1789828333394509347,
+        "dev": 16777229,
+        "ino": 1057173415,
+        "mode": 33152,
+        "mtime_ns": 1789828333394509347,
+        "nlink": 1,
+        "size": 502
+      },
+      "sha256": "8939965d0bff0bcf0dc00e472b957d2ceb45de69f2fcf010e1c4360cf53c9176"
+    },
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-ruff-screen-03/replays/b0-warm-stock/stdout": {
+      "bytes": 0,
+      "identity": {
+        "ctime_ns": 1789828327055286694,
+        "dev": 16777229,
+        "ino": 1057173414,
+        "mode": 33152,
+        "mtime_ns": 1789828327055286694,
+        "nlink": 1,
+        "size": 0
+      },
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "scope": "Exact N compiler JSON source and three selected closed top raw streams; not a full 650-call audit, no new compiler/Cargo invocation or target import.",
+  "status": "source-and-three-closed-raw-contract-reviewed"
+}
