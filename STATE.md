@@ -384,3 +384,12 @@ Started exactisolatedprimaryretirement01 supervisor45184, sourcee7510ee7; await
 finished0+independentclosure beforetypedplannerqualification. No Rustbuild yet.
 Native draft now8controls (addswidearithmeticincomingflagindependence),source
 preservedatd858af33; separateobserver4dbc26cd has9authoredunrunPythoncontrols.
+
+Isolatedprimaryretirement01 supervisor45184/controller45187 finished0; independent
+closureexecbbfad4 exit0 verifies3191absentpaths and2780protectedhashes unchanged.
+Freevolume delta1709895680bytes(1.59GiB),logicalremoved2047542516bytes. Original
+failed40commandhistory+2strictcontrols untouched. Sourcee7510ee7. Sharedtargetnever
+cleaned. Launched typedplanner01 supervisor60951/controller pending, source0896a428,
+6controls/debug+release, freshbuildfloorcheckedbycontroller. Freezeactualcrates,
+branch-budget-native PLAN/controller, focushelper throughindependentclosure.
+Mainpublicationworktreeff4fd6e73c preservingpeerwork; storageevidencepublicationnext.
