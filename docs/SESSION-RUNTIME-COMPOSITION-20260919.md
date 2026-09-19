@@ -78,8 +78,15 @@ preserves both compiler errors, two normally closed sessions with zero requests,
 and restored source. A dedicated controller now uses core in that probe. Its
 [closed portable qualification](../results/session-runtime-composition-pgrust-protocol-01/summary.json)
 includes four actual pinned-rustc type/borrow rejections across std and no_std,
-with no code or metadata emitted. Attempt02 uses fresh namespaces; it has passed
-the actual project strict controls and is running the unchanged176-command guard.
+with no code or metadata emitted. Attempt02 used fresh namespaces and
+[passed all176 commands](../results/session-runtime-composition-edit-pgrust-02/summary.json),
+including both strict controls. Wall/adopted1.0031383653 with A/A0.0120627776
+and CPU/adopted1.0005123570 with A/A0.0131577991 pass the regression margins;
+neither establishes a speed improvement. Candidate/native wall1.1193991052
+covers the four original hashfn tests. The first audit stopped on source tuples
+versus JSON lists with identical contents; a separate auditor normalized that
+comparison and independently closed the full history, preserving the first
+audit failure. No benchmark command was repeated.
 The original controller remains intact. Later parser/large proof bindings are
 being requalified to require the corrected pgrust result; no timed samples from
 attempt01 exist to reuse or discard.

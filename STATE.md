@@ -93,19 +93,23 @@ fault/replay and private memory; call/branch/resource controls retained.
   retained accounting/command controls,4 fresh source/outcome controls and4 real
   pinned-rustc std/no_std type/borrow rejections). Independently CLOSED40059.
   No metadata/code emitted; no shared target used (tiny probe admission14GiB).
-- Pgrust02 source34dd8e57 is ACTIVE:53869/53872, launched03:57:13 with fresh
-  namespaces. Both real-project strict probes now pass and guest timings started.
-  Dedicated controller session-runtime-composition-pgrust-guard/benchmark.py;
-  freeze this folder and all bound inputs until its own close.py completes.
-- Large and parser protocol02 updates PREPARED5917e79c but UNEXECUTED: require
-  pgrust02, use core in identical portable probe bodies, bind real compiler proof
-  byte-for-byte. Protocol01 evidence remains; timing requires requalification02.
+- Pgrust02 source34dd8e57:53869/53872, all176 commands+2strict pass. Initial
+  audit90875 failed before mutation because source tuples differ from JSON lists;
+  values match exactly. Separate auditor2ea7a85c normalizes only this comparison,
+  preserves that failure, and independently CLOSED4260. No benchmark was rerun.
+  Wall/adopted1.0031383653+A/A.0120627776=1.0152011429;
+  CPU/adopted1.0005123570+A/A.0131577991=1.0136701561; regression PASS.
+  Four original hashfn tests, nativewall1.1193991052. No clear speed claim.
+- Parser protocol02 source14f59b70:14413 passed14 controls and byte-for-byte
+  real-compiler portable-probe binding. Independent close ACTIVE; see status.
+- Large protocol02 remains PREPARED but UNEXECUTED; its auditor now also compares
+  case metadata in JSON form. All old protocol/audit evidence is retained.
 
 ## Next actions
 
-Finish and independently close pgrust02. Then qualify and close parser/large
-protocol02 before any later guard. A passing pgrust admits private rg-aot. No
-benchmark retry, runtime change, or noise threshold change from the fixture fix. The private/Nushell adapters and both parser guards
+Finish/close parser protocol02, then qualify/close large protocol02 and launch
+private rg-aot with the qualified large controller. Pgrust02 is closed and passes.
+Keep later parser profiles/Nushell gated. The private/Nushell adapters and both parser guards
 remain required before integration. Their controllers are prepared in
 session-runtime-composition-large-guards and session-runtime-composition-parser-guards;
 parser/large protocol01 is closed; corrected protocol02 needs qualification;

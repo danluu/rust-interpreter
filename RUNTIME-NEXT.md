@@ -16,9 +16,11 @@ Pgrust01 failed before timings: its borrow fixture used std in a no_std crate.
 Two compiler errors,zero server requests; source restored and failure CLOSED97727.
 Dedicated pgrust02 uses core and fresh namespaces. Its26-control protocol passed
 and CLOSED40059, including four real std/no_std compiler probes. Pgrust02 is
-ACTIVE53869/53872 and real-project strict checks passed. Finish/close it, then
-qualify the PREPARED parser/large protocol02 readmission before private rg-aot.
-See STATE.md.
+complete53869/53872 with176 commands+2strict, independently CLOSED4260. Initial
+audit90875 failed only on tuple-vs-JSON-list metadata; preserved without rerunning
+any timing. Regression margins wall1.0152011429/CPU1.0136701561 pass; four tests.
+Parser protocol02 passed14 controls and is closing; then qualify/close large02
+and run private rg-aot. See STATE.md.
 
 Both parent experiments remain failed; no combined speedup is inferred. The new
 cache key binds indirect signature ordinals, and session options are explicitly
