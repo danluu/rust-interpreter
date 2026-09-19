@@ -196,3 +196,10 @@ Branch experiment/buffered-template-keys-20260919 prepared fixed4KiB SHAwritebuf
 exactv3preimage/digest/size-limit semantics preserved. Two stream/reject controls
 (buffered+unbuffered). Qualify658Rust/profile+16ignored,33diag,10unbufferedsession,
 24unbufferedmodels/defaultVM,Python442record. 48servers92clients. No runyet.
+
+Bufferedkey qualification source7198070c ACTIVE92922/controller92925:
+.work/experiments/buffered-template-keys-qualification-01/status.json.
+Debug658+16ignoredpassed; releasepending, then33diag/10unbufferedsession/
+24unbufferedmodels/defaultVM. ExistingPython442+22skip hashverified/reused.
+Freeze crates/scripts/tests andbuffered-template-keys folderthroughclosure.
+Main71c31879pushed phaseevidence preservingpeer8de038df. Nootheractiveexperiment.

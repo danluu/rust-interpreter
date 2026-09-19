@@ -46,3 +46,10 @@ executables/artifacts retained. Main7a8e8c83pushed,preservingpeer9dc7d17f;fullre
 Adoptedtool df4006e03daad7dd008eab34c24a03390d892ec14e55154c43e2d5568c0bba62,
 VM6ac4dd9e964e0ebb0a050f8412c8ec8877bd197e8ad7876832db378ed03ca7cf,
 proof results/scratch-scalar-main-qualification-01/summary.json. StrictRustchecking.
+
+Bufferedkey qualification source7198070c ACTIVE92922/controller92925:
+.work/experiments/buffered-template-keys-qualification-01/status.json.
+Debug658+16ignoredpassed; releasepending, then33diag/10unbufferedsession/
+24unbufferedmodels/defaultVM. ExistingPython442+22skip hashverified/reused.
+Freeze crates/scripts/tests andbuffered-template-keys folderthroughclosure.
+Main71c31879pushed phaseevidence preservingpeer8de038df. Nootheractiveexperiment.
