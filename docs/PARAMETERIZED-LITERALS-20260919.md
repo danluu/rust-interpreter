@@ -64,3 +64,27 @@ key construction, manifests and restoration also cost time and retained memory.
 Only a newly qualified, changed-source end-to-end comparison can justify adoption.
 Strict Rust checking remains required, the default runtime is unchanged, and
 this is not yet evidence that the design improves development of large projects.
+
+
+Primary05 completed all40changed-source commands and both strict rejections.
+All114original outcomes, artifact equality and source restoration pass. The
+candidate/adopted wall ratio is0.9696848094, but the A/A envelope is0.0320016632:
+the required sum is1.0016864726, so the wall gate FAILS. This is a measurable
+failure, not the >8%noise category. CPU ratio0.9157322051 plus0.0271723127 A/A
+passes. Candidate/native is1.296276wall and1.212481CPU; candidate/session-off
+is0.972665wall and0.947334CPU. No adoption, full comparison, or unchanged retry.
+[Primary result](../results/cross-program-template-parser-screen-incremental-05/summary.json).
+
+The diagnostic reduction in miss emission did not establish an end-to-end wall
+gain beyond control variation. Inspect the recorded build/execution/request costs
+before selecting a further change; preserve the same future acceptance gates.
+
+The closed primary's candidate medians are1278.096ms build-to-ready and301.122ms
+execution, versus1250.573ms and389.931ms for the adopted control. Within the
+candidate, request296.680ms includes29.062ms outside workers; summed preparation
+is31.998ms and test compilation61.513ms. These medians overlap and cannot be
+subtracted into a causal decomposition. Frontend/exporter ownership remains
+separate. The next bounded runtime hypothesis is sharing immutable normalized
+function-key hashing across the two current-request workers, since the phase
+diagnostic now assigns10.278ms/worker to key construction versus7.103ms to misses.
+[Recorded costs](../results/parameterized-literals-primary-costs-01/summary.json).
