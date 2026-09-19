@@ -1,0 +1,140 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/old-compiler-partial-retirement-01/retire.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/old-compiler-published-retirement-01/retire.py
+@@ -1,4 +1,4 @@
+-"""One exact closed failed staging prefix; no chmod or other tree retirement."""
++"""One exact superseded compiler prefix; qualified directory-only mode transition."""
+ import argparse
+ import hashlib
+ import json
+@@ -12,12 +12,13 @@
+ 
+ HERE=Path(__file__).resolve().parent
+ OWNER=HERE.parents[1]
+-TARGET=OWNER/'.work/compilers/.install-8j_ugjr3'
++PARTIAL=OWNER/'.work/compilers/.install-8j_ugjr3'
++TARGET=OWNER/'.work/compilers/e48e40e180efbcad9366decdfef2f1152f0a54fb0e78fb865550a64056e84723'
+ PRESERVED=OWNER/'.work/compilers/60096d7efe02d38269c5694bfd046d4f9facfb65139b2d82173d12345a1c9c46'
+-PUBLISHED=OWNER/'.work/compilers/e48e40e180efbcad9366decdfef2f1152f0a54fb0e78fb865550a64056e84723'
++MODE_SOURCE=OWNER/'experiments/old-compiler-directory-modes-01'
+ COMPARISON=OWNER/'.work/root-old-compiler-copy-comparison-03.json'
+ HISTORY=OWNER/'.work/root-old-compiler-retirement-history-01'
+-WORK=OWNER/'.work/old-compiler-partial-retirement-01'
++WORK=OWNER/'.work/old-compiler-published-retirement-01'
+ PACKET=HERE/'plan-01'
+ A=Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918')
+ X=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+@@ -27,6 +28,8 @@
+ import runtime_platform
+ import bounded_probes
+ import fd_remove
++sys.path.insert(0,str(MODE_SOURCE))
++import directory_modes
+ owned=bounded_probes.owned
+ 
+ 
+@@ -86,28 +89,32 @@
+         'historical comparison differs')
+     require(comparison['preserved_replacement']==str(PRESERVED),'replacement route differs')
+     target=comparison['targets'][str(TARGET)]
+-    require(not target['sole_metadata_to_retain'] and len(target['files'])==6982,'partial prefix has unique metadata')
++    require(target['sole_metadata_to_retain']==[str(TARGET/'ready.json')] and len(target['files'])==6983,'published unique metadata differs')
+     rows={'.':dict(kind='directory',identity=target['root_identity'])}
+     for name,row in target['members'].items():
+         row=json.loads(json.dumps(row))
+         if row['kind']=='file':
+-            proof=target['files'][str(TARGET/name)];preserved=Path(proof['preserved_equal_payload'])
++            proof=target['files'][str(TARGET/name)]
++            if name=='ready.json':
++                require(proof['identity']==row['identity'] and proof['sha256']=='ff93b6ae55e28406d6c88d0c1bc680f46ecae7f14014f54b83e84a8b34edaeda','unique ready metadata differs')
++                row['sha256']=proof['sha256'];rows[name]=row;continue
++            preserved=Path(proof['preserved_equal_payload'])
+             require(preserved==PRESERVED/name and proof['identity']==row['identity'],'comparison relative association differs')
+             keep=comparison['preserved_files'][str(preserved)]
+             require(keep['sha256']==proof['sha256'] and keep['identity']['size']==row['identity']['size'],'preserved payload equality differs')
+-            require(bool(keep['identity']['mode']&0o111)==bool(row['identity']['mode']&0o111),'executable class differs')
++            require(keep['identity']['mode']==row['identity']['mode'],'published payload mode differs')
+             row['sha256']=proof['sha256']
+-        else:require(row['kind']=='directory' and stat.S_IMODE(row['identity']['mode'])==0o700,'unreviewed directory permission')
++        else:require(row['kind']=='directory' and stat.S_IMODE(row['identity']['mode'])==0o555,'unreviewed directory permission')
+         rows[name]=row
+-    require(len(rows)==8388 and sum(row['kind']=='directory' for row in rows.values())==1406
+-        and stat.S_IMODE(rows['.']['identity']['mode'])==0o700,'unexpected partial-prefix shape')
++    require(len(rows)==8389 and sum(row['kind']=='directory' for row in rows.values())==1406
++        and stat.S_IMODE(rows['.']['identity']['mode'])==0o700,'unexpected published-prefix shape')
+     return rows
+ 
+ 
+ def archive_history():
+     manifest_raw=(HISTORY/'members.json').read_bytes();manifest=json.loads(manifest_raw)
+     summary=read(HISTORY/'summary.json');audit=read(HISTORY/'full-archive-verification-02.json')
+-    require(summary['retained_compiler_copy']==str(TARGET) and summary['archive_sha256']==sha(HISTORY/'evidence.tar.xz')
++    require(summary['retained_compiler_copy']==str(PARTIAL) and summary['installed_compiler_key']==TARGET.name and summary['archive_sha256']==sha(HISTORY/'evidence.tar.xz')
+         ==audit['archive_sha256']=='97898061418b8a1f9e078e26418c9f45f14e566773f33af34c0425718c93b908', 'closed failure archive association differs')
+     require(audit['status']=='verified-read-only-old-task-archive' and audit['full_member_bytes_and_xz_eof_verified'] is True,'full prior archive audit required')
+     seen={};total=0
+@@ -179,6 +186,19 @@
+         tested=read(self.plan['controls']['inputs'])['files'][self.plan['controls']['tested_helper']]['sha256']
+         require(tested==sha(self.plan['controls']['tested_helper'])==sha(HERE/'fd_remove.py')
+             =='0b154792e3b393bdc018a6ee4337347535be466db64aa3fa40cd6a3899be6041','actual tested removal helper differs')
++        mode=self.plan['mode_controls'];control=read(mode['receipt']);audit=read(mode['audit']);tested=read(mode['inputs'])
++        require(control['status']=='passed' and control['controls_passed']==audit['controls']==10 and audit['status']=='verified'
++            and audit['receipt_sha256']==sha(mode['receipt']) and audit['inputs_sha256']==control['inputs_sha256']==sha(mode['inputs']),
++            'qualified directory-mode history differs')
++        require(tested['files'][str(MODE_SOURCE/'directory_modes.py')]['sha256']==sha(MODE_SOURCE/'directory_modes.py')
++            =='5767a2c81f76d6a53b26ba00851b09f10d439f358f387bf839c895b07ac341d6'
++            and tested['files'][str(OWNER/'experiments/old-compiler-partial-retirement-01/fd_remove.py')]['sha256']==sha(HERE/'fd_remove.py'),
++            'mode helper or tested removal helper differs')
++        prior=self.plan['partial_retirement'];terminal=read(prior['receipt']);audit=read(prior['audit'])
++        require(terminal['status']=='passed' and audit['status']=='verified' and audit['receipt_sha256']==sha(prior['receipt'])
++            and audit['retired_entries']==8388 and audit['all_durable_events_replayed'] is True
++            and not PARTIAL.exists() and not PARTIAL.is_symlink(),'closed partial retirement differs')
++        require(sha(PACKET/'preserved-ready.json')==self.plan['ready']['sha256'],'durable unique ready copy differs')
+         require(archive_history()==self.plan['closed_history'],'closed historical archive differs')
+ 
+     def protected(self,retired=False):
+@@ -208,18 +228,41 @@
+                 (WORK/'commands').mkdir()
+                 for spec in self.plan['commands']:self.probe(spec,fd)
+                 self.guard();self.protected();require(inventory(TARGET)==rows and identity(TARGET.parent)==self.plan['outer_identity'],'target drift after quiescence')
++                raw=(PACKET/'preserved-ready.json').read_bytes()
++                require(hashlib.sha256(raw).hexdigest()==rows['ready.json']['sha256']==self.plan['ready']['sha256'],
++                    'unique ready copy bytes differ')
++                with (WORK/'preserved-ready.json').open('xb') as stream:
++                    require(stream.write(raw)==len(raw),'short metadata retention write');stream.flush();os.fsync(stream.fileno())
++                directory_fd=os.open(WORK,fd_remove.DIRECTORY_FLAGS)
++                try:os.fsync(directory_fd)
++                finally:os.close(directory_fd)
++                require(sha(WORK/'preserved-ready.json')==rows['ready.json']['sha256'],'retained unique ready readback differs')
++                with (WORK/'directory-modes.jsonl').open('xb'):pass
++                writable,mode_result=directory_modes.make_writable(TARGET,rows,self.plan['outer_identity'],WORK/'directory-modes.jsonl',capacity)
++                require(mode_result==dict(changed_directories=1405,chmod_calls=1405,changed_files=0,changed_root=False),
++                    'mode transition scope differs')
++                require(inventory(TARGET)==writable,'post-mode complete bytes or membership differ')
++                owned.write(WORK/'writable-inventory.json',writable)
++                self.record.update(mode_transition=mode_result,mode_ledger_sha256=sha(WORK/'directory-modes.jsonl'),
++                    writable_inventory_sha256=sha(WORK/'writable-inventory.json'));self.save()
++                self.protected();self.guard()
+                 with (WORK/'deleted.jsonl').open('xb'):pass
+-                try:removed=fd_remove.remove_tree(TARGET,rows,self.plan['outer_identity'],WORK/'deleted.jsonl',capacity)
++                try:removed=fd_remove.remove_tree(TARGET,writable,self.plan['outer_identity'],WORK/'deleted.jsonl',capacity)
+                 finally:self.record['ledger']=fd_remove.ledger_summary(WORK/'deleted.jsonl');self.save()
+                 require(not TARGET.exists() and not TARGET.is_symlink(),'target root remains')
+                 self.protected(retired=True);self.guard();ledger=self.record['ledger']
+                 require(all(set(ledger[k])==set(rows) and len(ledger[k])==len(rows) for k in ['intent','unlinked','validated'])
+                     and not ledger['uncertain'] and ledger['readback_error'] is None,'incomplete durable removal ledger')
+-                require(removed==dict(removed_entries=8388,files=6982,directories=1406,root_absent=True),'removed scope differs')
++                require(removed==dict(removed_entries=8389,files=6983,directories=1406,root_absent=True),'removed scope differs')
+                 self.record.update(status='passed',removed=removed,ledger_sha256=sha(WORK/'deleted.jsonl'),transition_sha256=sha(WORK/'transition.json'),
+-                    free_bytes_after=capacity(),preserved_payload_files=6982,actual_readonly_probes=2,chmod_calls=0)
++                    free_bytes_after=capacity(),preserved_payload_files=6982,actual_readonly_probes=2,chmod_calls=1405,changed_files=0,changed_root=False,
++                    unique_ready_sha256=sha(WORK/'preserved-ready.json'))
+         except BaseException as error:self.record.update(status='failed',error=repr(error));raise
+-        finally:self.record['finished_at']=time.time();self.save()
++        finally:
++            for name in ['directory-modes.jsonl','deleted.jsonl']:
++                path=WORK/name
++                if path.exists():self.record.setdefault('retained_ledgers',{})[name]=dict(path=str(path),bytes=path.stat().st_size)
++            self.record['finished_at']=time.time();self.save()
+ 
+ 
+ if __name__=='__main__':

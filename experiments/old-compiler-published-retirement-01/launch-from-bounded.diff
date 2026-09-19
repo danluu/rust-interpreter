@@ -1,0 +1,39 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/launch_hash_prerequisite_controls_02_bounded.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/old-compiler-published-retirement-01/launch.py
+@@ -1,4 +1,5 @@
+ """Bounded wrapper/terminal observation; no process signals or identity probes."""
++import argparse
+ import hashlib
+ import json
+ import os
+@@ -9,18 +10,22 @@
+ import time
+ 
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+-HERE = ROOT/'experiments/hir-options-hash-prerequisite-controls-02'
+-LAUNCH = HERE/'launch.json'
+-EXPECTED = '14d79b37f5ef7f36d68e4cc3ec92ba89ead79ab94b8978fecb09df1660610f61'
+-WORK = ROOT/'.work/hir-options-hash-prerequisite-controls-launch-execution-02'
+-OUTER = ROOT/'.work/experiments/hir-options-hash-prerequisite-controls-supervisor-02'
++HERE = ROOT/'experiments/old-compiler-published-retirement-01'
++PACKET = HERE/'plan-01'
++LAUNCH = PACKET/'launch.json'
++parser=argparse.ArgumentParser();parser.add_argument('--launch-sha256',required=True)
++EXPECTED=parser.parse_args().launch_sha256
++assert len(EXPECTED)==64 and set(EXPECTED)<=set('0123456789abcdef')
++WORK = ROOT/'.work/old-compiler-published-retirement-launch-01'
++OUTER = ROOT/'.work/experiments/old-compiler-published-retirement-supervisor-01'
+ sha = lambda p: hashlib.sha256(Path(p).read_bytes()).hexdigest()
+ assert Path.cwd() == ROOT and sys.dont_write_bytecode and not sys.flags.optimize
+ assert sha(LAUNCH) == EXPECTED
+ plan = json.loads(LAUNCH.read_bytes())
+-assert sha(HERE/'inputs.json') == plan['inputs_sha256'] and sha(HERE/'run.py') == plan['helper_sha256']
+-assert plan['owner'] == str(ROOT) and plan['controls'] == 17 and plan['expected_children'] == 1
+-assert shutil.disk_usage(ROOT).free >= 16*2**30
++assert sha(PACKET/'inputs.json') == plan['inputs_sha256'] and sha(HERE/'retire.py') == plan['helper_sha256']
++assert plan['cwd']==str(ROOT) and plan['actual_readonly_probes']==2 and plan['removed_entries']==8389 and plan['changed_directories']==1405
++assert plan['bounds']['entry_free_bytes']==9*2**30+256*2**20 and plan['bounds']['live_free_gib']==9
++assert shutil.disk_usage(ROOT).free >= 9*2**30+256*2**20
+ assert not WORK.exists() and not WORK.is_symlink() and not OUTER.exists() and not OUTER.is_symlink()
+ WORK.mkdir()
+ record = dict(status='starting', launcher_source_path=str(Path(__file__).resolve()), launcher_source_sha256=sha(__file__),

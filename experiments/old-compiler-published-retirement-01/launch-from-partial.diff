@@ -1,0 +1,25 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/launch_old_compiler_partial_retirement_01.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/old-compiler-published-retirement-01/launch.py
+@@ -1,5 +1,6 @@
+-"""One explicit-wait dispatcher for the reviewed partial-prefix retirement."""
++"""One explicit-wait dispatcher for the reviewed superseded-prefix retirement."""
+ from pathlib import Path
++import argparse
+ import hashlib
+ import json
+ import os
+@@ -8,9 +9,11 @@
+ import time
+ 
+ OWNER=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+-PACKET=OWNER/'experiments/old-compiler-partial-retirement-01/plan-01'
+-OUT=OWNER/'.work/old-compiler-partial-retirement-launch-01'
+-EXPECTED='0711117f4bdf133882f9a9e55a87c1cbf45ec0678dfc42c729f9f02330b35ccb'
++PACKET=OWNER/'experiments/old-compiler-published-retirement-01/plan-01'
++OUT=OWNER/'.work/old-compiler-published-retirement-launch-01'
++parser=argparse.ArgumentParser();parser.add_argument('--launch-sha256',required=True)
++EXPECTED=parser.parse_args().launch_sha256
++assert len(EXPECTED)==64 and set(EXPECTED)<=set('0123456789abcdef')
+ sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+ assert Path.cwd()==OWNER and sha(PACKET/'launch.json')==EXPECTED
+ plan=json.loads((PACKET/'launch.json').read_bytes())

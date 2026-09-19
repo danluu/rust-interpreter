@@ -1,0 +1,47 @@
+--- experiments/old-compiler-published-retirement-evidence-01/archive.before-reservation.py
++++ experiments/old-compiler-published-retirement-evidence-01/archive.py
+@@ -39,12 +39,15 @@
+     assert sum(row['bytes'] for row in plan['members'].values())==plan['logical_bytes']<plan['maximum_logical_bytes']==384*2**20
+     assert plan['archive_limit_bytes']==64*2**20
+     guard(freeze)
++    assert plan['reservation_bytes']==128*2**20 and plan['entry_free_bytes']==9*2**30+plan['reservation_bytes']
++    assert owned.disk(OWNER,9)>=plan['entry_free_bytes'],'archive entry reservation unavailable before WORK'
+     assert not WORK.exists() and not WORK.is_symlink();WORK.mkdir()
+     record=dict(platform_observation=list(os.uname()),status='waiting',pid=os.getpid(),parent_pid=os.getppid(),started_at=time.time(),children=[],compiler_or_cleanup_execution=False)
+     owned.write(WORK/'receipt.json',record)
+     try:
+         with owned.workload_lock(owned.CANONICAL_LOCK,600) as fd:
+-            record.update(status='running',admitted_at=time.time(),free_bytes_before=owned.disk(OWNER,9));owned.write(WORK/'receipt.json',record)
++            free=owned.disk(OWNER,9);assert free>=plan['entry_free_bytes'],'canonical archive entry reservation unavailable'
++            record.update(status='running',admitted_at=time.time(),free_bytes_before=free,reservation_bytes=plan['reservation_bytes']);owned.write(WORK/'receipt.json',record)
+             guard(freeze)
+             assert str(route.resolve(strict=True))==executor['resolved'] and identity(route)==executor['route_identity']
+             for name,checks in plan['receipt_checks'].items():
+--- experiments/old-compiler-published-retirement-evidence-01/prepare.before-reservation.py
++++ experiments/old-compiler-published-retirement-evidence-01/prepare.py
+@@ -96,7 +96,7 @@
+         audit = a.read(audit_path)
+         assert audit['status'] == 'verified' and audit['controls'] == count
+         assert audit['receipt_sha256'] == a.sha(work/'receipt.json') and audit['inputs_sha256'] == a.sha(control/'inputs.json')
+-    for name in ['archive.py', 'prepare.py', 'README.md']: add(a.HERE/name)
++    for name in ['archive.py','prepare.py','README.md','archive.before-reservation.py','prepare.before-reservation.py','README.before-reservation.md','reservation-source.diff']: add(a.HERE/name)
+     for name in ['experiments/stable-cgu/owned_stage.py', 'scripts/supervise_experiment.py']: add(R/name)
+ 
+     terminal = a.read(W/'receipt.json')
+@@ -146,7 +146,7 @@
+         canonical_lock=str(a.owned.CANONICAL_LOCK),wait_seconds=600,minimum_free_gib=9,
+         executor=dict(path='/opt/homebrew/bin/python3',resolved=str(Path('/opt/homebrew/bin/python3').resolve(strict=True)),
+                       route_identity=a.identity(Path('/opt/homebrew/bin/python3'))),
+-        children=0,archive_limit_bytes=64*2**20,maximum_logical_bytes=384*2**20,
++        children=0,reservation_bytes=128*2**20,entry_free_bytes=9*2**30+128*2**20,archive_limit_bytes=64*2**20,maximum_logical_bytes=384*2**20,
+         member_count=len(members),logical_bytes=sum(row['bytes'] for row in members.values()),
+         excluded_live_provider_files=len(omitted),excluded_live_provider_bytes=sum(row['identity']['size'] for row in omitted.values()),
+         exclusion_meaning='Live provider payloads are excluded; complete original frozen catalogs and the closed independent audit retain their historical association. Closed consumer absence observations are not ongoing absence requirements.',
+--- experiments/old-compiler-published-retirement-evidence-01/README.before-reservation.md
++++ experiments/old-compiler-published-retirement-evidence-01/README.md
+@@ -4,4 +4,4 @@
+ 
+ Every non-provider input from the actual retirement freeze is retained, including the full catalogs for omitted live providers. No live compiler payload is copied. Historical consumer-absence observations are retained as past facts and are not reasserted after closure. The archive preparer does not import the retirement controller or start probes.
+ 
+-The archive engine is copied from the passed partial-retirement evidence engine with namespace/doc changes only: canonical 600-second admission, 9 GiB live checks, 64 MiB pre-write compressed cap, 384 MiB logical bound, 1,536 member ceiling, exact input/member hashes and complete gzip EOF verification. Read-only preparation has a 600-second alarm and 96 MiB per-file limit. Archive execution requires separate exact packet review; failures and partial output are preserved without retry.
++The archive engine is copied from the passed partial-retirement evidence engine with namespace/doc changes plus the explicit entry reservation: canonical 600-second admission, 9 GiB live checks, a stricter 128 MiB entry reservation before WORK and again under the canonical lock, 64 MiB pre-write compressed cap, 384 MiB logical bound, 1,536 member ceiling, exact input/member hashes and complete gzip EOF verification. Read-only preparation has a 600-second alarm and 96 MiB per-file limit. Archive execution requires separate exact packet review; failures and partial output are preserved without retry.

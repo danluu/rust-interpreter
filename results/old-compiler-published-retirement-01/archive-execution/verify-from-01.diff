@@ -1,0 +1,13 @@
+--- .work/verify_old_compiler_published_retirement_evidence_01.py
++++ .work/verify_old_compiler_published_retirement_evidence_02.py
+@@ -54,8 +54,8 @@
+  path=O/'.work/old-compiler-published-retirement-01'/name
+  assert str(path).lstrip('/') in expected and expected[str(path).lstrip('/')]['sha256']==sha(path)
+ assert read(Path(str(P)+'.stdout'))['supervisor_pid']==e['supervisor_pid']
+-assert a['launcher_sha256']==sha(O/'.work/launch_old_compiler_partial_retirement_evidence_01.py')
++assert a['launcher_sha256']==sha(O/'.work/launch_old_compiler_published_retirement_evidence_01.py')
+ assert str(t['pid']) in e['child_identity'] and str(t['parent_pid']) in e['child_identity']
+ assert e['command'][2] in e['child_identity'] and str(e['supervisor_pid']) in e['supervisor_identity']
+ report=dict(status='verified',checked_at=time.time(),members=164,logical_bytes=logical,expanded_bytes=expanded,archive_bytes=(R/'evidence.tar.gz').stat().st_size,all_member_hashes_and_full_gzip_trailer_verified=True,frozen_files=len(f['files']),closed_retired_entries=8389,retained_durable_events=25167,retained_mode_events=4215,retained_directory_mode_controls=10,retained_readonly_probes=2,retained_remover_controls=12,original_history_members=52,archive_sha256=sha(R/'evidence.tar.gz'),manifest_sha256=sha(R/'manifest.json'),receipt_sha256=sha(W/'receipt.json'),outer_sha256=sha(E/'status.json'),launcher_sha256=sha(Path(str(P)+'.actual.json')),verifier_sha256=sha(Path(__file__)),actual_workload_children=0,actual_deletions=0,compiler_or_provider_payloads_archived=False,actual=dict(supervisor_pid=e['supervisor_pid'],helper_pid=t['pid'],admitted_at=t['admitted_at'],finished_at=t['finished_at'],released_at=e['finished_at'],free_bytes_after=t['free_bytes_after']),limitation='This execution only retained already closed evidence. Historical failures stay failed; original published-prefix cleanup and its quiescence are retained observations, not repeated actions.')
+-out=O/'.work/old-compiler-published-retirement-evidence-verification-01.json';assert not out.exists();out.write_text(json.dumps(report,indent=2,sort_keys=True)+'\n');print(json.dumps(report,indent=2));print(sha(out))
++out=O/'.work/old-compiler-published-retirement-evidence-verification-02.json';assert not out.exists();out.write_text(json.dumps(report,indent=2,sort_keys=True)+'\n');print(json.dumps(report,indent=2));print(sha(out))

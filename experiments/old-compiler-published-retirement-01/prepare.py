@@ -1,0 +1,164 @@
+"""Read-only exact e48 proposal; preserves ready bytes and qualified mode history."""
+import ast
+import json
+import os
+from pathlib import Path
+import sys
+import retire as r
+
+CONTROL_SOURCE=r.A/'experiments/ruff-strict-cache-retirement-01'
+CONTROL_RECEIPT=r.A/'.work/ruff-strict-cache-retirement-controls-01/receipt.json'
+CONTROL_AUDIT=r.O/'.work/ruff-strict-cache-retirement-controls-independent-verification-01.json'
+MODE_CONTROLS=r.O/'experiments/old-compiler-directory-mode-controls-01'
+MODE_WORK=r.O/'.work/old-compiler-directory-mode-controls-01'
+MODE_AUDIT=r.O/'.work/old-compiler-directory-mode-controls-independent-verification-01.json'
+PARTIAL_SOURCE=r.OWNER/'experiments/old-compiler-partial-retirement-01'
+PARTIAL_WORK=r.OWNER/'.work/old-compiler-partial-retirement-01'
+PARTIAL_AUDIT=r.OWNER/'.work/old-compiler-partial-retirement-independent-verification-01.json'
+PROVIDER_PROOF=r.X/'experiments/hir-options-hash/runtime-installation-handoff-01/provider-comparison.json'
+
+
+def main():
+    r.require(Path.cwd()==r.OWNER and sys.dont_write_bytecode and not sys.flags.optimize,'fixed preparer owner required')
+    for path in [r.PACKET,r.WORK,r.OWNER/'.work/experiments/old-compiler-published-retirement-supervisor-01']:
+        r.require(not path.exists() and not path.is_symlink(),'fresh namespaces required')
+    r.capacity();comparison=r.read(r.COMPARISON);rows=r.inventory(r.TARGET)
+    r.require(rows==r.compared_rows(),'current target differs from exact original comparison')
+    history=r.archive_history();files={};routes={};directories={}
+    def add(path,expected=None,original_identity=None):
+        path=Path(path);target=path.resolve(strict=True)
+        r.require(not target.is_relative_to(r.TARGET),'mutable target cannot enter immutable post-retirement guard')
+        routes[str(path)]=dict(resolved=str(target),identity=r.identity(path));row=r.file(target)
+        if expected is not None:r.require(row['sha256']==expected,'retained bytes differ: '+str(path))
+        if original_identity is not None:r.require(row['identity']==original_identity,'retained identity differs: '+str(path))
+        r.require(str(target) not in files or files[str(target)]==row,'inconsistent frozen identity')
+        files[str(target)]=row
+        r.require(len(files)<=30000 and sum(v['identity']['size'] for v in files.values())<=5*r.GIB,'input discovery bound')
+        if target.suffix=='.py':ast.parse(target.read_bytes(),filename=str(target))
+    def tree(path):
+        path=Path(path);r.require(path.resolve(strict=True)==path and path.is_dir(),'ordinary proof root required')
+        for parent,dirs,names in os.walk(path,followlinks=False):
+            for name in dirs:r.require(not (Path(parent)/name).is_symlink(),'indirect proof directory')
+            for name in names:add(Path(parent)/name)
+    def directory(path,expected=None):
+        path=Path(path);r.require(path.resolve(strict=True)==path and path.is_dir(),'ordinary protected directory required')
+        value=r.identity(path)
+        if expected is not None:r.require(value==expected,'historical protected directory changed')
+        directories[str(path)]=dict(identity=value,children=sorted(os.listdir(path)))
+    # The completed replacement is immutable; the sole e48 target is not.
+    for path,row in comparison['preserved_files'].items():add(path,row['sha256'],row['identity'])
+    add(r.PRESERVED/'ready.json',comparison['preserved_ready']['sha256'],comparison['preserved_ready']['identity'])
+    directory(r.PRESERVED)
+    for name,row in comparison['targets'][str(r.TARGET)]['members'].items():
+        if row['kind']=='directory':directory(r.PRESERVED/name)
+    provider=r.read(PROVIDER_PROOF);add(PROVIDER_PROOF)
+    source=Path(provider['source_distribution']['provider'])
+    for name,row in provider['source_distribution']['provider_files'].items():add(source/name,row['sha256'])
+    add(provider['support']['path'],provider['support']['file']['sha256'])
+    f9=source.parents[5];r.require(f9.parent==r.TARGET.parent and f9.name.startswith('f9fb3e5f'),'retained source-provider root differs')
+    directory(f9);directory(source)
+    n=r.X/'.work/hir-options-hash-compiler-01';s=n/'source';host='aarch64-apple-darwin'
+    for sysroot in [s/'build'/host/'stage0',s/'build'/host/'stage1']:
+        directory(sysroot);add(sysroot/'bin/rustc')
+        drivers=list((sysroot/'lib').glob('librustc_driver-*.dylib'));r.require(len(drivers)==1,'current driver ambiguous')
+        for path in [drivers[0],sysroot/'lib/libLLVM.dylib']:add(path)
+    directory(n/'beta-sysroot')
+    b3=r.A/'.work/hir-options-hash-beta-composition-08/assembly/output-inventory.json';add(b3)
+    for name,row in r.read(b3).items():add(n/'beta-sysroot'/name,row['sha256'],row['identity'])
+    consumer_records=[];consumer_absences=[]
+    for source_root in [r.A/'experiments/hir-options-hash-beta-composition-08',
+                        r.A/'experiments/hir-options-hash-native-controls-01',
+                        r.O/'experiments/hir-options-hash-run-make-stage-02']:
+        for name in ['plan.json','inputs.json','launch.json']:
+            path=source_root/name;r.require(path.is_file(),'original consumer packet required')
+            r.require(not r.contains_target(r.read(path)),'consumer references e48 target');add(path);consumer_records.append(str(path))
+    for source_root in [r.A/'experiments/hir-options-hash-native-controls-02',r.OWNER/'experiments/hir-options-hash-driver-stage']:
+        for name in ['plan.json','inputs.json','launch.json']:
+            path=source_root/name
+            if path.exists():
+                r.require(not r.contains_target(r.read(path)),'future consumer references e48 target');add(path);consumer_records.append(str(path))
+            else:
+                r.require(not path.is_symlink(),'indirect absent consumer');consumer_absences.append(str(path))
+    for path in [r.COMPARISON,CONTROL_AUDIT,CONTROL_RECEIPT,MODE_AUDIT,PARTIAL_AUDIT,
+        r.OWNER/'.work/verify_old_compiler_failure_archive_02.py',r.OWNER/'scripts/supervise_experiment.py',
+        r.OWNER/'experiments/stable-cgu/owned_stage.py',r.A/'experiments/runtime-application-admission/runtime_platform.py',
+        r.A/'.work/beta-composition-independent-verification-08.json',r.A/'.work/verify_beta_composition_08_loader_projection_02.py',
+        r.O/'.work/verify_ruff_strict_cache_controls_01.py',r.O/'.work/verify_directory_mode_controls_01.py',
+        r.OWNER/'.work/verify_old_compiler_partial_retirement_01.py']:
+        add(path)
+    # Retain completed raw histories, not recursive historical provider closures.
+    for path in [r.HISTORY,CONTROL_SOURCE/'controls-01',r.A/'.work/ruff-strict-cache-retirement-controls-01',
+        r.A/'.work/experiments/ruff-strict-cache-retirement-controls-supervisor-01',MODE_CONTROLS,MODE_WORK,
+        r.O/'.work/experiments/old-compiler-directory-mode-controls-supervisor-01',PARTIAL_SOURCE,PARTIAL_WORK,
+        r.OWNER/'.work/experiments/old-compiler-partial-retirement-supervisor-01',r.OWNER/'.work/old-compiler-partial-retirement-launch-01']:
+        tree(path)
+    for suffix in ['actual.json','stdout','stderr']:
+        add(r.O/'.work'/('old-compiler-directory-mode-controls-launch-01.'+suffix))
+        add(r.A/'.work'/('ruff-strict-cache-retirement-controls-launch-01.'+suffix))
+    for path in r.HERE.iterdir():
+        if path.is_file():add(path)
+    for name in ['fd_remove.py','test_fd_remove.py','bounded_probes.py']:add(CONTROL_SOURCE/name)
+    for control_inputs in [CONTROL_SOURCE/'controls-01/inputs.json',MODE_CONTROLS/'inputs.json']:
+        for path,row in r.read(control_inputs)['files'].items():
+            add(path,row['sha256']);state=Path(path).lstat()
+            r.require([state.st_dev,state.st_ino,state.st_mode,state.st_size,state.st_mtime_ns,state.st_ctime_ns,state.st_nlink]==row['stamp'],
+                'actual tested source/input stamp differs')
+    r.require(r.sha(r.HERE/'fd_remove.py')==r.sha(CONTROL_SOURCE/'fd_remove.py')
+        =='0b154792e3b393bdc018a6ee4337347535be466db64aa3fa40cd6a3899be6041','qualified remover differs')
+    r.require(r.sha(r.MODE_SOURCE/'directory_modes.py')=='5767a2c81f76d6a53b26ba00851b09f10d439f358f387bf839c895b07ac341d6','qualified mode helper differs')
+    python=Path(sys.executable).resolve(strict=True)
+    for path in [python,'/opt/homebrew/bin/python3','/bin/ps','/usr/sbin/lsof']:add(path)
+    environment=dict(HOME='/Users/danluu',USER='danluu',LOGNAME='danluu',LANG='C',LC_ALL='C',TZ='UTC',
+        PATH='/usr/bin:/bin:/usr/sbin:/sbin',PYTHONDONTWRITEBYTECODE='1',PYTHONNOUSERSITE='1',__CF_USER_TEXT_ENCODING='0x1F5:0x0:0x0')
+    commands=[dict(label='open-handles',argv=['/usr/sbin/lsof','+D',str(r.TARGET)],expected=[0,1]),
+        dict(label='closed-owner-pids',argv=['/bin/ps','-p',','.join(map(str,history['closed_pids'])),
+            '-o','pid=,ppid=,pgid=,lstart=,tty=,command='],expected=[0,1])]
+    ref=lambda path:dict(path=str(path),sha256=r.sha(path))
+    transition=dict(action='retire-single-superseded-published-compiler-prefix',root=str(r.TARGET),
+        historical_comparison=ref(r.COMPARISON),historical_summary=ref(r.HISTORY/'summary.json'),
+        archive=ref(r.HISTORY/'evidence.tar.xz'),actual_archive_audit=ref(r.HISTORY/'full-archive-verification-02.json'),
+        files=6983,directories=1406,entries=8389,preserved_equal_payload_root=str(r.PRESERVED),
+        directory_mode_transition=dict(changed_directories=1405,from_mode=0o555,to_mode=0o755,changed_files=0,changed_root=False),
+        unique_ready=dict(original_path=str(r.TARGET/'ready.json'),sha256=rows['ready.json']['sha256'],identity=rows['ready.json']['identity']),
+        mode_controls=dict(receipt=ref(MODE_WORK/'receipt.json'),audit=ref(MODE_AUDIT)),
+        prior_partial=dict(receipt=ref(PARTIAL_WORK/'receipt.json'),audit=ref(PARTIAL_AUDIT)),
+        history_meaning='Original install01 and tools01 failures stay failed; published e48 install02 passed but lacked objcopy. Prior partial retirement is separately passed. E48 absence is asserted only after this retirement passes.')
+    plan=dict(status='prepared-unrun',owner=str(r.OWNER),root=str(r.TARGET),work=str(r.WORK),python=str(python),environment=environment,
+        routes=dict(routes),platform_identity=r.runtime_platform.identity(list(os.uname())),platform_context=r.runtime_platform.observation(list(os.uname())),
+        commands=commands,closed_history=history,controls=dict(receipt=str(CONTROL_RECEIPT),audit=str(CONTROL_AUDIT),inputs=str(CONTROL_SOURCE/'controls-01/inputs.json'),tested_helper=str(CONTROL_SOURCE/'fd_remove.py')),
+        mode_controls=dict(receipt=str(MODE_WORK/'receipt.json'),audit=str(MODE_AUDIT),inputs=str(MODE_CONTROLS/'inputs.json')),
+        partial_retirement=dict(receipt=str(PARTIAL_WORK/'receipt.json'),audit=str(PARTIAL_AUDIT)),
+        ready=dict(sha256=rows['ready.json']['sha256'],bytes=rows['ready.json']['identity']['size'],retained=str(r.PACKET/'preserved-ready.json')),
+        protected_directories=directories,outer_identity=r.identity(r.TARGET.parent),outer_children=sorted(os.listdir(r.TARGET.parent)),
+        consumer_records=consumer_records,consumer_absences=consumer_absences,transition=transition,
+        observed_allocated_bytes=comparison['targets'][str(r.TARGET)]['allocated_bytes'],
+        bounds=dict(entry_free_bytes=9*r.GIB+256*r.MIB,live_free_gib=9,floor_gib=8,evidence_bytes=256*r.MIB,
+            ledger_bytes=192*r.MIB,mode_ledger_bytes=8*r.MIB,canonical_wait_seconds=600,inputs=30000,input_bytes=5*r.GIB,
+            single_input_bytes=512*r.MIB,inventory_entries=10000,inventory_logical_bytes=2*r.GIB),
+        limitations=['Only exact e48 is removable; completed600/f9/std/tool roots remain. Earlier staging prefix was separately retired.',
+            'Historical PID absence check refuses any reused PID; no signal or ownership inference.',
+            'Full retained600/source/B3 bytes and selected D2/E2 providers are guarded; this is not a whole-host claim.'])
+    r.PACKET.mkdir()
+    raw=(r.TARGET/'ready.json').read_bytes()
+    r.require(r.file(r.TARGET/'ready.json')==dict(identity=rows['ready.json']['identity'],sha256=rows['ready.json']['sha256']),'ready changed before retention')
+    with (r.PACKET/'preserved-ready.json').open('xb') as stream:
+        r.require(stream.write(raw)==len(raw),'short ready retention write');stream.flush();os.fsync(stream.fileno())
+    r.require(r.sha(r.PACKET/'preserved-ready.json')==rows['ready.json']['sha256'],'ready retention readback differs')
+    add(r.PACKET/'preserved-ready.json')
+    r.owned.write(r.PACKET/'inventory.json',rows);r.owned.write(r.PACKET/'plan.json',plan)
+    add(r.PACKET/'inventory.json');add(r.PACKET/'plan.json')
+    freeze=dict(status='prepared-unrun',files=files,plan_sha256=r.sha(r.PACKET/'plan.json'))
+    r.owned.write(r.PACKET/'inputs.json',freeze)
+    launch=dict(status='prepared-unrun-awaiting-exact-review',command=[str(python),'-B',str(r.OWNER/'scripts/supervise_experiment.py'),
+        '--run-id','old-compiler-published-retirement-supervisor-01','--',str(python),'-B',str(r.HERE/'retire.py'),
+        '--inputs-sha256',r.sha(r.PACKET/'inputs.json')],cwd=str(r.OWNER),environment=environment,
+        inputs_sha256=r.sha(r.PACKET/'inputs.json'),helper_sha256=r.sha(r.HERE/'retire.py'),bounds=plan['bounds'],
+        actual_readonly_probes=2,removed_entries=8389,changed_directories=1405)
+    r.owned.write(r.PACKET/'launch.json',launch)
+    check=object.__new__(r.Retirement);check.plan=plan;check.freeze=freeze;check.guard();check.protected()
+    r.require(r.inventory(r.TARGET)==rows,'target changed during discovery')
+    print(json.dumps(dict(status='prepared-unrun',launch_sha256=r.sha(r.PACKET/'launch.json'),inputs_sha256=r.sha(r.PACKET/'inputs.json'),
+        files=len(files),bytes=sum(row['identity']['size'] for row in files.values()),removed_entries=8389,changed_directories=1405),indent=2))
+
+
+if __name__=='__main__':main()
