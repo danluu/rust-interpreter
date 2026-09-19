@@ -19,22 +19,20 @@ and CLOSED40059, including four real std/no_std compiler probes. Pgrust02 is
 complete53869/53872 with176 commands+2strict, independently CLOSED4260. Initial
 audit90875 failed only on tuple-vs-JSON-list metadata; preserved without rerunning
 any timing. Regression margins wall1.0152011429/CPU1.0136701561 pass; four tests.
-Parser protocol02 passed14 controls and is closing; then qualify/close large02
-and run private rg-aot. See STATE.md.
+Parser protocol02 passed14 controls and CLOSED23181; large protocol02 passed23
+and CLOSED43657. First rg admission and first large audit timed out on the shared
+lock before work; both preserved. Actual rg-aot176 commands+2strict passed and
+CLOSED94315 under outer suffix-admitted-02. Wall margin1.0308613865 and CPU
+margin1.0375064256 pass; nativewall.5910980861. No clear gain versus adopted.
 
-Both parent experiments remain failed; no combined speedup is inferred. The new
-cache key binds indirect signature ordinals, and session options are explicitly
-transported and verified. Main runtime remains adopted scratch/scalar df4006e0.
-No unchanged timing retries or later guards on a failed primary.
+Next: parser incremental, parser repository defaults, Nushell last. Current free
+17.6GiB is below parser24GiB and Nushell66.54872655GiB. Disposable transparent
+compression probe02 CLOSED4233; no existing evidence changed. Read-only exact
+public evidence inventory is prepared. Only separate verified exact-path storage
+work can reclaim space; no broad cleanup, shared target or peer/private changes.
 
-No subagents/goal tools; two workers, shared lock, dynamic disk admission. Four
-closed old parser caches were safely retired, with all11256 protected hashes
-unchanged; never repeat that retirement or clean the shared target/peer caches.
+Both parents failed. Main runtime stays scratch/scalar df4006e0 until every guard
+and current-main integration passes. No unchanged timing retries. No subagents
+or goal tools; two workers, shared lock, dynamic admission. Primary/token and old
+parser/Nushell retirements are complete and MUST NOT repeat. See STATE.md.
 Continue indefinitely and publish qualified evidence regularly.
-
-Large protocol02 passed23 checks but first close timed out on the peer-held lock.
-A premature rg-aot launch also timed out before any stage or workload; its empty
-admission is preserved. No peer was controlled. Lock later became available;
-large-protocol close-02 is ACTIVE. Verify/commit its closure before launching the
-unchanged rg-aot run-id under fresh supervisor suffix-admitted-02. Dedicated
-admission-recovery/close_rg.py binds the actual supervisor. See STATE.md.

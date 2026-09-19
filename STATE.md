@@ -102,38 +102,39 @@ fault/replay and private memory; call/branch/resource controls retained.
   Four original hashfn tests, nativewall1.1193991052. No clear speed claim.
 - Parser protocol02 source14f59b70:14413 passed14 controls plus exact portable
   probe binding; CLOSED23181.
-- Large protocol02 source2b8add9c:31950 passed23 controls. First close44308
-  timed out before taking the shared benchmark lock; peer preflight held it.
-  No peer process was controlled. Audit admission failure retained.
-- A shell sequencing error prematurely launched rg-aot supervisor86482/86485;
-  it also timed out on the lock BEFORE context/stage/cache/source/session/timing.
-  Bounded no-work proof is CLOSED in results/session-runtime-composition-rg-aot-admission-01.
-  Do not overwrite that supervisor or rerun preserve.py. Original raw/result
-  session-runtime-composition-edit-rg-aot-01 and endpoints still do not exist.
-- Lock became available at read-only observation. Large-protocol close-02 is
-  now ACTIVE; see status. Original23 tests will not be rerun. Gate every command
-  on success explicitly (no shell sequence that continues after a failed assert).
+- Large protocol02 source2b8add9c:31950 passed23 controls, independently CLOSED43657.
+  First audit44308 and premature rg outer86482/86485 timed out at shared-lock
+  admission before any workload. Both are preserved; no peer was controlled.
+- First actual private rg-aot history sourcef799aa49:52568/52579 under outer
+  session-runtime-composition-edit-rg-aot-01-admitted-02; all176 commands+2strict
+  pass. Dedicated admission-recovery/close_rg.py independently CLOSED94315.
+  Raw/result run remains session-runtime-composition-edit-rg-aot-01. The initial
+  empty admission is separately CLOSED in session-runtime-composition-rg-aot-admission-01.
+  Wall/adopted1.0004170757+A/A.0304443108=1.0308613865;
+  CPU/adopted1.0101769480+A/A.0273294777=1.0375064256; regression PASS.
+  One original private test, two persistent slots fully charged; nativewall.5910980861.
+- Disposable compression compatibility probe02 sourceb55b6d52:67506, CLOSED4233.
+  Two synthetic fixtures preserve plaintext, ordinary reads/seek/mmap, mode,
+  owner, mtime and a synthetic xattr through transparent compression/restoration.
+  Existing evidence modified0. Probe01 setup failure is independently preserved.
+  Repetitive fixture blocks2850816->28672 is synthetic, not real savings.
 
 ## Next actions
 
-Finish large-protocol close-02 and VERIFY success, then commit closure. Launch
-first actual private history under supervisor session-runtime-composition-edit-rg-aot-01-admitted-02
-with unchanged benchmark.py --case rg-aot --run-id session-runtime-composition-edit-rg-aot-01.
-The raw run-id stays01 because no stage or workload existed. Dedicated auditor
-benchmarks/experiments/session-runtime-admission-recovery/close_rg.py binds the
-fresh supervisor and retained empty attempt; use it for final rg closure.
-Keep parser profiles/Nushell gated. The private/Nushell adapters and both parser guards
-remain required before integration. Their controllers are prepared in
-session-runtime-composition-large-guards and session-runtime-composition-parser-guards;
-parser/large protocol01 is closed; corrected protocol02 needs qualification;
-timing is unstarted. Order: public three, private rg-aot,
-parser incremental, parser repository defaults, Nushell last. Full parser retains
-its existing stronger session wall/CPU/noise gates. Private uses two persistent
-slots even for one test, with all idle-worker costs charged. Nushell requires
-max(47GiB,8GiB+120%*nine*saved namespace estimate), not the old six-arm reservation. A failure stops later guards, with no
-unchanged timing retry. Preserve every completed and partial attempt and strict
+All four full project guards are CLOSED. Parser incremental and repository
+profiles then Nushell remain required before current-main integration/adoption.
+Both parser and large protocol02 qualifications are CLOSED. Parser needs24GiB;
+Nushell needs66.54872655GiB for nine namespaces. Last free17.6GiB, so no parser
+workload is admitted yet. Inventory exact manifest-listed completed public raw
+files with benchmarks/experiments/closed-evidence-inventory; read-only, no real
+compression authorized by the inventory itself. A separate exact-path protocol
+and full hash/metadata/open-file checks are required before any storage mutation.
+Do not compress sources/tools/live/private caches or alter benchmark bytes.
+New folded compiler caches could also be retired after exact proof verification;
+primary/token and older Nushell caches are already retired: NEVER repeat.
+No unchanged timing retry. A failed gate stops later guards. Preserve strict
 checks, original assertions, source restoration and full server CPU accounting.
-No adoption before qualified current-main integration preserving peer changes.
+Gate every dependent shell command on verified success explicitly.
 
 ## Resources and ownership
 
@@ -141,7 +142,7 @@ Shared .work/benchmark.lock,45s admission; two Cargo/test workers. Shared target
 .work/fixed-frame-clear-combined-build-01/target MUST NEVER be cleaned. Builds
 require max(14GiB,8GiB+2*current allocated target), re-evaluated before each child.
 Replay/analysis12GiB, closure/children8GiB; fre16GiB, parser24GiB plus namespace
-allowance, pgrust12GiB, Nushell>=47GiB. Last free~18.9GiB; recheck continuously.
+allowance, pgrust12GiB, Nushell66.54872655GiB. Last free~17.6GiB; recheck continuously.
 Cleaner read-only: /usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status.
 Never compete with it, repair it, signal peers or use broad cleanup.
 
@@ -156,10 +157,10 @@ suggestions.txt remains user-owned/untracked, SHA256
 4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f;
 reread this turn. Detailed dispositions docs/SUGGESTIONS-REVIEW-20260913-1245.md.
 
-Main publication282fdca1 includes qualified parser/large adapters; publication
-worktree now fast-forwarded to peerd1f27ff3 before pending folded/token-retirement
-proof publication. Experimental branch pushed through97de6f71. The six-namespace primary cache retirement is CLOSED60900 and must never repeat.
-Publish qualified evidence regularly.
+Main publicationfb594d1d includes closed folded, token retirement and portable
+pgrust strict-probe qualification. Closed pgrust02/private guard, parser/large
+protocol02 and storage compatibility proof publication are pending. Experimental
+branch remote last2b8add9c; push current commits regularly. Runtime stays df4006e0.
 Publish exact proof/docs paths on main, fetch/ff first; do not copy experimental
 runtime or overwrite compiler work. Prior detail archived at
  docs/history/STATE-20260919-before-session-runtime-composition.md.

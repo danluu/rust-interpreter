@@ -90,3 +90,13 @@ audit failure. No benchmark command was repeated.
 The original controller remains intact. Later parser/large proof bindings are
 being requalified to require the corrected pgrust result; no timed samples from
 attempt01 exist to reuse or discard.
+
+The [private rg-aot guard](../results/session-runtime-composition-edit-rg-aot-01/summary.json)
+is independently closed:176 changed-source commands plus two strict probes, one
+original test. Wall/adopted1.0004170757 with A/A0.0304443108 and CPU/adopted
+1.0101769480 with A/A0.0273294777 pass the fixed regression gate. Candidate/native
+wall0.5910980861 is specific to this workload; the adopted-runtime difference is
+inside noise. An initial empty lock-admission failure is retained separately;
+the actual history used a fresh outer supervisor, with no timed retry. Parser
+incremental/repository profiles and Nushell remain outstanding. Their corrected
+protocols are qualified and closed; current disk space does not admit them.
