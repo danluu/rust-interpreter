@@ -20,8 +20,10 @@ CLOSED47849: actual removable LDR samples2/2; specific narrow design parked.
 Isolated compact switch failed full primary, archived old branch38c51f5d.
 No unchanged retiming or cancelled guards. All raw failures retained.
 
-Next: review historical call/loop compiler attempts and current code to find a
-materially distinct mechanism with native-PC coverage. No Rust build admitted
+Next: execute and independently close region-budget-credit-01 offline model
+and native-PC scope. New bounded forward-edge budget credit, twelve controls.
+Sources frozen through closure; preserve any failure in a distinct continuation.
+No guest/Rust/native-code publication. Potential samples depend on entry path. No Rust build admitted
 until disk reserve recomputed: max(14GiB,8GiB+2*allocated shared target), last23GiB.
 Free~19.9GiB. Shared .work/fixed-frame-clear-combined-build-01/target NEVER CLEAN.
 Analysis12GiB/children8GiB, shared benchmark lock45s, two build/test workers.

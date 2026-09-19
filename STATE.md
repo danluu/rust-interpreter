@@ -268,3 +268,11 @@ Main d73ab139 already pushed all qualified loop/copy/payload evidence, preservin
 peer e694389f. Next direction must consult complete experiment/result archive.
 Revalidated suggestionsSHA4d74b3dc unchanged,free19.9GiB,cleaner29541 readonly.
 No active owned command. Goal stillpaused; no subagents.
+
+Registered region-budget-credit-01, an offline forward-edge DAG model. Existing
+x22 and per-region immediate-guard attempts are archived separately; no retry.
+Twelvecontrols include all512 three-nodegraphs, everyshortbudget/faultprefix,
+externalentries, guard/call/backedgebarriers, capcuts and seededwalks. Inputs use
+closed adopted1933/1429 nativecaptures. Count actual CMP/B.LO potentialsites,
+entrydependence explicit; include checked-entry extraimmediates in nominalword
+flowbounds. No runtimeclaim/guest/build/cleanup. Freeze sources throughclosure.
