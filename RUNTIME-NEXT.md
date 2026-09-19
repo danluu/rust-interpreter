@@ -1,3 +1,13 @@
+LATEST: install01 CLOSED success (50286/50290, source6e88d00c), close94690passed.
+Explicittool63578118a17b8bd63fbd84c2c63fef3d6f6a8a30713cda3d1fdd0899f6d06703,
+VM087792c85b0d4fba0605a8eab43dc41905f1a5b526acde55087b9aeb826210c9,
+unchangedfrontend+121closedchecks reverified. No defaultchange. Newshort-clear-
+tail-screen folder:40ES8commands+2strictcandidateprobes; 14protocol/controller
+controls first. Nextcommit/push, supervise short-clear-tail-screen-protocol-01
+protocol.py, independent--close; then screen-es8-01 benchmark.py andclose.py.
+Wallratio<=.99 AND ratio+maxAA<1;CPUratio<=1+maxAA. All5validpairs, no rerun on
+failed/noisy gate. Qualified originalprofiles alreadyclosed. Currentfree~20GiB.
+
 LATEST: short-tail profile01 all10guests passed, supervisor34937/controller34940,
 source2bc19013. Five paired originalES8/token/folded tests match exactPCcounts,
 non-timingcounters/memory/entropy and20bytes/helper growth, zero declines. Independent closure75399 passed. New short-clear-tail-install
