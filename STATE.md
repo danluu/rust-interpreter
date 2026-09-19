@@ -138,3 +138,11 @@ Cachecleanupc1d93da2 completed25037/25040 CLOSED36634/36638:17,546files,
 3,635,477,875logicalbytes;13,912protectedhashesunchanged;8exactnamespaces. Norepeat.
 Free31GiB. Nextsourcefrozen primary04 unchanged40command5modeprotocol+2strict.
 Maina0605c71proofpushed (notruntimeadoption). Sourcekey/newcandidate bindingsupdated.
+
+Primary04 f50d99f8 completed47517/47520 CLOSED2787/2793.40commands+2strictcontrols
+allcorrect/restored. PASSES narrowly wall.9593396007+.0400753281=.9994149288;
+CPU.9338512222+.0131285115=.9469797337. Still1.32168xnativewall. No adoption.
+Nextqualify full110-command3cycleparser accounting8controls, unchangedgates,
+thennewcoldnamespaces. Fullfolder cross-program-template-full-parser prepared.
+Retire6primary04compiler namespaces only ifneeded (currently~23GiB), keepallproofs.
+Main16f568ca pushed preservingpeers; rootf50d pushed. Noactivework afterclosure.
