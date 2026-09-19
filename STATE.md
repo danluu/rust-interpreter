@@ -393,3 +393,11 @@ cleaned. Launched typedplanner01 supervisor60951/controller pending, source0896a
 6controls/debug+release, freshbuildfloorcheckedbycontroller. Freezeactualcrates,
 branch-budget-native PLAN/controller, focushelper throughindependentclosure.
 Mainpublicationworktreeff4fd6e73c preservingpeerwork; storageevidencepublicationnext.
+
+Typedplanner01 supervisor60951/controller60954 passed6controls eachdebug/release,
+independentclosureexec58477 exit0; source0896a428. Observer01 supervisor77371/
+controller77374 passed9Pythoncontrols, independentclosuree9cbb1 exit0. Applied
+preservednativepatch onlyaftertypedclosure and allbase/drafthashes matched.
+Actualemitter NOWfeature-onlywired, stilldefaultoffandinstalledVMunchanged.
+Registered branch-budget-native-focused01:8nativecontrols eachdebug/release.
+Main05a1c998 pushed16storagepaths preservingpeer4fd6e73c. Root27dac896 pushed.
