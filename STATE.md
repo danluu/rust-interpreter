@@ -32,13 +32,18 @@ Closed qualification:
 -13 primary protocol controls plus3 map controls; exact full Python build
   evidence reused through source/log bindings, not reported as fresh tests.
 
-**Active:** `shared-cold-tail-screen-token-01`, supervisor97059 / child97170,
-started September18 at17:17:21. Check `.work/experiments/<run>/status.json` and
-`command.log` before assuming it finished. Source9ecb65d9; keep its frozen inputs
-unchanged.40 complete commands, five valid edited pairs, ordinary entropy,
-adopted/duplicate/candidate/historical-anchor/ordinary-native arms, two workers.
-Only the existing noise-adjusted wall/CPU gate admits larger comparisons.
-No speedup is established by the smaller code or correctness profiles.
+**Closed:** `shared-cold-tail-screen-token-01`, source9ecb65d9,
+supervisor97059 / child97170, normal completion. All40 outcomes and source
+restoration pass, but performance gate fails: wall1.025596964, CPU1.014945602,
+A/A wall3.607767%, CPU3.375373%. No gain established; larger histories cancelled.
+The closure verifies1,674 evidence files and56 artifacts. Never repeat this
+candidate unchanged. Main retains the adopted VM.
+
+Next: a bounded saved-code census of host-frame metadata loads/stores in the
+adopted native Call/Return paths. Identify exact pairs and sampled instruction
+coverage before considering any production change. No guest/build/timing is
+admitted by this hypothesis. Avoid duplicating parked cached-continuation or
+counter proposals. [Primary decision](results/shared-cold-tail-screen-token-01/ASSESSMENT.md).
 
 [Build](results/shared-cold-tail-build-01/ASSESSMENT.md),
 [strict/cache](results/shared-cold-tail-qualification-01/ASSESSMENT.md),

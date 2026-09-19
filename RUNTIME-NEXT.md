@@ -1,24 +1,20 @@
 # Next runtime work
 
-Complete the active shared cold fault-tail40-command edited-source primary.
-Read [current state](STATE.md) for exact tool, supervisor and resource boundaries.
-The candidate's615-test debug/release build,121 strict/cache commands, three
-exact original profiles and primary protocol controls are closed. Code-size
-reductions alone establish no development-loop speedup.
+The shared cold fault-tail40-command edited-source primary is closed and failed
+its original wall and CPU requirements. All assertions and restoration pass;
+wall1.025596964 and CPU1.014945602 establish no benefit. Park the candidate and
+cancel all larger histories. The code-size reduction and correctness evidence
+remain valid, but do not justify adoption or an unchanged retry.
+[Decision](results/shared-cold-tail-screen-token-01/ASSESSMENT.md).
 
-If the original primary gate fails, close and preserve all40 commands, park the
-candidate, cancel larger histories and choose a materially different mechanism
-from the closed adopted-runtime captures. Do not retry unchanged timing or move
-the acceptance threshold. Distinguish an inconclusive noisy result from evidence
-of a slowdown while still enforcing the predeclared admission decision.
-
-If it passes, qualify original selected/prepared controls, freeze fresh full
-histories for fre token/folded, pgrust hashfn, private rg-aot and Nushell in that
-order, then both edited114-test parser guards. Keep the established full gates,
-source transitions, strict checking, ordinary entropy, two workers and independent
-native controls. No primary pair becomes a full-history pair. Admit Nushell only
-under its actual disk reservation. Integrate only after all required guards pass,
-using the isolated diff and fresh qualification against concurrent main changes.
+Next census exact hot host-frame metadata access sequences in the two closed
+adopted-runtime captures. Calls/Returns use private initialized descriptors;
+there may be adjacent fields that can use paired loads/stores without changing
+layout, bounds, guest memory, counters or fault order. Count exact known machine
+patterns and same-process sampled PCs before designing a production change.
+Keep ambiguous PCs separate and reconcile all original sample totals. This is
+not the parked cached-continuation/counter mechanism. Do not infer time savings
+from instruction or sample counts. If coverage is small, defer it.
 
 The previous indirect/readonly/successor composition is rejected after its
 parser CPU margin failed1.05. The narrower address/budget/spill/scalar variants
