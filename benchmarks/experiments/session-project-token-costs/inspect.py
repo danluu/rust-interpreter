@@ -6,7 +6,7 @@ sys.path.insert(0,str(ROOT/'benchmarks/experiments/cross-program-template-model'
 import focus
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import require_space,write_json as write
-sys.path.insert(0,str(ROOT/'benchmarks/experiments/cross-program-template-full-parser'))
+sys.path.insert(0,str(ROOT/'benchmarks/experiments/session-project-guards'))
 from accounting import SESSION_MODES,account
 RUN='session-project-token-costs-01'
 PRIMARY='session-project-edit-token-01'
