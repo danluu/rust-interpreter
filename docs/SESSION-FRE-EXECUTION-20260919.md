@@ -57,8 +57,32 @@ scalar-body samples do not identify individual instructions. The capture execute
 one selected fresh guest at a time, so session-history and two-worker effects
 remain represented by the complete changed-source guard, not these samples.
 
-Next reconstruct the Copy/Load/Store subparts in the saved bytes using the existing
-test-only emitter observer. Distinguish address selection, validation, frame-base
-calculation, transfers and register publication before choosing another runtime
-change. Preserve previous rejected budget, address, spill and scalar candidates;
-the operation-level distribution alone is not evidence to retry them.
+The [memory subparts reconstruction](../results/session-fre-memory-parts-01/summary.json)
+is also independently closed. Two offline emitter tests reproduce the complete
+saved native words; the attribution reuses qualified partition and ambiguity
+controls. No guest executes and no executable code is published.
+
+| Memory subpart | Block test | Exhaustive test |
+| --- | ---: | ---: |
+| Load data |285|116|
+| Address-space selection |179|75|
+| Store data |81|40|
+| Bounds check |60|29|
+| Frame-base calculation |10|4|
+
+Frame-base calculations account for less than1% of all generated-code samples,
+so caching the base is parked. Existing failed checked-address and address-bias
+candidates already cover several tempting instruction reductions; this evidence
+does not justify retrying those unchanged candidates.
+
+The first generic closure attempt rejected the legacy plan's missing
+`controller_command` field before modifying evidence. A dedicated independent
+auditor verified the actual supervisor command, three completed diagnostic
+commands,324 frozen inputs and19 artifacts. No tests or samples were repeated.
+
+A prospective next direction is to combine complementary mechanisms: the earlier
+indirect/readonly/spill composition passed the five project histories but narrowly
+failed the parser CPU guard, while session history/scheduling passed parser gates
+and failed fre. This needs an interaction review, new qualification and fresh
+changed-source comparisons. Neither old result predicts a combined speedup or
+authorizes runtime adoption.

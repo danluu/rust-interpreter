@@ -62,12 +62,20 @@ identity only; same-process dumps must independently reconstruct every native wo
 Both captures completed64185/72317 (guest64190/72324); analysis76632 passed and
 closure86007 verified all evidence. Generated self samples1716block/1294exhaustive,
 Copy434/228,Call351/314,Load202/83. Full attribution is closed; no timing claim.
-Memory subparts01 ACTIVE32466/controller32469, Cargo child32475: two offline
-reconstruction tests plus retained-PC attribution; zero guest/code publications.
-Sourceed5bbeb2; controller benchmarks/experiments/session-fre-memory-parts/run.py.
-First build admitted23.178GiB vs22.971GiB required. Freeze all qualified Rust,
-scripts and memory-parts folder until closure. Preserve completed prefix if a
-later admission check fails. Existing six partition/ambiguity controls reused.
+Memory subparts01 sourceed5bbeb2 completed32466/32469; independent close02
+91664 verifies324 frozen inputs and19 artifacts. Two offline reconstruction tests
+plus retained-PC attribution; zero guest/code publications. Generic close01
+67037 failed on an absent legacy controller_command field before mutation; the
+new auditor handles the actual plan format without rerunning tests.
+Load data285/116 samples, address-space selection179/75, store81/40, bounds60/29;
+frame-base10/4 out of1716/1294 generated samples. Park frame-base caching.
+
+Next review one materially new composition: current session history/scheduling
+plus earlier native indirect + readonly scalar + successor spilling. The earlier
+composition passed726 project commands but failed parser CPU1.0502179853 vs1.05;
+that failure remains binding. Prior improvements are not additive. Inspect
+session option transport, cross-program keys, relocation and ordered-fault
+interactions before implementing; full qualification and fresh gates required.
 
 ## Resources and source safety
 
@@ -76,7 +84,8 @@ Two Cargo/native/test workers. Shared target .work/fixed-frame-clear-combined-bu
 must never be cleaned. Build floor max(14GiB,8GiB+2*allocated target), analysis/
 replay12GiB, closure/child8GiB, parser24GiB plus16GiB cache allowance, fre16GiB,
 pgrust12GiB; Nushell at least47GiB, recompute for additional arm. Free space was
-about16.5GiB and changes continuously. Read-only cleaner status:
+23.02GiB at03:09; shared target7.486GiB implies build admission22.971GiB.
+Recheck before every substantial command; headroom changes continuously. Read-only cleaner status:
 /usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status
 Never repair or compete with it or touch peer workloads.
 
@@ -96,8 +105,8 @@ Suggestions.txt unchanged, SHA256
 re-read September19. Detailed disposition docs/SUGGESTIONS-REVIEW-20260913-1245.md.
 Budget-per-region and SipHash guards already exist; don't recreate them.
 
-Publication worktree at484d2483 on integration/guarded-local-facts-main-20260913,
-pushed to main preserving peerc1842851. Failed fre and saved-cost proofs are pushed. Publish later proofs by exact paths,
-fetching/fast-forwarding main first. Do not publish
-experimental runtime changes. Previous chronology is archived at
- docs/history/STATE-20260919-before-fre-session-failure.md.
+Publication worktree at0620952a on integration/guarded-local-facts-main-20260913,
+pushed to main preserving peer23a10d58. Failed fre, costs, phase/native-PC results
+and exact cache retirements are pushed. Publish memory closure by exact paths,
+fetching/fast-forwarding main first. Do not publish experimental runtime changes.
+Previous chronology: docs/history/STATE-20260919-before-fre-session-failure.md.
