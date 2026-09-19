@@ -20,3 +20,7 @@ Hold root lock with45-second admission and8GiB floor. Record removed paths,
 logical bytes, actual volume free before/after and unchanged protected hashes.
 Close terminal and manifests before any later cleanup. Do not signal processes,
 repair the independent cleaner or assume this removal grants timing admission.
+
+Attempt01 timed out before acquiring the shared lock. No inventory or deletion
+started; its supervisor terminal and log are preserved in results with an
+admission-only closure. Attempt02 uses the identical target and classifier.

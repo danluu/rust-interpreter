@@ -8,7 +8,7 @@ from workflow_io import write_json as write
 from native_suite import test_status
 from suite_reports import validate_report
 
-NAME='closed-composition-nushell-check-retirement-01'
+NAME='closed-composition-nushell-check-retirement-02'
 RUNS=['runtime-composition-edit-nushell-02']
 
 def identity(path):
