@@ -327,6 +327,8 @@ enum FaultKind { Assertion, Trap }
 pub(crate) const MAX_CODE_BYTES: usize = 16 * 1024 * 1024;
 
 struct CompiledFunction<'a> {
+    #[cfg(feature = "jit-parameterized-literals")]
+    literal_sites:Vec<parameterized_literals::Site>,
     #[cfg(any(test, feature = "jit-template-session"))]
     model_relocations: Vec<cross_program_templates::Relocation>,
     #[cfg(test)]
@@ -586,6 +588,8 @@ impl<'a> Jit<'a> {
         let mut words = vec![];
         #[cfg(any(test, feature = "jit-template-session"))]
         let mut model_relocations = vec![];
+        #[cfg(feature = "jit-parameterized-literals")]
+        let mut literal_sites=vec![];
         #[cfg(test)]
         let mut local_forwarding = vec![];
         #[cfg(test)]
@@ -825,6 +829,8 @@ impl<'a> Jit<'a> {
                 }
                 #[cfg(any(test, feature = "jit-template-session"))]
                 cross_program_templates::append(&mut model_relocations, a.model_relocations, words.len());
+                #[cfg(feature = "jit-parameterized-literals")]
+                parameterized_literals::append(&mut literal_sites,a.literal_sites,words.len());
                 words.extend(a.words);
                 entries[start] = Some(Block { offset, end: pc });
                 operations += pc - start;
@@ -851,6 +857,8 @@ impl<'a> Jit<'a> {
                     }
                     #[cfg(any(test, feature = "jit-template-session"))]
                     cross_program_templates::append(&mut model_relocations, a.model_relocations, words.len());
+                    #[cfg(feature = "jit-parameterized-literals")]
+                    parameterized_literals::append(&mut literal_sites,a.literal_sites,words.len());
                     words.extend(a.words);
                 }
                 if self.native_call_stubs {
@@ -879,6 +887,7 @@ impl<'a> Jit<'a> {
             patch_jump(&mut words, at, target)?;
         }
         Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
+            #[cfg(feature = "jit-parameterized-literals")] literal_sites,
             #[cfg(any(test, feature = "jit-template-session"))] model_relocations,
             #[cfg(test)] memory_spans,
             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
@@ -1164,6 +1173,8 @@ enum Fact {
 struct Assembler<'a> {
     #[cfg(feature = "jit-parameterized-literals")]
     literals:Option<&'a BTreeSet<usize>>,
+    #[cfg(feature = "jit-parameterized-literals")]
+    literal_sites:Vec<parameterized_literals::Site>,
     #[cfg(any(test, feature = "jit-template-session"))]
     model_relocations: Vec<cross_program_templates::Relocation>,
     scalar_fallbacks: BTreeMap<usize, usize>,
@@ -1223,6 +1234,8 @@ impl Default for Assembler<'_> {
         Self {
             #[cfg(feature = "jit-parameterized-literals")]
             literals:None,
+            #[cfg(feature = "jit-parameterized-literals")]
+            literal_sites:vec![],
             model_relocations: vec![],
             observe_guarded_local_retention: true,
             observe_static_local_facts: true,

@@ -1,6 +1,10 @@
 //! Explicit literal parameters. Opaque to optimization, materialized through a ledger.
 use super::*;
 use serde::{Serialize,Serializer,ser::SerializeSeq};
+pub(super) type Site=(usize,usize,cross_program_templates::Kind);
+pub(super) fn append(out:&mut Vec<Site>,sites:Vec<Site>,base:usize) {
+    out.extend(sites.into_iter().map(|(word,words,kind)|(word+base,words,kind)));
+}
 
 pub(super) fn selected_with_fills(f:&Function,fills:&BTreeMap<usize,LocalFill>)->BTreeSet<usize> {
     let mut pcs=f.code.iter().enumerate().filter_map(|(pc,op)|match op {
@@ -48,8 +52,12 @@ impl Assembler<'_> {
     pub(super) fn literal(&mut self,rd:u32,pc:usize,value:u128,high:bool) {
         let value=if high {(value>>64) as u64} else {value as u64};
         let word=self.words.len();self.imm(rd,value);
+        let site=(word,self.words.len()-word,cross_program_templates::Kind::Literal{pc,high,rd});
+        // Keep the typed emission manifest independently of the relocation
+        // list. Capture rejects a lost/reassociated record before retention.
+        self.literal_sites.push(site);
         self.model_relocations.push(cross_program_templates::Relocation{word,words:self.words.len()-word,value,
-            kind:cross_program_templates::Kind::Literal{pc,high,rd}});
+            kind:site.2});
     }
 }
 

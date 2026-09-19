@@ -224,6 +224,8 @@ impl TemplateHistory {
 // Compare all staged executable state before publication. Return a bounded
 // fatal preparation error on a mismatch; never silently publish or fall back.
 fn verify_staging(a:&CompiledFunction<'_>,b:&CompiledFunction<'_>)->Result<(),EmitError> {
+    #[cfg(feature = "jit-parameterized-literals")]
+    if a.literal_sites!=b.literal_sites {return Err(EmitError::InvalidRelocation("literal manifest differs from fresh emission"));}
     let equal=a.words==b.words && a.resumes==b.resumes && a.assertions==b.assertions
         && a.model_relocations==b.model_relocations
         && (a.operations,a.register_pairs,a.liveness_declined)==(b.operations,b.register_pairs,b.liveness_declined)
@@ -451,7 +453,7 @@ impl Template {
             .checked_add(staged.model_relocations.len().checked_mul(std::mem::size_of::<Relocation>())?)?
             .checked_add(std::mem::size_of::<Self>()+5*64)?;
         #[cfg(feature = "jit-parameterized-literals")]
-        let minimum=minimum.checked_add(64)?.checked_add(staged.model_relocations.iter().filter(|r|matches!(r.kind,Kind::Literal{..})).count()
+        let minimum=minimum.checked_add(64)?.checked_add(staged.literal_sites.len()
             .checked_mul(std::mem::size_of::<(usize,usize,Kind)>())?)?;
         if minimum>limit {return None;}
         let mut pcs=vec![];pcs.try_reserve_exact(staged.assertions.len()).ok()?;
@@ -467,11 +469,7 @@ impl Template {
             let mut out=vec![];out.try_reserve_exact(items.len()).ok()?;out.extend_from_slice(items);Some(out)
         }
         #[cfg(feature = "jit-parameterized-literals")]
-        let literal_sites={
-            let count=staged.model_relocations.iter().filter(|r|matches!(r.kind,Kind::Literal{..})).count();
-            let mut sites=vec![];sites.try_reserve_exact(count).ok()?;
-            sites.extend(staged.model_relocations.iter().filter(|r|matches!(r.kind,Kind::Literal{..})).map(|r|(r.word,r.words,r.kind)));sites
-        };
+        let literal_sites=copy(&staged.literal_sites)?;
         let result=Self{key,emitter,words:copy(&staged.words)?,entries:copy(&staged.entries)?,resumes:copy(&staged.resumes)?,
             assertion_pcs:pcs,operations:staged.operations,register_pairs:staged.register_pairs,liveness_declined:staged.liveness_declined,
             relocations:copy(&staged.model_relocations)?,assertion_base:jit.assertions.len(),rebind,
@@ -516,6 +514,7 @@ impl Template {
             words[r.word..r.word+r.words].copy_from_slice(&replacement);r.value=value;
         }
         Some(CompiledFunction{words,model_relocations,entries:copy(&self.entries)?,resumes:copy(&self.resumes)?,assertions,
+            #[cfg(feature = "jit-parameterized-literals")] literal_sites:copy(&self.literal_sites)?,
             operations:self.operations,register_pairs:self.register_pairs,liveness_declined:self.liveness_declined,
             #[cfg(test)] local_forwarding:vec![],#[cfg(test)] local_fact_events:vec![],
             #[cfg(test)] scratch_hits:vec![],#[cfg(test)] scratch_copy_hits:vec![],
@@ -622,6 +621,22 @@ fn parameterized_literal_missing_duplicate_and_corrupt_sites_decline() {
     }
 }
 #[test]
+#[cfg(feature = "jit-parameterized-literals")]
+fn parameterized_literal_capture_requires_independent_emission_manifest() {
+    let mut p=fixture();p.functions[0].code[0]=Op::Imm{dst:0,value:0x123456};let a=owner(&p);let c=Checked::new(&p).unwrap();
+    for change in 0..4 {
+        let mut staged=stage(&a,0);
+        let i=staged.model_relocations.iter().position(|r|matches!(r.kind,Kind::Literal{..})).unwrap();
+        match change {
+            0=>{staged.model_relocations.remove(i);},
+            1=>staged.model_relocations[i].kind=Kind::Literal{pc:0,high:true,rd:9},
+            2=>staged.literal_sites.clear(),
+            _=>staged.literal_sites.push(staged.literal_sites[0]),
+        }
+        assert!(Template::capture_mode(&c,&a,0,EMITTER,&staged,MAX_RETAINED,true).is_none(),"change {change}");
+    }
+}
+#[test]
 #[cfg(all(feature = "jit-parameterized-literals",target_arch="aarch64",target_os="macos"))]
 fn parameterized_literal_live_forwarding_arithmetic_branch_and_budgets_match() {
     let history=std::rc::Rc::new(std::cell::RefCell::new(History::new(MAX_RETAINED).unwrap()));let mut hits=0;
@@ -688,6 +703,8 @@ fn cross_program_template_verifier_rejects_changed_words_and_metadata() {
     assert!(owner.code.is_none());
 }
 pub(super) fn same(a:&CompiledFunction<'_>,b:&CompiledFunction<'_>) {
+    #[cfg(feature = "jit-parameterized-literals")]
+    assert_eq!(a.literal_sites,b.literal_sites);
     // Keep failures bounded even when a real function stages millions of words.
     assert_eq!(a.words.len(),b.words.len());
     for (i,(a,b)) in a.words.iter().zip(&b.words).enumerate() {assert_eq!(a,b,"machine word {i}");}

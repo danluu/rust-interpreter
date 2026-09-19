@@ -52,3 +52,9 @@ identical interpreter/JIT text. Existing engine contracts differ (scalar_calls/
 scratch_values tests already cover this). Focused03 adds exact cached-versus-fresh
 JIT comparison and requires the exact existing error from each engine at the known
 invalid address; successful values/instruction counts must match allthree.
+
+Focused03 timed out at sharedlock beforeanyrawstage/test/build; terminal-only
+closure retained. Before04, strengthen capture by carrying an independent typed
+literal-site manifest fromAssembler throughCompiledFunction. A new control
+rejects missing/reassociated relocation records and missing/duplicate manifests
+at capture, in addition to restoration checks.30template+3policy/profile,24off.
