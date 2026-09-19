@@ -28,7 +28,16 @@ def runtime_options(plan, commands):
     require(not options['jit_resumable_calls'] or
             not (options['jit_native_calls'] or options['jit_native_call_stubs']), 'incompatible runtime options')
     require(not options['jit_scalar_calls'] or options['jit_resumable_calls'], 'scalar calls require resumable calls')
+    indirect = plan.get('jit_indirect_calls', False)
+    require(type(indirect) is bool, 'invalid indirect-call option type')
+    require(not indirect or options['jit_resumable_calls'], 'indirect calls require resumable calls')
+    # Older closed diagnostics omitted this option. Preserve their summary shape
+    # while still refusing a command that enabled an unrecorded backend feature.
+    if 'jit_indirect_calls' in plan:
+        options['jit_indirect_calls'] = indirect
     for command in commands:
+        require(('--jit-indirect-calls' in command) == indirect,
+                'sampled indirect-call option differs from plan')
         for option, enabled in options.items():
             require(('--' + option.replace('_', '-') in command) == enabled,
                     'sampled runtime option differs from plan')
