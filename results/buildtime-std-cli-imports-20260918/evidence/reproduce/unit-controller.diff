@@ -1,0 +1,350 @@
+--- inherited-C10/run-unit-tests.py
++++ candidate-C13/run-unit-tests.py
+@@ -1,5 +1,5 @@
+ #!/usr/bin/env python3
+-"""Matching-arm synthetic tool-cache correctness: baseline5 +candidate8 =13 tests."""
++"""Candidate-only21 selection tests; pinned synthetic Python controls, no real tool build."""
+ import ast
+ import fcntl
+ import hashlib
+@@ -11,35 +11,38 @@
+ import subprocess
+ import sys
+ import time
+-ROOT = Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/bytecode-core-split-probe')
++ROOT = Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-mir-lazy-selection-probe')
+ PACKET = ROOT
+-PROPOSAL = PACKET.parent / "bytecode-core-split-proposal"
++PROPOSAL = PACKET.parent / "std-mir-lazy-selection-proposal"
+ OUT = PACKET / "unit-screen-01"
+ LOCK = Path("/Users/danluu/dev/rust-interp/.work/benchmark.lock")
+ SOURCE = PACKET / "unit-source-manifest.json"
+-SOURCE_SHA = '0b3a601699af2500e07fb5c6b77e67520f25632bf33a581f760cdd80a1480cda'
++SOURCE_SHA = "UNBOUND"
+ DRIVER = PACKET / "unit-driver.py"
+-UNIT_PLAN = PACKET / "unit-stage-plan.json"
+-UNIT_PLAN_SHA = '8da36193d3b2f3d6c7c82cc49b076f2bcd2eb614843162e5678d6d1c602c4019'
+-APPLIED_SHA = '8ab3d5894ffcb08c60dd14556af5e3452a2cbaf6f559e8f0812aac7be71d8137'
++UNIT_PLAN = PACKET / "decision-plan.json"
++UNIT_PLAN_SHA = "UNBOUND"
++APPLIED_SHA = "801f46e3be8c9a224d2478b0d69584d254859f1faa6f5fbe336ab322c2c7cc72"
+ PYTHON = Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14')
+ FIXED = {
+     PYTHON: '87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634',
+     PYTHON.parent.parent / 'Python': 'b112695af23f5e46d84a7c4ef6057603b70b94aacc32e9d548808c2875759d47',
+     SOURCE: SOURCE_SHA,
+-    DRIVER: "7dd826a91d00a6fd2788ea2a17567299b6f7d080ed81c8cb68a4cd009d78fbdb",
++    DRIVER: "UNBOUND",
+     UNIT_PLAN: UNIT_PLAN_SHA,
+     PACKET / 'applied-source-manifest.json': APPLIED_SHA,
+-    PROPOSAL / 'source-bindings.json': '20aeb0dcb7e6dc9ac94da79ef54adc8ac96c75fd64580267354ce8beedb7e07a',
+-    PROPOSAL / 'candidate.patch': 'c75f1cee8f0c2ff395e70397b869e8a9b3e6d457f9eb60c8a1b859510a23480e',
+-    PROPOSAL / 'packet-manifest.json': '3c9e4a087f648cc4837ed9e51bb6e2514e11ad14d3507e1e86159f083e67e567',
+-    PACKET.parent / 'std-readmission-stat-probe/run-unit-tests.py': '811185773c18b11f8aafe4c7aa051da12c8a6de480c63bd5e50843b561ca8657',
+-    PACKET.parent / 'std-readmission-stat-probe/unit-screen-01/result.json': '26d9bb17cd6abf6839c22a7e795af39c868e0c8657ae032b98f0c3206dc29a9a',
++    PROPOSAL / 'source-bindings.json': 'ae6871a985c1be5c228be993d1176a630d1c591c3628d014b8669896a18a1a22',
++    PROPOSAL / 'candidate.patch': 'e5df711ee51cc0e53d255af38d19d2a88e5b6112727ecd2fe702dc3f083dbb23',
++    PROPOSAL / 'packet-manifest.json': 'b801a3e0de6440b0c24bea7a162a377a2cee3b9138fcdaf9890e6d14ce409d8e',
++    PACKET.parent / 'bytecode-core-split-probe/run-unit-tests.py': '0dca06642975710a89d49222b58df73a2dd5016d2eaaf9593faf13cff34c695a',
++    PACKET.parent / 'bytecode-core-split-probe/unit-driver.py': '7dd826a91d00a6fd2788ea2a17567299b6f7d080ed81c8cb68a4cd009d78fbdb',
++    Path('/Users/danluu/.codex/AGENTS.md'): 'e1605bf47fa1c85e645485621ae89be1915409934df327797ee1b8ca10165949',
+ }
+ GIB = 1024 ** 3
+ MIB = 1024 ** 2
+ FLOOR = 16 * GIB
+-TESTS = (('baseline-tool-cache', 'baseline', 'test_interpreter_tools.py', 5), ('candidate-tool-cache', 'candidate', 'test_interpreter_tools.py', 8))
++TESTS = (('selection-routing', 'candidate', 'test_std_mir_selection.py', 8),
++         ('custom-compiler-launcher', 'candidate', 'test_custom_compiler_launcher.py', 6),
++         ('custom-cargo', 'candidate', 'test_custom_cargo.py', 7))
+ EXPECTED_TESTS = sum(count for _, _, _, count in TESTS)
+ CHILDREN = []
+ 
+@@ -82,73 +85,77 @@
+         require(digest is None or p["sha256"] == digest, "fixed input changed: " + str(path))
+         files[str(path)] = p
+     descriptor = json.loads(SOURCE.read_bytes())
+-    require(descriptor["status"] == "frozen" and descriptor["base_commit"] == "050a7d2a1e9677bc467a49fdba7a2ab485566e97" and
+-            descriptor["expected_tests"] == EXPECTED_TESTS and set(descriptor["arms"]) == {"baseline", "candidate"},
+-            "wrong source descriptor")
+-    require(descriptor["unit_stage_plan_sha256"] == UNIT_PLAN_SHA and
+-            descriptor["applied_source_manifest_sha256"] == APPLIED_SHA and
+-            descriptor["proposal_bindings_sha256"] == FIXED[PROPOSAL / "source-bindings.json"],
++    require(descriptor["status"] == "frozen" and descriptor["base_commit"] == "050a7d2a1e9677bc467a49fdba7a2ab485566e97"
++            and descriptor["expected_tests"] == 21 and set(descriptor["arms"]) == {"candidate"}
++            and descriptor["work_processes"] == descriptor["memory_processes"] == 1,
++            "wrong candidate-only source descriptor")
++    require(descriptor["decision_sha256"] == UNIT_PLAN_SHA
++            and descriptor["applied_source_manifest_sha256"] == APPLIED_SHA
++            and descriptor["proposal_bindings_sha256"] == FIXED[PROPOSAL / "source-bindings.json"],
+             "descriptor stage bindings differ")
+-    require(descriptor["runtime"]["executable"] == str(PYTHON) and
+-            descriptor["runtime"]["required_version"] == [3, 14, 7] and
+-            descriptor["runtime"]["private_empty_pycache"] == str(OUT / "pycache"), "runtime binding differs")
+-    for path, expected in descriptor["runtime"]["files"].items():
++    runtime = descriptor["runtime"]
++    require(runtime["executable"] == str(PYTHON) and runtime["required_version"] == [3, 14, 7]
++            and runtime["private_empty_pycache"] == str(OUT / "pycache")
++            and runtime["flags"] == ["-I", "-S", "-B"] and len(runtime["files"]) == 1955,
++            "runtime binding differs")
++    for path, expected in runtime["files"].items():
+         p = proof(Path(path))
+-        require({k: p[k] for k in ("bytes", "sha256")} == expected, "installed runtime changed")
++        require({k: p[k] for k in ("bytes", "sha256", "identity")} == expected,
++                "installed runtime changed: " + path)
++        files[path] = p
++    for row in runtime["links"]:
++        path = Path(row["path"])
++        observed = dict(path=str(path), identity=identity(path.lstat()), text=os.readlink(path), resolved=str(path.resolve()))
++        require(stat.S_ISLNK(path.lstat().st_mode) and observed == row, "runtime link changed")
++        files[str(path)] = observed
++    for path, expected in descriptor["fixed_files"].items():
++        p = proof(Path(path))
++        require({k: p[k] for k in ("bytes", "sha256")} == expected, "support input changed: " + path)
+         files[path] = p
+     decision = json.loads(UNIT_PLAN.read_bytes())
+-    q = decision["unit_tests"]
+-    require(decision["state"] == "frozen" and decision["base_commit"] == descriptor["base_commit"] and
+-            decision["proposal_patch_sha256"] == FIXED[PROPOSAL / "candidate.patch"] and
+-            decision["proposal_bindings_sha256"] == FIXED[PROPOSAL / "source-bindings.json"] and
+-            decision["candidate_applied_source_manifest_sha256"] == APPLIED_SHA and
+-            q["total"] == EXPECTED_TESTS and q["work_processes"] == q["memory_processes"] == 2 and
+-            q["per_arm"] == {"baseline": {"test_interpreter_tools.py": 5},
+-                               "candidate": {"test_interpreter_tools.py": 8}} and
+-            decision["resource"]["free_gib_min"] == 16 and
+-            decision["resource"]["memory_free_percent_min"] == 30 and
+-            decision["constraints"]["private_empty_pycache"] is True and
+-            decision["constraints"]["actual_cargo_compiler_or_subprocess_inside_tests"] is False,
++    q = decision["qualification"]
++    require(decision["state"].startswith("numerical decision frozen")
++            and decision["base_commit"] == descriptor["base_commit"]
++            and decision["candidate_root"] == descriptor["arms"]["candidate"]["root"]
++            and decision["baseline_root"] == descriptor["baseline_root"]
++            and decision["proposal_patch_sha256"] == FIXED[PROPOSAL / "candidate.patch"]
++            and decision["applied_source_manifest_sha256"] == APPLIED_SHA
++            and q["candidate_tests"] == 21 and q["new_selection_tests"] == 8
++            and q["unchanged_downstream_tests"] == 13
++            and decision["resource"]["free_gib_min"] == 16
++            and decision["resource"]["memory_free_percent_min"] == 30,
+             "unit stage differs from frozen decision")
+-    for arm in ("baseline", "candidate"):
+-        expected_methods = sorted(test_id.partition(".")[2] for row in descriptor["tests"]
+-                                  if row["arm"] == arm for test_id in row["expected_ids"])
+-        require(expected_methods == q["exact_methods"][arm], "unit-stage method names differ")
+-    for arm in ("baseline", "candidate"):
+-        source = descriptor["arms"][arm]
+-        root = Path(source["root"])
+-        require(str(root) == decision[arm + "_root"] and root.resolve() == root and
+-                source["base_commit"] == descriptor["base_commit"], "wrong arm source root")
+-        expected = source["sources"]
+-        actual_paths = {str(p.relative_to(root)) for folder in ("scripts", "tests")
+-                        for p in (root / folder).glob("*.py")}
+-        require(len(expected) == 189 and actual_paths == set(expected), "Python source inventory changed")
+-        for relative, expected_proof in expected.items():
+-            path = Path(relative)
+-            require(not path.is_absolute() and ".." not in path.parts, "invalid source path")
+-            p = proof(root / path)
+-            require({k: p[k] for k in ("bytes", "sha256")} == expected_proof,
+-                    "project source changed: " + arm + "/" + relative)
+-            files[str(root / path)] = p
++    source = descriptor["arms"]["candidate"]
++    root = Path(source["root"])
++    require(root.resolve() == root and source["base_commit"] == descriptor["base_commit"], "wrong candidate source root")
++    expected = source["sources"]
++    actual_paths = {str(p.relative_to(root)) for folder in ("scripts", "tests")
++                    for p in (root / folder).glob("*.py")}
++    require(len(expected) == 190 and actual_paths == set(expected), "Python source inventory changed")
++    for relative, expected_proof in expected.items():
++        path = Path(relative)
++        require(not path.is_absolute() and ".." not in path.parts, "invalid source path")
++        p = proof(root / path)
++        require({k: p[k] for k in ("bytes", "sha256")} == expected_proof,
++                "project source changed: " + relative)
++        files[str(root / path)] = p
+     proposal = json.loads((PROPOSAL / "source-bindings.json").read_bytes())
+-    require(proposal["base_commit"] == descriptor["base_commit"] and
+-            proposal["patch_sha256"] == FIXED[PROPOSAL / "candidate.patch"], "wrong source proposal")
+-    baseline = descriptor["arms"]["baseline"]["sources"]
+-    candidate = descriptor["arms"]["candidate"]["sources"]
+-    differences = {name for name in set(baseline) | set(candidate) if baseline.get(name) != candidate.get(name)}
+-    changed_python = {name for name in proposal["changed_files"] if name in baseline or name in candidate}
+-    require(differences == changed_python == set(descriptor["python_differences"]),
+-            "unexpected Python arm difference")
+-    for relative in differences:
+-        change = proposal["changed_files"][relative]
+-        require(baseline[relative]["sha256"] == change["base_sha256"] and
+-                candidate[relative] == {"bytes": change["proposed_bytes"], "sha256": change["proposed_sha256"]},
+-                "Python source does not match extraction proposal")
+-        path = PROPOSAL / "files" / relative
++    applied = json.loads((PACKET / "applied-source-manifest.json").read_bytes())
++    require(proposal["base_commit"] == applied["base_commit"] == descriptor["base_commit"]
++            and applied["root"] == str(root)
++            and proposal["patch_sha256"] == applied["patch_sha256"] == FIXED[PROPOSAL / "candidate.patch"]
++            and applied["source_bindings_sha256"] == FIXED[PROPOSAL / "source-bindings.json"],
++            "wrong source proposal/application")
++    require(set(proposal["files"]) == set(applied["files"]) == {"scripts/std_mir.py", "tests/test_std_mir_selection.py"},
++            "unexpected source proposal scope")
++    for relative, change in proposal["files"].items():
++        require(expected[relative] == change["candidate"] == applied["files"][relative], "candidate proposal mismatch")
++        path = PROPOSAL / "candidate" / relative
+         p = proof(path)
+-        require({k: p[k] for k in ("bytes", "sha256")} == candidate[relative], "candidate proposal copy changed")
++        require({k: p[k] for k in ("bytes", "sha256")} == expected[relative], "candidate proposal copy changed")
+         files[str(path)] = p
+     return files
++
+ 
+ 
+ def test_inventory():
+@@ -276,9 +283,11 @@
+ 
+ def main():
+     require(sys.argv[1:] == ["--execute-synthetic-unit-tests"], "explicit execution flag required")
+-    require(all(digest != "UNBOUND" for digest in FIXED.values()), "C10 unit source/plan/apply bindings remain UNBOUND")
+-    require(sys.version_info[:3] == (3, 14, 7) and Path(sys.executable).resolve() == PYTHON.resolve(),
+-            "pinned Python3.14.7 required")
++    require(all(digest != "UNBOUND" for digest in FIXED.values()), "C13 unit source/plan/apply bindings remain UNBOUND")
++    require(sys.version_info[:3] == (3, 14, 7) and sys.implementation.name == "cpython"
++            and Path(sys.executable).resolve() == PYTHON.resolve()
++            and sys.flags.isolated and sys.flags.no_site and sys.dont_write_bytecode,
++            "pinned isolated no-bytecode Python3.14.7 required")
+     require(sys.platform == "darwin" and ROOT.resolve() == ROOT and PACKET.resolve() == PACKET,
+             "wrong platform or owned paths")
+     require(os.environ.get("HOME") == "/Users/danluu", "HOME must remain unchanged")
+@@ -303,65 +312,66 @@
+         try:
+             before = bindings()
+             inventory = test_inventory()
++            descriptor = json.loads(SOURCE.read_bytes())
+             write("test-inventory.json", inventory)
+             write("inputs.json", dict(bindings=before, tests=TESTS, expected_tests=EXPECTED_TESTS,
++                work_processes=1, memory_processes=1,
+                 controller_pid=os.getpid(), controller_parent_pid=os.getppid(),
+                 lock_identity=[identity_before.st_dev, identity_before.st_ino],
+-                resource_scope="synthetic Python tests only; 16 GiB/30%; no Rust/std/tool build",
++                resource_scope="candidate-only synthetic Python tests; 16 GiB/30%; no Rust/std/tool build",
+                 log_limit="1 MiB bounded reader per stream, ordinary file logs; not hard disk cap"))
+             cache = OUT / "pycache"
+             cache.mkdir(mode=0o700)
+-            for label, arm, filename, expected in TESTS:
+-                temporary = OUT / (label + "-tmp")
+-                temporary.mkdir(mode=0o700)
+-                env = dict(environment, TMPDIR=str(temporary))
+-                gate = admission(label, env)
+-                report_path = OUT / (label + "-tests.json")
+-                require(not list(cache.iterdir()), "private unit cache changed")
+-                command = [PYTHON, "-I", "-S", "-B", "-X", "pycache_prefix=" + str(cache), DRIVER, label, report_path]
+-                receipt = run_child(label, command, env, gate)
+-                stderr = (OUT / (label + ".stderr")).read_text()
+-                found = re.findall(r"(?m)^Ran (\d+) tests? in [^\n]+$", stderr)
+-                successful = re.findall(r"(?m)^test_.* \.\.\. ok$", stderr)
+-                require(found == [str(expected)] and len(successful) == expected and
+-                        re.search(r"(?m)^OK\s*\Z", stderr) is not None,
+-                        "unexpected unittest count/result or skipped/non-success test: " + label)
+-                report_proof = proof(report_path, MIB)
+-                report = json.loads(report_path.read_bytes())
+-                declared = next(row for row in inventory["modules"] if row["label"] == label)
+-                source = json.loads(SOURCE.read_bytes())["arms"][arm]
+-                require(report["status"] == "passed" and report["arm"] == arm and
+-                        report["label"] == label and report["filename"] == filename and
+-                        report["tests_run"] == expected and report["discovered_ids"] == declared["expected_ids"] and
+-                        report["successful_ids"] == declared["expected_ids"] and
+-                        not any(report[key] for key in ("failures", "errors", "skipped", "expected_failures", "unexpected_successes")) and
+-                        report["module_path"] == str(Path(source["root"]) / "scripts/interpreter.py") and
+-                        report["module_content"] == source["sources"]["scripts/interpreter.py"] and
+-                        report["test_path"] == declared["path"] and
+-                        report["test_content"] == {k: before[declared["path"]][k] for k in ("bytes", "sha256")} and
+-                        report["canonical_module_object_preserved"] is True and report["manifest_sha256"] == SOURCE_SHA and
+-                        not report["actual_process_attempts"] and report["private_tmpdir"] == str(temporary) and
+-                        report["pycache_prefix"] == str(cache) and report["cache_empty"] is True and
+-                        not list(cache.iterdir()) and
+-                        report["python"]["version_info"][:3] == [3, 14, 7] and
+-                        report["python"]["implementation"] == "cpython" and
+-                        Path(report["python"]["executable"]).resolve() == PYTHON.resolve(),
+-                        "driver names/module/result mismatch: " + label)
+-                for name, observed in report["project_modules"].items():
+-                    path = Path(observed["path"])
+-                    require(path.is_relative_to(Path(source["root"])) and
+-                            observed["content"] == source["sources"].get(str(path.relative_to(source["root"]))),
+-                            "driver imported a different project source: " + name)
+-                require(report["project_modules"]["interpreter"]["path"] == report["module_path"],
+-                        "canonical interpreter import missing")
+-                if arm == "candidate":
+-                    require(report["project_modules"]["build_custom_tools"]["path"] ==
+-                            str(Path(source["root"]) / "scripts/build_custom_tools.py"),
+-                            "candidate custom builder import missing")
+-                tests.append(dict(label=label, arm=arm, pattern=filename, passed=expected,
+-                                  failures=0, ignored=0, child_pid=receipt["pid"],
+-                                  report=report, report_proof=report_proof))
+-            require(sum(row["passed"] for row in tests) == EXPECTED_TESTS and len(CHILDREN) == 4
++            label = "candidate-selection"
++            temporary = OUT / (label + "-tmp")
++            temporary.mkdir(mode=0o700)
++            env = dict(environment, TMPDIR=str(temporary))
++            gate = admission(label, env)
++            report_path = OUT / (label + "-tests.json")
++            require(not list(cache.iterdir()), "private unit cache changed")
++            command = [PYTHON, "-I", "-S", "-B", "-X", "pycache_prefix=" + str(cache), DRIVER, label, report_path]
++            receipt = run_child(label, command, env, gate)
++            stderr = (OUT / (label + ".stderr")).read_text()
++            found = re.findall(r"(?m)^Ran (\d+) tests? in [^\n]+$", stderr)
++            successful = re.findall(r"(?m)^test_.* \.\.\. ok$", stderr)
++            require(found == ["21"] and len(successful) == 21 and re.search(r"(?m)^OK\s*\Z", stderr) is not None,
++                    "unexpected unittest count/result or skipped/non-success test")
++            report_proof = proof(report_path, MIB)
++            report = json.loads(report_path.read_bytes())
++            ids = sorted(i for row in inventory["modules"] for i in row["expected_ids"])
++            source = descriptor["arms"]["candidate"]
++            root = Path(source["root"])
++            require(report["status"] == "passed" and report["arm"] == "candidate" and report["label"] == label
++                    and report["tests_run"] == 21 and report["discovered_ids"] == report["successful_ids"] == ids
++                    and not any(report[key] for key in ("failures", "errors", "failure_details", "error_details",
++                        "skipped", "expected_failures", "unexpected_successes", "actual_process_attempts"))
++                    and report["module_path"] == str(root / "scripts/std_mir.py")
++                    and report["module_content"] == source["sources"]["scripts/std_mir.py"]
++                    and report["canonical_module_object_preserved"] is True
++                    and report["manifest_sha256"] == SOURCE_SHA
++                    and report["private_tmpdir"] == str(temporary) and report["pycache_prefix"] == str(cache)
++                    and report["cache_empty"] is True and not list(cache.iterdir())
++                    and report["python"]["version_info"][:3] == [3, 14, 7]
++                    and report["python"]["implementation"] == "cpython"
++                    and Path(report["python"]["executable"]).resolve() == PYTHON.resolve(), "unit report mismatch")
++            expected_test_sources = {row["filename"]: dict(path=row["path"],
++                content=source["sources"]["tests/" + row["filename"]]) for row in inventory["modules"]}
++            require(report["test_sources"] == expected_test_sources, "reported test source differs")
++            for name, observed in report["project_modules"].items():
++                path = Path(observed["path"])
++                require(path.is_relative_to(root) and observed["content"] == source["sources"].get(str(path.relative_to(root))),
++                        "driver imported a different project source: " + name)
++            for name in ("std_mir", "interpreter", "custom_compiler", "custom_cargo", "build_custom_tools", "test_custom_compiler"):
++                folder = "tests" if name.startswith("test_") else "scripts"
++                require(report["project_modules"][name]["path"] == str(root / folder / (name + ".py")),
++                        "required canonical import missing: " + name)
++            for name, observed in report["runtime_modules"].items():
++                expected = descriptor["runtime"]["files"].get(observed["path"])
++                require(expected is not None and observed["content"] == {k: expected[k] for k in ("bytes", "sha256")},
++                        "unbound driver runtime dependency: " + name)
++            tests.append(dict(label=label, arm="candidate", patterns=[row["filename"] for row in inventory["modules"]],
++                              passed=21, failures=0, ignored=0, child_pid=receipt["pid"], report=report, report_proof=report_proof))
++            require(len(CHILDREN) == 2 and [c["label"] for c in CHILDREN] == [label + "-memory", label]
+                     and all(c["returncode"] == 0 and c["error"] is None for c in CHILDREN), "incomplete correctness panel")
+         except BaseException as caught:
+             error = repr(caught)
+@@ -378,10 +388,10 @@
+                       expected_tests=EXPECTED_TESTS, passed_tests=sum(r["passed"] for r in tests),
+                       tests=tests, test_inventory=inventory, bindings=before,
+                       bindings_after=after, post_binding_error=post_binding_error, children=CHILDREN,
+-                      scope="13 exact named Python correctness tests, baseline5/candidate8 from their matching actual test modules; private synthetic tool-cache fixtures and mocked compilation only; no Rust/compiler/Cargo/VM workload or performance claim")
++                      scope="21 exact candidate-only Python correctness tests:8 selection routing,6 custom compiler launcher,7 custom Cargo. Private synthetic fixtures and mocked tool work; no real subprocess inside units or performance claim")
+         write("result.json", result)
+-        print(json.dumps(dict(status=result["status"], passed_tests=result["passed_tests"],
+-                              error=error, result=str(OUT / "result.json"))), flush=True)
++        print(json.dumps(dict(status=result["status"], passed_tests=result["passed_tests"], error=error,
++                              result=str(OUT / "result.json"))), flush=True)
+         return 0 if error is None else 1
+     finally:
+         os.close(fd)
+@@ -389,3 +399,4 @@
+ 
+ if __name__ == "__main__":
+     raise SystemExit(main())
++

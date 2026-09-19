@@ -167,10 +167,8 @@ def main():
         import stable_mono_cgu
         try:stable_mono_cgu.validate_selection(args,os.environ)
         except ValueError as error:parser.error(str(error))
-    if args.compiler_key is not None:
-        from custom_compiler import load_compiler
-    if args.cargo_key is not None:
-        from custom_cargo import load_cargo
+    from custom_compiler import load_compiler
+    from custom_cargo import load_cargo
     custom=load_compiler(ROOT,args.compiler_key) if args.compiler_key is not None else None
     options={} if custom is None else dict(custom=custom,namespace='stable-cgu:'+args.stable_cgu_partitioning)
     if args.std_mir_policy!='v1' or args.std_mir_key is not None:
