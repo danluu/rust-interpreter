@@ -92,10 +92,12 @@ def close():
         for p in [raw/'plan.json',raw/'records.json',outer/'status.json',outer/'plan.json',outer/'command.log']:evidence[str(p.relative_to(ROOT))]=sha(p)
         write(raw/'source-bindings.json',bindings);write(raw/'closed-evidence.json',evidence)
         (out/'terminal.json').write_bytes((outer/'status.json').read_bytes())
+        summary=read(out/'summary.json')
         write(out/'closure.json',dict(status='closed',all_hashes_verified=True,source_files=len(bindings),frozen_inputs=len(plan['frozen']),
             evidence_files=len(evidence),summary_sha256=sha(out/'summary.json'),terminal_sha256=sha(out/'terminal.json'),
             source_bindings=str((raw/'source-bindings.json').relative_to(ROOT)),source_bindings_sha256=sha(raw/'source-bindings.json'),
-            evidence=str((raw/'closed-evidence.json').relative_to(ROOT)),evidence_sha256=sha(raw/'closed-evidence.json'),original_project_guest_commands=0))
+            evidence=str((raw/'closed-evidence.json').relative_to(ROOT)),evidence_sha256=sha(raw/'closed-evidence.json'),
+            original_project_guest_commands=summary.get('original_project_guest_commands',0)))
         print('Closed cross-program template models; terminal',terminal['returncode'],flush=True)
 
 if __name__=='__main__':
