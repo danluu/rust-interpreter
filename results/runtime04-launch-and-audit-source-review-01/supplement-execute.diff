@@ -1,0 +1,22 @@
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/runtime05-before-launcher-supplement-01/execute.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-05/execute.py
+@@ -26,6 +26,7 @@
+ ADAPTER = ROOT/'experiments/runtime04-environment-adapter-01'
+ RUNTIME = X/'experiments/hir-options-hash/runtime-installation-04'
+ PREPARATION_LAUNCHER = ROOT/'experiments/runtime04-prepare-launch-01/prepare_once.py'
++RUNTIME_LAUNCHER = ROOT/'experiments/runtime04-launch-01/launch.py'
+ CANONICAL = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+ PYTHON = Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14')
+ OWNED = X/'experiments/stable-cgu/owned_stage.py'
+@@ -120,9 +121,9 @@
+     total = 0
+     for name, expected in value['sources'].items():
+         path = Path(name)
+-        require(str(path) == name and path.parent in [HERE, ADAPTER]
++        require(str(path) == name and (path.parent in [HERE, ADAPTER] or path == RUNTIME_LAUNCHER)
+                 and re.fullmatch('[A-Za-z][A-Za-z0-9_.-]*', path.name),
+-                'source inventory must name only explicit audit05/adapter source files')
++                'source inventory must name only explicit audit05/adapter files or exact runtime launcher')
+         total += len(raw(name, digest(expected), 2**20))
+     require(total <= 2*2**20 and str(Path(__file__)) == str(HERE/'execute.py'), 'bounded exact executor source required')
+     declarations = [node.value for node in ast.parse(raw(HERE/'prepare_manifest.py')).body
