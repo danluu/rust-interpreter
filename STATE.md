@@ -17,7 +17,7 @@ improvements without observer instrumentation. See experiment PLAN and docs obse
 
 Qualification03 sourcee17e60fb passed652Rust/profile+16ignored, default VM build,
 reused exact442Python+22skip record.24servers46clients reaped. CLOSED60406/60437.
-Parser replay86a38c47 completed74700/74704,CLOSED79099/79102:16actual saved suites,
+Parser replay86a38c47 completed74700/74704,CLOSED79099/79103:16actual saved suites,
 1,824original invocations,17,150verifiedhits, exact failures/outcomes/kernelCPU.
 Install83903/83906 CLOSED90547/90561. Tool
 c3bd08d4e9e139fa91b22b9e10168cf216a7a1193538db4654e8b512f2fd7ef8
@@ -56,3 +56,7 @@ Adopted tool df4006e03daad7dd008eab34c24a03390d892ec14e55154c43e2d5568c0bba62
 VM6ac4dd9e964e0ebb0a050f8412c8ec8877bd197e8ad7876832db378ed03ca7cf,
 proof results/scratch-scalar-main-qualification-01/summary.json. Strict Rust checking.
 Previous details archived docs/history/STATE-20260918-before-size-tier-primary.md.
+
+Primary03 source20c3d614 ACTIVE10426/controller10429; initial24GiB admission passed.
+Check .work/experiments/cross-program-template-parser-screen-incremental-03/status.json
+and raw records; no other runtime experiment active. Source freeze remains.
