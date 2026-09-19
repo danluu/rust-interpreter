@@ -268,3 +268,17 @@ remaining builds. Only four commands remain; no test retry. Primary05 closed-cac
 retirement completed20684/20687 with15152files2,991,235,194logicalbytes removed,
 11410protected hashes unchanged; independent closure underway. Suggestions unchanged.
 No adoption; saved goal paused, no peerwork touched.
+
+## 2026-09-19 scheduler qualification and actual ordering
+
+Qualification02 sourcee0569229 passed four remaining commands with three reused;
+679Rust/profile17ignored,39diagnostic10offsession31offmodel/defaultVM,Python442+22.
+Closed74856/74860 after44211/44214. Replay531022b5 passed1824invocations19597verified
+hits, closed91158 after78941/78945. Phasesa3356c7c passed1824/19964observedhits,
+closed8591 after5670. Independent saved-order audit6831a5f1 completed12673:
+16requests conform to independently reconstructed prior-duration priorities, and
+all ten valid longest tests begin first (alone on thatworker). Cached diagnostic
+worker median264.122→242.255ms; ownheavy198.176→221.008ms, so do not count the
+whole38.811ms preceding interval as a predicted gain. New actualsource primary06
+still required. No default adoption; sharedkeysOFF/literal-v1. Cleanup primary05
+closed41306/41310, neverrepeat.
