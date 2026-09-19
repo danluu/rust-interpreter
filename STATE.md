@@ -1,3 +1,18 @@
+LATEST: bounded-padding ES8screen01 terminalFAILED at45s LOCKADMISSION,
+sourceaed376cb supervisor90631/controller90674. records/strict/space allEMPTY,
+nochildreceipt/sourceedit/build/guest; NOTaperformanceverdict. Itsclose attempt
+14617also timedout45s waiting; retainedresults/.../closure-attempt-01.json.
+Needread-onlylockinspection, waituntilfree, runoriginalscreen/close.py toCLOSE
+zero-prefix FIRST. Peerholder22337 frontend.py inruntime-exporterworktree, donot
+control. Newwrapperfolderbounded-scalar-padding-screen-resume readyUNRUN changes
+onlyRUNtoes8-02 andbindsclosedempty01; reusesexact14-controlprotocol/gate/candidate.
+Afteroldclose:commit/pushwrapper+closedprefix, launchresume.py throughsupervisor
+bounded-scalar-padding-screen-es8-02; independentresume.py--closeafterterminal.
+No successful guest/build maybereplayed. Screen/source filesfrozenpendingclose.
+Protocol01 CLOSEDafterfirst45sclosuretimeout; close86730passed. Main80fabb50pushed
+profile/install evidence preservingpeer5485f77b. Candidate d4aba7b8,VMfc71b1b2,
+defaultdf4006unchanged. Current~18GiBfree; protectedtargetuntouched;goalPAUSED.
+
 LATEST: profile01 CLOSED source5372d29b,supervisor44095/controller44139,
 close67442passed. Tenoriginalguests5pairs exactPCcounts/counters/entropy/peak,
 zero declines; nativebytesremoved2968/2936/13788/17148/944. Install01 CLOSED
