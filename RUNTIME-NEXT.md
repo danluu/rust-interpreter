@@ -7,15 +7,20 @@ all current entries/fresh guests/currentlimits/canonicalreports unchanged.
 Focused01 source3d288774 12620/12623 failed9pass1fixture(readonlyProgram.data),
 CLOSED24324. Fixed writabletaggedstatics fixture6c5cc0e4 focused02 complete
 30526/30529 CLOSED87092:10servercontrols/profile+4featureoff. No runtime defect.
-Fullqualification01 sourceb38c4b3c CLOSED61743/61746 after9037/9040: passed
-679Rust/profile17ignored andPython442+22skip, then disk admission before diagnostic.
-Qualification02 sourcee0569229 COMPLETE44211/44214 CLOSED74856/74860: reused3,
-new4commands:39diagnostic10offsession31offmodel/defaultVM;24newservers46clients
-plus24retained/46. Replay source531022b5 COMPLETE78941/78945:1824invocations,
-19597verifiedhits, closure underway. Next diagnostic phase, independent order audit,
-normal-binary install, then bind primary06; no source change/adoption.
-Cleanup primary05 CLOSED41306/41310 after20684/20687:15152files
-2,991,235,194logicalbytes,11410protectedhashesunchanged. NEVER repeat.
+Qualification02 sourcee0569229 COMPLETE44211/44214 CLOSED74856/74860:679/profile
+17ignored,39diagnostic10offsession31offmodel/defaultVM;Python442+22skip reuse.
+Replay531022b5 COMPLETE78941/78945 CLOSED91158:1824/19597verifiedhits.
+Phasesa3356c7c COMPLETE5670 CLOSED8591:1824/19964observedhits.
+Independentordering6831a5f1 COMPLETE12673 CLOSED17012:16requests conform, longest
+first10/10validreports;cachedworker264.122→242.255ms separateinstrumentedruns.
+Installb0c744db COMPLETE18465 CLOSED24404:tool60bc004658a1db09e1c905eed50e25062f1ff8ae27811331aed9ad51b206a5a5,
+servera4634740fa5188b7b4bb5e17cd2970f1eebe14dd4e4b781d2d3657d5c031f6e1.
+Primary06 source80a5c78f ACTIVE30011/controller30014, admitted24.41GiB;strict
+controlscompleted, actual40commands running. FREEZE crates/scripts/tests and
+cross-program-template-screen/controllerqualifiedsources until closure.
+Main5d97b166 pushed qualification/replay/order evidence preservingpeerf9e1a12e.
+Cleanupprimary05 CLOSED41306/41310 after20684/20687:15152files/2,991,235,194bytes,
+11410protectedhashesunchanged. NEVER repeat. No goaltools/peercontrol/adoption.
 
 Shared-key candidate PARKED: full678/profile17ignored andactual1824/19673verified
 hits; phase19151observedhits,key9.003vsparent10.278ms butordinary21.952vs21.703.
