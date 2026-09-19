@@ -71,3 +71,18 @@ separate, without causal subtraction. [Full result](../results/cross-program-tem
 No unchanged retry, adoption or later project timing follows. The primary pass
 remains true within its original scope. Next inspect the retained full-command
 stage costs, then choose a materially different runtime change with evidence.
+
+Read-only full-cost observer95844e4c completed21677/21680 and closed24293/24333.
+All60valid-edit custom reports bind to the closed full guard. Candidate medians:
+build-to-ready1265.27ms, execution300.02ms, request295.49ms, outside-worker29.64ms,
+worker preparation sum31.54ms and compile sum58.50ms. Baseline execution391.45ms;
+history-off347.42ms. Independent medians cannot be subtracted to assign a causal
+speedup; worker sums overlap and are not CPU. [Cost inspection](../results/session-artifact-digest-full-costs-01/summary.json).
+
+Next split trusted-template key serialization/hash, lookup, restore, miss emission
+and capture/insertion in the existing diagnostic feature. The current key streams
+many small bincode writes directly into SHA256; whether buffering would help must
+be measured before changing it. Preserve complete v3 key inputs, bounds, rebindings
+and fresh-emission verification. This is a diagnostic direction, not an accepted
+optimization. Do not restart the already-failed conditional region-demand policy;
+its earlier native-coverage improvement did not pass its end-to-end wall gate.

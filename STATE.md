@@ -166,3 +166,8 @@ allcorrect/restored. UNMEASURABLE: wall.9437843138+.1156560910=1.0594404049;
 CPU.9129773888+.0722446023=.9852219911. Noretry/adoption/laterprojecttiming.
 Newbranch analysis/session-full-costs-20260919; next read-only60reportcostobserver.
 Noactiveexperiment. Main22048b98 pushed, rootprevious254e94aa statecommitlocal.
+
+Fullcostobserver95844e4c CLOSED24293/24333,60reports:build1265ms/execution300ms,
+prepsum31.5ms/compilesum58.5ms(overlap), outsideworkers29.6ms. Next diagnostic-only
+Context::stage phases keyhash/lookup/restore/missemission/capture/verify underexisting
+jit-preparation-observer; no runtimebufferingchangeuntilcostevidence. Noactiveexperiment.
