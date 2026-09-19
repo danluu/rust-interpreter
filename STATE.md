@@ -133,3 +133,12 @@ Build01 is prepared/current:615minimum workspace tests/profile,13ignored;
 456Pythondiscovered/22skip; ordinary releaseVM then compose with adoptedcompiler.
 No original guest/latency command yet. Sources stay frozen until build closure.
 Strict121 and a new genuine-edit primary remain required. Current free about21GiB.
+
+Build01 at7a5a6725 passed615Rust/profile (13ignored),434Pythonpass/22skip,
+and ordinary releaseVM, under95636/95673; tool78176777e223ad180f5c47c2a2c28f040a806e63979965c46e0f2bee0614b879,
+VM5ec0cc0ef6b3f26335f383ea160e26b63290407f3ab7fde9392fe25da84b0297.
+Exact adopted exporter/wrapper. CLOSED36499 (child in terminal). Next strict
+qualification01 uses unchanged121fixture/cache/unreachable-type/borrow/actual-
+partial controls. Prepare parser primary protocol but do not admit below24GiB
+initial reservation; free currentlyabout20GiB. Candidate/runtime remains
+unadopted; no performance measurement yet. Saved pause/ownership boundaries hold.
