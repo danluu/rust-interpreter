@@ -2,72 +2,56 @@
 
 Continue manual optimization indefinitely; saved goal stays PAUSED. No goal
 calls, subagents or independent model calls. Root owns /Users/danluu/dev/rust-interp.
-Current branch experiment/jit-preparation-phases-20260918.
+Current branch experiment/emitter-register-workspace-20260918.
 Private repository danluu/rust-interpreter. Push qualified work regularly; main
 must preserve peer commits. Do not stop at milestones.
 
 ## Next direction
 
-Shared emission templates are PARKED after the completed32-command pgrust parser
-primary (71290/71293, source82ef7c10), closed13381/13384:5316frozen inputs,
-112evidencefiles. All114 outcomes and source/artifact restoration pass, but
-wallratio0.999311805 + A/A0.044733804 =1.044045609 FAILS. CPU0.997671428 +
-0.045325435 =1.042996863 passes. Candidate/nativewall1.332915272. Cancel larger
-comparisons; no unchanged retry or gate changes. Experiment branch
-experiment/shared-emission-templates-20260918 retains all source and evidence.
+Current root branch experiment/emitter-register-workspace-20260918. Restore of
+Rust/Cargo sources to adoptedfca687eb was verified exactly atc663d59d before the
+new prototype. No production optimization is adopted. Previous diagnostic and
+sharing branches remain preserved/pushed. Main docs/results at a0260bc7 are
+prepared from clean publication worktree; verify its push before claiming remote.
 
-Candidate tool7a4e2bc034fc55c0ca89e174b0d403d0af8174eb8046443e09b11311d52af4ca,
-VMd071c9123c40cd9ee9ad4dd1bb13faed046373a7d743ebc85919b08c029e8ebd.
-Qualified635Rust/profile14ignored;434Pythonpass22skip;121strict/cache commands;
-13originalsuite/CLI checks;19protocol controls. Suite qualification hits797on
-original parser and53on wrong source; one-worker/one-entry fallback inactive.
-Production option remained defaultoff, same checked Program, independent arenas/
-state/budgets,64MiB store. No runtime merged to main. Docs/results and cost audit are pushed main995b04df, preserving peers through
-45563c5e. The parked branch is pushed through1246eabc.
+Preparation observers are CLOSED. First observer4097408c passed nine controls
+per profile (debug retained across count-bookkeeping failure), ordinary no-feature
+check, seven report-validator controls, original pgrust114+wrong114+fre12 outcomes,
+and six CLI rejections. Refined observerf82aaa50 passed nine/profile, ordinary
+check and eight validators, then original pgrust114+fre12 outcomes. Six unchanged
+CLI controls reused by exact source identity. Every native outcome matches.
+All sources, full reports, binaries, plans and terminals are bound by closures:
+results/preparation-{phases-integrated-02,phases-refined-01,phase-workloads-01,
+phase-workloads-refined-01}. Refined guest run73002/73039, close78648/78721.
+Branch experiment/jit-preparation-phases-20260918 pushed33c95808.
 
-Saved preparation audit shared-template-costs01 under66923/66952 is CLOSED
-80552/80555, source045376fb:10controls,15existing edited receipts, no new guest
-or build. Median compiler sums209.8ms adopted/211.9duplicate/200.9candidate;
-largestworker122.5/123.0/116.8ms; constructors44.0/44.2/43.7ms; new store5.6ms.
-Worker intervals overlap, scalar work is nested, independent medians are not
-additive or causal savings. Two declined function owners persist, but names
-and their cost are not in these receipts. Removing just5.6ms store construction
-is not enough justification for another timing attempt.
+Ordinary region generation takes73.95/56.41ms per pgrust worker and91.84/65.97ms
+per fre worker. Liveness20.47/13.01ms and33.24/24.50ms; call slots5.06/3.19ms and
+10.23/7.79ms. Timers are nested, workers overlap, observer costs included; none
+is CPU time or promised savings. Reducer1357/140615ops is the only prepared
+no-native-entry pgrust function per owner (~29ms with scalar preparation), each
+owner reports one decline. Broad/conditional demand candidates already failed;
+see conditional-demand-parser-screen-incremental01 and old jit-emission-stages01.
+Do not reimplement demand or liveness-only changes from these observations.
 
-Root is now on experiment/jit-preparation-phases-20260918. Rust/Cargo
-production sources are restored exactly to adoptedfca687eb; diff verification
-passes before adding any diagnostic.
-Keep all failed candidate source/evidence on its pushed branch. Build an explicit
-feature-gated standalone preparation observer (existing indirect observer warns
-that libtest cannot supply the required main thread). Record per-function and
-phase elapsed intervals for constructor validation/JIT/metadata, scalar proof,
-lowering/emission, ordinary emission and publication. Bound diagnostic storage,
-report dropped/overflowed observations, preserve nested timer scope and normal
-checks/admission/budgets. Ordinary builds must have no diagnostic fields/calls.
-Use original pgrust/fre artifacts and assertions; observe the adopted runtime,
-not the parked template candidate. Establish actual cost before designing a
-negative cache, shared scalar preparation or metadata reuse. Do not infer that
-large declined bodies dominate just because there are two declines.
+Next bounded register workspace model lives in jit/register_workspace.rs under
+cfg(test) only, unused by runtime. Replaces temporary BTree map/set storage in a
+future prototype using per-function dense slots and touched resets, preserving
+sorted flush order and exact emitted code. Stage1 tests five model properties
+per profile with no guest/native publication. Per-map65,536register/4MiB actual
+Vec payload caps are not combined/RSS promises; future integration must bound
+aggregate workspace. Optional allocation/outside-range fallback is sparse.
+Current model controller benchmarks/experiments/emitter-register-workspace/model.py
+uses only root target and freezes/ closes before changes. After passing model,
+wire only ordinary regions, qualify exact emission and full runtime checks,
+then a new real edited primary. No unchanged retry or gate relaxation.
 
-Recorder focused01 under65651/65654 timed out45seconds on the shared lock
-before any plan, build or test. The zero-command admission failure is CLOSED
-againstc3012e01. Focused02 retries only this unstarted work after fresh admission.
-Focused02 passed six controls/profile under88348/88351 and is CLOSED
-39950/39955 at source834339fe. Integrated01 debug passed nine controls
-(the intended eight plus an existing frame control); exact-count bookkeeping
-expected eight and stopped. CLOSED75809/75812. Integrated02 reused that debug
-capture after Rust/Cargo hash verification, passed nine release controls, built
-observer4097408c101e0fe16e9275aa650b994165f48b8060d77d42849d8f70aab869e0,
-and checked normal no-feature lib/VM under82507/82510. CLOSED92610;source7f8b0572.
-Next preparation-phase-workloads01 runs seven validation controls, original
-pgrust114 and wrong114 plus fre token12 tests, six CLI rejections. Native
-outcomes/catalogs/artifacts are reused from closed comparisons. No source
-edits or latency claim. Bound diagnostic report64MiB, trace65,536buckets/owner,
-2prepared workers and original entropy. Preserve completed guest commands if
-later diagnostic validation fails. Ordinary runtime has no instrumentation.
-Exact old
-candidate qualification, failed attempts, audit details and ownership are in
-[previous state](docs/history/STATE-20260918-before-preparation-phases.md).
+Shared templates remain PARKED: completed32-command parser primary under71290/
+71293 passed114 outcomes but wallratio0.999311805 + A/A0.044733804 fails. CPU
+passes. Larger commands cancelled. Store construction5.6ms and only~9ms lower
+summed overlapping compiler intervals did not justify another unchanged run.
+Full prior identities, failure/closure and cache-retirement details are in
+[previous state](docs/history/STATE-20260918-before-emitter-register-workspace.md).
 
 ## Adopted identities
 
@@ -99,7 +83,7 @@ zero unassigned. Preserve every successful capture without reruns.
   Do not repair/restart/compete with it. Never control any peer process/session.
 - Compiler/Cargo/frontend and application-admission work belongs to peers.
   Preserve their worktrees. Root publication worktree `.work/publication-main`
-  is clean at995b04df on `integration/guarded-local-facts-main-20260913`; fetch
+  is clean at a0260bc7 on `integration/guarded-local-facts-main-20260913`; fetch
   before publishing, preserve peer commits and never force push.
 - No AWS activation/purchase/model/billing fallback and no browser.
 - `suggestions.txt` is user-owned/untracked, SHA256

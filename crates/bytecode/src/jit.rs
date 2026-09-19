@@ -48,6 +48,8 @@ mod values;
 mod transfers;
 mod guarded_ranges;
 mod scratch_values;
+#[cfg(test)]
+mod register_workspace;
 
 #[cfg(test)]
 mod limit_tests;
