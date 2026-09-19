@@ -1,39 +1,28 @@
-# Continue the real heap-layout changed-source primary
+# Continue adopted allocator-exit scope
 
-Manual indefinite task; savedgoalPAUSED/no subagents or peercontrol. Root branch
-experiment/heap-layout-table-20260919. Read STATE.md and docs/HEAP-LAYOUT-TABLE-20260919.md.
-Explicitcandidate da1779094da6a44c2ff63cae3767e18407050a63f54380465a9fb7fb51d70db1;
-VM8705a17e, unchangedadoptedexporter/wrapper. Installeddefaultdf4006unchanged.
+Manual indefinite task; savedgoalPAUSED, no subagents/peercontrol/AWS/browser.
+Root branch experiment/allocator-exit-scope-20260919. Bytecode restored EXACTLY to
+adopted fca687eb; installeddefaultdf4006 unchanged. HeapHashMap candidate PARKED
+on experiment/heap-layout-table-20260919 at927ea3d8. Closed40editedcommands:
+wall.981239792+AA.051989623=1.033229416 FAIL;CPUceilingspass. No unchangedretry.
+All unstartedheap full/private/parser/Nushellguards canceled. Main6165c6d1 pushed
+fullqualification+negativeevidence, preservingpeer97076a30.
 
-ALL prerequisite gates CLOSED: focused03(16heap+6C/profile), workspace02
-(Python446pass22skip;Rust618pass13ignored/profile), nativecomparison01(9controls),
-profile03(3originalguests,2new+1retained, exactPC/memory/entropy/nativecode modulo
-427/532/21 proven scalar-entryASLRrelocations), install01(frontend121proofreused),
-screen-protocol01(17controls; sourcee172b1b3 supervisor58386/controller58391;
-independentclose85692passed). Earlierfailedprefixes preserved, passingcommandsnotrerun.
+Next commit this baseline restore and new diagnostic, then supervise
+allocator-exit-scope-01:
+/opt/homebrew/bin/python3 benchmarks/experiments/allocator-exit-scope/analyze.py
+Independent --close afterfinished0; freeze sources/evidence until closed.
+No guest/compiler/timing/nativepublication. Reuses closed original-PC decoder
+and full1933/1429sample sites fromadopted-hot-loop-census02. Counts allocatorops,
+followingnativeentries, and sampledentry/flush nearallocation; do NOT equate
+interpretedopfrequency withlatency. Wholeheapbodycost remains in a bridge.
+Preliminaryread:885372/1572514/74906allocatorops, but only39/33broadnativeboundary
+selfsamples and27/32otherhostself; existing73/155heapcontextcostnoteliminated.
+Nativebridge NOT implemented/admitted; decide fromthisscope first.
 
-After thiscommit, supervise heap-layout-screen-token-01:
-/opt/homebrew/bin/python3 benchmarks/experiments/heap-layout-screen/benchmark.py
---case token --run-id heap-layout-screen-token-01.
-40wholeoriginalsource/wrongsource/5validedits/restored commands acrossnative,
-adopted,A-A,candidate,anchor;2strictunreachabletype/borrow probes. Freeze all
-controllers/scripts/crates/tests/originalprojectinputs through terminal+independent
-close.py heap-layout-screen-token-01. Do NOT inspect interim timing to changegate.
-Passingclosedprimary admits heap-layout-guard-protocol01 then fulltoken/folded/
-pgrust in order (154commands/case), private/parser/Nushelllater. Failedprimary
-parks candidate andcancelsallunstartedguards. NOunchangedtimingretry/gateloosen.
-
-Sharedlock45s;fre16GiBinitial/8GiBchildren,2workers. Latestfree~24.35GiB. Compiler
-floor=max(14GiB,8GiB+2*allocatedsharedtarget) eachchild; targetNEVERclean. Analysis12,
-parser24,Nushell66.55GiB. No processcontrols. Read-onlycleanerstatus allowed.
-Main3bea799d storagepublication; peerremoteadvanced97076a30: preserveonfetch/ff.
-Publishreviewedclosedqualification/evidenceexplicitpaths, nofullbranchmerge.
-No runtimeadoption or speed claim yet. Suggestionshashunchanged. Keepworking.
-
-PRIMARY FINISHED/CLOSED: source6801f0bd supervisor72152/controller72195,
-independentclose85882passed40commands+2strictcontrols,12originaltests. Wallratio
-.981239792+AA.051989623=1.033229416 FAIL;CPU.979778617+AA.040559047=1.020337664pass.
-PARKheap candidate, no unchangedretry; allunstartedfullguardsCANCELED. Default
-unchanged. Nextpublishclosedexperimentexplicitpaths preservingpeer97076a30,
-thennewbranchrestoreexactadoptedbytecode beforeofflineallocator-exit scope.
-No newruntimebridge admitted without saved dominant-test scope evidence.
+Sharedlock45s;analysis12GiB/children+closure8GiB;2build/testworkers. Sharedtarget
+NEVERclean; compilerfloor=max(14GiB,8GiB+2*allocatedtarget), last26629357568bytes.
+Currentfree~22GiB afterprimary. Fre16/parser24/Nushell66.55GiB. Noactiveowned
+commands afterprimaryclosure; publication18919 finished0. No priorcleanupreplay.
+SuggestionsunchangedSHA4d74b3dc8b79...c2f. ReadSTATE andarchivedhistories before
+newmechanisms; preparedworkerJITreuse alreadyexists, no reimplementation.

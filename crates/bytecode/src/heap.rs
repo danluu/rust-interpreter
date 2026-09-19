@@ -1,24 +1,11 @@
 //! Guest allocations with reusable ranges. Addresses are offsets, not pointers.
 use std::collections::BTreeMap;
-// Only exact ownership lookups use this table. Free ranges remain address
-// ordered, preserving first-fit selection, alignment and coalescing exactly.
-#[cfg(feature = "heap-layout-hash")]
-type Layouts = std::collections::HashMap<usize, (usize, usize)>;
-#[cfg(not(feature = "heap-layout-hash"))]
-type Layouts = BTreeMap<usize, (usize, usize)>;
-
-#[cfg(all(test, feature = "heap-layout-hash"))]
-#[path = "heap_layout_reference.rs"]
-mod reference;
-#[cfg(all(test, feature = "heap-layout-hash"))]
-#[path = "heap_layout_tests.rs"]
-mod hash_tests;
 
 pub(crate) const TAG: usize = crate::HEAP_POINTER_TAG as usize;
 
 pub(crate) struct Heap {
     pub bytes: Vec<u8>,
-    allocations: Layouts,
+    allocations: BTreeMap<usize, (usize, usize)>,
     free: BTreeMap<usize, usize>,
     static_len: usize,
     allocation_limit: usize,
@@ -28,7 +15,7 @@ impl Default for Heap {
     fn default() -> Self {
         Self {
             bytes: Vec::new(),
-            allocations: Layouts::default(),
+            allocations: BTreeMap::new(),
             free: BTreeMap::new(),
             static_len: 0,
             allocation_limit: crate::DEFAULT_ALLOCATION_LIMIT,

@@ -118,3 +118,12 @@ PARKheap candidate, no unchangedretry; allunstartedfullguardsCANCELED. Default
 unchanged. Nextpublishclosedexperimentexplicitpaths preservingpeer97076a30,
 thennewbranchrestoreexactadoptedbytecode beforeofflineallocator-exit scope.
 No newruntimebridge admitted without saved dominant-test scope evidence.
+
+NEW ROOT DIRECTION: branch experiment/allocator-exit-scope-20260919; restore
+EXACTfca bytecode (4files revert), no heapfeaturecomposition. Main6165c6d1 pushed
+allheapqualification+closednegative, preservingpeer97076a30. Newoffline
+allocator-exit-scope01 registered; no guest/build. Preliminaryadoptedprofiles count
+885372/1572514/74906 allocator interpretedops; currentnativeboundaryself39/33,
+otherhost27/32, heap73/155 notsavedbybridge. Need exactallocation-adjacentgenerated
+samplejoin before consideringimplementation. Sharedlock45s,12GiBinitial,8GiBcase.
+Freeze source/evidence throughindependent--close. Noactiveownedcommands.
