@@ -15,12 +15,18 @@ Independentordering6831a5f1 COMPLETE12673 CLOSED17012:16requests conform, longes
 first10/10validreports;cachedworker264.122→242.255ms separateinstrumentedruns.
 Installb0c744db COMPLETE18465 CLOSED24404:tool60bc004658a1db09e1c905eed50e25062f1ff8ae27811331aed9ad51b206a5a5,
 servera4634740fa5188b7b4bb5e17cd2970f1eebe14dd4e4b781d2d3657d5c031f6e1.
-Primary06 source80a5c78f ACTIVE30011/controller30014, admitted24.41GiB;strict
-controlscompleted, actual40commands running. FREEZE crates/scripts/tests and
-cross-program-template-screen/controllerqualifiedsources until closure.
-Main5d97b166 pushed qualification/replay/order evidence preservingpeerf9e1a12e.
-Cleanupprimary05 CLOSED41306/41310 after20684/20687:15152files/2,991,235,194bytes,
-11410protectedhashesunchanged. NEVER repeat. No goaltools/peercontrol/adoption.
+Primary06 source80a5c78f COMPLETE30011/30014 CLOSED88772:40+2strictcorrect,
+wall.9311698739+A/A.0308233457=.9619932196;CPU.9104683898+.0308595313=.9413279211
+PASS. Nativewall1.2718753876, noadoption. Main21f57dbe pushedpreservingpeer48a8dda0.
+Full02 sourcec91666c7 NOTADMITTED33669/33713: oldprotocol01 boundprevious
+candidateprerequisites; zero stage/build/guest/timing, terminalproofpreserved.
+Protocol02 source126020d8 COMPLETE63564,8unchangedaccountingcontrols;closure
+underway. Freeze full-parserfolder until protocol/fullclosure. Nextfreshfull03,
+110commands15pairs22requestsper session, samequalifiedtool andgates.
+Primary06cachecleanup CLOSED2706 after93584 source2838da6e:15152files/2991235289bytes,
+11413protectedhashesunchanged. Failedsetupcachecleanup bc52545f COMPLETE20731
+CLOSED28087:941files438200579bytes,2209protectedhashesunchanged. NEVER repeat
+anyretirement. Free24.2GiBvariable; nopeercontrol/goaltools/adoption.
 
 Shared-key candidate PARKED: full678/profile17ignored andactual1824/19673verified
 hits; phase19151observedhits,key9.003vsparent10.278ms butordinary21.952vs21.703.
