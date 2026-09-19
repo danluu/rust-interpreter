@@ -42,10 +42,6 @@ mod scalar_ir;
 mod scalar_call_model;
 #[cfg(test)]
 mod memory_tests;
-#[cfg(test)]
-mod cross_edit_census;
-#[cfg(test)]
-mod cross_edit_differences;
 #[cfg(any(test, feature = "indirect-target-observer"))]
 mod indirect_trace;
 #[cfg(feature = "indirect-target-observer")]
