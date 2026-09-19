@@ -68,3 +68,16 @@ wholecallinline. Thoseearlierexperimentsalreadyfailedgates; scalar-resource
 hoistingwouldneednewproof/scope andlargeendtoendgate. Reuseexistingworddecoder
 butno broad claimsfromunknowninstructions. Current sharedtoolbuildfloorstill
 26.63GB;free~21.8GiB. Noactiveownedcommands.
+
+LATEST direction: rootexperiment/adopted-es8-call-scope-20260919. Scopefiles
+benchmarks/experiments/short-clear-tails/{PLAN.md,model.py,scope.py} NEW,parsed,
+notlaunchedyet. Nextcommit/pushthen supervise short-clear-tail-scope-01 absolute
+scope.py; independent scope.py --close. Exactoldhelper10wordpattern scope on
+4closedcaptures. Candidate onlyshorttail8/4/2/1stores(TBZ) plusCBZzero,chunkloop
+unchanged. Preliminarytailcounts39/797and52/609ES8;66/1933and39/1429token.
+Onehotcallee10scalarCall33/64samplesatbyte-loopCMP (seededES8),notassertbody.
+No runtimepatch/buildyet. Earlierwideclearbundlepreservedtails,so newmechanism.
+Existingbulkzero/padding/canarynativeRusttests extensive; auditliveflags fornew
+helper thenaddfocusedmachinecontract. Need boundedruntime-onlytarget resource
+plan ifsharedtargetfloor26.63GBstillunavailable; do NOT lowersharedfloor/cleanit.
+Noactiveownedprocesses now. Publicationmain2114a430 confirmed.

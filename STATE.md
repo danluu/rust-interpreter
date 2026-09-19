@@ -202,3 +202,16 @@ Currenthotfunction245Range::spec_next calls10unchecked-addprecondition checker:
 Nextpartitionexistingunprofiledcalls resource/args/dispatch/commit beforechoose
 newgenericmechanism; existingcapacitycreditandwholecallinline parkedverdicts
 notreinterpreted. No newtoolbuild. ProfileJSONnameshuge:truncateprintednames.
+
+ES8diagnostics published main2114a430 (pushverified). Read-only exploratory
+whole-pattern match finds exact10wordzero_range helpers212/243inES8 and2928/
+3455intokenblock/exhaustive. Byte-tail PC samples39/52and66/39 respectively.
+Unlikeparkedwideclearbundle (preservedscalartails), candidate replacesonlybyte
+tail withCBZ+TBZ-selected8/4/2/1exactstores. No runtimeedit yet. Newregistered
+short-clear-tail-scope01 will qualify10mutatedpatternnegatives,1024canarymodel
+cases,emptyrange/overwide mutation, independentlyassemble9proposedwords, bind
+fourclosedcapturesandderivecoverage. It performsoneclangassemblychild/no guest.
+ES8primaryselectedprospectively1%gainandAA-envelopewallguard;alllarge-project
+guardsremainrequiredbeforeadoption. Source/readmeplanstatesnewboundedruntime
+onlytargetmusthavefrozenresourceplanbeforenativebuild; protectedsharedtarget
+26.63GBadmissionunchanged. Free21.8GiB.
