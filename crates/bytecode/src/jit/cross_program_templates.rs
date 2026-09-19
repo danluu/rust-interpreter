@@ -85,6 +85,43 @@ struct Template {
     assertion_pcs:Vec<usize>,operations:usize,register_pairs:usize,liveness_declined:bool,
     relocations:Vec<Relocation>,assertion_base:usize,rebind:bool,
 }
+
+// Private bounded in-memory history for the diagnostic model. The two ordered
+// maps retain at most one recency record per template; repeated hits cannot
+// grow an append-only eviction queue. Charges bound declared retained payload
+// and node slack, not allocator RSS. No file or process interface exists.
+const HISTORY_BASE:usize=512;
+const HISTORY_NODE:usize=256;
+struct History {
+    entries:BTreeMap<[u8;32],(Template,u64,usize)>,order:BTreeMap<u64,[u8;32]>,
+    charge:usize,limit:usize,clock:u64,evictions:usize,
+}
+impl History {
+    fn new(limit:usize)->Option<Self> {
+        (HISTORY_BASE..=MAX_RETAINED).contains(&limit).then(||Self{
+            entries:BTreeMap::new(),order:BTreeMap::new(),charge:HISTORY_BASE,limit,clock:0,evictions:0})
+    }
+    fn get(&mut self,key:&[u8;32])->Option<&Template> {
+        let next=self.clock.checked_add(1)?;let entry=self.entries.get_mut(key)?;
+        assert_eq!(self.order.remove(&entry.1),Some(*key));entry.1=next;self.clock=next;
+        assert!(self.order.insert(next,*key).is_none());Some(&entry.0)
+    }
+    fn insert(&mut self,template:Template)->Option<()> {
+        let charge=template.charge()?.checked_add(HISTORY_NODE)?;
+        if charge>self.limit-HISTORY_BASE {return None;}
+        let next=self.clock.checked_add(1)?;let key=template.key;
+        if let Some((_,stamp,old_charge))=self.entries.remove(&key) {
+            assert_eq!(self.order.remove(&stamp),Some(key));self.charge-=old_charge;
+        }
+        while self.charge.checked_add(charge)?>self.limit || self.entries.len()>=16_384 {
+            let (stamp,old)=self.order.pop_first()?;let (_,recorded,removed)=self.entries.remove(&old)?;
+            assert_eq!(recorded,stamp);self.charge-=removed;self.evictions+=1;
+        }
+        self.clock=next;self.charge+=charge;
+        assert!(self.order.insert(next,key).is_none());assert!(self.entries.insert(key,(template,next,charge)).is_none());
+        Some(())
+    }
+}
 impl Template {
     fn valid_relocations(&self,f:&Function,jit:&Jit<'_>,capture:bool)->Option<()> {
         // Expected sites come from the complete checked caller and current scalar
@@ -404,5 +441,40 @@ fn cross_program_template_rebinding_keeps_body_layout_admission_and_budget_depen
     assert!(t.restore(&d,&b,0,&EMITTER,t.words.len()-1).is_none());
     same(&stage(&b,0),&t.restore(&d,&b,0,&EMITTER,t.words.len()).unwrap());
     b.bytes=b.capacity;assert!(t.restore(&d,&b,0,&EMITTER,MAX_CODE_BYTES/4).is_none());assert!(b.code.is_none());
+}
+
+#[test]
+fn cross_program_template_history_bounds_recency_replacement_and_declines() {
+    let p=fixture();let a=owner(&p);let c=Checked::new(&p).unwrap();
+    let item=template(&c,&a,0).charge().unwrap()+HISTORY_NODE;
+    let make=|key|{let mut t=template(&c,&a,0);t.key=[key;32];t};
+    let mut h=History::new(HISTORY_BASE+2*item).unwrap();
+    h.insert(make(1)).unwrap();h.insert(make(2)).unwrap();
+    for _ in 0..1000 {assert!(h.get(&[1;32]).is_some());}
+    assert_eq!(h.order.len(),2);assert_eq!(h.charge,HISTORY_BASE+2*item);
+    h.insert(make(3)).unwrap();assert_eq!(h.evictions,1);
+    assert!(h.get(&[2;32]).is_none());assert!(h.get(&[1;32]).is_some());
+    h.insert(make(1)).unwrap();assert_eq!(h.entries.len(),2);assert_eq!(h.order.len(),2);
+    assert_eq!(h.charge,HISTORY_BASE+2*item);assert_eq!(h.evictions,1);
+    let mut small=History::new(HISTORY_BASE+item-1).unwrap();assert!(small.insert(make(4)).is_none());
+    assert_eq!(small.charge,HISTORY_BASE);assert!(small.entries.is_empty() && small.order.is_empty());
+    h.clock=u64::MAX;assert!(h.get(&[1;32]).is_none());assert!(h.insert(make(4)).is_none());
+    assert_eq!(h.entries.len(),2);assert_eq!(h.order.len(),2);
+    assert!(History::new(0).is_none() && History::new(MAX_RETAINED+1).is_none());
+}
+#[test]
+fn cross_program_template_history_reuses_checked_body_variants_with_fresh_owner_values() {
+    let mut history=History::new(MAX_RETAINED).unwrap();let mut hits=0;
+    for (iteration,value) in [1,2,1,2].into_iter().enumerate() {
+        let mut p=fixture();p.functions[0].code[0]=Op::Imm{dst:0,value};
+        let c=Checked::new(&p).unwrap();let mut j=owner(&p);
+        scalar(&mut j,0x123456780000+iteration*4096);prior_assertions(&mut j,iteration);
+        let key=identity_mode(&c,&j,0,&EMITTER,MAX_KEY_BYTES,true).unwrap();let fresh=stage(&j,0);
+        if let Some(t)=history.get(&key) {
+            same(&fresh,&t.restore(&c,&j,0,&EMITTER,MAX_CODE_BYTES/4).unwrap());hits+=1;
+        } else {history.insert(relocatable(&c,&j)).unwrap();}
+        assert!(j.code.is_none());assert_eq!(j.bytes,0);
+    }
+    assert_eq!(hits,2);assert_eq!(history.entries.len(),2);assert_eq!(history.order.len(),2);
 }
 }

@@ -106,3 +106,19 @@ relocations, and these runs exclude disk-cache loading, publication and misses'
 fresh emission. Associate exact IDs with the existing original ordinary-emission
 intervals only, preserving the earlier trace's nesting/overlap limitations.
 Require the complete input/output/source/terminal closure before further work.
+
+## Model03: bounded populated history
+
+The original-only replay is closed before this change. Add a private64MiB
+history keyed by the already-qualified identity, with one ordered recency record
+per template and at most16,384 entries. Charge each template plus256 bytes of
+map-node slack and512 bytes base bookkeeping. This is declared retained payload,
+not allocator RSS. Oversized entries and timestamp exhaustion decline without
+eviction; replacement removes the prior entry's charge. Evict the least recently
+used entry only when a new bounded entry needs space. No disk/IPC API is added.
+
+Two additional controls bring focused qualification to14/profile: bounded
+recency/replacement/eviction and exact reuse of two checked caller-body variants
+across four distinct owners with different assertion bases/scalar addresses.
+Repeated hits must not grow metadata. Close these controls before extending the
+saved-artifact replay to populate the history after misses.
