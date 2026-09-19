@@ -72,3 +72,9 @@ CLOSED74820/74866;20retainedreports,no guest/compiler. Candidate execution332.9m
 serveroutsideworkers39.6ms,prepsum34.2ms,compile sum98.9ms. Edit4largest extra
 delaybuild1451vs1250ms;execution371.6vsfresh372.8ms. No causal subtraction/acceptance.
 Next diagnostic-only requestinput/workerconstructor phases; branch separately.
+
+Branch experiment/session-input-phases-20260918. Diagnostic-only changes now
+prepared: inputdecode/validation/reportoutput phases plus workerconstructorparts
+underjit-preparation-observer; actualchecks unchanged. Qualify32controls/profile
+and10feature-offsession controls (36servers69clients), then16savedparsercommands.
+Replay socketprefixinput-phases-01, NOTprior endpoint. Sourcefreeze once started.

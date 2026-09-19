@@ -99,7 +99,30 @@ fn edited_suites_and_request_inputs_match_without_and_with_history() {
             assert_eq!(report["passed"],if passed {32} else {0});assert_eq!(report["failed"],if passed {0} else {32});
             let outcomes=report["tests"].as_array().unwrap().iter().map(|t|(t["name"].clone(),t["status"].clone(),t["error"].clone())).collect::<Vec<_>>();
             if history==0 {reference.push(outcomes);} else {assert_eq!(outcomes,reference[i]);}
+            #[cfg(feature = "jit-preparation-observer")]
+            {
+                let input=&report["input_observer"];
+                let sum=["artifact_read_hash_ns","artifact_decode_ns","catalog_read_hash_ns","catalog_decode_ns",
+                    "catalog_validation_ns","program_validation_ns","report_reservation_ns"].iter()
+                    .map(|field|input[*field].as_u64().unwrap()).sum::<u64>();
+                assert_eq!(sum,input["total_ns"].as_u64().unwrap());
+                assert!(input["artifact_bytes"].as_u64().unwrap()>0 && input["catalog_bytes"].as_u64().unwrap()>0);
+                let output=&response["output_observer"];
+                assert_eq!(["serialization_ns","write_flush_ns","digest_ns"].iter()
+                    .map(|field|output[*field].as_u64().unwrap()).sum::<u64>(),output["total_ns"].as_u64().unwrap());
+                assert_eq!(output["report_bytes"],bytes.len());
+                assert!((sum+output["total_ns"].as_u64().unwrap()) as f64 <= response["request_seconds"].as_f64().unwrap()*1e9);
+            }
+            #[cfg(not(feature = "jit-preparation-observer"))]
+            {assert!(report.get("input_observer").is_none() && response.get("output_observer").is_none());}
             for row in report["worker_records"].as_array().unwrap() {
+                #[cfg(feature = "jit-preparation-observer")]
+                {
+                    let setup=&row["preparation_observer"]["constructor"];
+                    assert_eq!(setup["total_ns"],row["preparation_ns"]);
+                    assert!(setup["before_metadata_ns"].as_u64().unwrap()+setup["execution_metadata_ns"].as_u64().unwrap()
+                        <=setup["total_ns"].as_u64().unwrap());
+                }
                 if history==0 {assert!(row["templates"].is_null() && row["storage"].is_null());}
                 else {let n=row["templates"]["hits"].as_u64().unwrap();hits+=n;assert_eq!(row["templates"]["verified_hits"],n);
                     assert!(row["storage"]["charged_bytes"].as_u64().unwrap()<=history as u64);}

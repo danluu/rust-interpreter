@@ -35,6 +35,8 @@ pub struct PreparedJit<'program> {
     persistent_registers: bool,
     scalar_calls: bool,
     preparation_nanos: u128,
+    #[cfg(feature = "jit-preparation-observer")]
+    session_setup_ns: Option<(u128,u128)>,
 }
 
 impl<'program> PreparedJit<'program> {
@@ -73,7 +75,12 @@ impl<'program> PreparedJit<'program> {
     /// include observation overhead and must not be used as acceptance timings.
     #[cfg(feature = "jit-preparation-observer")]
     pub fn preparation_observation(&self) -> serde_json::Value {
-        self.jit.as_ref().unwrap().preparation_observation()
+        let mut value=self.jit.as_ref().unwrap().preparation_observation();
+        if let Some((before_metadata_ns,execution_metadata_ns))=self.session_setup_ns {
+            value["constructor"]=serde_json::json!({"before_metadata_ns":before_metadata_ns,
+                "execution_metadata_ns":execution_metadata_ns,"total_ns":self.preparation_nanos});
+        }
+        value
     }
 
     /// Explicit per-request environment without changing host process globals.
@@ -109,10 +116,15 @@ impl<'program> PreparedJit<'program> {
         context: Option<std::rc::Rc<jit::cross_program_templates::Context<'program>>>,
         environment: &[(Vec<u8>,Vec<u8>)], started: std::time::Instant) -> Result<Self,String> {
         let mut jit = crate::create_jit::<false, true, false, true>(program, limits)?;
+        #[cfg(feature = "jit-preparation-observer")]
+        let metadata_started=std::time::Instant::now();
         let metadata = ExecutionMetadata::with_environment(program, jit.as_ref(), limits.memory, environment)?;
+        #[cfg(feature = "jit-preparation-observer")]
+        let session_setup_ns=Some((metadata_started.duration_since(started).as_nanos(),metadata_started.elapsed().as_nanos()));
         if let Some(context) = context {jit.as_mut().unwrap().attach_templates(context);}
         Ok(Self {program,jit,metadata,code_bytes:limits.jit_code_bytes,
             persistent_registers:limits.jit_persistent_registers,scalar_calls:limits.jit_scalar_calls,
+            #[cfg(feature = "jit-preparation-observer")] session_setup_ns,
             preparation_nanos:started.elapsed().as_nanos()})
     }
 
@@ -125,6 +137,7 @@ impl<'program> PreparedJit<'program> {
         Ok(Self { program, jit, metadata, code_bytes: limits.jit_code_bytes,
             persistent_registers: limits.jit_persistent_registers,
             scalar_calls: limits.jit_scalar_calls,
+            #[cfg(feature = "jit-preparation-observer")] session_setup_ns:None,
             preparation_nanos: started.elapsed().as_nanos() })
     }
 

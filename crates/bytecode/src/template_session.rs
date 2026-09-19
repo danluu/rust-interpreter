@@ -187,17 +187,41 @@ fn run_request(pool:&mut Pool,id:u64,body:Body)->Result<Value,String> {
     let Body::Run{artifact,catalog,report,cwd,budget,environment}=body else {return Err("expected run request".into());};
     if absolute(&cwd)?!=std::env::current_dir().map_err(|e|e.to_string())? {return Err("session working directory differs".into());}
     let limits=budget.limits()?;environment_bound(&environment)?;
+    #[cfg(feature = "jit-preparation-observer")]
+    let input_started=Instant::now();
     let bytes=read_bound(&artifact,64*1024*1024)?;
+    #[cfg(feature = "jit-preparation-observer")]
+    let artifact_read=Instant::now();
     let program:Program=bincode::DefaultOptions::new().with_fixint_encoding().with_limit(64*1024*1024)
         .reject_trailing_bytes().deserialize(&bytes).map_err(|e|e.to_string())?;
+    #[cfg(feature = "jit-preparation-observer")]
+    let artifact_decoded=Instant::now();
     let catalog_bytes=read_bound(&catalog,4*1024*1024)?;
+    #[cfg(feature = "jit-preparation-observer")]
+    let catalog_read=Instant::now();
     let catalog_value:EntryCatalog=serde_json::from_slice(&catalog_bytes).map_err(|e|e.to_string())?;
+    #[cfg(feature = "jit-preparation-observer")]
+    let catalog_decoded=Instant::now();
     let entries=catalog_value.validated_entries(&program,&bytes)?.into_iter().map(|(n,id)|(n.to_owned(),id)).collect::<Vec<_>>();
+    #[cfg(feature = "jit-preparation-observer")]
+    let catalog_validated=Instant::now();
     let total=entries.len();let program=ValidatedProgram::new(program)?;
+    #[cfg(feature = "jit-preparation-observer")]
+    let program_validated=Instant::now();
     // Reject unsafe/unsupported session host I/O through the unchanged runtime
     // admission (no descriptor/getcwd options in this initial protocol).
     let mut file=std::fs::OpenOptions::new().write(true).create_new(true).open(absolute(&report)?).map_err(|e|e.to_string())?;
-    let started=Instant::now();let rows=pool.run(program,entries,limits.clone(),environment)?;
+    let started=Instant::now();
+    #[cfg(feature = "jit-preparation-observer")]
+    let input_observer=json!({"artifact_read_hash_ns":artifact_read.duration_since(input_started).as_nanos(),
+        "artifact_decode_ns":artifact_decoded.duration_since(artifact_read).as_nanos(),
+        "catalog_read_hash_ns":catalog_read.duration_since(artifact_decoded).as_nanos(),
+        "catalog_decode_ns":catalog_decoded.duration_since(catalog_read).as_nanos(),
+        "catalog_validation_ns":catalog_validated.duration_since(catalog_decoded).as_nanos(),
+        "program_validation_ns":program_validated.duration_since(catalog_validated).as_nanos(),
+        "report_reservation_ns":started.duration_since(program_validated).as_nanos(),
+        "total_ns":started.duration_since(input_started).as_nanos(),"artifact_bytes":bytes.len(),"catalog_bytes":catalog_bytes.len()});
+    let rows=pool.run(program,entries,limits.clone(),environment)?;
     let poisoned=rows.iter().any(|r|r["poisoned"]==true);
     let complete=rows.iter().all(|r|r["status"]=="completed");
     let mut tests=rows.iter().filter_map(|r|r["tests"].as_array()).flatten().cloned().collect::<Vec<_>>();
@@ -205,20 +229,38 @@ fn run_request(pool:&mut Pool,id:u64,body:Body)->Result<Value,String> {
     let coverage=tests.len()==total && tests.iter().enumerate().all(|(i,r)|r["index"].as_u64()==Some(i as u64));
     let failures=tests.iter().filter(|r|r["status"]=="failed").count();
     let status=if !complete || !coverage {"incomplete"} else if failures>0 {"failed"} else {"passed"};
-    let result=json!({"schema_version":1,"request_id":id,"status":status,"mode":"prepared","workers":WORKERS,
+    #[allow(unused_mut)]
+    let mut result=json!({"schema_version":1,"request_id":id,"status":status,"mode":"prepared","workers":WORKERS,
         "selected":total,"completed":tests.len(),"passed":tests.len().saturating_sub(failures),"failed":failures,
         "tests":tests,"worker_records":rows,
         "artifact_sha256":artifact.sha256,"catalog_sha256":catalog.sha256,"poisoned":poisoned,
         "runtime_limits":{"instructions":limits.instructions,"allocations":limits.allocations,"memory_bytes":limits.memory,"frames":limits.frames},
         "jit_code_limit_bytes":limits.jit_code_bytes,"seconds_before_report_write":started.elapsed().as_secs_f64(),
         "scope":"selected test bodies; fresh native owners and guest state, per-request environment; no source build or libtest/thread/unwind semantics"});
+    #[cfg(feature = "jit-preparation-observer")]
+    {result["input_observer"]=input_observer;}
+    #[cfg(feature = "jit-preparation-observer")]
+    let output_started=Instant::now();
     let bytes=serde_json::to_vec(&result).map_err(|e|e.to_string())?;
+    #[cfg(feature = "jit-preparation-observer")]
+    let serialized=Instant::now();
     if bytes.len()>MAX_FRAME {return Err("session report exceeds bound".into());}
     // Match ordinary suite reports: completed writes, without a power-loss
     // durability promise. Reservation and the exact returned digest remain.
     file.write_all(&bytes).and_then(|_|file.flush()).map_err(|e|e.to_string())?;
-    Ok(json!({"kind":"result","id":id,"status":status,"poisoned":poisoned,"report":report,
-        "report_sha256":format!("{:x}",Sha256::digest(&bytes))}))
+    #[cfg(feature = "jit-preparation-observer")]
+    let written=Instant::now();
+    let report_sha256=format!("{:x}",Sha256::digest(&bytes));
+    #[cfg(feature = "jit-preparation-observer")]
+    let digested=Instant::now();
+    #[allow(unused_mut)]
+    let mut response=json!({"kind":"result","id":id,"status":status,"poisoned":poisoned,"report":report,
+        "report_sha256":report_sha256});
+    #[cfg(feature = "jit-preparation-observer")]
+    {response["output_observer"]=json!({"serialization_ns":serialized.duration_since(output_started).as_nanos(),
+        "write_flush_ns":written.duration_since(serialized).as_nanos(),"digest_ns":digested.duration_since(written).as_nanos(),
+        "total_ns":digested.duration_since(output_started).as_nanos(),"report_bytes":bytes.len()});}
+    Ok(response)
 }
 fn executable_identity()->Result<String,String> {
     let executable=std::env::current_exe().map_err(|e|e.to_string())?;
