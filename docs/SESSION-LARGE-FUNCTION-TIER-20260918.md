@@ -1,4 +1,4 @@
-# Size-tier candidate: qualified, end-to-end comparison pending
+# Size-tier candidate: correct, primary unmeasurable
 
 The experimental runtime keeps resumable functions above 65,536 bytecode operations
 in the custom interpreter before scalar-callee preparation or native emission.
@@ -30,10 +30,29 @@ recorded in the closed results below.
 - [Parser replay](../results/session-large-function-tier-parser-client-01/summary.json)
 - [Installed composition](../results/session-large-function-tier-install-01/summary.json)
 
-The unchanged 40-command parser primary is running with two additional strict
-rejection controls, separate A/A and session-without-history modes, native Rust,
-and complete lifecycle/CPU accounting. It passed the unchanged 24 GiB initial
-admission after bounded retirement of owned completed compiler intermediates.
-No adoption decision or speedup is claimed. A passing primary must be followed by
-the original project regression comparisons, including fre, pgrust, rg-aot and
-Nushell. The two earlier session primaries remain failed under their original gates.
+The completed 40-command parser primary is **unmeasurable**, not accepted. All
+source states, original outcomes, paired artifacts and restoration match. Both
+strict rejection controls returned101 without submitting a session request. Both
+servers exited by owner EOF and were reaped; complete kernel CPU and lifecycle
+costs are charged under the original protocol.
+
+| Valid-edit paired median | Wall | CPU |
+| --- | ---: | ---: |
+| Cached session / adopted runtime | 0.921620 | 0.911341 |
+| Maximum A/A deviation | 0.088141 | 0.059675 |
+| Candidate/adopted plus A/A margin | 1.009761 | 0.971016 |
+| Cached / session without history | 0.989230 | 0.974599 |
+| Session without history / adopted | 0.961303 | 0.952686 |
+| Cached / native Rust | 1.322340 | 1.236810 |
+
+The observed wall reduction is7.8%, below the8.8% A/A allowance. The predeclared
+8% high-variance rule classifies this as unmeasurable. CPU meets its gates. Edit4
+has a candidate/adopted wall ratio1.11065, so a simple uniform benefit is not
+established. These ratios are within-run; they do not isolate the threshold's
+effect from earlier measurements. No unchanged retry, larger comparisons or
+adoption follows. Inspect retained stage intervals before a materially new choice.
+
+[Primary result](../results/cross-program-template-parser-screen-incremental-03/summary.json).
+Source20c3d614 ran10426/10429. The two earlier session primaries remain failed under
+their original gates. Correctness proofs remain valid; the experimental runtime
+stays on its branch and the adopted runtime is unchanged.

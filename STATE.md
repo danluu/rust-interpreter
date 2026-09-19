@@ -60,3 +60,9 @@ Previous details archived docs/history/STATE-20260918-before-size-tier-primary.m
 Primary03 source20c3d614 ACTIVE10426/controller10429; initial24GiB admission passed.
 Check .work/experiments/cross-program-template-parser-screen-incremental-03/status.json
 and raw records; no other runtime experiment active. Source freeze remains.
+
+Primary03 completed10426/10429,40sourcecommands+2strictcontrols allcorrect;
+UNMEASURABLE wall.921620065+A/A.088141211=1.009761276;CPU.911340697+.059674881=.971015578.
+No unchanged retry/adoption/largercampaign. Closure56465/controllercheckstatus.
+Next read-only retained20report cost inspection; choose newmaterialcandidate.
+Main2a5c1464 published qualification/replay/install proof preserving acb5dcf0.
