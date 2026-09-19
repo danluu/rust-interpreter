@@ -73,13 +73,32 @@ failure and repeated fresh guest state match freshJIT; successful values/counts
 also match interpreter. These2controls deliberately publish/execute nativecode;
 all earlier staged models/replays publish none. No original projectguest rerun.
 
-NEXT: connect a cfg(test)-only cache context to normal lazy JIT preparation,
-keeping fresh scalar proof/admission, per-owner code/table budgets, assertion
-rebinding, fallbacks and publication unchanged. Qualify its focused/native and
-workspace tests, then replay actual saved project suites to observe real cache
-reachability/order/outcomes before choosing persistence. No CLI/store/IPC/runtime
-adoption yet. No current owned process is running at this state update; inspect
-receipts after recovery before any retry. Saved goal stays paused.
+Lazy context integrated at8cae5e11, still cfg(test)-only and absent bydefault.
+Jit.prepare_function prepares current scalar callees first, then optional Context
+uses the bound Request to restore or freshly emit/capture. Existing normal
+finish_preparation publishes it. Context validates the current Program once and
+shares a thread-local Rc/RefCell History. Two new controls exercise real lazy
+preparation across Programs and storage-decline fallback. Model08 passes20/profile
+under59303/59306, CLOSED66549/66552. Commit6aeaef0e adds workspace controller.
+
+ACTIVE at this state update: workspace01 source6aeaef0e, supervisor81196/child81199.
+Controller benchmarks/experiments/cross-program-template-model/workspace.py.
+Debug passed628tests/15ignored; release still running as last inspected. Inspect
+.work/experiments/cross-program-template-workspace-01/status.json and raw records
+before any continuation. Freeze Rust/controllers until completed and closed via
+workspace.py --close. Never repeat successful debug because later stages fail.
+
+NEXT after workspace closure: actual saved project suites using the lazy cache
+context across artifact edits, two owning worker threads with bounded per-thread
+histories and normal dynamic suite scheduling. Add opt-in diagnostic verification
+that emits fresh staging for each hit and compares exact code/metadata BEFORE
+publication, counting verified hits. This is correctness/actual-reachability
+qualification, not an end-to-end speedup (verification deliberately re-emits).
+Use exact per-state EntryCatalog/hash/outcome bindings from closed real edit
+histories, preserve wrong-result edit and restored-source state. No arbitrary
+old numeric function-set approximation. Qualify new diagnostic controls before
+original-project guest execution. No persistent native files/IPC/CLI/runtime
+adoption yet. Saved goal stays paused.
 
 ## Completed cross-edit investigation
 
@@ -104,8 +123,8 @@ candidates associate with26.9–38.3ms original ordinary emission in worker0 and
 CPU, edited-run measurements or predicted savings, nor a populated-cache bound.
 [Assessment](docs/CROSS-EDIT-EMISSION-CENSUS-20260918.md).
 
-Main publication worktree .work/publication-main is clean ata0027d13, confirmed
-PUSHEDmain, preserving peer296a927d/bd7e74a7. Published closed template/replay
+Main publication worktree .work/publication-main is clean atcd5ce92a, confirmed
+PUSHEDmain, preserving peercd19ee2e (and earlier296a927d/bd7e74a7). Published closed template/history/native-model throughModel07
 docs/results/plan only, no runtime candidate; earlier census also published.
 Fetch before future publication and preserve peer commits; never force push.
 
