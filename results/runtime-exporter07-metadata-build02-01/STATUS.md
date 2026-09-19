@@ -1,0 +1,11 @@
+# Exporter07 metadata02 and build02
+
+Metadata02 passed all36 declared children and closed normally: parent97343, supervisor98056, controller98058. Build02 then passed its seven declared children and closed normally: parent53853, supervisor54567, controller54569. The ordinary Cargo command remained locked/offline/release/jobs2. Two fresh exporter/wrapper binaries were built for the exact D2/B3/runtime07 role composition; no compiler or VM was rebuilt.
+
+Root and X independently read the closed raw/receipt/result chain. X checked409 named files, all238 immutable source hashes/identities, the43 exact child commands/environment/chronology,44 compiler rows in Cargo verbose output, both fresh binary hashes, generated role binding and complete Cargo JSON/raw associations. Recorded loader nodes match saved otool output; resolved-library bytes/hashes match the frozen packet. Each of the two compiler roles and the exporter produced705 dyld events,548 distinct images,391 final loaded and157 delayed images, with its selected driver active.
+
+The ordinary bind_recorded_wrapper helper adds the wrapper SHA/role association to raw capabilities; the retained readbacks check this transformation. Short-lived commands can finish before the separate cwd observation succeeds. Missing cwd observations remain recorded; saved spawn arguments and PID/parent/normal wait receipts establish the declared command/cwd transport. Four real build-script identity probes remain source/Cargo/generated-output evidence, not four independently supervised receipts.
+
+This capsule copies152 closed evidence/reader/root-review files and preserves exact six closed-tree memberships. The5.4MB packet plan, current source manifests and prior preparation capsule remain referenced in place. Two binary payloads, provider trees, the adopted VM and238 source-copy payloads are not copied. Failed preparation and metadata01 histories remain in preceding capsules. Frontend, publication, application and performance outcomes are outside this capture; no active frontend output was consumed.
+
+The publisher performed only bounded file copies and EOF/SHA/current-identity readback. It ran no compiler, Cargo, target import, provider probe or Git operation. Historical source documents retain their original qualification status.

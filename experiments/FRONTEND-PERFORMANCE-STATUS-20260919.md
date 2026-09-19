@@ -77,9 +77,9 @@ No exporter build or application timing ran in the failed attempt.
 
 The successor preparation retains five exact sparse-checkout proof paths across
 main merges. Metadata02 passed all 36 commands, and build02 passed its ordinary
-locked/offline exporter build and six tool checks. Frontend correctness controls
-are running; tool publication and strict Ruff application qualification remain
-pending. These preparation checks provide no application timing result.
+locked/offline exporter build and six tool checks. All 34 frontend correctness controls passed, including bytecode parity and
+nine diagnostic comparisons. Tool publication passed all three fresh checks; strict Ruff
+application qualification remains pending. These preparation checks provide no application timing result.
 
 Evidence entry points:
 
@@ -113,3 +113,5 @@ linked actual-result records establish which work has since run; an old plan's
 test count is not a new execution result.
 
 - [Successor exporter preparation and held frontend/publication sources](../results/runtime-exporter07-successor02-preparation-01/STATUS.md)
+
+- [Closed metadata and exporter build evidence](../results/runtime-exporter07-metadata-build02-01/STATUS.md)
