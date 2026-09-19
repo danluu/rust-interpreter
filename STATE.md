@@ -44,6 +44,28 @@ potential simpler emission preserving full128-bit values and first match. This
 is a hypothesis, not a measured gain. Do not repeat old general-address/bias/
 budget/frame-base/threshold candidates or speculative validation caches.
 
+## Active compact-switch candidate
+
+New runtime9bf97808 adds compact full128-bit switch comparison; no frontend or
+checking change. Closed saved census50983: block116/1514 switch samples,
+84singlezero/32other small; exhaustive78/1306,57/21; no sampled general cases.
+Census sourceb2027db7 and results/compact-switch-census-01 are final; no rerun.
+New singlezero emitter uses OR ofboth halves. Other allcase<=4095 tables guard
+high once then cmp immediate; generalcasesretainoldpath, firstmatch/duplicates.
+Seven focused controls debug/release pass, independently CLOSED89258.
+Full workspace RUNNING compact-native-switch-workspace-01, supervisor92487,
+controller92532, sourcef04edef9, exact sharedtarget/twoworkers. Python468found,
+446pass22skips; debugwasrunninglastcheck. Do not modify frozenruntime/scripts/
+tests while it runs. Qualification expected727Rust/profile19ignored; diagnostic
+41,featureoff11,ordinarymodel35,52servers108clients. Rawstoresownedidentities.
+Currentroot4724f460 pushed. Prepared separate folders compact-native-switch-
+replay(parser/fre), -install, -screen; none launched yet. Replaysmustfollowfull
+closure (1824parser/192fre originaltests,verifyallhits), then immutableinstall
+withadoptedcompilerbytes and new40command changed-source screen. Screenprotocol
+needsits16controls/closure before timing. All namesunique; no parenttimingretry.
+Main04fc8995 published closed nativecaptures+samplerhelpers, preservespeer
+cecfbba1; no experimental runtime adopted. Currentfreeabout24.7GiB; memory49%.
+
 ## Qualified candidate identities
 
 Installed tool3ebea1cdc1a521169df8bba1ca139df97759aaf200798c2bcb91bef4cba3c5ad
@@ -118,12 +140,10 @@ Last free23.5GiB. Memory check before parser:48GiB host,46% free. Recheck.
 Cleaner read-only: /usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status.
 No competing cleanup/guard, signaling, or peer session manipulation.
 
-Current root branch experiment/composed-native-costs-20260919. All current
-capture/analysis/closure commands are finished. Root latesta7202fd4 before docs
-and final proof checkpoint. Main last18e85fd0 preserves peerdbd119ff; current
-sampler helpers and closed diagnostics are ready for publication. Fetch/ff
-publication-main, copy exact qualified paths, never overwrite compiler work or
-merge experimental runtime. Push root regularly. Lastfree24.8GiB; recheck.
+Current root branch experiment/composed-native-costs-20260919. Active command
+and publication status is in the compact-switch section above. Only this root
+and .work/publication-main belong to runtime work; fetch/ff before publishing.
+Never overwrite compiler work or merge experimental runtime before full gates.
 
 suggestions.txt is unchanged,user-owned/untracked,SHA256
 4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f.

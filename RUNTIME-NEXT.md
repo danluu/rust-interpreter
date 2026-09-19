@@ -27,3 +27,12 @@ old inode inventory. Shared target and peer/private data stay untouched.
 Manual work indefinitely; no goal tools or subagents. Two workers/shared lock,
 dynamic disk admission. Lastfree23.5GiB. Current decisions and exact identities
 are in STATE.md. Publish qualified proofs regularly; experimental runtime stays off main.
+
+Compact-switch candidate9bf97808 now implemented from closed current census.
+Seven focused controls/profile CLOSED89258. Full workspace running supervisor
+92487/controller92532,sourcef04edef9; do not edit frozen crates/scripts/tests.
+Expected727Rust/profile; Python446pass22skip done. Next close, verify original
+parser/fre histories with prepared compact-native-switch-replay controllers,
+install exact qualified binaries, qualify new16-control screen and execute one
+fresh40command changed-source primary. Main04fc8995 carries sampler/evidence,
+experimental runtime only on root branch (pushed4724f460).
