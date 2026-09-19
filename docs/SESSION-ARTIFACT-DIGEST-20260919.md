@@ -22,7 +22,7 @@ Actual saved parser replay297defbe also passed:16suites,1,824invocations and
 Exact outcomes, wrong-edit failure text, fresh guests/current limits and kernel
 CPU reconcile. [Replay](../results/session-artifact-digest-parser-client-01/summary.json).
 
-The separate diagnostic replay3cb83f0e (92450/92453, closed5661/5664) passes the same
+The separate diagnostic replay3cb83f0e (92450/92453, closed5661/5665) passes the same
 1,824invocations, with16,244observed hits and verification off for phase attribution.
 For the five valid cached edits, median catalog validation is0.015ms versus8.602ms
 in the previous diagnostic. Input total is30.151ms versus37.273ms. Actual-byte
