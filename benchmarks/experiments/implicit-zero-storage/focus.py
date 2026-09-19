@@ -11,7 +11,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='implicit-zero-storage-focused-02'
+RUN='implicit-zero-storage-focused-03'
 BASE='fca687ebac0ea9374a1426addd01169fe707f608'
 
 

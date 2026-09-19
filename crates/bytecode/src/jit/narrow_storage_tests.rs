@@ -102,12 +102,15 @@ fn narrow_storage_declines_proof_storage_and_code_limits_without_partial_publica
         }
     }
     let mut ordinary=Jit::new(&p,false,MAX_CODE_BYTES).unwrap();ordinary.ensure_function(0).unwrap();
-    assert!(ordinary.narrow_registers[0].is_none());
+    assert!(ordinary.narrow_registers.is_empty());
 }
 
 fn reused(wide_after: bool, fault: bool, initial: bool) -> Program {
     let poison=function("wide storage",vec![Op::Local{dst:0,offset:0},Op::Imm{dst:1,value:u128::MAX},
-        Op::Jump{target:3},Op::Store{address:0,src:1,size:16},Op::Return],6);
+        // Force a real VM read so the wide source must reach physical backing
+        // before Return. A native-only Store could keep it in a persistent pair.
+        Op::Binary{dst:2,overflow:3,op:Binary::Mul,a:1,b:1,bits:128,signed:false},
+        Op::Store{address:0,src:1,size:16},Op::Return],6);
     let mut code=vec![Op::Local{dst:0,offset:0},Op::Imm{dst:1,value:0},Op::Jump{target:3},
         // Native full read after a real spill; zero's stale high half is observable.
         Op::Assert{value:1,expected:false,message:"narrow native zero".into()},
@@ -188,7 +191,8 @@ fn narrow_storage_tls_callbacks_reuse_root_backing_and_keep_handle_validation() 
         let handle=u128::from(crate::FUNCTION_POINTER_TAG|2)|if invalid {1u128<<100} else {0};
         let root=function("tls root",vec![Op::Imm{dst:0,value:handle},Op::Imm{dst:1,value:7},
             Op::RegisterTlsDestructor{callback:0,argument:1},Op::Local{dst:0,offset:0},
-            Op::Imm{dst:1,value:u128::MAX},Op::Jump{target:6},
+            Op::Imm{dst:1,value:u128::MAX},
+            Op::Binary{dst:2,overflow:3,op:Binary::Mul,a:1,b:1,bits:128,signed:false},
             Op::Store{address:0,src:1,size:16},Op::Return],6);
         let mut callback=function("tls narrow callback",vec![Op::Local{dst:0,offset:8},
             Op::Load{dst:1,address:0,size:8},Op::Jump{target:3},

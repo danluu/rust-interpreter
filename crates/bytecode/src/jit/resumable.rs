@@ -140,6 +140,7 @@ impl<'a> Jit<'a> {
         persistent: bool,
     ) -> Result<Self, String> {
         let mut jit = Self::new_with_options(program, profiled, capacity, false, persistent)?;
+        jit.narrow_registers = vec![None; program.functions.len()];
         jit.resumable = Some(Entries::new(program));
         Ok(jit)
     }

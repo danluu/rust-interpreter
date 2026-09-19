@@ -7,8 +7,8 @@ Only resumable native functions are eligible. Retain at most8MiB of boolean
 proof entries per JIT, in addition to the existing per-function proof limits.
 Publish proofs with successful code publication; declines retain the ordinary
 representation. Diagnostic re-emission uses the exact retained proof even if
-later functions exhaust metadata admission. Ordinary native/tree modes and
-scalar bodies keep their current representation. All initialization remains.
+later functions exhaust metadata admission. Ordinary native/tree modes allocate no proof table and keep their current
+representation, as do scalar bodies. All initialization remains.
 
 Nine focused controls exercise dirty high backing at small/large offsets,
 actual persistent-pair reloads and the host ABI, read/write aliases and uncommon
@@ -29,3 +29,11 @@ histories keep their original gates. No gain or adoption is presumed.
 Use acquire_lock(...,45), two Cargo/test workers, the existing owned target,
 and max(14GiB,8GiB+2*allocated target) admission; check8GiB before every child.
 Preserve the paused goal, all peer work and closed successful evidence.
+
+Focused03 strengthens wide-to-narrow reuse: an actual interpreted128-bit
+multiply forces the earlier wide value into backing before the frame is reused.
+A native-only store could keep that value in a persistent pair and leave the
+intended dirty byte pattern untested. The existing isolated native probes also
+verify physically poisoned slots directly. Focused02 remains closed and valid
+for its original fixtures;03 adds this guarantee and avoids proof-table allocation
+outside resumable mode.

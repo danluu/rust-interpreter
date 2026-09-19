@@ -440,7 +440,7 @@ impl<'a> Jit<'a> {
             observe_flush: false,
             #[cfg(test)]
             observe_memory_parts: false,
-            narrow_registers: vec![None; program.functions.len()], narrow_register_bytes: 0,
+            narrow_registers: vec![], narrow_register_bytes: 0,
             #[cfg(test)]
             disable_narrow_registers: false,
             persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
