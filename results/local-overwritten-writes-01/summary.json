@@ -1,0 +1,763 @@
+{
+  "status": "passed",
+  "raw": ".work/local-overwritten-writes-01",
+  "source_revision": "00ee280ac29020c48cc060917fb3caecef729d0e",
+  "controls": 12,
+  "plan_sha256": "dfd90d870d48fe00e3af9fa3883a6e6796536ee7ac43f8e79fe2bb76451ab373",
+  "records_sha256": "652bcce32cf78d034206d03061502db59e40d7328a47ac86af62bd78446f6caa",
+  "details_sha256": {
+    "block": "cf41e96fcd1b8bca5a42b86984f0b2cdfca63ec9efc01ab13385cbf2538eb574",
+    "exhaustive": "b09d16cf51a41d4f289a3154a588c5be4c80e60f8282c4838ca76784d0977f07"
+  },
+  "cases": [
+    {
+      "case": "block",
+      "generated_samples": 1933,
+      "copy_samples": 466,
+      "store_samples": 67,
+      "counts": {
+        "regions": 20033,
+        "operations": 365217,
+        "Store_operations": 26764,
+        "Store_logical_executions": 943330613,
+        "Copy_operations": 44718,
+        "Copy_logical_executions": 1524297520,
+        "read_fault_or_exit_barriers": 38999,
+        "modeled_overwritten_writes": 1501,
+        "modeled_write_samples": 0,
+        "modeled_cyclic_write_samples": 0,
+        "modeled_write_logical": 16613069,
+        "Store_candidate_samples": 0,
+        "Copy_candidate_samples": 0
+      },
+      "modeled_write_sample_percent": 0.0,
+      "whole_test_fixed_entropy_logical": {
+        "native": 15847599117,
+        "interpreted": 1932147,
+        "scalar": 1147704517,
+        "total": 15849531264
+      },
+      "top_functions": [
+        {
+          "function": 1,
+          "name": "token_phrase::tests::block_boundaries_preserve_maximal_runs_literal_gating_and_restart[]",
+          "samples": 0
+        },
+        {
+          "function": 83,
+          "name": "token_phrase::TokenPhrasePlan::build_attempt::{closure#0}[i16, Binder { value: extern \"RustCall\" fn(()) -> std::result::Result<token_phrase::TokenPhrasePlan, token_phrase::BuildError>, bound_vars: [] }, (&'{erased} &'{erased} [u8], &'{erased} usize, &'{erased} usize, &'{erased} usize, &'{erased} usize, &'{erased} usize, &'{erased} mut u64, &'{erased} mut usize, &'{erased} mut usize, &'{erased} mut usize, &'{erased} mut usize, &'{erased} mut usize, &'{erased} mut usize, &'{erased} bool)]",
+          "samples": 0
+        },
+        {
+          "function": 245,
+          "name": "fre_exact_alloc::copy_exact_with[]",
+          "samples": 0
+        },
+        {
+          "function": 150,
+          "name": "memchr::memmem::searcher::Searcher::new[memchr::arch::all::packedpair::DefaultFrequencyRank]",
+          "samples": 0
+        },
+        {
+          "function": 248,
+          "name": "memchr::arch::all::packedpair::Pair::with_ranker[&'{erased} memchr::arch::all::packedpair::DefaultFrequencyRank]",
+          "samples": 0
+        },
+        {
+          "function": 522,
+          "name": "std::sync::Once::call_once_force[Closure(DefId(1:5560 ~ std[515b]::sync::once_lock::{impl#0}::initialize::{closure#0}), [fre_simd_kernels::CpuCapabilities, Closure(DefId(1:5543 ~ std[515b]::sync::once_lock::{impl#0}::get_or_init::{closure#0}), [fre_simd_kernels::CpuCapabilities, FnDef(DefId(32:51 ~ fre_target_features[1f1b]::detect_host), Binder { value: [], bound_vars: [] }), i32, Binder { value: extern \"RustCall\" fn(()) -> std::result::Result<fre_simd_kernels::CpuCapabilities, !>, bound_vars: [] }, (FnDef(DefId(32:51 ~ fre_target_features[1f1b]::detect_host), Binder { value: [], bound_vars: [] }),)]), !, i32, Binder { value: extern \"RustCall\" fn((&'^0 std::sync::OnceState,)), bound_vars: [Region(BrAnon)] }, (Closure(DefId(1:5543 ~ std[515b]::sync::once_lock::{impl#0}::get_or_init::{closure#0}), [fre_simd_kernels::CpuCapabilities, FnDef(DefId(32:51 ~ fre_target_features[1f1b]::detect_host), Binder { value: [], bound_vars: [] }), i32, Binder { value: extern \"RustCall\" fn(()) -> std::result::Result<fre_simd_kernels::CpuCapabilities, !>, bound_vars: [] }, (FnDef(DefId(32:51 ~ fre_target_features[1f1b]::detect_host), Binder { value: [], bound_vars: [] }),)]), &'{erased} std::cell::UnsafeCell<std::mem::MaybeUninit<fre_simd_kernels::CpuCapabilities>>, &'{erased} mut std::result::Result<(), !>)])]",
+          "samples": 0
+        },
+        {
+          "function": 718,
+          "name": "std::sys::sync::once::queue::Once::call[]",
+          "samples": 0
+        },
+        {
+          "function": 1003,
+          "name": "std::sync::atomic::atomic_compare_exchange_weak[*mut ()]",
+          "samples": 0
+        },
+        {
+          "function": 4145,
+          "name": "std_detect::detect::cache::do_initialize[]",
+          "samples": 0
+        },
+        {
+          "function": 3363,
+          "name": "fre_target_features::macos::detect_aarch64[]",
+          "samples": 0
+        },
+        {
+          "function": 927,
+          "name": "core::slice::memchr::memchr[]",
+          "samples": 0
+        },
+        {
+          "function": 926,
+          "name": "core::slice::memchr::memchr_aligned::runtime[]",
+          "samples": 0
+        }
+      ],
+      "top_sites": [
+        {
+          "function": 2717,
+          "name": "regex_automata::util::determinize::state::Repr::<'a>::iter_nfa_state_ids['{erased}, Closure(DefId(35:4279 ~ regex_automata[605a]::util::determinize::next::{closure#0}), [i16, Binder { value: extern \"RustCall\" fn((regex_automata::util::primitives::StateID,)), bound_vars: [] }, (&'{erased} mut regex_automata::util::sparse_set::SparseSet,)])]",
+          "region_start": 500,
+          "region_end": 560,
+          "pc": 516,
+          "offset": 176,
+          "size": 8,
+          "kind": "Store",
+          "overwritten_by": 535,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 3444224
+        },
+        {
+          "function": 2720,
+          "name": "regex_automata::util::determinize::state::StateBuilderEmpty::into_matches[]",
+          "region_start": 0,
+          "region_end": 93,
+          "pc": 48,
+          "offset": 48,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 51,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 987840
+        },
+        {
+          "function": 2728,
+          "name": "regex_automata::util::determinize::add_nfa_states[]",
+          "region_start": 60,
+          "region_end": 118,
+          "pc": 64,
+          "offset": 80,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 68,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 982464
+        },
+        {
+          "function": 2717,
+          "name": "regex_automata::util::determinize::state::Repr::<'a>::iter_nfa_state_ids['{erased}, Closure(DefId(35:4279 ~ regex_automata[605a]::util::determinize::next::{closure#0}), [i16, Binder { value: extern \"RustCall\" fn((regex_automata::util::primitives::StateID,)), bound_vars: [] }, (&'{erased} mut regex_automata::util::sparse_set::SparseSet,)])]",
+          "region_start": 336,
+          "region_end": 387,
+          "pc": 352,
+          "offset": 176,
+          "size": 8,
+          "kind": "Store",
+          "overwritten_by": 371,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 974848
+        },
+        {
+          "function": 3528,
+          "name": "regex_automata::dfa::dense::TransitionTable::<std::vec::Vec<u32>>::set[]",
+          "region_start": 0,
+          "region_end": 91,
+          "pc": 43,
+          "offset": 64,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 46,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 974848
+        },
+        {
+          "function": 3528,
+          "name": "regex_automata::dfa::dense::TransitionTable::<std::vec::Vec<u32>>::set[]",
+          "region_start": 0,
+          "region_end": 91,
+          "pc": 46,
+          "offset": 64,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 49,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 974848
+        },
+        {
+          "function": 3528,
+          "name": "regex_automata::dfa::dense::TransitionTable::<std::vec::Vec<u32>>::set[]",
+          "region_start": 160,
+          "region_end": 247,
+          "pc": 199,
+          "offset": 104,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 202,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 974848
+        },
+        {
+          "function": 3528,
+          "name": "regex_automata::dfa::dense::TransitionTable::<std::vec::Vec<u32>>::set[]",
+          "region_start": 160,
+          "region_end": 247,
+          "pc": 202,
+          "offset": 104,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 205,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 974848
+        },
+        {
+          "function": 4070,
+          "name": "<Q as hashbrown::Equivalent<K>>::equivalent[[u8], regex_automata::util::determinize::state::State]",
+          "region_start": 62,
+          "region_end": 92,
+          "pc": 71,
+          "offset": 112,
+          "size": 8,
+          "kind": "Store",
+          "overwritten_by": 84,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 942763
+        },
+        {
+          "function": 2597,
+          "name": "regex_automata::dfa::determinize::Runner::<'a>::run['{erased}]",
+          "region_start": 464,
+          "region_end": 538,
+          "pc": 483,
+          "offset": 1368,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 490,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 934080
+        },
+        {
+          "function": 2597,
+          "name": "regex_automata::dfa::determinize::Runner::<'a>::run['{erased}]",
+          "region_start": 464,
+          "region_end": 538,
+          "pc": 490,
+          "offset": 1368,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 493,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 934080
+        },
+        {
+          "function": 3238,
+          "name": "regex_automata::util::determinize::state::ReprVec::<'a>::set_look_have['{erased}, Closure(DefId(35:4286 ~ regex_automata[605a]::util::determinize::add_nfa_states::{closure#1}), [i16, Binder { value: extern \"RustCall\" fn((regex_automata::util::look::LookSet,)) -> regex_automata::util::look::LookSet, bound_vars: [] }, ()])]",
+          "region_start": 135,
+          "region_end": 272,
+          "pc": 150,
+          "offset": 64,
+          "size": 8,
+          "kind": "Store",
+          "overwritten_by": 168,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 782208
+        },
+        {
+          "function": 3237,
+          "name": "regex_automata::util::determinize::state::ReprVec::<'a>::set_look_need['{erased}, Closure(DefId(35:4285 ~ regex_automata[605a]::util::determinize::add_nfa_states::{closure#0}), [i16, Binder { value: extern \"RustCall\" fn((regex_automata::util::look::LookSet,)) -> regex_automata::util::look::LookSet, bound_vars: [] }, (&'{erased} regex_automata::util::look::Look,)])]",
+          "region_start": 155,
+          "region_end": 292,
+          "pc": 170,
+          "offset": 72,
+          "size": 8,
+          "kind": "Store",
+          "overwritten_by": 188,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 254016
+        },
+        {
+          "function": 2723,
+          "name": "regex_automata::util::determinize::state::ReprVec::<'a>::set_look_have['{erased}, Closure(DefId(35:4282 ~ regex_automata[605a]::util::determinize::next::{closure#3}), [i16, Binder { value: extern \"RustCall\" fn((regex_automata::util::look::LookSet,)) -> regex_automata::util::look::LookSet, bound_vars: [] }, ()])]",
+          "region_start": 146,
+          "region_end": 283,
+          "pc": 161,
+          "offset": 64,
+          "size": 8,
+          "kind": "Store",
+          "overwritten_by": 179,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 215040
+        },
+        {
+          "function": 75,
+          "name": "alloc::raw_vec::RawVecInner::<A>::grow_amortized[std::alloc::Global]",
+          "region_start": 124,
+          "region_end": 188,
+          "pc": 133,
+          "offset": 104,
+          "size": 8,
+          "kind": "Store",
+          "overwritten_by": 145,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 183366
+        },
+        {
+          "function": 75,
+          "name": "alloc::raw_vec::RawVecInner::<A>::grow_amortized[std::alloc::Global]",
+          "region_start": 124,
+          "region_end": 188,
+          "pc": 145,
+          "offset": 104,
+          "size": 8,
+          "kind": "Store",
+          "overwritten_by": 157,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 183366
+        },
+        {
+          "function": 138,
+          "name": "alloc::raw_vec::RawVecInner::<A>::finish_grow[std::alloc::Global]",
+          "region_start": 140,
+          "region_end": 174,
+          "pc": 149,
+          "offset": 128,
+          "size": 8,
+          "kind": "Store",
+          "overwritten_by": 161,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 183366
+        },
+        {
+          "function": 2262,
+          "name": "regex_automata::util::determinize::next[]",
+          "region_start": 1222,
+          "region_end": 1256,
+          "pc": 1226,
+          "offset": 288,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 1230,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 123200
+        },
+        {
+          "function": 1829,
+          "name": "regex_automata::meta::stopat::dfa_try_search_half_fwd[]",
+          "region_start": 97,
+          "region_end": 281,
+          "pc": 233,
+          "offset": 920,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 236,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 90888
+        },
+        {
+          "function": 3084,
+          "name": "<regex_automata::dfa::dense::StateTransitionIter<'a> as std::iter::Iterator>::next['{erased}]",
+          "region_start": 60,
+          "region_end": 125,
+          "pc": 84,
+          "offset": 88,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 87,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 87808
+        }
+      ]
+    },
+    {
+      "case": "exhaustive",
+      "generated_samples": 1429,
+      "copy_samples": 234,
+      "store_samples": 41,
+      "counts": {
+        "regions": 23406,
+        "operations": 448992,
+        "Store_operations": 31961,
+        "Store_logical_executions": 786571890,
+        "Copy_operations": 57889,
+        "Copy_logical_executions": 1018089254,
+        "read_fault_or_exit_barriers": 50161,
+        "modeled_overwritten_writes": 1802,
+        "modeled_write_samples": 0,
+        "modeled_cyclic_write_samples": 0,
+        "modeled_write_logical": 14889566,
+        "Store_candidate_samples": 0,
+        "Copy_candidate_samples": 0
+      },
+      "modeled_write_sample_percent": 0.0,
+      "whole_test_fixed_entropy_logical": {
+        "native": 13360844530,
+        "interpreted": 2417680,
+        "scalar": 2699917979,
+        "total": 13363262210
+      },
+      "top_functions": [
+        {
+          "function": 6,
+          "name": "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex[]",
+          "samples": 0
+        },
+        {
+          "function": 83,
+          "name": "token_phrase::TokenPhrasePlan::build_attempt::{closure#0}[i16, Binder { value: extern \"RustCall\" fn(()) -> std::result::Result<token_phrase::TokenPhrasePlan, token_phrase::BuildError>, bound_vars: [] }, (&'{erased} &'{erased} [u8], &'{erased} usize, &'{erased} usize, &'{erased} usize, &'{erased} usize, &'{erased} usize, &'{erased} mut u64, &'{erased} mut usize, &'{erased} mut usize, &'{erased} mut usize, &'{erased} mut usize, &'{erased} mut usize, &'{erased} mut usize, &'{erased} bool)]",
+          "samples": 0
+        },
+        {
+          "function": 245,
+          "name": "fre_exact_alloc::copy_exact_with[]",
+          "samples": 0
+        },
+        {
+          "function": 150,
+          "name": "memchr::memmem::searcher::Searcher::new[memchr::arch::all::packedpair::DefaultFrequencyRank]",
+          "samples": 0
+        },
+        {
+          "function": 522,
+          "name": "std::sync::Once::call_once_force[Closure(DefId(1:5560 ~ std[515b]::sync::once_lock::{impl#0}::initialize::{closure#0}), [fre_simd_kernels::CpuCapabilities, Closure(DefId(1:5543 ~ std[515b]::sync::once_lock::{impl#0}::get_or_init::{closure#0}), [fre_simd_kernels::CpuCapabilities, FnDef(DefId(32:51 ~ fre_target_features[1f1b]::detect_host), Binder { value: [], bound_vars: [] }), i32, Binder { value: extern \"RustCall\" fn(()) -> std::result::Result<fre_simd_kernels::CpuCapabilities, !>, bound_vars: [] }, (FnDef(DefId(32:51 ~ fre_target_features[1f1b]::detect_host), Binder { value: [], bound_vars: [] }),)]), !, i32, Binder { value: extern \"RustCall\" fn((&'^0 std::sync::OnceState,)), bound_vars: [Region(BrAnon)] }, (Closure(DefId(1:5543 ~ std[515b]::sync::once_lock::{impl#0}::get_or_init::{closure#0}), [fre_simd_kernels::CpuCapabilities, FnDef(DefId(32:51 ~ fre_target_features[1f1b]::detect_host), Binder { value: [], bound_vars: [] }), i32, Binder { value: extern \"RustCall\" fn(()) -> std::result::Result<fre_simd_kernels::CpuCapabilities, !>, bound_vars: [] }, (FnDef(DefId(32:51 ~ fre_target_features[1f1b]::detect_host), Binder { value: [], bound_vars: [] }),)]), &'{erased} std::cell::UnsafeCell<std::mem::MaybeUninit<fre_simd_kernels::CpuCapabilities>>, &'{erased} mut std::result::Result<(), !>)])]",
+          "samples": 0
+        },
+        {
+          "function": 718,
+          "name": "std::sys::sync::once::queue::Once::call[]",
+          "samples": 0
+        },
+        {
+          "function": 1003,
+          "name": "std::sync::atomic::atomic_compare_exchange_weak[*mut ()]",
+          "samples": 0
+        },
+        {
+          "function": 4145,
+          "name": "std_detect::detect::cache::do_initialize[]",
+          "samples": 0
+        },
+        {
+          "function": 3363,
+          "name": "fre_target_features::macos::detect_aarch64[]",
+          "samples": 0
+        },
+        {
+          "function": 927,
+          "name": "core::slice::memchr::memchr[]",
+          "samples": 0
+        },
+        {
+          "function": 926,
+          "name": "core::slice::memchr::memchr_aligned::runtime[]",
+          "samples": 0
+        },
+        {
+          "function": 1492,
+          "name": "<std::sys::sync::once::queue::WaiterQueue<'_> as std::ops::Drop>::drop['{erased}]",
+          "samples": 0
+        }
+      ],
+      "top_sites": [
+        {
+          "function": 1461,
+          "name": "<A as core::slice::cmp::SlicePartialOrd>::partial_compare[u8]",
+          "region_start": 43,
+          "region_end": 86,
+          "pc": 52,
+          "offset": 120,
+          "size": 8,
+          "kind": "Store",
+          "overwritten_by": 65,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 7898292
+        },
+        {
+          "function": 75,
+          "name": "alloc::raw_vec::RawVecInner::<A>::grow_amortized[std::alloc::Global]",
+          "region_start": 124,
+          "region_end": 188,
+          "pc": 133,
+          "offset": 104,
+          "size": 8,
+          "kind": "Store",
+          "overwritten_by": 145,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 471483
+        },
+        {
+          "function": 75,
+          "name": "alloc::raw_vec::RawVecInner::<A>::grow_amortized[std::alloc::Global]",
+          "region_start": 124,
+          "region_end": 188,
+          "pc": 145,
+          "offset": 104,
+          "size": 8,
+          "kind": "Store",
+          "overwritten_by": 157,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 471483
+        },
+        {
+          "function": 138,
+          "name": "alloc::raw_vec::RawVecInner::<A>::finish_grow[std::alloc::Global]",
+          "region_start": 140,
+          "region_end": 174,
+          "pc": 149,
+          "offset": 128,
+          "size": 8,
+          "kind": "Store",
+          "overwritten_by": 161,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 471483
+        },
+        {
+          "function": 129,
+          "name": "token_phrase::TokenPhrasePlan::derive_short_input_upper_bounds[]",
+          "region_start": 709,
+          "region_end": 759,
+          "pc": 728,
+          "offset": 1056,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 748,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 404352
+        },
+        {
+          "function": 129,
+          "name": "token_phrase::TokenPhrasePlan::derive_short_input_upper_bounds[]",
+          "region_start": 770,
+          "region_end": 800,
+          "pc": 779,
+          "offset": 1040,
+          "size": 8,
+          "kind": "Store",
+          "overwritten_by": 784,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 404352
+        },
+        {
+          "function": 129,
+          "name": "token_phrase::TokenPhrasePlan::derive_short_input_upper_bounds[]",
+          "region_start": 805,
+          "region_end": 867,
+          "pc": 824,
+          "offset": 1040,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 829,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 404352
+        },
+        {
+          "function": 129,
+          "name": "token_phrase::TokenPhrasePlan::derive_short_input_upper_bounds[]",
+          "region_start": 878,
+          "region_end": 908,
+          "pc": 887,
+          "offset": 1048,
+          "size": 8,
+          "kind": "Store",
+          "overwritten_by": 892,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 404352
+        },
+        {
+          "function": 133,
+          "name": "token_phrase::TokenPhrasePlan::scan_block_masks[]",
+          "region_start": 1387,
+          "region_end": 1432,
+          "pc": 1396,
+          "offset": 1056,
+          "size": 8,
+          "kind": "Store",
+          "overwritten_by": 1406,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 404352
+        },
+        {
+          "function": 133,
+          "name": "token_phrase::TokenPhrasePlan::scan_block_masks[]",
+          "region_start": 1515,
+          "region_end": 1577,
+          "pc": 1529,
+          "offset": 976,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 1534,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 404352
+        },
+        {
+          "function": 133,
+          "name": "token_phrase::TokenPhrasePlan::scan_block_masks[]",
+          "region_start": 1582,
+          "region_end": 1649,
+          "pc": 1603,
+          "offset": 976,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 1608,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 404352
+        },
+        {
+          "function": 133,
+          "name": "token_phrase::TokenPhrasePlan::scan_block_masks[]",
+          "region_start": 1660,
+          "region_end": 1693,
+          "pc": 1669,
+          "offset": 984,
+          "size": 8,
+          "kind": "Store",
+          "overwritten_by": 1674,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 404352
+        },
+        {
+          "function": 133,
+          "name": "token_phrase::TokenPhrasePlan::scan_block_masks[]",
+          "region_start": 1698,
+          "region_end": 1765,
+          "pc": 1719,
+          "offset": 976,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 1724,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 404352
+        },
+        {
+          "function": 133,
+          "name": "token_phrase::TokenPhrasePlan::scan_block_masks[]",
+          "region_start": 1776,
+          "region_end": 1809,
+          "pc": 1785,
+          "offset": 984,
+          "size": 8,
+          "kind": "Store",
+          "overwritten_by": 1790,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 404352
+        },
+        {
+          "function": 1641,
+          "name": "<regex_automata::util::prefilter::memchr::Memchr as regex_automata::util::prefilter::PrefilterI>::find[]",
+          "region_start": 29,
+          "region_end": 130,
+          "pc": 38,
+          "offset": 272,
+          "size": 8,
+          "kind": "Store",
+          "overwritten_by": 57,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 206544
+        },
+        {
+          "function": 1641,
+          "name": "<regex_automata::util::prefilter::memchr::Memchr as regex_automata::util::prefilter::PrefilterI>::find[]",
+          "region_start": 29,
+          "region_end": 130,
+          "pc": 87,
+          "offset": 256,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 96,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 206544
+        },
+        {
+          "function": 1324,
+          "name": "regex_automata::meta::limited::dfa_try_search_half_rev[]",
+          "region_start": 220,
+          "region_end": 404,
+          "pc": 356,
+          "offset": 504,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 359,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 130880
+        },
+        {
+          "function": 869,
+          "name": "regex_automata::meta::strategy::ReverseInner::try_search_full[]",
+          "region_start": 271,
+          "region_end": 315,
+          "pc": 275,
+          "offset": 552,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 284,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 117552
+        },
+        {
+          "function": 1324,
+          "name": "regex_automata::meta::limited::dfa_try_search_half_rev[]",
+          "region_start": 2054,
+          "region_end": 2144,
+          "pc": 2096,
+          "offset": 504,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 2099,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 117552
+        },
+        {
+          "function": 1347,
+          "name": "regex_automata::meta::strategy::ReverseInner::try_search_half_rev_limited[]",
+          "region_start": 384,
+          "region_end": 446,
+          "pc": 406,
+          "offset": 264,
+          "size": 8,
+          "kind": "Copy",
+          "overwritten_by": 415,
+          "samples": 0,
+          "cyclic_samples": 0,
+          "logical_executions": 117552
+        }
+      ]
+    }
+  ],
+  "guest_commands": 0,
+  "host_builds": 0,
+  "production_changes": 0,
+  "performance_measurement": false,
+  "limitation": "Diagnostic rendered-operation model, not an emitter proof or native instruction saving. Native partial normal-entropy self-PC samples and fixed-entropy whole-test logical executions remain separate. No speedup or adoption inference. Typed exact-emitter qualification required before runtime changes."
+}
