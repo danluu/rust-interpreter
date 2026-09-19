@@ -127,3 +127,8 @@ Focused02 timed out at45s sharedlock before raw/tests; independently closed.
 Peer holder44851 now finished naturally; no process controlled. Readmit as03
 with unchanged tests and retained02 admission receipt. Workspace requires03.
 Heap-layout-profile01 registeredUNRUN using exact currenthost/code/map checks.
+
+Focused03 sourcec4fae859 supervisor98245/controller98250 finished0; independent
+close73158 passed. Newbudget3debug+all6release, retainedheap16/profile andC3debug.
+Combined16heap+6C/profile complete, originalfailure andadmissiontimeout preserved.
+Next workspace01 (4commands), independent--close; freeze allcrates/scripts/tests.
