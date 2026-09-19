@@ -25,7 +25,11 @@ ordering. Focused01's nine passes and one failure are preserved: the new fixture
 had attempted to write immutable Program.data;02 fixes only the fixture to use
 writable tagged statics. [Focused proof](../results/session-duration-order-focused-02/summary.json).
 
-Full679/profile qualification is running. Verified actual parser replay and
-uninstrumented scheduling evidence must precede a new changed-source primary06.
+Full qualification01 passed all679Rust tests/profile with17ignored, then stopped
+before diagnostic on disk admission. Its three completed commands are closed and
+retained. Qualification02 will verify and reuse them, bind the retained binaries
+to target bytes before any new build, and run only the four remaining commands.
+Verified actual parser replay and separate diagnostic ordering evidence must
+precede a new changed-source primary06.
 The shared-key variant is disabled; literal parameterization, key-v1, current
 checks and the adopted compiler tools remain. No default change or speedup claim.

@@ -257,3 +257,14 @@ Shared replaya1fdf264 complete10978 CLOSED17870:1824/19673verifiedhits. Phase4b8
 Worker-tailcensus ececc7b0 complete55074/55105 CLOSED74675:10reports1140intervals;heaviestlast10/10. Candidate median203.713ms after41.111ms prior;peer41.556ms total; prior37.490-62.691. Historyoff prior79.316 heavy223.240ms. Nextgeneralprevious-duration priority, sharedkeysOFF; no scheduler implementation yet. Mainadvancedpeerbdd02387 preserved.
 
 Durationorderprototype3d288774:focused01 12620/12623 failed9pass1fixture Program.data readonly, CLOSED24324. Correctedstaticsfixture6c5cc0e4 focused02 complete30526/30529 CLOSED87092:10/profile4off. Full01sourceb38c4b3c ACTIVE9037/controller9040, freeze crates/scripts/tests/duration-workspace throughclosure;679/profile17ignored39diag10offsession31offmodel. Main9e506a1c pushedshared/tailproofspreservingpeerbdd02387. SuggestionsSHA4d74b3dc unchanged02:03.
+
+## 2026-09-19 duration-order qualification disk recovery
+
+Qualification01 closed after successful Python reuse442+22skip and679Rust tests
+per profile17ignored. It stopped before diagnostic at the unchanged disk admission
+threshold, not a test failure. Recovery preserves all three completed commands and
+checks their source, receipts, and copied binaries against the current target before
+remaining builds. Only four commands remain; no test retry. Primary05 closed-cache
+retirement completed20684/20687 with15152files2,991,235,194logicalbytes removed,
+11410protected hashes unchanged; independent closure underway. Suggestions unchanged.
+No adoption; saved goal paused, no peerwork touched.

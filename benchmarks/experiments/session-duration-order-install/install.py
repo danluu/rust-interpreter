@@ -22,7 +22,7 @@ def main():
             result=ROOT/'results'/name;c=bind(result/'closure.json');assert c['status']=='closed' and c['all_hashes_verified']
             t=bind(result/'terminal.json',c['terminal_sha256']);assert t['status']=='finished' and t['returncode']==0 and t['owner']==str(ROOT)
             s=bind(result/'summary.json',c['summary_sha256']);assert s['status']=='passed';return s
-        qualification=closed('session-duration-order-qualification-01');replay=closed('session-duration-order-parser-client-01')
+        qualification=closed('session-duration-order-qualification-02');replay=closed('session-duration-order-parser-client-01')
         assert qualification['large_function_interpreter_threshold']==replay['large_function_interpreter_threshold']==65536
         assert qualification['duration_order'] is True and qualification['shared_literal_keys'] is False
         assert qualification['parameterized_literals'] is replay['parameterized_literals'] is True

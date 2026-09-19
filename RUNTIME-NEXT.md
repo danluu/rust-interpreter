@@ -7,10 +7,14 @@ all current entries/fresh guests/currentlimits/canonicalreports unchanged.
 Focused01 source3d288774 12620/12623 failed9pass1fixture(readonlyProgram.data),
 CLOSED24324. Fixed writabletaggedstatics fixture6c5cc0e4 focused02 complete
 30526/30529 CLOSED87092:10servercontrols/profile+4featureoff. No runtime defect.
-Fullqualification01 sourceb38c4b3c ACTIVE9037/controller9040:679Rust/profile17ignored,
-39diagnostic,10offsession31offmodel/defaultVM,442Python+22skip hashboundreuse.
-Freeze crates/scripts/tests andsession-duration-order-workspace throughclosure.
-Replay/phase/install controllers prepared, notstarted; primary06 notyetbound.
+Fullqualification01 sourceb38c4b3c CLOSED61743/61746 after9037/9040: passed
+679Rust/profile17ignored andPython442+22skip, then disk-admission stop before
+any diagnostic command. Qualification02 prepared: reuse3commands with exact
+source/log/fixture hashes and retainedbinary-to-currenttarget comparisons; only
+4remainingcommands run (39diagnostic,10offsession31offmodel/defaultVM).
+Cleanup primary05 completed20684/20687:15152files2,991,235,194logicalbytes,
+11410protectedhashesunchanged; closure underway. NEVER repeat that retirement.
+Replay/phase/install now require qualification02; primary06 notyetbound.
 
 Shared-key candidate PARKED: full678/profile17ignored andactual1824/19673verified
 hits; phase19151observedhits,key9.003vsparent10.278ms butordinary21.952vs21.703.
@@ -63,7 +67,7 @@ work via benchmark.lock45s. Buildtarget .work/fixed-frame-clear-combined-build-0
 neverclean; buildfloor max(14GiB,8GiB+2*allocated target). Replay/analysis12GiB,
 child/closure8GiB,parser24GiB+16GiBcacheallowance,Nushell47GiB. Read-only cleaner
 /usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status.
-Free~25GiB variable. SuggestionsSHA4d74b3dc... unchanged/re-read September19.
+Free~24.5GiB variable. SuggestionsSHA4d74b3dc... unchanged/re-read September19.
 
 Do notrepeat completedcache retirement: primary01/02,03+strict01/02/03,
 primary04+strict, recenttoken02, frecustom01. Preserve all proofs/binaries/sources

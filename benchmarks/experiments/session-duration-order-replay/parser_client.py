@@ -25,7 +25,7 @@ def main():
         def closed(run):
             folder=ROOT/'results'/run;c=bind(folder/'closure.json');assert c['status']=='closed' and c['all_hashes_verified']
             bind(folder/'terminal.json',c['terminal_sha256']);return bind(folder/'summary.json',c['summary_sha256'])
-        qualification=closed('session-duration-order-qualification-01');assert qualification['duration_order'] is True and qualification['shared_literal_keys'] is False
+        qualification=closed('session-duration-order-qualification-02');assert qualification['duration_order'] is True and qualification['shared_literal_keys'] is False
         assert qualification['parameterized_literals'] is True and qualification['buffered_template_keys'] is False
         assert qualification['template_key_domain']=='cross-program-staging-literals-v1' and qualification['artifact_digest_reuse'] is True
         assert qualification['status']=='passed' and qualification['large_function_interpreter_threshold']==65536 and qualification['diagnostic_feature'] is False

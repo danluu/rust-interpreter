@@ -26,7 +26,7 @@ def main():
             folder=ROOT/'results'/run;c=bind(folder/'closure.json');assert c['status']=='closed' and c['all_hashes_verified']
             bind(folder/'terminal.json',c['terminal_sha256']);return bind(folder/'summary.json',c['summary_sha256'])
         replay=closed('session-duration-order-parser-client-01');assert replay['verified_cache_hits']>0 and replay['test_invocations']==1824
-        qualification=closed('session-duration-order-qualification-01');assert qualification['status']=='passed'
+        qualification=closed('session-duration-order-qualification-02');assert qualification['status']=='passed'
         assert qualification['duration_order'] is True and qualification['shared_literal_keys'] is False
         assert qualification['parameterized_literals'] is replay['parameterized_literals'] is True
         assert qualification['buffered_template_keys'] is replay['buffered_template_keys'] is False
