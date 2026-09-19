@@ -18,7 +18,11 @@ Controllers are benchmarks/experiments/cross-edit-emission-census.
 Observe.py reads eight already-retained parser artifacts
 (original, wrong, five valid edits, restored) and emits all seven consecutive
 structural comparisons. It requires the closed model and complete parser history.
-Observer has NOT STARTED. It invokes one release ignored diagnostic, using the
+Observer01 at774fc3dc failed preflight under48617/48620 before any diagnostic:
+restored source does not imply identical artifact bytes. CLOSED63286/63337,
+with both retained artifacts/source verified. Census02 corrects that extra
+assumption, retaining the complete eight-state sequence and per-state arm match.
+It invokes one release ignored diagnostic, using the
 existing root target; no guest or executable publication. Freeze inputs until
 closure. Do not rerun a successful command for later bookkeeping failures.
 

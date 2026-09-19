@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='cross-edit-emission-census-01'
+RUN='cross-edit-emission-census-02'
 def read(p):return json.loads(p.read_text())
 
 with (ROOT/'.work/benchmark.lock').open('a') as lock:
@@ -48,7 +48,9 @@ with (ROOT/'.work/benchmark.lock').open('a') as lock:
             item=row[key];bind(ROOT/item['path'],item['sha256'])
         item=row['artifact']
         inputs.append(dict(path=str(ROOT/item['path']),sha256=item['sha256'],state=row['state']))
-    assert inputs[0]['sha256']==inputs[-1]['sha256']
+    # The closed history guarantees restored source and matched arms at each
+    # state, not identical serialization across independently lowered states.
+    assert rows[0]['source_sha256']==rows[-1]['source_sha256']
     for path in Path(__file__).parent.iterdir():
         if path.suffix in ['.py','.md']:bind(path)
     for name in ['compare_saved_runtime.py','workflow_io.py']:bind(ROOT/'scripts'/name)

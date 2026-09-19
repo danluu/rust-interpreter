@@ -37,3 +37,10 @@ Serialize substantial work on the root lock with45-second admission. Build floor
 is max(14GiB,8GiB+2*allocated target); saved analysis12GiB and closures8GiB. Preserve
 peer work and the paused goal. No new performance campaign is admitted by this
 plan, and no earlier failed candidate is rerun.
+
+Preflight01 failed before any diagnostic command: it incorrectly required the
+original and restored artifacts to have identical bytes. Both exact retained
+artifacts passed the original closed history with matching per-state arms, but
+their hashes differ. The failure is closed and preserved. Census02 requires
+source restoration (the original contract) and compares the differing artifacts
+without assuming cross-state byte identity. All eight states remain included.
