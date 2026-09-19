@@ -67,3 +67,13 @@ callee bodies and does not prove scalar admission or emitted-code equality.
 Model03 runs12controls/profile before anchors01. No new original guest capture,
 benchmark or code cache is involved; overlapping diagnostic timing weights will
 remain descriptive and must exclude functions with no published ordinary entries.
+
+Weight01 requires closed anchors01 and the existing refined original parser
+preparation trace. Verify their identical original artifact, all source/report
+hashes, complete trace validation and each original function's ID/name/op count.
+Four association controls reject mismatched identity, duplicate owners/functions/
+intervals, invalid masks and unprepared entries. Keep original elapsed phase
+weights separate for each worker and phase; exclude no-entry functions from
+native-template candidates. This is a join to one original diagnostic capture,
+not edited-run measurements or recoverable savings. No new guest, compiler build,
+artifact lowering or timing campaign. Initial12GiB, child/closure8GiB, rootlock45s.
