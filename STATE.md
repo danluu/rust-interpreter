@@ -2,7 +2,7 @@
 
 Manual optimization continues indefinitely; the saved goal remains paused.
 Root owns `/Users/danluu/dev/rust-interp` on
-`experiment/upper-word-read-census-20260918`. No subagents or independent model calls.
+`experiment/narrow-register-storage-20260918`. No subagents or independent model calls.
 Private repository: `danluu/rust-interpreter`. Push qualified work regularly;
 never merge an entire experimental branch over concurrent main changes.
 
@@ -44,11 +44,19 @@ zero guest/build commands. Potential pairs cover only9/1,933 and9/1,429 generate
 self samples. Defer this mechanism without a runtime prototype or timing.
 [Decision](results/native-frame-access-census-01/ASSESSMENT.md).
 
-Next examine a typed high-word-read proof for virtual registers. Explicit
-address/length consumers truncate to the target width; require every read role,
-including aliases and unreachable code, to be low-only. Other reads remain
-full-width. This is separate from the insufficient logical-width/zero-storage
-proof and from parked paired spills. Start with a diagnostic census only.
+The typed high-word consumer census is closed in01 and02. The expanded masked
+integer proof passes8 controls/profile and6 traffic controls, including3,800
+actual integer-semantic comparisons. It covers33/1,933 and13/1,429 upper-store
+samples. Defer a consumer-only emitter; both studies and sources are retained.
+
+Current diagnostic: `benchmarks/experiments/narrow-register-storage`. Size an
+implicit-zero backing representation using the unchanged whole-function width
+proof, exact native high-word traffic and a conservative repair cost from current
+interpreted-PC counts. Native high reads would need to synthesize zero and VM
+reads would need logical-value restoration; simply omitting stores is unsafe.
+No representation, native emission, interpreter or initialization change exists.
+The new typed observer and3 cost controls remain test-only;4 existing width tests
+and6 traffic controls qualify the census before any decision.
 
 [Build](results/shared-cold-tail-build-01/ASSESSMENT.md),
 [strict/cache](results/shared-cold-tail-qualification-01/ASSESSMENT.md),

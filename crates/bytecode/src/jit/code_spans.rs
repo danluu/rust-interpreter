@@ -21,6 +21,8 @@ mod memory_parts;
 mod continuation_census;
 #[cfg(test)]
 mod upper_reads;
+#[cfg(test)]
+mod narrow_storage;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
