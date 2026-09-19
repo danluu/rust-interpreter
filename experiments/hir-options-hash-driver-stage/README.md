@@ -2,8 +2,7 @@
 
 This source-only core connects the unchanged driver and fixture to the existing
 finite driver supervisor and strict stdout/loader readback. No concrete plan,
-freeze, standalone launcher, or actual execution exists yet. It is not a
-qualification receipt.
+freeze, or actual execution exists yet. It is not a qualification receipt.
 
 The future enclosing stage must first validate the actual completed compiler
 continuation, B3 composition and strip tests, native compiler-role controls, and
@@ -52,3 +51,14 @@ actual completed native prerequisites and independent review. The enclosing
 controller must also bind B3/compiler transitive inputs, provider inventories,
 the independent audits, and the separate completed run-make stage. These nine
 controls do not establish any of those unrun qualifications.
+
+`stage.py` is an unrun enclosing-controller draft. It imports the separate
+native and driver parsers with scoped aliases, and uses the run-make successor's
+isolated adapter to select the exact A-owned aggregate monitor. Admission
+requires actual compiler, B3, native and run-make histories and independent
+audits. Complete D2/E2/B3 membership, metadata/source/SDK guards and inherited
+frozen inputs remain checked around the unchanged three-command core. Its final
+status would still require independent audit. The preparer, source retention,
+final run-make schema binding and integration controls remain unfinished;
+there is no runnable admission packet. Only AST parsing has been performed on
+this controller draft.
