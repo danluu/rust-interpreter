@@ -33,7 +33,19 @@ Full workspace qualification passes 678 Rust tests per profile (17 ignored),
 33 diagnostic integrations, 10 feature-off session checks, 31 feature-off template
 checks and the default VM build. The unchanged 442 Python controls (22 skips) are
 reused through exact hashes. All 48 owned servers and 92 clients have terminal
-records. [Workspace proof](../results/shared-literal-keys-qualification-01/summary.json). Actual parser replay must verify
-every cache hit against fresh native emission; phase attribution then decides
-whether a new end-to-end primary is justified. Sharing may introduce contention
-or setup overhead. No performance gain or default-runtime adoption is established.
+records. [Workspace proof](../results/shared-literal-keys-qualification-01/summary.json). Actual parser replay passes all 1,824 invocations, with all 19,673 hits matching
+fresh native emission. The diagnostic also passes 1,824 invocations and records
+19,151 hits. Median key time falls from the parent's 10.278 ms to 9.003 ms per
+valid-request worker, but median ordinary preparation is 21.952 ms versus21.703 ms.
+Summed ordinary intervals are287.264 ms versus282.252 ms across ten workers;
+these overlapping, separately collected samples do not prove a causal regression
+or gain. Constructor medians remain15.736 ms versus15.988 ms.
+[Replay](../results/shared-literal-keys-parser-client-01/summary.json),
+[phases](../results/shared-literal-keys-phases-parser-01/summary.json).
+
+Park this variant: the component saving does not establish a useful aggregate
+preparation improvement. No installation, new primary or cleanup follows. Inspect
+saved per-test worker timings next: the previous literal primary schedules its
+longest parser test last, after substantial earlier work, leaving the other worker
+idle. A general duration-based scheduling hypothesis requires a complete saved
+census before implementation. No benchmark-name special case or assertion change.
