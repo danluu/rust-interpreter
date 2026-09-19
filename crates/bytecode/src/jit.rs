@@ -395,7 +395,7 @@ pub(crate) struct Jit<'a> {
 }
 impl<'a> Jit<'a> {
     /// Reused storage can retain a previous callee's wide upper words. Restore
-    /// the current logical value before every interpreted read, including
+    /// the current logical value before interpreted full-width reads, including
     /// aliases and unsupported operations. Ordinary interpreter writes stay full.
     pub(crate) fn repair_register_reads(&self, id: usize, op: &Op, registers: &mut [u128]) {
         if let Some(narrow) = &self.narrow_registers[id] {

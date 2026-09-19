@@ -2,24 +2,7 @@
 use super::*;
 use serde_json::{json, Value};
 
-fn narrow(bits:u8)->bool {matches!(bits,8|16|32|64)}
-fn full_reads(op:&Op,mut read:impl FnMut(Reg)) {
-    // Reviewed directly against execute_prepared_impl: these paths cast every
-    // input to usize/u8 before using it. Keep unreviewed helpers conservative.
-    match op {
-        Op::Load{..}|Op::Copy{..}|Op::CopyDynamic{..}|Op::FillBytes{..}|
-        Op::CompareBytes{..}|Op::Call{..}|Op::Allocate{..}|Op::Deallocate{..}|
-        Op::Reallocate{..}|Op::RandomBytes{..}|Op::CpuFeatureQuery{..}=>{},
-        Op::Store{src,size,..}=>{if *size>8 {read(*src);}},
-        Op::CallIndirect{callee,..}=>read(*callee),
-        Op::Binary{bits,..}|Op::Unary{bits,..} if narrow(*bits)=>{},
-        Op::Cast{from,..} if narrow(*from)=>{},
-        // Full truth/selection,128-bit math, checked handles and helpers stay
-        // full. In particular, C allocation and descriptors take raw u128s.
-        _=>crate::registers::visit_registers(op,read,|_|{}),
-    }
-}
-fn reads(op:&Op)->Vec<Reg> {let mut out=vec![];full_reads(op,|r|out.push(r));out}
+fn reads(op:&Op)->Vec<Reg> {let mut out=vec![];register_widths::visit_full_reads(op,|r|out.push(r));out}
 
 #[test]
 fn selective_repair_aliases_and_wide_store_payloads_remain_full() {

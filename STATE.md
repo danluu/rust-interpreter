@@ -90,15 +90,20 @@ from retained typed/current profiles, before any different runtime variant. Cont
 [Contract](docs/IMPLICIT-ZERO-REGISTER-DESIGN-20260918.md),
 [focused](results/implicit-zero-storage-focused-03/ASSESSMENT.md).
 
-New diagnostic: `benchmarks/experiments/selective-narrow-repair/run.py`.
-The root still contains parked3e53b127 production code; all new changes are
-test-only. Four role controls include96actual interpreter heap cases with
-poisoned high sizes, alignments and pointers, plus aliases, checked helpers and
-width bounds. With4width and3cost controls, expect11/profile and one typed
-observer (7commands). Bind candidate and adopted current profiles and verify
-identical interpreted-PC arrays before counting necessary full-width repairs.
-No original guest, native publication, new VM installation or production
-selective repair exists. Main ccb3b465 publishes only the closed primary outcome.
+The selective-read diagnostic is closed at330ac583:7commands,11controls/profile,
+234frozen inputs. Actual candidate/adopted interpreted-PC arrays are identical.
+Required repairs fall6,542,145→1,033,563(block) and8,513,802→843,810(exhaustive),
+mostly checked indirect handles.96poisoned actual-interpreter heap comparisons,
+alias/checked-helper/width controls pass. No original guest was rerun.
+
+Current new variant moves that exact classifier into production and repairs
+only full-width interpreted consumers. Native emission/proof admission stays
+unchanged from parked3e53b127. Add2native/VM controls for low-only backing and
+heap fallbacks followed by full reads; focused stage expects15controls/profile
+(11native/VM +4role), then634workspace tests/profile/16ignored. No new tool is
+installed or timing admitted yet. See `benchmarks/experiments/selective-narrow-repair/focus.py`
+and `docs/SELECTIVE-NARROW-REPAIR-20260918.md`. Main ccb3b465 contains only the
+closed conservative-primary outcome; root owns this new experimental branch.
 
 [Build](results/shared-cold-tail-build-01/ASSESSMENT.md),
 [strict/cache](results/shared-cold-tail-qualification-01/ASSESSMENT.md),

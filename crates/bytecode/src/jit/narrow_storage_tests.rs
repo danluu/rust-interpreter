@@ -66,7 +66,7 @@ fn narrow_storage_repair_reads_precede_alias_writes_and_keep_wide_values() {
     let ops=[
         (Op::Binary{dst:0,overflow:1,op:Binary::Mul,a:0,b:0,bits:128,signed:false},vec![0]),
         (Op::Select{dst:0,condition:2,yes:1,no:0},vec![0,2]),
-        (Op::CallIndirect{callee:0,args:vec![2,1],arg_sizes:vec![8,8],destination:3,result_size:8},vec![0,2,3]),
+        (Op::CallIndirect{callee:0,args:vec![2,1],arg_sizes:vec![8,8],destination:3,result_size:8},vec![0]),
         (Op::RegisterTlsDestructor{callback:0,argument:2},vec![0,2]),
         (Op::DescriptorWrite{dst:0,descriptor:1,address:2,size:3,errno:0},vec![0,2,3]),
         (Op::Imm{dst:0,value:7},vec![]),
@@ -218,4 +218,35 @@ fn narrow_storage_indirect_reentry_repairs_narrow_handles_but_rejects_wide_handl
             Op::Imm{dst:1,value:99},Op::Store{address:0,src:1,size:16},Op::Return],2));
         check(&p,40);
     }
+}
+
+#[test]
+fn narrow_storage_selective_repair_retains_low_only_backing_until_a_full_read() {
+    let poison=0xabcdefu128<<100;
+    let mut values=[poison|8,poison|16,poison|1];let narrow=[true;3];
+    for op in [Op::Allocate{dst:2,size:0,align:2,zeroed:true},
+        Op::Store{address:0,src:1,size:8},
+        Op::Binary{dst:0,overflow:2,op:Binary::Shl,a:0,b:1,bits:64,signed:false}] {
+        register_widths::repair_reads(&narrow,&op,&mut values);
+        assert_eq!(values,[poison|8,poison|16,poison|1]);
+    }
+    register_widths::repair_reads(&narrow,&Op::Switch{value:0,cases:vec![],otherwise:0},&mut values);
+    assert_eq!(values,[8,poison|16,poison|1]);
+    register_widths::repair_reads(&narrow,&Op::Store{address:1,src:1,size:16},&mut values);
+    assert_eq!(values,[8,16,poison|1]);
+}
+
+#[test]
+fn narrow_storage_selective_heap_fallbacks_keep_later_full_reads_and_faults() {
+    for size in [0,1,8,64] {for align in [1,3,8] {
+        let mut p=reused(false,false,false);
+        p.functions[2].code=vec![Op::Local{dst:0,offset:0},Op::Imm{dst:1,value:size},
+            Op::Imm{dst:5,value:align},Op::Jump{target:4},
+            Op::Allocate{dst:2,size:1,align:5,zeroed:true},
+            Op::Deallocate{pointer:2,size:1,align:5},
+            Op::Binary{dst:3,overflow:4,op:Binary::Mul,a:1,b:1,bits:128,signed:false},
+            Op::Store{address:0,src:3,size:16},Op::Return];
+        assert!(!crate::registers::needs_initial_zeroes(&p.functions[2]));
+        check(&p,32);
+    }}
 }
