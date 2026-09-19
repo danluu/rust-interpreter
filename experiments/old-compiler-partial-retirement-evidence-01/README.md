@@ -1,0 +1,7 @@
+# Completed partial compiler-prefix retirement evidence
+
+This packet retains the actual closed deletion of the one failed `.install-8j_ugjr3` staging prefix: all 8,388 paths and 25,164 durable intent/unlinked/validated events; both read-only probes; actual launcher/supervisor/terminal and independent audit; exact comparison catalogs and both failed read-only comparison attempts; original 52-member XZ history with its failed first verification; and the actual twelve-fixture helper qualification. The earlier failed compiler install and tool-build histories retain their failure status.
+
+Current compiler/provider payloads are excluded. Complete original frozen provider catalogs and current-proof audit records preserve their identity/content associations as historical evidence; the packet does not claim removed staging paths remain present. Selected consumer proposal files and bounded source/proof records are retained exactly.
+
+The evidence-only controller is copied from the reviewed completed run-make retention02 capped writer, with namespace/doc changes only. It uses the canonical lock with a 600-second wait, 9 GiB live floor, a 64 MiB compressed pre-write cap, 384 MiB logical bound, exact member hashes and full gzip EOF readback. No compiler, provider probe, control, deletion, or process-control workload runs. Actual archive execution requires separate concrete review; partial/failure output is preserved without retry.
