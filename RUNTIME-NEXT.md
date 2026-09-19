@@ -55,3 +55,7 @@ Next commit/push then supervise adopted-es8-controller-01 with absolute
 qualify_controller.py; close with --close. Six controls. Freeze all workflow
 files through controller closure AND full history. Onceclosed commitresult then
 supervise adopted-es8-edit-01 benchmark.py; close.py independently.
+
+Controller01 passed6 tests and independently CLOSED. Next launch benchmark.py
+under supervisor adopted-es8-edit-01 after this checkpoint commit. Do not modify
+workflow sources until terminal and close.py closure.

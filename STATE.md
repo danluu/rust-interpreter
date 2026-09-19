@@ -161,3 +161,7 @@ external-edit preservation, environment/engine identity, stale units and wrong
 edit agreement. Next qualify via adopted-es8-controller-01, independently close,
 then launch adopted-es8-edit-01 once. All runtime crates remain exact adopted
 fca687eb. Free22.7GiB; initialfre floor16GiB and childfloor8GiB. No new toolbuild.
+
+Controller qualification adopted-es8-controller-01 CLOSED:6 tests/1 command,
+terminal0, supervisor94422/controller94425, source80e4ae85. Frozen workflow ready
+for single32-command current ES8 history; no project guest yet.
