@@ -1,0 +1,925 @@
+--- 02/README.md
++++ 03/README.md
+@@ -1,11 +1,16 @@
+ # Candidate B3 composition source
+ 
+-Status: **source only, unrun and unqualified**. No `plan.json`, `inputs.json`,
+-launch, composed sysroot, producer discovery, compiler probe or synthetic test
+-execution is supplied by this packet. Python source has only been parsed as
+-syntax. The first candidate compiler build failed before bootstrap crate
+-compilation; its failure is not a B3 predecessor. A successful successor and
+-its actual outputs remain required.
++Status: **source only, unrun and unqualified**. No plan, input freeze, launch,
++composed sysroot, producer discovery, compiler probe or synthetic test execution
++is supplied by this packet. Its 63 written controls have not run. Predecessor02
++and its 49 passed pure controls are retained separately and unchanged.
++
++The candidate build02 stopped after 16 successful children because the harness
++expected three incorrect module names; all 27 actual lowering tests passed.
++There is no completed native build or B3 predecessor. This draft deliberately
++still rejects the failed02 terminal. Adoption of the separately reviewed build
++continuation requires an explicit successor guard and actual successful outputs;
++it must not relabel build02 or guess a future compiled catalog.
+ 
+ This implements the assembly and auxiliary-strip part of the accepted
+ `../hir-options-hash-beta-driver/PROPOSAL.md`. It does not implement the later
+@@ -14,14 +19,59 @@
+ No runtime is installed, and the strict Ruff frozen owner and scripts are
+ unchanged. This is setup/correctness work, with no application timing claim.
+ 
+-## Successor02 changes
++## Successor03 changes
++
++This separate source successor implements the accepted source-bound balanced
++TIMING proposal in `../hir-options-hash-producer-association`. The complete
++stdout stack is checked, including setup events before self-check prints and
++all trailing events. Every printed native Cargo context remains in the catalog.
++Only a source-proved real context can be selected as a producer; all real
++same-child contexts still must agree on the **entire** effective environment.
++There is no stderr Finished-segment inference, timestamp association, arbitrary
++environment projection, compiler rerun or substitution of historical producers.
++
++The callback recognizes only native-host stage0 compile::Rustc, check::Rustc and
++test::Crate emitting steps, with exact manifest, Cargo output tree, host, message
++format and package order. Module/role Debug fields and delimiters are complete;
++unknown producer steps, malformed events and missing/disabled timing reject.
++Nonproducer frames are retained structurally but confer no executable role.
++The exact admitted outer commands prohibit command-line dry-run/config overrides.
++The whole selected bootstrap configuration and 13 source files bind the
++self-check/real Builders, Step timing, Cargo construction/conversion, default
++run_in_dry_run=false, stream guard, emitting steps and test-renderer variant.
++
++Native test Cargo deliberately sets an ordered DYLD_LIBRARY_PATH:
++D2/lib, admitted CI LLVM/lib, then the stage0-sysroot host std directory.
++`test::prepare_cargo_test` derives this from rustc_lib_paths plus the build std;
++helpers::add_dylib_path chains the bootstrap process's inherited path, which
++must be absent in this admitted history. shim_utils chooses DYLD_LIBRARY_PATH
++on Apple. The rustc shim then prepends D2/lib again when invoking the real
++compiler. Source-bound test routing permits exactly the three-path Cargo value;
++build/check still require absence. Inherited or crate-local loader overrides,
++foreign/reordered paths, fallback, preload, version and wrapper overrides reject.
++The future composition plan must bind direct search-directory membership,
++exact qualified provider/build-std entries and full resolved-link bytes. It
++must not treat the path spelling alone as provider identity.
++
++Two retained traces become read-only pure-control fixtures: historical native005
++has 30 timing events and native prints32/57 (self-check/real); candidate build02
++child015 has 26 events and test prints31/58, both with the exact three-path loader
++value. The latter child returned0 and printed all27 successful tests within an
++overall failed build; it does not establish a qualified compiler predecessor.
++
++`successor-from-02.diff` records this delta. Frozen02 is unchanged. The B3
++compositor/strip algorithm and 19-child future stage remain unchanged; future
++actual output catalogs, successful continuation adoption, source/provider
++qualification and reviewed resource admission remain mandatory.
++
++## Inherited successor02 contract
+ 
+ Draft01 remains byte-for-byte unchanged and unrun. This successor addresses
+ only actual Cargo-context ambiguity, explicit build02 workspace guard adoption,
+ and its separate evidence namespace. The compositor and strip algorithms,
+ 19-child order, candidate revision, resource gates and later role qualification
+-requirements remain unchanged. `successor-from-01.diff` records the source delta;
+-`source-bindings.json` retains every draft01 file hash plus new guard references.
++requirements remain unchanged. `successor-from-01.diff` retains the inherited source delta;
++`source-bindings.json` now retains every draft02 file hash and the additional route references.
+ 
+ A selected bootstrap stdout line cannot establish nesting of a Cargo stderr
+ `Running` line. Every native-tree Cargo context in the same successful child
+@@ -204,11 +254,10 @@
+ 
+ ## Unrun controls and remaining review
+ 
+-The packet contains all ten historical compositor controls, adapted to
+-explicit roots and exact private stamps, four additional bounds/role controls,
+-the six retained object-strip controls, fifteen actual-command producer grammar
+-and context controls, five command/loader controls and nine ancestor-workspace
+-controls: **49 written, zero executed**.
++The packet preserves the 49 predecessor controls and adds 14 source/trace,
++loader-route, classification and adversarial controls: **63 written, zero03
++executed**. The 49 predecessor controls passed in their own unchanged freeze;
++that result is not a test result for successor03.
+ Pure controls need their own reviewed bounded launch. No synthetic control
+ would substitute for the actual new producer, loader, copy or strip results.
+ 
+--- 02/bounded_stage.py
++++ 03/bounded_stage.py
+@@ -16,7 +16,7 @@
+ import owned_stage as owned
+ 
+ NAMESPACE = OWNER/'.work/hir-options-hash-compiler-01'
+-EVIDENCE = CONTROLLER_OWNER/'.work/hir-options-hash-beta-composition-02'
++EVIDENCE = CONTROLLER_OWNER/'.work/hir-options-hash-beta-composition-03'
+ GIB = 2**30
+ 
+ 
+--- 02/compose.py
++++ 03/compose.py
+@@ -12,6 +12,7 @@
+ import re
+ import sys
+ import time
++import tomllib
+ 
+ import bounded_stage as bounded
+ import compose_sysroot as comp
+@@ -319,7 +320,8 @@
+                 require(comp.digest(raw) == child[stream + '_sha256'], 'actual build raw stream differs')
+                 if wanted in build_plan['stages'] and wanted['argv'][0] == './x':
+                     streams[str(path.parent / stream)] = dict(raw=raw, child_receipt=str(path),
+-                        environment=child['environment'], stage_index=build_plan['stages'].index(wanted))
++                        environment=child['environment'], stage_index=build_plan['stages'].index(wanted),
++                        stream_kind=stream, outer_argv=wanted['argv'])
+             if wanted == native:
+                 matched += 1
+         require(matched == 1, 'unique completed native producer required')
+@@ -371,9 +373,51 @@
+                 require(row['kind'] == 'link' and path.is_symlink() and os.readlink(path) == row['target']
+                         and str(path.resolve(strict=True)) == row['resolved'] and self.m.stamp(path) == row['stamp']
+                         and Path(row['resolved']).is_relative_to(S), 'compiler-build source route differs')
++        # Test Cargo searches exactly D2/lib, admitted CI LLVM/lib and the
++        # build-std lib directory. Freeze every direct search entry, and require
++        # file/link membership and bytes to come from the qualified providers or
++        # complete build-std inventory above. No path-only loader admission.
++        loader_dirs = self.plan['producer']['loader_directories']
++        require([row['path'] for row in loader_dirs] == producer.test_loader_paths(S),
++                'test Cargo loader search order differs')
++        qualified = dict(compiled['providers'])
++        qualified.update({str(build_sysroot / name): row for name, row in expected_sysroot['files'].items()})
++        for directory in loader_dirs:
++            root = Path(directory['path'])
++            require(root.resolve(strict=True) == root and root.is_dir(), 'loader search directory aliases another path')
++            entries = {entry.name: entry for entry in root.iterdir()}
++            require(set(entries) == set(directory['entries']), 'loader search directory membership differs')
++            for name, path in entries.items():
++                row = directory['entries'][name]
++                require(self.m.stamp(path) == row['stamp'], 'loader directory entry identity differs')
++                if row['kind'] == 'directory':
++                    require(path.is_dir() and not path.is_symlink(), 'ordinary loader subdirectory required')
++                    continue
++                require(str(path) in qualified, 'loader file outside qualified provider/build-std catalogs')
++                prior = qualified[str(path)]
++                require(row['stamp'] == prior['stamp'], 'loader file was not the qualified provider')
++                if row['kind'] == 'file':
++                    frozen(path)
++                    require(row['sha256'] == prior['sha256'] == owned.sha(path), 'loader provider bytes differ')
++                else:
++                    require(row['kind'] == 'link' and path.is_symlink()
++                            and row['target'] == prior['target'] == os.readlink(path)
++                            and row['resolved'] == str(path.resolve(strict=True)), 'loader provider link differs')
++                    resolved = frozen(row['resolved'])
++                    require(resolved.is_relative_to(S) and resolved.is_file()
++                            and self.m.file(resolved) == row['resolved_file'], 'resolved loader provider bytes differ')
+         require(self.plan['producer']['compiler_environment'] == build_plan['tests']['assertions']['build_compiler_std']['compiler_commit_environment'],
+                 'producer compiler commit environment differs')
+-        return producer.validate(self.plan['producer'], self.plan['composition'], streams, REVISION)
++        # Bootstrap source/route policy remains an explicit full-byte closure.
++        bindings = read(HERE / 'source-bindings.json')['timing_sources']
++        for name, row in bindings.items():
++            path = S / name; frozen(path)
++            require(owned.sha(path) == row['sha256'] and path.stat().st_size == row['size'],
++                    'source-bound timing/emitting route changed: ' + name)
++        frozen(HERE / 'source-bindings.json')
++        config_path = frozen(S / 'bootstrap.toml')
++        return producer.validate(self.plan['producer'], self.plan['composition'], streams, REVISION,
++                                 tomllib.loads(config_path.read_text()))
+ 
+     def command(self):
+         self.guard(); self.budget()
+--- 02/producer.py
++++ 03/producer.py
+@@ -7,6 +7,8 @@
+ the controller must not guess a build-script/native-archive producer.
+ """
+ import re
++import json
++import timing_context
+ import shlex
+ from pathlib import Path
+ 
+@@ -105,6 +107,28 @@
+     return dict(argv=words, environment=environment, removed=removed)
+ 
+ 
++def test_loader_paths(source):
++    """Exact native-host test::prepare_cargo_test order with admitted CI LLVM."""
++    root = Path(source) / 'build/aarch64-apple-darwin'
++    return [str(root / 'stage0/lib'), str(root / 'ci-llvm/lib'),
++            str(root / 'stage0-sysroot/lib/rustlib/aarch64-apple-darwin/lib')]
++
++
++def loader_policy(row, cargo, inherited, source):
++    # add_dylib_path chains the *bootstrap process* environment, not the
++    # command's prior env; the admitted child has no inherited loader paths.
++    require(not any(k.startswith(('DYLD_', 'LD_')) for k in inherited),
++            'unadmitted inherited loader environment')
++    require(not any(k.startswith(('DYLD_', 'LD_')) for k in row['environment']),
++            'crate-local loader environment override')
++    expected = ':'.join(test_loader_paths(source)) if cargo['argv'][1] == 'test' else None
++    require(cargo['environment'].get('DYLD_LIBRARY_PATH') == expected,
++            'test-only ordered bootstrap loader path differs')
++    require(not any(k.startswith(('DYLD_', 'LD_')) and k != 'DYLD_LIBRARY_PATH'
++                    for k in cargo['environment']), 'unadmitted Cargo loader override')
++    return expected
++
++
+ def mechanism(row, cargo, inherited, source):
+     """Match the actual two-shim Cargo route and rustc.rs host/target split."""
+     source = Path(source)
+@@ -117,6 +141,7 @@
+     for key in cargo['removed']:
+         environment.pop(key, None)
+     environment.update(cargo['environment'])
++    loader_policy(row, cargo, inherited, source)
+     # Cargo may print crate-local additions, but may not replace these routes.
+     for name, value in row['environment'].items():
+         require(name not in environment or environment[name] == value or not name.startswith(('RUSTC', 'CFG_')),
+@@ -130,7 +155,7 @@
+         CARGO_BUILD_BUILD_DIR=str(source / 'build' / host / 'stage1-rustc'))
+     require(all(environment.get(k) == v for k, v in required.items()), 'actual D2/bootstrap provider binding differs')
+     require(not any(environment.get(k) for k in ['RUSTC_WRAPPER_REAL', 'RUSTC_FORCE_RUSTC_VERSION',
+-        'RUSTC_ADDITIONAL_SYSROOT_PATHS', 'DYLD_LIBRARY_PATH', 'DYLD_FALLBACK_LIBRARY_PATH', 'DYLD_INSERT_LIBRARIES']),
++        'RUSTC_ADDITIONAL_SYSROOT_PATHS', 'DYLD_FALLBACK_LIBRARY_PATH', 'DYLD_INSERT_LIBRARIES']),
+         'unadmitted compiler/loader override in actual producer')
+     require('--sysroot' not in row['argv'] and not any(x.startswith('--sysroot=') for x in row['argv']),
+             'producer supplies a separate sysroot override')
+@@ -140,6 +165,67 @@
+     # No target means rustc.rs chooses RUSTC_SNAPSHOT and its libdir. Both exact
+     # alternatives above are D2; host flags remain in the raw inherited env.
+     return environment
++
++
++
++def allowed_bootstrap_commands():
++    return [
++        ['./x', 'check', '--stage', '1', 'compiler/rustc_ast_lowering', '--jobs', '2', '-vv'],
++        ['./x', 'test', '--stage', '1', 'compiler/rustc_ast_lowering', '--jobs', '2', '-vv'],
++        ['./x', 'build', '--stage', '1', 'compiler/rustc', 'library', '--jobs', '2', '-vv'],
++        ['./x', 'test', '--stage', '1', 'compiler/rustc_interface', '--jobs', '2', '-vv'],
++        ['./x', 'build', '--stage', '1', 'src/tools/run-make-support', '--jobs', '2', '-vv'],
++    ]
++
++
++def native_emitter(cargo, step, source):
++    """Exact Mode::Rustc routes from compile/check/test Step implementations.
++
++    The test route prints before the same stream guard in render_tests.rs;
++    it does not use compile::stream_cargo. Both remain separately source-bound.
++    """
++    source = Path(source); host = 'aarch64-apple-darwin'
++    argv, env = cargo['argv'], cargo['environment']
++    require(argv[0] == str(source / 'build' / host / 'stage0/bin/cargo'), 'unproved timed Cargo executable')
++    require(argv[1] in ['build', 'check', 'test'], 'unproved timed Cargo mode')
++    require(single(argv, '--target') == host
++            and single(argv, '--manifest-path') == str(source / 'compiler/rustc/Cargo.toml'),
++            'timed Cargo manifest/target route differs')
++    tree = str(source / 'build' / host / 'stage1-rustc')
++    require(env.get('CARGO_TARGET_DIR') == env.get('CARGO_BUILD_BUILD_DIR') == tree,
++            'timed Cargo native output route differs')
++    if argv[1] in ['build', 'check']:
++        require(single(argv, '--message-format') == 'json-render-diagnostics', 'unknown Cargo stream format')
++    else:
++        require('--' in argv and '--format' in argv[argv.index('--') + 1:]
++                and single(argv[argv.index('--') + 1:], '--format') == 'json', 'unknown test-renderer route')
++        require(not any(x == '--message-format' or x.startswith('--message-format=') for x in argv[:argv.index('--')]),
++                'unproved Cargo JSON test route')
++    head = argv[:argv.index('--')] if '--' in argv else argv
++    packages = []
++    for i, word in enumerate(head):
++        if word == '-p':
++            require(i + 1 < len(head) and re.fullmatch(r'[a-zA-Z_][a-zA-Z_0-9-]*', head[i + 1]), 'invalid Cargo package selection')
++            packages.append(head[i + 1])
++        elif word.startswith(('-p', '--package', '--workspace', '--exclude')):
++            raise ValueError('unproved Cargo package selection spelling')
++    require(len(packages) == len(set(packages)), 'duplicate Cargo package selection')
++    compiler = 'Compiler { stage: 0, host: ' + host + ', forced_compiler: false }'
++    prefix = {
++        'build': 'compile::Rustc { target: ' + host + ', build_compiler: ' + compiler + ', crates: ',
++        'check': 'check::Rustc { check_kind: Check, build_compiler: CompilerForCheck { build_compiler: '
++                 + compiler + ', rustc_rmeta_sysroot: None, std_rmeta_sysroot: None }, target: ' + host + ', crates: ',
++        'test': 'test::Crate { build_compiler: ' + compiler + ', target: ' + host + ', mode: Rustc, crates: ',
++    }[argv[1]]
++    if step is not None:
++        require(step.startswith(prefix) and step.endswith(' }'), 'unknown timed Cargo emitting Step/role')
++        crates = json.loads(step[len(prefix):-2])
++        require(isinstance(crates, list) and all(isinstance(name, str) and re.fullmatch(r'[a-zA-Z_][a-zA-Z_0-9-]*', name) for name in crates),
++                'unproved timed Step crate selection')
++        require(len(crates) == len(set(crates)), 'duplicate timed Step crate selection')
++        require(packages == crates, 'timed Step/Cargo package selection mismatch')
++    return 'test::Crate/run_cargo_test/render_tests::run_tests' if argv[1] == 'test' else (
++        'compile::Rustc/run_cargo/stream_cargo' if argv[1] == 'build' else 'check::Rustc/run_cargo/stream_cargo')
+ 
+ 
+ def unambiguous_environment(row, candidates, source):
+@@ -170,11 +256,12 @@
+     require(one['child_receipt'] == outer['child_receipt'], 'Cargo mechanism belongs to another child')
+     row = running_line(one['raw'], coordinate)
+     cargo = bootstrap_line(outer['raw'], cargo_coordinate, source)
+-    require(any(item['command'] == cargo_coordinate for item in cargo_catalog), 'unlisted actual Cargo mechanism')
++    selected = [item for item in cargo_catalog if item['command'] == cargo_coordinate]
++    require(len(selected) == 1 and selected[0]['execution'] == 'real', 'selected Cargo context is not proved real')
+     require(row == binding['parsed'] and cargo == binding['parsed_cargo'], 'actual producer/Cargo command differs')
+     # The catalog is complete across both retained streams. A convenient
+     # coordinate alone does not prove nesting or inherited source flags.
+-    plausible = [item for item in cargo_catalog if item['child_receipt'] == one['child_receipt']]
++    plausible = [item for item in cargo_catalog if item['child_receipt'] == one['child_receipt'] and item['execution'] == 'real']
+     candidates = []
+     for item in plausible:
+         context = streams[item['command']['stream']]
+@@ -185,7 +272,7 @@
+     return row, environment
+ 
+ 
+-def validate(proof, composition, streams, revision):
++def validate(proof, composition, streams, revision, configuration):
+     """streams contains qualified successful stages, never an unrelated build.
+ 
+     Earlier native dependencies from `./x test` may be Fresh in the final build.
+@@ -210,7 +297,18 @@
+                 cargo_catalog.append(dict(command=coordinate, parsed=parsed,
+                     child_receipt=stream['child_receipt'], stage_index=stream['stage_index']))
+     require(cargo_catalog and proof['cargo_catalog'] == cargo_catalog,
+-            'complete actual native Cargo command catalog differs')
++            'complete printed native Cargo command catalog differs')
++    classified, timings = [], {}
++    for stream_name in sorted({item['command']['stream'] for item in cargo_catalog}):
++        stream = streams[stream_name]
++        require(stream['stream_kind'] == 'stdout', 'bootstrap printed Cargo command outside stdout')
++        timing_context.configured(configuration, stream['outer_argv'], allowed_bootstrap_commands())
++        entries = [item for item in cargo_catalog if item['command']['stream'] == stream_name]
++        result = timing_context.classify(stream['raw'], entries,
++            lambda cargo, step: native_emitter(cargo, step, composition['source']))
++        classified.extend(result['commands']); timings[stream_name] = result
++    require(proof['timing_contexts'] == timings, 'complete actual timing classification differs')
++    cargo_catalog = classified
+     commands = {}
+     for source, binding in proof['private'].items():
+         coordinate = binding['command']
+--- 02/source-bindings.json
++++ 03/source-bindings.json
+@@ -2,65 +2,80 @@
+   "actual_candidate_build_passed": false,
+   "artifact_discovery_completed": false,
+   "candidate_revision": "4de35bdacef0e3cd18a66bc30b5459c19e09b118",
+-  "explicit_build_route": "compiler-build-02",
++  "explicit_build_route": "compiler-build-02; passed successor continuation adoption still required",
+   "predecessor_draft": {
+     "README.md": {
+-      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-01/README.md",
+-      "sha256": "2f69f50461835511b7ceb7fcce9694a4c67ac0f7d515a79795b3a5a3556c37bb",
+-      "size": 11193
++      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-02/README.md",
++      "sha256": "a89d48107022d1734928a41bf395bfb532e0757a8971dc4eb586e623bf16ec9f",
++      "size": 13885
++    },
++    "ancestor_workspace.py": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-02/ancestor_workspace.py",
++      "sha256": "242aa4194305a8e4cf9af0b401a600d677c058cd726a9dd42cf1a53fd8aa40af",
++      "size": 8236
+     },
+     "bounded_stage.py": {
+-      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-01/bounded_stage.py",
+-      "sha256": "f03fd08089c0f6524f85910ce2d3b1f014ed1ffe58c3eb15a18e9fe68e6a3068",
++      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-02/bounded_stage.py",
++      "sha256": "9cf3c3134d5ac93e423b4d8603c347b9ec0c11180baa6b7ff80142209613180a",
+       "size": 11089
+     },
+     "compose.py": {
+-      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-01/compose.py",
+-      "sha256": "1c8af5dde970d17adb6397915d7e5de71ec4ec5049c55e4837b1a8d2adbb9c96",
+-      "size": 29155
++      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-02/compose.py",
++      "sha256": "b7c58a91976416767796975a41dcf296329287944a962a25ebbe4381694ca625",
++      "size": 31733
+     },
+     "compose_sysroot.py": {
+-      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-01/compose_sysroot.py",
++      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-02/compose_sysroot.py",
+       "sha256": "4ef9deed11edeca6bf530f251b679df083143a671b2d2aa69639d7dc21d761c4",
+       "size": 22410
+     },
+     "compositor-from-reference.diff": {
+-      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-01/compositor-from-reference.diff",
++      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-02/compositor-from-reference.diff",
+       "sha256": "e35ba2190287b892620be8a8d1ebb763416a87f44dc3b6cbbd732057ccf5f056",
+       "size": 9377
+     },
+     "producer.py": {
+-      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-01/producer.py",
+-      "sha256": "12c076ad9df071b88a8d4908eb8cf89e2f13859110e8a131b94d0eda3791e1a2",
+-      "size": 13097
++      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-02/producer.py",
++      "sha256": "e36c61748bff582bba0f1c22cd5650cd7744b32a96409f7652963870f507b7c6",
++      "size": 14638
+     },
+     "source-bindings.json": {
+-      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-01/source-bindings.json",
+-      "sha256": "43e7f4bc08ab071a1d466982c7c68bcf5546605053c48debed9c78e2b57d31f5",
+-      "size": 5261
++      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-02/source-bindings.json",
++      "sha256": "c304f2de06337caa0db7fb44f3ef8df6bb70c11f163b8c880a34528fea2d12bc",
++      "size": 11257
+     },
+     "strip_object.py": {
+-      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-01/strip_object.py",
++      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-02/strip_object.py",
+       "sha256": "48e0064118ac7622be62d9635bbaca70c21510cc7c3658d37c5ce99573136ce0",
+       "size": 3315
+     },
++    "successor-from-01.diff": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-02/successor-from-01.diff",
++      "sha256": "190a8a17f1b6717acdae9239e9e13c02b3308114fc4fa042948c949004d353b6",
++      "size": 35787
++    },
++    "test_ancestor_workspace.py": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-02/test_ancestor_workspace.py",
++      "sha256": "f03f82c70a8ea767b5c089b2e0ecea63bfa88d551739a831766eb0950d1d87eb",
++      "size": 6706
++    },
+     "test_compose_sysroot.py": {
+-      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-01/test_compose_sysroot.py",
++      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-02/test_compose_sysroot.py",
+       "sha256": "4d672fdadebe28af9398c382c1472b509ba6fafbe8767f7087e2f588a32bbc7c",
+       "size": 14638
+     },
+     "test_controller.py": {
+-      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-01/test_controller.py",
++      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-02/test_controller.py",
+       "sha256": "0014e13d211462dc91d63b6d10e7f36b8d00cbd6b0d151e1324f404893c98b89",
+       "size": 3494
+     },
+     "test_producer.py": {
+-      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-01/test_producer.py",
+-      "sha256": "a860a1c4aa91647245d97350225522faf53c16450787bd348a292a6b6fef045f",
+-      "size": 5952
++      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-02/test_producer.py",
++      "sha256": "a454c66975f3e627e6033a7d8e628306867b3998855ff0ecb2a5919367fdfc7e",
++      "size": 10573
+     },
+     "test_strip.py": {
+-      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-01/test_strip.py",
++      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-beta-composition-02/test_strip.py",
+       "sha256": "f9f47bb4b06f13a51904d51cdd8d1c0f69848be324ec924e588ad4cfaac2b442",
+       "size": 2642
+     }
+@@ -136,6 +151,22 @@
+       "sha256": "c73e4f0d656bfb017dc4697104f80aab1242f4ff60925b32440bf73548defda6",
+       "size": 12737863
+     },
++    "candidate_bootstrap_configuration": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/bootstrap.toml",
++      "sha256": "71b495da8fc35ca1321322f56065eb149ecd82fa3c8ff7ef4d4c10ec53f0df9b",
++      "size": 702
++    },
++    "candidate_lowering_test_receipt": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-build-02/commands/015/receipt.json",
++      "sha256": "ac92801e4b026ae0c9520fac6d75abe6101dca320f73405291bb7bef12ebe5c6",
++      "size": 18396
++    },
++    "candidate_lowering_test_stdout": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-build-02/commands/015/stdout",
++      "sha256": "d82c247d8bc5ef403c44c9b284c8971896d7e32a3e75e5331db44e2ed4ae82f7",
++      "size": 25668,
++      "source_root": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source"
++    },
+     "compositor": {
+       "path": "/Users/danluu/dev/rust-interp-beta-auxiliary-sysroot-20260913/experiments/embedded-frontend-bootstrap/compose_sysroot.py",
+       "sha256": "b9ac4187febcfb8a36052134088ae22735676610451a75691d6121b25abe360b",
+@@ -185,6 +216,21 @@
+       "path": "/Users/danluu/dev/rust-interp-beta-auxiliary-readmission-20260918/experiments/beta-auxiliary-readmission/test_strip.py",
+       "sha256": "b8280d7d08af813356fd73c066df8bb35eb4d7484c0578c8f91bb2a67f232860",
+       "size": 2636
++    },
++    "timing_association_proposal": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-producer-association/PROPOSAL.md",
++      "sha256": "d4deecd01891452dc6f62d31d84148a5549f5e5724ae7ceaf89d71999f5e35f7",
++      "size": 8058
++    },
++    "timing_observation": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-producer-association/observation.json",
++      "sha256": "573a5e67ba1430ecc0d503d5ea625b00f3619590c271361fbeaa18c39376760e",
++      "size": 35483
++    },
++    "timing_observer": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-producer-association/observe.py",
++      "sha256": "74600d51db08b0c770e33a19423712ce16aed95fb1229a12063f55207c52e7c3",
++      "size": 6096
+     },
+     "workspace_controls_historical_catalog": {
+       "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/workspace-controls-01/inputs.json",
+@@ -202,5 +248,72 @@
+       "size": 2153
+     }
+   },
+-  "status": "source-only-unrun"
++  "status": "source-only-unrun; successor02 passed49 controls separately",
++  "timing_sources": {
++    "src/bootstrap/bootstrap.py": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/bootstrap/bootstrap.py",
++      "sha256": "f2803b8f2e1c002cc3fba42475e10c8301fdf41a9c2d25fa831d79b3522d042b",
++      "size": 55550
++    },
++    "src/bootstrap/src/bin/rustc.rs": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/bootstrap/src/bin/rustc.rs",
++      "sha256": "4f207e8a520c34e4a937919036d1e9c870cf15d41ce61e8e7b32235df55da65e",
++      "size": 18198
++    },
++    "src/bootstrap/src/core/build_steps/check.rs": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/bootstrap/src/core/build_steps/check.rs",
++      "sha256": "f1b2c7ccf91eb39804f679175aac3e2932cdd89ba5469028990e7c140742090b",
++      "size": 31742
++    },
++    "src/bootstrap/src/core/build_steps/compile.rs": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/bootstrap/src/core/build_steps/compile.rs",
++      "sha256": "3ac8cc96ce9ad5c432dc1d55d24cacf282406ff522148febec69abca25599c7e",
++      "size": 125274
++    },
++    "src/bootstrap/src/core/build_steps/test.rs": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/bootstrap/src/core/build_steps/test.rs",
++      "sha256": "62b7aadb658b2ec7a54fdd410bd946d55cf6f1d343f33bf86bf9c37d2b5de9a9",
++      "size": 178466
++    },
++    "src/bootstrap/src/core/builder/cargo.rs": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/bootstrap/src/core/builder/cargo.rs",
++      "sha256": "5e3c71654fd5d36806993ca39058921ae444f7c1945ff1489c3a71040f92ad8b",
++      "size": 68635
++    },
++    "src/bootstrap/src/core/builder/mod.rs": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/bootstrap/src/core/builder/mod.rs",
++      "sha256": "1135a422061fe6e15e2274299ce6715ed43a70bbaef02c6fdbfd4624475bd120",
++      "size": 66232
++    },
++    "src/bootstrap/src/core/session.rs": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/bootstrap/src/core/session.rs",
++      "sha256": "ffba50ea8f67eaff5497575e7b010231156e3fb70861d142f1a5bff9fb39032e",
++      "size": 69793
++    },
++    "src/bootstrap/src/utils/exec.rs": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/bootstrap/src/utils/exec.rs",
++      "sha256": "0c5621ff7613608efbc7e33d4d097c784ea0e3b5fb8cd424eb6678af6a30ebc1",
++      "size": 31350
++    },
++    "src/bootstrap/src/utils/helpers.rs": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/bootstrap/src/utils/helpers.rs",
++      "sha256": "4e638fc0bd2c3244c6e7c6ae9f0daab4a22e3ca76559eb20b27beb4bc3a880b6",
++      "size": 22418
++    },
++    "src/bootstrap/src/utils/render_tests.rs": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/bootstrap/src/utils/render_tests.rs",
++      "sha256": "58b82a734a6c8175f925b881195376d2a4960b0b2626ec06c89a57b1da46d19d",
++      "size": 19679
++    },
++    "src/shim_utils/src/lib.rs": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/shim_utils/src/lib.rs",
++      "sha256": "2d0a7971d47e0402f406c0538c1fa5888e829cdaeb77a097be3b3c9137fb066b",
++      "size": 638
++    },
++    "src/shim_utils/src/shared_helpers.rs": {
++      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/shim_utils/src/shared_helpers.rs",
++      "sha256": "bad42330a198e7d14e84a2868359b8745cc1e45e2bafc873a66fcebebb85bc33",
++      "size": 5453
++    }
++  }
+ }
+--- 02/test_producer.py
++++ 03/test_producer.py
+@@ -15,6 +15,7 @@
+             RUSTC_SYSROOT=source + '/build/' + host + '/stage0-sysroot',
+             CARGO_TARGET_DIR=source + '/build/' + host + '/stage1-rustc',
+             CARGO_BUILD_BUILD_DIR=source + '/build/' + host + '/stage1-rustc')
++        env['DYLD_LIBRARY_PATH'] = ':'.join(producer.test_loader_paths(source))
+         row = dict(argv=[shim, shim, '--crate-name', 'test', '--target', host], environment={})
+         raw = ('  Running `' + shlex.join(row['argv']) + '`\n').encode()
+         coordinate = dict(stream='rustc', line=1, line_sha256=digest(raw))
+@@ -29,7 +30,7 @@
+             parsed = producer.bootstrap_line(text, coord, source)
+             child = 'child' if index == 0 else second_child
+             streams[name] = dict(raw=text, child_receipt=child, environment={})
+-            catalog.append(dict(command=coord, parsed=parsed, child_receipt=child, stage_index=0))
++            catalog.append(dict(command=coord, parsed=parsed, child_receipt=child, stage_index=0, execution='real'))
+         binding = dict(command=coordinate, cargo_command=catalog[0]['command'], parsed=row,
+                        parsed_cargo=catalog[0]['parsed'])
+         return binding, catalog, streams, source
+@@ -76,6 +77,33 @@
+             producer.unambiguous_environment(row, [one, dict(cargo=cargo, inherited={'EXTRA': 'x'})], source)
+         with self.assertRaises(ValueError):
+             producer.unambiguous_environment(row, [], source)
++
++    def test_selfcheck_is_preserved_but_cannot_be_selected_as_real(self):
++        binding, catalog, streams, source = self.contexts({'ARBITRARY_ENV_INPUT': 'different'})
++        catalog[1]['execution'] = 'self-check-print'
++        producer.actual_command(binding, catalog, streams, source)
++        binding['cargo_command'] = catalog[1]['command']; binding['parsed_cargo'] = catalog[1]['parsed']
++        with self.assertRaises(ValueError): producer.actual_command(binding, catalog, streams, source)
++
++    def test_exact_test_loader_order_and_absent_inherited_or_crate_overrides(self):
++        binding, catalog, streams, source = self.contexts()
++        row, cargo = binding['parsed'], catalog[0]['parsed']
++        producer.mechanism(row, cargo, {}, source)
++        exact = ':'.join(producer.test_loader_paths(source))
++        for value in [None, '', exact + ':/foreign', ':'.join(reversed(producer.test_loader_paths(source)))]:
++            env = dict(cargo['environment'])
++            if value is None: del env['DYLD_LIBRARY_PATH']
++            else: env['DYLD_LIBRARY_PATH'] = value
++            with self.subTest(value=value), self.assertRaises(ValueError):
++                producer.mechanism(row, cargo | {'environment': env}, {}, source)
++        for key in ['DYLD_LIBRARY_PATH', 'DYLD_FALLBACK_LIBRARY_PATH', 'DYLD_INSERT_LIBRARIES', 'DYLD_FRAMEWORK_PATH', 'LD_PRELOAD']:
++            with self.subTest(key=key), self.assertRaises(ValueError): producer.mechanism(row, cargo, {key: '/foreign'}, source)
++            with self.subTest(key=key), self.assertRaises(ValueError): producer.mechanism(row | {'environment': {key: exact}}, cargo, {}, source)
++        for mode in ['build', 'check']:
++            with self.subTest(mode=mode), self.assertRaises(ValueError):
++                producer.mechanism(row, cargo | {'argv': [cargo['argv'][0], mode]}, {}, source)
++            clean = dict(cargo['environment']); del clean['DYLD_LIBRARY_PATH']
++            producer.mechanism(row, cargo | {'argv': [cargo['argv'][0], mode], 'environment': clean}, {}, source)
+ 
+     def argv(self):
+         return ['/candidate/bootstrap/rustc', '--crate-name', 'rustc_test', 'compiler/test.rs',
+@@ -142,6 +170,7 @@
+             RUSTC_SYSROOT=source + '/build/' + host + '/stage0-sysroot',
+             CARGO_TARGET_DIR=source + '/build/' + host + '/stage1-rustc',
+             CARGO_BUILD_BUILD_DIR=source + '/build/' + host + '/stage1-rustc')
++        env['DYLD_LIBRARY_PATH'] = ':'.join(producer.test_loader_paths(source))
+         cargo = dict(argv=[d + '/bin/cargo', 'test'], environment=env, removed=[])
+         row = dict(argv=[shim, shim, '--crate-name', 'test', '--target', host], environment={})
+         self.assertEqual(producer.mechanism(row, cargo, {}, source), env)
+--- 02/test_timing_context.py
++++ 03/test_timing_context.py
+@@ -0,0 +1,178 @@
++"""Prepared source/trace controls only; no compiler or subprocess invocation."""
++import json
++from pathlib import Path
++import shlex
++import unittest
++
++import producer
++import timing_context as timing
++from compose_sysroot import digest
++
++
++class TimingControls(unittest.TestCase):
++    SOURCE = '/source'
++    HOST = 'aarch64-apple-darwin'
++
++    def step(self, mode='build'):
++        compiler = 'Compiler { stage: 0, host: ' + self.HOST + ', forced_compiler: false }'
++        return {
++            'build': 'compile::Rustc { target: ' + self.HOST + ', build_compiler: ' + compiler + ', crates: [] }',
++            'test': 'test::Crate { build_compiler: ' + compiler + ', target: ' + self.HOST + ', mode: Rustc, crates: ["rustc_ast_lowering"] }',
++            'check': 'check::Rustc { check_kind: Check, build_compiler: CompilerForCheck { build_compiler: ' + compiler
++                     + ', rustc_rmeta_sysroot: None, std_rmeta_sysroot: None }, target: ' + self.HOST + ', crates: ["rustc_ast_lowering"] }',
++        }[mode]
++
++    def cargo(self, mode='build', extra=None):
++        tree = self.SOURCE + '/build/' + self.HOST + '/stage1-rustc'
++        env = dict(CARGO_TARGET_DIR=tree, CARGO_BUILD_BUILD_DIR=tree) | (extra or {})
++        argv = [self.SOURCE + '/build/' + self.HOST + '/stage0/bin/cargo', mode, '--target', self.HOST,
++                '--manifest-path', self.SOURCE + '/compiler/rustc/Cargo.toml']
++        if mode == 'test': argv += ['-p', 'rustc_ast_lowering', '--', '-Z', 'unstable-options', '--format', 'json']
++        else:
++            if mode == 'check': argv += ['-p', 'rustc_ast_lowering']
++            argv += ['--message-format', 'json-render-diagnostics']
++        return dict(argv=argv, environment=env, removed=[])
++
++    def printed(self, cargo):
++        words = ['cd', self.SOURCE, '&&', 'env', *[key + '=' + value for key, value in cargo['environment'].items()],
++                 *cargo['argv'], '(failure_mode=Exit)']
++        return 'running: ' + shlex.join(words) + '\n'
++
++    def entries(self, raw):
++        result = []
++        for number, line in enumerate(raw.splitlines(keepends=True), 1):
++            if line.startswith(b'running: '):
++                coord = dict(stream='stdout', line=number, line_sha256=digest(line))
++                result.append(dict(command=coord, parsed=producer.bootstrap_line(raw, coord, self.SOURCE)))
++        return result
++
++    def classify(self, raw):
++        return timing.classify(raw, self.entries(raw), lambda cargo, step: producer.native_emitter(cargo, step, self.SOURCE))
++
++    def complete(self, cargo=None):
++        cargo = cargo or self.cargo(); step = self.step(cargo['argv'][1])
++        return ('[TIMING:start] outer::Setup { name: "before" }\n[TIMING:end] outer::Setup { name: "before" } -- 0.001\n'
++                + self.printed(cargo) + '[TIMING:start] compile::Assemble { value: 1 }\n'
++                + '[TIMING:start] ' + step + '\n' + self.printed(cargo)
++                + '[TIMING:end] ' + step + ' -- 0.001\n[TIMING:end] compile::Assemble { value: 1 } -- 0.002\n').encode()
++
++    def test_setup_timing_does_not_relabel_later_selfcheck_and_nested_real(self):
++        result = self.classify(self.complete())
++        self.assertEqual([r['execution'] for r in result['commands']], ['self-check-print', 'real'])
++        self.assertEqual([len(r['timing_stack']) for r in result['commands']], [0, 2])
++        self.assertEqual(len(result['events']), 6)
++        self.assertEqual(result['commands'][0]['parsed'], result['commands'][1]['parsed'])
++        self.assertNotEqual(result['commands'][0]['command'], result['commands'][1]['command'])
++
++    def test_complete_actual_historical_native_context_catalog(self):
++        refs = json.loads(Path(__file__).with_name('source-bindings.json').read_bytes())['references']
++        row = refs['historical_native_stdout']; raw = Path(row['path']).read_bytes()
++        self.assertEqual(len(raw), row['size']); self.assertEqual(digest(raw), row['sha256'])
++        source = '/Users/danluu/dev/rustc-hir-capture-check-20260913'
++        entries = []
++        for number, line in enumerate(raw.splitlines(keepends=True), 1):
++            if line.startswith(b'running: ') and b'CARGO_TARGET_DIR=' in line and (source + '/build/' + self.HOST + '/stage1-rustc').encode() in line:
++                coord = dict(stream='stdout', line=number, line_sha256=digest(line))
++                parsed = producer.bootstrap_line(raw, coord, source)
++                if parsed['environment']['CARGO_TARGET_DIR'].endswith('/stage1-rustc'):
++                    entries.append(dict(command=coord, parsed=parsed))
++        result = timing.classify(raw, entries, lambda cargo, step: producer.native_emitter(cargo, step, source))
++        self.assertEqual(len(result['events']), 30)
++        self.assertEqual([r['command']['line'] for r in result['commands']], [32, 57])
++        self.assertEqual([r['execution'] for r in result['commands']], ['self-check-print', 'real'])
++        self.assertNotEqual(entries[0]['parsed']['environment'], entries[1]['parsed']['environment'])
++
++    def test_saved_successful_lowering_child_keeps_exact_test_loader_paths(self):
++        refs = json.loads(Path(__file__).with_name('source-bindings.json').read_bytes())['references']
++        row = refs['candidate_lowering_test_stdout']; raw = Path(row['path']).read_bytes()
++        self.assertEqual(len(raw), row['size']); self.assertEqual(digest(raw), row['sha256'])
++        source = str(Path(row['source_root']))
++        entries = []
++        for number, line in enumerate(raw.splitlines(keepends=True), 1):
++            if line.startswith(b'running: ') and b'CARGO_TARGET_DIR=' in line and (source + '/build/' + self.HOST + '/stage1-rustc').encode() in line:
++                coord = dict(stream='stdout', line=number, line_sha256=digest(line))
++                parsed = producer.bootstrap_line(raw, coord, source)
++                if parsed['environment']['CARGO_TARGET_DIR'].endswith('/stage1-rustc'):
++                    entries.append(dict(command=coord, parsed=parsed))
++        result = timing.classify(raw, entries, lambda cargo, step: producer.native_emitter(cargo, step, source))
++        self.assertEqual(len(result['events']), 26)
++        self.assertEqual([r['command']['line'] for r in result['commands']], [31, 58])
++        self.assertEqual([r['execution'] for r in result['commands']], ['self-check-print', 'real'])
++        receipt_row = refs['candidate_lowering_test_receipt']; receipt_raw = Path(receipt_row['path']).read_bytes()
++        self.assertEqual(digest(receipt_raw), receipt_row['sha256'])
++        receipt = json.loads(receipt_raw)
++        self.assertEqual(receipt['status'], 'finished'); self.assertEqual(receipt['returncode'], 0)
++        self.assertEqual(receipt['stdout_sha256'], digest(raw))
++        self.assertEqual(receipt['command'], producer.allowed_bootstrap_commands()[1])
++        for entry in result['commands']:
++            self.assertEqual(producer.loader_policy({'environment': {}}, entry['parsed'], receipt['environment'], source),
++                             ':'.join(producer.test_loader_paths(source)))
++
++    def test_check_and_rendered_test_steps_use_specific_source_routes(self):
++        for mode, expected in [('check', 'check::Rustc/run_cargo/stream_cargo'),
++                               ('test', 'test::Crate/run_cargo_test/render_tests::run_tests')]:
++            with self.subTest(mode=mode):
++                result = self.classify(self.complete(self.cargo(mode)))
++                self.assertEqual({row['source_route'] for row in result['commands']}, {expected})
++
++    def test_unknown_real_emitter_or_compiler_role_is_rejected(self):
++        for old, new in [(b'compile::Rustc {', b'unknown::Rustc {'),
++                         (b'stage: 0', b'stage: 1'), (b'forced_compiler: false', b'forced_compiler: true')]:
++            with self.subTest(new=new), self.assertRaises(ValueError):
++                self.classify(self.complete().replace(old, new))
++
++    def test_unknown_cargo_route_is_rejected_even_without_open_step(self):
++        for key, value in [('CARGO_TARGET_DIR', '/foreign'), ('CARGO_BUILD_BUILD_DIR', '/foreign')]:
++            with self.subTest(key=key), self.assertRaises(ValueError):
++                self.classify(self.complete(self.cargo(extra={key: value})))
++        cargo = self.cargo(); cargo['argv'][0] = '/foreign/cargo'
++        with self.assertRaises(ValueError): self.classify(self.complete(cargo))
++
++    def test_unclosed_mismatched_or_extra_timing_events_are_rejected(self):
++        original = self.complete()
++        bad = [original.rsplit(b'[TIMING:end]', 1)[0],
++               original + b'[TIMING:end] no::Step -- 0.000\n',
++               original.replace(b'[TIMING:end] compile::Assemble', b'[TIMING:end] wrong::Assemble'),
++               original + b'[TIMING:unknown] no::Step\n',
++               original + b' [TIMING:start] no::Step\n',
++               original + b'[TIMING start] no::Step\n',
++               original + b'[TIMING:start] no::Step\n']
++        for raw in bad:
++            with self.subTest(raw=raw[-80:]), self.assertRaises(ValueError): self.classify(raw)
++
++    def test_events_after_last_relevant_command_are_not_ignored(self):
++        raw = self.complete() + b'[TIMING:start] after::Step { value: 1 }\n'
++        with self.assertRaises(ValueError): self.classify(raw)
++
++    def test_timing_representation_requires_complete_bounded_debug_shape(self):
++        for step in ['Step', 'x::Step { x: [ }', 'x::Step { x: "unterminated }', 'x::Step\t', 'x::Step ' + 'a' * 17000]:
++            with self.subTest(step=step[:50]), self.assertRaises(ValueError): timing.step_name(step)
++        self.assertEqual(timing.step_name('x::Step { x: "[quoted]", y: Some([1, 2]) }'), 'x::Step')
++
++    def test_raw_coordinates_missing_duplicate_or_changed_are_rejected(self):
++        raw = self.complete(); entries = self.entries(raw)
++        for bad in [[entries[0], entries[0]], [dict(entries[0], command=entries[0]['command'] | {'line_sha256': '0' * 64})],
++                    [dict(entries[0], command=entries[0]['command'] | {'line': 999})]]:
++            with self.assertRaises(ValueError):
++                timing.classify(raw, bad, lambda cargo, step: producer.native_emitter(cargo, step, self.SOURCE))
++
++    def test_step_and_cargo_package_selection_must_match(self):
++        for mode in ['build', 'check', 'test']:
++            cargo = self.cargo(mode)
++            cargo['argv'][2:2] = ['-p', 'other']
++            with self.subTest(mode=mode), self.assertRaises(ValueError):
++                self.classify(self.complete(cargo))
++        for flags in [['--package=other'], ['--workspace'], ['-prustc_ast_lowering']]:
++            cargo = self.cargo(); cargo['argv'][2:2] = flags
++            with self.subTest(flags=flags), self.assertRaises(ValueError):
++                self.classify(self.complete(cargo))
++
++    def test_configuration_and_outer_cli_must_be_exactly_admitted(self):
++        allowed = producer.allowed_bootstrap_commands(); config = dict(build={'print-step-timings': True})
++        timing.configured(config, allowed[0], allowed)
++        for cfg, command in [(dict(build={'print-step-timings': False}), allowed[0]), ({}, allowed[0]),
++                             (config, allowed[0] + ['--dry-run']), (config, ['./x', 'build'])]:
++            with self.subTest(command=command), self.assertRaises(ValueError): timing.configured(cfg, command, allowed)
++
++
++if __name__ == '__main__': unittest.main()
+--- 02/timing_context.py
++++ 03/timing_context.py
+@@ -0,0 +1,97 @@
++"""Pure complete timing-stack classification, with a source-bound route callback.
++
++The callback must prove that its exact Cargo argv is printed before the common
++dry-run stream guard from a specific Step::run. It must validate a real top Step
++when supplied, and reject unknown routes. Empty stack is not sufficient alone.
++Nonproducer timing frames are retained structurally; they do not prove a Cargo
++route. No Finished-boundary or cross-stream timestamp inference is performed.
++"""
++import hashlib
++import re
++
++MAX_RAW = 32 * 2**20
++MAX_LINES = 100000
++MAX_EVENTS = 10000
++MAX_STEP = 16384
++MAX_DEPTH = 128
++
++
++def require(value, message):
++    if not value: raise ValueError(message)
++
++
++def configured(configuration, command, allowed_commands):
++    require(configuration.get('build', {}).get('print-step-timings') is True,
++            'complete real step timings are required')
++    require(command in allowed_commands and command[:1] == ['./x'] and command[-1:] == ['-vv'],
++            'unproved bootstrap command/configuration override')
++
++
++def step_name(text):
++    require(0 < len(text) <= MAX_STEP and all(32 <= ord(c) < 127 for c in text),
++            'bounded printable timing Step required')
++    match = re.fullmatch(r'([A-Za-z_][A-Za-z_0-9]*(?:::[A-Za-z_][A-Za-z_0-9]*)+)(?: (\{.*\})|\((.*)\))?', text)
++    require(match is not None, 'unrecognized timing Step representation')
++    # Validate the entire nested Debug representation without normalizing it.
++    brackets, quoted, escape = [], False, False
++    pairs = {'}': '{', ']': '[', ')': '('}
++    for char in text:
++        if quoted:
++            if escape: escape = False
++            elif char == '\\': escape = True
++            elif char == '"': quoted = False
++        elif char == '"': quoted = True
++        elif char in '{[(': brackets.append(char)
++        elif char in '}])':
++            require(brackets and brackets.pop() == pairs[char], 'malformed timing Step delimiters')
++    require(not brackets and not quoted and not escape, 'unfinished timing Step representation')
++    return match[1]
++
++
++def classify(raw, entries, approve_route):
++    """Keep every provided printed context, marking source-proved real vs dry.
++
++    Caller separately derives the *complete* Cargo catalog from the retained
++    stream. Each entry must contain command.line/line_sha256 and parsed argv/env.
++    All timing records in the stream are parsed, including records after the
++    last relevant command and setup steps before the dry self-check.
++    """
++    require(isinstance(raw, bytes) and len(raw) <= MAX_RAW, 'timing stdout exceeds bound')
++    wanted = {}
++    for entry in entries:
++        line = entry['command']['line']
++        require(type(line) is int and line > 0 and line not in wanted, 'duplicate/invalid printed-command coordinate')
++        wanted[line] = entry
++    stack, events, contexts = [], [], {}
++    offset = 0
++    for number, line in enumerate(raw.splitlines(keepends=True), 1):
++        require(number <= MAX_LINES, 'timing stdout line bound exceeded')
++        text = line.decode('utf-8', errors='strict').rstrip('\r\n')
++        start = re.fullmatch(r'\[TIMING:start\] (.+)', text)
++        end = re.fullmatch(r'\[TIMING:end\] (.+) -- ([0-9]+\.[0-9]{3})', text)
++        if '[TIMING' in text:
++            require(start or end, 'unknown or malformed timing event')
++        if start or end:
++            step = start[1] if start else end[1]
++            name = step_name(step)
++            if start:
++                require(len(stack) < MAX_DEPTH, 'timing stack depth exceeded')
++                stack.append(step)
++            else:
++                require(stack and stack[-1] == step, 'out-of-order/mismatched timing end')
++            events.append(dict(line=number, offset=offset, size=len(line), line_sha256=hashlib.sha256(line).hexdigest(),
++                               event='start' if start else 'end', step=step, step_name=name, depth=len(stack)))
++            require(len(events) <= MAX_EVENTS, 'timing event bound exceeded')
++            if end: stack.pop()
++        if number in wanted:
++            entry = wanted[number]
++            require(hashlib.sha256(line).hexdigest() == entry['command']['line_sha256']
++                    and text.startswith('running: ') and not (start or end), 'printed command raw coordinate differs')
++            route = approve_route(entry['parsed'], stack[-1] if stack else None)
++            require(isinstance(route, str) and route, 'source-bound emitting route required')
++            contexts[number] = dict(execution='real' if stack else 'self-check-print', timing_stack=list(stack), source_route=route)
++        offset += len(line)
++    require(not stack, 'unclosed timing stack')
++    require(set(contexts) == set(wanted) and events, 'missing printed contexts or complete timing events')
++    return dict(stdout_sha256=hashlib.sha256(raw).hexdigest(), events=events,
++                commands=[dict(entry, **contexts[entry['command']['line']]) for entry in entries])

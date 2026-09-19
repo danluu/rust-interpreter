@@ -1,0 +1,282 @@
+--- 04/bounded_stage.py
++++ 05/bounded_stage.py
+@@ -10,7 +10,7 @@
+ sys.modules[spec.name] = shared
+ spec.loader.exec_module(shared)
+ OWNER, NAMESPACE, owned = shared.OWNER, shared.NAMESPACE, shared.owned
+-EVIDENCE = A/'.work/hir-options-hash-beta-composition-04'
++EVIDENCE = A/'.work/hir-options-hash-beta-composition-05'
+ 
+ def sample(prior_evidence):
+     return shared.sample(evidence_root=EVIDENCE, evidence_roots=prior_evidence)
+--- 04/prepare.py
++++ 05/prepare.py
+@@ -278,7 +278,7 @@
+         write(HERE/'inputs.json', freeze)
+         launch = dict(status='prepared-unrun-awaiting-review', owner=str(c.OWNER), environment=plan['environment'],
+             command=[freeze['python'], '-B', str(c.OWNER/'scripts/supervise_experiment.py'), '--run-id',
+-                     'hir-options-hash-beta-composition-supervisor-04', '--', freeze['python'], '-B', str(HERE/'compose.py'),
++                     'hir-options-hash-beta-composition-supervisor-05', '--', freeze['python'], '-B', str(HERE/'compose.py'),
+                      '--inputs-sha256', c.owned.sha(HERE/'inputs.json')],
+             inputs_sha256=c.owned.sha(HERE/'inputs.json'), plan_sha256=c.owned.sha(HERE/'plan.json'),
+             expected_children=19, capacity=plan['capacity'], actual_composition=False)
+--- 04/producer.py
++++ 05/producer.py
+@@ -54,16 +54,26 @@
+     directory = Path(single(argv, '--out-dir'))
+     require(directory.is_absolute() and '..' not in directory.parts,
+             'noncanonical producer output directory')
++    require(not any(word.startswith('-o') or word.startswith('--output')
++                    or word.startswith('@') for word in argv), 'explicit/indirect output needs separate proof')
++    emits = single(argv, '--emit').split(',')
++    require(all('=' not in value for value in emits), 'explicit emit destinations need separate proof')
+     extra = []
+     for index, word in enumerate(argv):
+         value = argv[index + 1] if word == '-C' and index + 1 < len(argv) else word[2:] if word.startswith('-C') else ''
+         if value.startswith('extra-filename='):
+             extra.append(value.removeprefix('extra-filename='))
++    # Cargo build-script binaries intentionally have no extra-filename. This
++    # exact executable-only form cannot emit a stamped rlib/rmeta/dylib;
++    # rustc_session::output::filename_for_input separates Executable from libs.
++    # Retain the command in output_catalog, never admit it as a private producer.
++    if not extra and crate == 'build_script_build':
++        require(single(argv, '--crate-type') == 'bin' and '--test' not in argv
++                and emits == ['dep-info', 'link'], 'ambiguous build-script output role')
++        return set()
+     require(len(extra) == 1 and re.fullmatch(r'-[a-zA-Z0-9]+', extra[0]),
+             'one ordinary extra-filename required')
+     stem = 'lib' + crate + extra[0]
+-    emits = single(argv, '--emit').split(',')
+-    require(all('=' not in value for value in emits), 'explicit emit destinations need separate proof')
+     if native:
+         require('link' in emits and '--test' not in argv, 'check-only metadata/test executable is not a native private producer')
+     if '--test' in argv:
+@@ -82,6 +92,42 @@
+             elif kind in ['dylib', 'proc-macro']:
+                 result.add(str(directory / (stem + '.dylib')))
+     return result
++
++
++def rustdoc_test(argv, source):
++    """Recognize only the two observed bootstrap doctest routes.
++
++    Bound bootstrap rustdoc.rs forwards --test to rustdoc. Bound doctest.rs
++    chooses a temporary outdir absent --persist-doctests and emits rust_out;
++    these commands are retained as non-private-output observations, not used
++    as compiler producers. Explicit/indirect/persistent outputs fail closed.
++    """
++    require(argv[0] == str(Path(source)/'build/bootstrap/debug/rustdoc'),
++            'unproved documentation executable')
++    require(argv.count('--test') == 1, 'one explicit documentation test mode required')
++    crate = single(argv, '--crate-name')
++    paths = {'rustc_interface': 'compiler/rustc_interface/src/lib.rs',
++             'run_make_support': 'src/tools/run-make-support/src/lib.rs'}
++    require(crate in paths and argv[argv.index('--test')+1:argv.index('--test')+2] == [paths[crate]],
++            'unknown/mixed documentation input role')
++    crate_types = []
++    for index, word in enumerate(argv):
++        if word == '--crate-type':
++            require(index+1 < len(argv), 'missing documentation crate type')
++            crate_types.append(argv[index+1])
++        elif word.startswith('--crate-type='):
++            crate_types.append(word.removeprefix('--crate-type='))
++    require(crate_types == {'rustc_interface': ['lib'], 'run_make_support': ['lib', 'dylib']}[crate],
++            'documentation crate types differ from observed route')
++    require(single(argv, '--target') == 'aarch64-apple-darwin', 'documentation target differs')
++    require(single(argv, '--test-run-directory') == str(Path(source)/Path(paths[crate]).parent.parent),
++            'documentation test cwd differs')
++    forbidden = ['--out-dir', '--emit', '--output', '--persist-doctests', '--parts-out-dir',
++                 '--merge', '--runtool', '--test-builder', '--test-builder-wrapper']
++    require(not any(word.startswith('@') or word.startswith('-o')
++                    or any(word == option or word.startswith(option+'=') for option in forbidden)
++                    for word in argv), 'documentation output override needs separate proof')
++    return dict(crate=crate, source=paths[crate], mode='temporary-doctest', private_outputs=[])
+ 
+ 
+ def bootstrap_line(raw, coordinate, source):
+@@ -331,6 +377,11 @@
+             coordinate = dict(stream=name, line=number, line_sha256=digest(line))
+             row = running_line(stream['raw'], coordinate)
+             argv = row['argv']
++            if argv[0] == str(source/'build/bootstrap/debug/rustdoc'):
++                observation = rustdoc_test(argv, source)
++                result.append(dict(command=coordinate, parsed=row, kind='rustdoc-test-running', outputs=[],
++                    observation=observation, history_index=stream['history_index'], child_receipt=stream['child_receipt']))
++                continue
+             is_rustc = '--crate-name' in argv or any(word.startswith('--crate-name=') for word in argv)
+             if not is_rustc:
+                 # Cargo build-script executions do not use the Rust output
+--- 04/test_nonprivate_outputs.py
++++ 05/test_nonprivate_outputs.py
+@@ -0,0 +1,138 @@
++"""Saved actual binary/doctest rows and adversarial non-private-output controls."""
++import json
++from pathlib import Path
++import shlex
++import tomllib
++import unittest
++
++import producer
++import test_output_catalog
++from compose_sysroot import digest, parse_stamp
++
++HERE = Path(__file__).resolve().parent
++
++
++class NonPrivateOutputs(unittest.TestCase):
++    def test_complete_saved_actual_catalog_has_all_256_final_private_producers(self):
++        bindings = json.loads((HERE/'source-bindings.json').read_bytes())['references']
++        def bound(name):
++            row = bindings[name]; raw = Path(row['path']).read_bytes()
++            self.assertEqual(digest(raw), row['sha256'])
++            return raw
++        compiled = json.loads(bound('actual-compiled03'))
++        stamp = Path(bindings['actual-native-stamp']['path']); tree = stamp.parents[2]
++        source = tree.parents[2]
++        composition = dict(source=str(source), tree=str(tree),
++                           private=parse_stamp(bound('actual-native-stamp'), tree=tree))
++        streams = {}
++        history = compiled['actual_command_history']
++        self.assertEqual(len(history), 26)
++        for i, ref in enumerate(history):
++            if ref['command'][0] != './x':
++                continue
++            child = json.loads(bound('actual-catalog-receipt-'+str(i)))
++            self.assertEqual(child['command'], ref['command'])
++            for kind in ['stdout', 'stderr']:
++                row = bindings['actual-catalog-'+str(i)+'-'+kind]
++                raw = bound('actual-catalog-'+str(i)+'-'+kind)
++                self.assertEqual(digest(raw), child[kind+'_sha256'])
++                streams[row['path']] = dict(raw=raw, child_receipt=ref['path'],
++                    history_index=i, stage_index=i, stream_kind=kind,
++                    outer_argv=child['command'], environment=child['environment'])
++        # This is a saved-byte parser control, not a new provenance/admission
++        # claim. The ordinary discovery independently repeats complete history.
++        proof = producer.discover(composition, streams, tomllib.loads(bound('actual-bootstrap-config').decode()))
++        self.assertEqual(set(proof['private']), {row['source'] for row in composition['private']})
++        self.assertEqual(len(proof['private']), 256)
++        self.assertEqual(len(proof['consumer']['ordered_driver_pair']), 2)
++
++    def binary(self):
++        return ['/source/build/bootstrap/debug/rustc']*2 + [
++            '--crate-name', 'build_script_build', 'build.rs', '--crate-type', 'bin',
++            '--emit=dep-info,link', '--out-dir', '/source/build/script/out']
++
++    def documentation(self):
++        return ['/source/build/bootstrap/debug/rustdoc', '--crate-name', 'rustc_interface',
++                '--crate-type', 'lib', '--test', 'compiler/rustc_interface/src/lib.rs',
++                '--target', 'aarch64-apple-darwin', '--test-run-directory', '/source/compiler/rustc_interface']
++
++    def test_saved_all_47_binary_and_two_documentation_commands(self):
++        bindings = json.loads((HERE/'source-bindings.json').read_bytes())['references']
++        report = Path(bindings['failed-discovery04']['path'])
++        self.assertEqual(digest(report.read_bytes()), bindings['failed-discovery04']['sha256'])
++        records = json.loads(report.read_bytes())['unexpected_output_command_forms']
++        self.assertEqual(len(records), 49)
++        binary, documentation = 0, 0
++        for record in records:
++            raw = Path(record['path']).read_bytes()
++            row = producer.running_line(raw, dict(line=record['line'], line_sha256=record['line_sha256']))
++            argv = row['argv']; source = str(Path(argv[0]).parents[3])
++            if Path(argv[0]).name == 'rustdoc':
++                self.assertEqual(producer.rustdoc_test(argv, source)['private_outputs'], [])
++                documentation += 1
++            else:
++                self.assertEqual(producer.rust_outputs(argv, native=False), set())
++                binary += 1
++        self.assertEqual((binary, documentation), (47, 2))
++
++    def test_binary_has_no_private_output_but_is_retained(self):
++        composition, streams, cargo, _, _ = test_output_catalog.CompleteOutputControls().fixture([self.binary()])
++        rows = producer.output_catalog(composition, streams, cargo)
++        self.assertEqual(rows[1]['kind'], 'rustc-running')
++        self.assertEqual(rows[1]['outputs'], [])
++        self.assertEqual(rows[1]['parsed']['argv'], self.binary())
++
++    def test_binary_mixed_role_or_metadata_rejects(self):
++        for before, after in [('bin', 'bin,rlib'), ('bin', 'lib'),
++                              ('--emit=dep-info,link', '--emit=dep-info,metadata,link')]:
++            with self.subTest(after=after), self.assertRaises(ValueError):
++                producer.rust_outputs([after if word == before else word for word in self.binary()], native=False)
++
++    def test_binary_output_redirect_or_indirect_args_reject(self):
++        for extra in [['-o', '/source/libx.rlib'], ['-o/source/libx.rlib'],
++                      ['--output=/source/libx.rlib'], ['@/source/args']]:
++            with self.subTest(extra=extra), self.assertRaises(ValueError):
++                producer.rust_outputs(self.binary()+extra, native=False)
++
++    def test_library_without_extra_filename_remains_rejected(self):
++        argv = [word.replace('build_script_build', 'ordinary_library').replace('bin', 'rlib') for word in self.binary()]
++        with self.assertRaises(ValueError):
++            producer.rust_outputs(argv, native=False)
++
++    def test_duplicate_filename_and_explicit_emit_remain_rejected(self):
++        for argv in [self.binary()+['-Cextra-filename=-a', '-Cextra-filename=-b'],
++                     [word.replace('--emit=dep-info,link', '--emit=link=/source/libx.rlib') for word in self.binary()]]:
++            with self.subTest(argv=argv), self.assertRaises(ValueError):
++                producer.rust_outputs(argv, native=False)
++
++    def test_documentation_retained_with_explicit_nonprivate_role(self):
++        composition, streams, cargo, _, _ = test_output_catalog.CompleteOutputControls().fixture([self.documentation()])
++        rows = producer.output_catalog(composition, streams, cargo)
++        self.assertEqual(rows[1]['kind'], 'rustdoc-test-running')
++        self.assertEqual(rows[1]['outputs'], [])
++        self.assertEqual(rows[1]['parsed']['argv'], self.documentation())
++
++    def test_documentation_outputs_and_response_files_reject(self):
++        for extra in [['--persist-doctests', '/source/out'], ['--out-dir=/source/out'],
++                      ['--emit=metadata'], ['-o/source/out'], ['@/source/args'],
++                      ['--test-builder=/foreign/compiler']]:
++            with self.subTest(extra=extra), self.assertRaises(ValueError):
++                producer.rustdoc_test(self.documentation()+extra, '/source')
++
++    def test_documentation_foreign_route_target_or_input_rejects(self):
++        for before, after in [('/source/build/bootstrap/debug/rustdoc', '/foreign/rustdoc'),
++                              ('lib', 'proc-macro'),
++                              ('aarch64-apple-darwin', 'x86_64-apple-darwin'),
++                              ('compiler/rustc_interface/src/lib.rs', 'compiler/other/src/lib.rs'),
++                              ('/source/compiler/rustc_interface', '/foreign/cwd')]:
++            with self.subTest(after=after), self.assertRaises(ValueError):
++                producer.rustdoc_test([after if word == before else word for word in self.documentation()], '/source')
++
++    def test_documentation_missing_or_duplicate_test_mode_rejects(self):
++        for argv in [self.documentation()+['--test'], [word for word in self.documentation() if word != '--test']]:
++            with self.subTest(argv=argv), self.assertRaises(ValueError):
++                producer.rustdoc_test(argv, '/source')
++
++
++if __name__ == '__main__':
++    unittest.main()
+--- 04/README.md
++++ 05/README.md
+@@ -71,3 +71,30 @@
+ review must close the proposed third-history adaptation, actual provider discovery,
+ all frozen inputs/routes/absences, bounded source snapshots, current capacity,
+ and output/producer coverage. No application-performance claim is made.
++
++
++## Successor05: saved binary and documentation output classification
++
++The first actual read-only discovery04 exited 1 before creating a proposal or
++B3. Its full raw failure is retained. The complete saved 26-command compiler
++history contains 47 build-script compilations with no extra-filename flag and
++two rustdoc --test invocations; the original parser rejected these ordinary
++non-private-output forms. All 82 passed controls and source04 remain unchanged.
++
++Successor05 retains every command and adds only two explicit classifications.
++A build_script_build compiler command with exactly bin, dep-info+link, no test,
++no filename suffix and no output redirection emits no private library. Other
++missing-suffix library or mixed/metadata roles still fail. The exact bootstrap
++rustdoc shim permits only the observed rustc_interface/run_make_support
++--test source/target/cwd routes, rejecting persistent or redirected output.
++Bound rustc_session output.rs separates executable/library output names; bound
++rustdoc shim and doctest.rs use the temporary doctest output directory and
++rust_out executable when persistent output is absent. These are not compiler
++producer substitutions or claims about arbitrary build-script side effects.
++
++Eleven additional source controls include all 47+2 saved raw commands and negative
++role/redirect/response-file/mixed-output cases, plus the complete saved actual
++catalog against all256 stamped private producers. They are written but unrun.
++The complete competing-output history, latest private producer, two-shim route,
++full effective environment, actual stamp and provider guards remain required.
++No new compiler workload, B3 composition or qualification occurred.
