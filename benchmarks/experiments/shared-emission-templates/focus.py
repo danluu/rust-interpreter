@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='shared-emission-templates-focused-05'
+RUN='shared-emission-templates-focused-06'
 def read(p):return json.loads(p.read_text())
 def main():
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
@@ -15,8 +15,8 @@ def main():
         needed=max(14*1024**3,8*1024**3+2*allocated);assert shutil.disk_usage(ROOT).free>=needed
         paths=[ROOT/p for p in subprocess.check_output(['git','ls-files','crates','Cargo.toml','Cargo.lock','rust-toolchain.toml'],cwd=ROOT,text=True).splitlines()]
         paths += [p for p in Path(__file__).parent.iterdir() if p.suffix in ['.py','.md']]
-        paths += [ROOT/'scripts'/p for p in ['compare_saved_runtime.py','workflow_io.py','interpreter.py','suite_reports.py','native_suite.py']
-        paths += [ROOT/'tests'/p for p in ['test_isolated_launcher.py','test_shared_templates.py']]]
+        paths += [ROOT/'scripts'/p for p in ['compare_saved_runtime.py','workflow_io.py','interpreter.py','suite_reports.py','native_suite.py']]
+        paths += [ROOT/'tests'/p for p in ['test_isolated_launcher.py','test_shared_templates.py']]
         prior=ROOT/'results/native-reuse-scope-01';closed=read(prior/'closure.json')
         assert closed['status']=='closed' and closed['all_hashes_verified'] and sha(prior/'summary.json')==closed['summary_sha256']
         paths += [prior/'closure.json',prior/'summary.json']

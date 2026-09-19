@@ -171,6 +171,12 @@ pgrust parser primary contract are prepared in QUALIFICATION.md; no runtime
 qualification or performance command has started yet. Admission is fresh: free
 space about18.7GiB and the shared lock was briefly available at19:29.
 
+Focused05 under53981/54020 failed parsing its controller (a mismatched list
+bracket) before admission or any build/test. It is CLOSED against85f2de01.
+Focused06 fixes only that controller syntax, keeps20Rust/16Python checks and
+retained VM, and all experiment controllers pass syntax compilation. Build01
+now requires closed focused06; no successful command is being repeated.
+
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally
 its incremental parser history and the latest selective-repair primary's
