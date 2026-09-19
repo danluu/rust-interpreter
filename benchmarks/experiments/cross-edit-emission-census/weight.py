@@ -21,12 +21,15 @@ with (ROOT/'.work/benchmark.lock').open('a') as lock:
         summary=bind(folder/'summary.json',c['summary_sha256'])
         bind(folder/'terminal.json',c['terminal_sha256'])
         return summary
-    anchors=closed('cross-edit-emission-anchors-01');assert anchors['status']=='passed'
+    anchors=closed('cross-edit-emission-anchors-02');assert anchors['status']=='passed'
     raw_anchors=ROOT/anchors['raw']
     bind(raw_anchors/'plan.json',anchors['plan_sha256']);bind(raw_anchors/'records.json',anchors['records_sha256'])
     for path,digest in anchors['outputs'].items():bind(ROOT/path,digest)
     comparison=read(raw_anchors/'report.json');inputs=read(raw_anchors/'inputs.json')
     assert comparison['original_anchor'] is True and len(comparison['comparisons'])==7
+    assert comparison['schema_version']==2
+    identities=comparison['original_functions']
+    assert [f['function'] for f in identities]==list(range(len(identities)))
     prior=closed('preparation-phase-workloads-refined-01');assert prior['status']=='passed' and prior['validator_controls']==8
     original=ROOT/prior['raw'];original_plan=bind(original/'plan.json',prior['plan_sha256'])
     original_records=bind(original/'records.json',prior['records_sha256'])
@@ -63,6 +66,9 @@ with (ROOT/'.work/benchmark.lock').open('a') as lock:
     rows=[]
     for row in comparison['comparisons']:
         assert row['previous_artifact_sha256']==inputs[0]['sha256'] and row['previous_state']==0
+        for f in row['functions']:
+            identity=identities[f['function']]
+            f.update(previous_name=identity['name'],previous_operations=identity['operations'],previous_sha256=identity['sha256'])
         rows.append(dict(state=row['state'],artifact_sha256=row['artifact_sha256'],
             workers=associate(row,profile['preparation_observations']['workers'])))
     assert [r['state'] for r in rows]==[-1,1,2,3,4,5,0]

@@ -77,3 +77,11 @@ weights separate for each worker and phase; exclude no-entry functions from
 native-template candidates. This is a join to one original diagnostic capture,
 not edited-run measurements or recoverable savings. No new guest, compiler build,
 artifact lowering or timing campaign. Initial12GiB, child/closure8GiB, rootlock45s.
+
+Anchors01 failed its64MiB report bound before publishing a report. Preserve its
+failed diagnostic, exact inputs and terminal; no guest ran. Model04 adds a control
+for storing original function metadata once in a schema2 report while retaining
+every per-state identity mask and operation count. Anchors02 uses compact JSON
+and the same64MiB cap. The association reconstructs original metadata from that
+single exact-ID table in memory; retained files stay unchanged. All original
+comparisons and source identities remain required. Model04 has13controls/profile.

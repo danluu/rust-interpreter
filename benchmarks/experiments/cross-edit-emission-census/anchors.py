@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='cross-edit-emission-anchors-01'
+RUN='cross-edit-emission-anchors-02'
 def read(p):return json.loads(p.read_text())
 
 with (ROOT/'.work/benchmark.lock').open('a') as lock:
@@ -20,10 +20,10 @@ with (ROOT/'.work/benchmark.lock').open('a') as lock:
         if digest is not None:assert actual==digest,path
         frozen[str(path.relative_to(ROOT))]=actual
         return read(path) if path.suffix=='.json' else actual
-    model=ROOT/'results/cross-edit-emission-model-03'
+    model=ROOT/'results/cross-edit-emission-model-04'
     closed=bind(model/'closure.json');assert closed['status']=='closed' and closed['all_hashes_verified']
     qualified=bind(model/'summary.json',closed['summary_sha256'])
-    assert qualified['status']=='passed' and qualified['tests_per_profile']==12
+    assert qualified['status']=='passed' and qualified['tests_per_profile']==13
     bind(model/'terminal.json',closed['terminal_sha256'])
     model_plan=bind(ROOT/qualified['raw']/'plan.json',qualified['plan_sha256'])
     for p,h in model_plan['frozen'].items():
@@ -78,6 +78,9 @@ with (ROOT/'.work/benchmark.lock').open('a') as lock:
     assert child.returncode==0 and 'test result: ok. 1 passed; 0 failed; 0 ignored;' in out,(out+err)[-5000:]
     report=read(raw/'report.json');assert report['guest_commands']==report['executable_code_publications']==0
     assert report['cache_admission'] is False and len(report['comparisons'])==7
+    assert report['schema_version']==2 and report['original_anchor'] is True
+    identities=report['original_functions']
+    assert [f['function'] for f in identities]==list(range(len(identities)))
     summaries=[]
     fields=['same_function_at_same_id','same_function_and_direct_callees','same_closed_direct_call_graph','global_context_and_graph_equal','same_function_and_direct_layouts']
     for index,row in enumerate(report['comparisons']):

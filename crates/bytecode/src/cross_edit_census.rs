@@ -233,8 +233,37 @@ fn cross_edit_observe_saved_original_anchors() {
         row["previous_artifact_sha256"]=inputs[0].sha256.clone().into();row["artifact_sha256"]=input.sha256.clone().into();
         comparisons.push(row);
     }
-    let bytes=serde_json::to_vec_pretty(&serde_json::json!({"comparisons":comparisons,
-        "guest_commands":0,"executable_code_publications":0,"cache_admission":false,"original_anchor":true})).unwrap();
+    let bytes=serde_json::to_vec(&anchor_document(&original,comparisons)).unwrap();
     assert!(bytes.len()<=64*1024*1024);
     std::fs::OpenOptions::new().write(true).create_new(true).open(std::env::var_os("RUST_INTERP_CROSS_EDIT_OUTPUT").unwrap()).unwrap().write_all(&bytes).unwrap();
+}
+
+fn anchor_document(original:&Program,mut comparisons:Vec<serde_json::Value>)->serde_json::Value {
+    let identities:Vec<_>=original.functions.iter().enumerate().map(|(id,f)|serde_json::json!({
+        "function":id,"name":f.name,"operations":f.code.len(),"sha256":digest(f).unwrap()})).collect();
+    for comparison in &mut comparisons {
+        for f in comparison["functions"].as_array_mut().unwrap() {
+            let f=f.as_object_mut().unwrap();
+            for field in ["name","sha256","previous_name","previous_operations","previous_sha256"] {f.remove(field);}
+        }
+    }
+    serde_json::json!({"schema_version":2,"original_functions":identities,"comparisons":comparisons,
+        "guest_commands":0,"executable_code_publications":0,"cache_admission":false,"original_anchor":true})
+}
+
+#[test]
+fn cross_edit_original_anchor_metadata_is_stored_once_without_losing_identity() {
+    let p=fixture();let mut q=p.clone();q.functions[2].name="edited leaf".into();
+    let original=compare(&p,&q).unwrap();let report=anchor_document(&p,vec![original.clone(),original.clone()]);
+    assert_eq!(report["schema_version"],2);assert_eq!(report["original_functions"].as_array().unwrap().len(),4);
+    for comparison in report["comparisons"].as_array().unwrap() {
+        for row in comparison["functions"].as_array().unwrap() {
+            let id=row["function"].as_u64().unwrap() as usize;let identity=&report["original_functions"][id];
+            assert_eq!(identity["name"],original["functions"][id]["previous_name"]);
+            assert_eq!(identity["operations"],original["functions"][id]["previous_operations"]);
+            assert_eq!(identity["sha256"],original["functions"][id]["previous_sha256"]);
+            assert_eq!(row["same_function_and_direct_layouts"],original["functions"][id]["same_function_and_direct_layouts"]);
+            assert!(row.get("previous_name").is_none() && row.get("name").is_none());
+        }
+    }
 }
