@@ -91,20 +91,25 @@ fault/replay and private memory; call/branch/resource controls retained.
   Original public controller and all old results remain unchanged. Fresh namespaces.
 - Portable pgrust protocol01 sourcead446618:24770 passed26controls (18 exact
   retained accounting/command controls,4 fresh source/outcome controls and4 real
-  pinned-rustc std/no_std type/borrow rejections). No metadata/code emitted; no
-  shared target used. Close ACTIVE; see experiment status. Do not change this
-  new controller folder until closure. Then admit pgrust02, not a repeated timing.
+  pinned-rustc std/no_std type/borrow rejections). Independently CLOSED40059.
+  No metadata/code emitted; no shared target used (tiny probe admission14GiB).
+- Pgrust02 source34dd8e57 is ACTIVE:53869/53872, launched03:57:13 with fresh
+  namespaces. Both real-project strict probes now pass and guest timings started.
+  Dedicated controller session-runtime-composition-pgrust-guard/benchmark.py;
+  freeze this folder and all bound inputs until its own close.py completes.
+- Large and parser protocol02 updates PREPARED5917e79c but UNEXECUTED: require
+  pgrust02, use core in identical portable probe bodies, bind real compiler proof
+  byte-for-byte. Protocol01 evidence remains; timing requires requalification02.
 
 ## Next actions
 
-Finish portable-protocol closure and commit its proof, then run fresh pgrust02
-using the dedicated corrected controller. Requalify large/parser admission to
-require pgrust02 rather than failed01 before either can run. Those updates are
-NOT YET MADE. Keep all old protocol receipts; no guest/runtime change. The private/Nushell adapters and both parser guards
+Finish and independently close pgrust02. Then qualify and close parser/large
+protocol02 before any later guard. A passing pgrust admits private rg-aot. No
+benchmark retry, runtime change, or noise threshold change from the fixture fix. The private/Nushell adapters and both parser guards
 remain required before integration. Their controllers are prepared in
 session-runtime-composition-large-guards and session-runtime-composition-parser-guards;
-parser and large protocols are independently closed; timing is
-unstarted. Order: public three, private rg-aot,
+parser/large protocol01 is closed; corrected protocol02 needs qualification;
+timing is unstarted. Order: public three, private rg-aot,
 parser incremental, parser repository defaults, Nushell last. Full parser retains
 its existing stronger session wall/CPU/noise gates. Private uses two persistent
 slots even for one test, with all idle-worker costs charged. Nushell requires
