@@ -6,7 +6,7 @@ installation work are separate from application build timings.
 
 | Candidate | Completed checks | Remaining performance evidence |
 | --- | --- | --- |
-| Cache the immutable incremental option hash once per compiler context | Compiler build; serial and parallel hash controls; compiler behavior controls; runtime preflight and its independent saved-result audit; runtime installation07 passed all 15 probes and audit13 passed | Prepare the standard library and exporter, then real edited Ruff builds with HIR caching off/on and independent holdouts |
+| Cache the immutable incremental option hash once per compiler context | Compiler build; serial and parallel hash controls; compiler behavior controls; audited runtime installation07 and standard-library preparation07 | Prepare and qualify the exporter, then real edited Ruff builds with HIR caching off/on and independent holdouts |
 | Retain the first ordinary procedural-macro arena page across reset | Corrected native and Miri checks; real macro callers against both N client libraries; default sysroot discovery; all 36 native frontend timings and restoration checks independently verified | Parked: median improvement 0.5894% did not exceed 3.4410% stock/stock variation |
 
 The hash candidate retains the complete original hash and its wire encoding.
@@ -60,6 +60,13 @@ and 326-file source-manifest preparation also passed. The earlier 29 regressions
 were not rerun; the original failure stays retained. These results establish
 installation correctness, not application behavior or build speed.
 
+Standard-library preparation07 passed its seven expected commands, including
+native and prepared E0080 source-location checks. Independent readback verified
+all 3,644 copied library source files and 3,670 prepared sysroot files, along with
+the exact commands, environment, retained inputs and terminal receipts. The
+ordinary CLI retained ownership of its workload and standard-library locks.
+Exporter qualification and strict application histories remain pending.
+
 Evidence entry points:
 
 - [Option-hash change and semantics](hir-options-hash/README.md)
@@ -82,6 +89,7 @@ Evidence entry points:
 - [Corrected directory reader and nine new regressions](../results/runtime13-provider-directory-source-01/STATUS.md)
 - [Passed audit13 of the unchanged installation](../results/runtime13-installation-saved-audit-01/STATUS.md)
 - [Standard-library adapter source and 12 focused tests](../results/runtime-std07-source-development-01/STATUS.md)
+- [Passed standard-library preparation07 and independent readback](../results/runtime-std07-preparation-01/STATUS.md)
 
 Historical plans and source manifests retain their original status text. The
 linked actual-result records establish which work has since run; an old plan's
