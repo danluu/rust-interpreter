@@ -1,0 +1,252 @@
+--- a/compiler/rustc_ast_lowering/src/body_cache/prepared.rs
++++ b/compiler/rustc_ast_lowering/src/body_cache/prepared.rs
+@@ -81,6 +81,21 @@
+     let checked = validate::check(tree.tree().clone(), current)?;
+     let value = Convert { current }.expr(&checked.tree().value)?;
+     Some(PreparedBody { current, body: BodyValues { expected: checked.tree().clone(),
++        owner: current.owner, start: current.start, end: current.journal.end,
++        source_start: BytePos(current.source_start), source_end: BytePos(current.source_end),
++        source: current.source.to_owned(), prefix, value } })
++}
++
++/// Prepare the owned replay payload against this one immutable Current.
++/// Keep the first complete tree/order validation before current-state checks,
++/// then convert while both values are still borrowed. No old CheckedTree is
++/// accepted and this result still grants no access to a lowering context.
++fn prepare_owned_replay<'current, 'input>(tree: w::BodyTree,
++    current: &'current Current<'input>) -> Option<PreparedBody<'current, 'input>> {
++    let checked = validate::check(tree, current)?;
++    let prefix = current_state(current)?;
++    let value = Convert { current }.expr(&checked.tree().value)?;
++    Some(PreparedBody { current, body: BodyValues { expected: checked.into_tree(),
+         owner: current.owner, start: current.start, end: current.journal.end,
+         source_start: BytePos(current.source_start), source_end: BytePos(current.source_end),
+         source: current.source.to_owned(), prefix, value } })
+@@ -305,6 +320,195 @@
+     use super::*;
+     use validate::tests::{checked, current, tree};
+ 
++    // Compare the real old validate+prepare path with owned replay preparation.
++    // These helpers inspect the existing block/literal fixture; they do not
++    // implement a second validator, converter, or replay model.
++    fn assert_same_span(left: &SpanRecipe, right: &SpanRecipe) {
++        match (left, right) {
++            (SpanRecipe::Dummy, SpanRecipe::Dummy) => (),
++            (SpanRecipe::Current { owner: a, lo: alo, hi: ahi },
++                SpanRecipe::Current { owner: b, lo: blo, hi: bhi }) => {
++                assert_eq!((a, alo, ahi), (b, blo, bhi));
++            }
++            _ => panic!("prepared span recipes differ"),
++        }
++    }
++
++    fn assert_owned_matches_checked(raw: w::BodyTree, current: &Current<'_>) -> bool {
++        let checked = validate::check(raw.clone(), current);
++        let legacy = checked.as_ref().and_then(|checked| prepare(checked, current));
++        let owned = prepare_owned_replay(raw, current);
++        assert_eq!(legacy.is_some(), owned.is_some(), "preparation acceptance differs");
++        let (Some(legacy), Some(owned)) = (legacy, owned) else { return false; };
++        assert!(std::ptr::eq(legacy.current, current));
++        assert!(std::ptr::eq(owned.current, current));
++        let (left, right) = (&legacy.body, &owned.body);
++        assert_eq!(left.expected, right.expected);
++        assert_eq!(left.owner, right.owner);
++        assert_eq!((left.start, left.end), (right.start, right.end));
++        assert_eq!((left.source_start, left.source_end), (right.source_start, right.source_end));
++        assert_eq!(left.source, right.source);
++        assert_eq!(left.prefix, right.prefix);
++        assert_eq!(left.value.node.id, right.value.node.id);
++        assert_same_span(&left.value.node.span, &right.value.node.span);
++        let (ExprKind::Block(left), ExprKind::Block(right)) = (&left.value.kind, &right.value.kind)
++            else { panic!("expected existing block fixture"); };
++        assert_eq!(left.node.id, right.node.id);
++        assert_same_span(&left.node.span, &right.node.span);
++        assert!(left.statements.is_empty() && right.statements.is_empty());
++        assert_eq!(left.rules, right.rules);
++        assert_eq!(left.targeted_by_break, right.targeted_by_break);
++        let (left, right) = (left.tail.as_ref().unwrap(), right.tail.as_ref().unwrap());
++        assert_eq!(left.node.id, right.node.id);
++        assert_same_span(&left.node.span, &right.node.span);
++        let (ExprKind::Literal { span: a, value: Literal::Integer(av, at) },
++            ExprKind::Literal { span: b, value: Literal::Integer(bv, bt) }) = (&left.kind, &right.kind)
++            else { panic!("expected existing integer fixture"); };
++        assert_same_span(a, b);
++        assert_eq!((av, at), (bv, bt));
++        true
++    }
++
++    #[test]
++    fn owned_replay_matches_checked_preparation_for_current_rebasing() {
++        use super::super::journal;
++        let base = checked();
++        let nodes = vec![journal::Node { body: true, binding: false, traits: false }; 2];
++        let other_owner = hir::OwnerId { def_id: rustc_span::def_id::LocalDefId {
++            local_def_index: rustc_span::def_id::DefIndex::from_u32(1) } };
++        for start in [3, 41, hir::ItemLocalId::INVALID.as_u32() - 3] {
++            let relocated = journal::check(base.journal().clone(), &journal::Entry {
++                start, nodes: &nodes, prefix_bindings: &BTreeMap::new() }).unwrap();
++            let mut current = current(&relocated); current.start = start;
++            for owner in [current.owner, other_owner] {
++                current.owner = owner;
++                for source_start in [100, 200, u32::MAX - 4] {
++                    current.source_start = source_start; current.source_end = source_start + 4;
++                    assert!(assert_owned_matches_checked(tree(), &current));
++                }
++            }
++            let mut dummy = tree(); dummy.value.node.span = w::SourceSpan::Dummy;
++            assert!(assert_owned_matches_checked(dummy, &current));
++        }
++    }
++
++    #[test]
++    fn owned_replay_matches_checked_rejection_of_invalid_current_state() {
++        let journal = checked();
++        for start in [0, 4, hir::ItemLocalId::INVALID.as_u32()] {
++            let mut current = current(&journal); current.start = start;
++            assert!(!assert_owned_matches_checked(tree(), &current));
++        }
++        let mut current = current(&journal);
++        current.source_end -= 1;
++        assert!(!assert_owned_matches_checked(tree(), &current)); current.source_end += 1;
++        current.source_start = u32::MAX - 3; current.source_end = u32::MAX;
++        assert!(!assert_owned_matches_checked(tree(), &current));
++        current.source_start = 100; current.source_end = 104;
++        current.resolutions.pop();
++        assert!(!assert_owned_matches_checked(tree(), &current)); current.resolutions.push(None);
++        current.references.pop();
++        assert!(!assert_owned_matches_checked(tree(), &current)); current.references.push(None);
++        current.locals.insert(w::LocalRef::Parameter(9), hir::HirId {
++            owner: current.owner, local_id: hir::ItemLocalId::from_u32(1) });
++        assert!(!assert_owned_matches_checked(tree(), &current)); current.locals.clear();
++        current.kinds = &[super::super::kinds::Kind::Block,
++            super::super::kinds::Kind::Expression(super::super::kinds::Expr::Tuple)];
++        assert!(!assert_owned_matches_checked(tree(), &current));
++    }
++
++    #[test]
++    fn owned_replay_matches_checked_prefix_and_reference_validation() {
++        use super::super::journal;
++        use super::super::kinds::{Kind, Expr as K};
++        let mut nodes = vec![journal::Node { body: true, binding: false, traits: false }; 2];
++        nodes.push(journal::Node { body: false, binding: true, traits: false });
++        let journal = journal::check(checked().journal().clone(), &journal::Entry {
++            start: 3, nodes: &nodes, prefix_bindings: &BTreeMap::from([(2, 1)]) }).unwrap();
++        let mut current = current(&journal);
++        current.kinds = &[Kind::Block, Kind::Expression(K::Literal), Kind::Pattern { binding: true }];
++        let reference = w::LocalRef::Parameter(2);
++        let id = hir::HirId { owner: current.owner, local_id: hir::ItemLocalId::from_u32(1) };
++        current.locals.insert(reference.clone(), id);
++        current.resolutions.push(Some(Res::Local(id)));
++        current.references.push(Some(w::Resolution::Local(reference.clone())));
++        assert!(assert_owned_matches_checked(tree(), &current));
++        current.locals.get_mut(&reference).unwrap().owner = hir::OwnerId {
++            def_id: rustc_span::def_id::LocalDefId { local_def_index: rustc_span::def_id::DefIndex::from_u32(1) } };
++        assert!(!assert_owned_matches_checked(tree(), &current));
++        current.locals.insert(reference.clone(), id);
++        current.resolutions[2] = Some(Res::Local(hir::HirId { owner: current.owner,
++            local_id: hir::ItemLocalId::from_u32(2) }));
++        assert!(!assert_owned_matches_checked(tree(), &current));
++        current.resolutions[2] = None;
++        assert!(!assert_owned_matches_checked(tree(), &current));
++        current.resolutions[2] = Some(Res::Local(id));
++        current.references[2] = Some(w::Resolution::Input(2));
++        assert!(!assert_owned_matches_checked(tree(), &current));
++        current.references[2] = None;
++        assert!(!assert_owned_matches_checked(tree(), &current));
++        current.references[2] = Some(w::Resolution::Local(reference));
++        assert!(assert_owned_matches_checked(tree(), &current));
++    }
++
++    #[test]
++    fn owned_replay_matches_checked_rejection_of_journal_order_mismatch() {
++        use super::super::journal;
++        let mut altered = checked().journal().clone();
++        altered.events[0] = journal::Event::Allocate { source: journal::Allocation::Ast(1), relative: 0 };
++        altered.events[1] = journal::Event::Allocate { source: journal::Allocation::Ast(0), relative: 1 };
++        let nodes = vec![journal::Node { body: true, binding: false, traits: false }; 2];
++        let altered = journal::check(altered, &journal::Entry {
++            start: 3, nodes: &nodes, prefix_bindings: &BTreeMap::new() }).unwrap();
++        // The fixture keeps its original tree, kinds and origin map, but the
++        // separately valid journal now requires different allocation origins.
++        // Current-state checks alone cannot replace the full tree/order check.
++        let current = current(&altered);
++        assert!(current_state(&current).is_some());
++        assert!(validate::check(tree(), &current).is_none());
++        assert!(!assert_owned_matches_checked(tree(), &current));
++    }
++
++    #[test]
++    fn owned_replay_matches_checked_rejection_of_tree_and_span_ranges() {
++        let journal = checked(); let current = current(&journal);
++        let mut duplicate = tree();
++        let w::ExprKind::Block(block) = &mut duplicate.value.kind else { unreachable!() };
++        block.tail.as_mut().unwrap().node.relative = 0;
++        assert!(!assert_owned_matches_checked(duplicate, &current));
++        let mut missing = tree();
++        let w::ExprKind::Block(block) = &mut missing.value.kind else { unreachable!() };
++        block.tail = None;
++        assert!(!assert_owned_matches_checked(missing, &current));
++        let mut out_of_range = tree();
++        let w::ExprKind::Block(block) = &mut out_of_range.value.kind else { unreachable!() };
++        block.tail.as_mut().unwrap().node.relative = journal.journal().end_delta;
++        assert!(!assert_owned_matches_checked(out_of_range, &current));
++        let mut wrong_root = tree(); wrong_root.value.node.relative = 1;
++        assert!(!assert_owned_matches_checked(wrong_root, &current));
++        for (lo, hi) in [(3, 4), (2, 5), (2, 1)] {
++            let mut bad_span = tree(); bad_span.value.node.span = w::SourceSpan::Relative { lo, hi };
++            assert!(!assert_owned_matches_checked(bad_span, &current));
++        }
++    }
++
++    #[test]
++    fn owned_replay_matches_checked_integer_boundaries_and_suffixes() {
++        let journal = checked(); let current = current(&journal);
++        for (value, suffix, accepted) in [
++            (u128::MAX.to_string(), Some("u128".into()), true),
++            ("340282366920938463463374607431768211456".into(), None, false),
++            ("42".into(), Some("f32".into()), false),
++        ] {
++            let mut raw = tree();
++            let w::ExprKind::Block(block) = &mut raw.value.kind else { unreachable!() };
++            let w::ExprKind::Literal { value: literal, .. } = &mut block.tail.as_mut().unwrap().kind
++                else { unreachable!() };
++            *literal = w::Literal::Integer(value, suffix);
++            assert_eq!(assert_owned_matches_checked(raw, &current), accepted);
++        }
++    }
++
+     #[test]
+     fn preparation_uses_current_ids_and_absolute_checked_utf8_coordinates() {
+         let journal = checked(); let mut current = current(&journal);
+--- a/compiler/rustc_ast_lowering/src/body_cache/prepared_replay.rs
++++ b/compiler/rustc_ast_lowering/src/body_cache/prepared_replay.rs
+@@ -64,8 +64,7 @@
+         &journal::Entry { start: frame.start, nodes: &candidate.nodes, prefix_bindings: &frame.prefix })?;
+     let (body, events, expected_exit) = {
+         let current = Current::new(candidate, frame.start, &frame.prefix, &checked)?;
+-        let tree = validate::check(payload.tree, &current)?;
+-        let prepared = prepare(&tree, &current)?;
++        let prepared = prepare_owned_replay(payload.tree, &current)?;
+         let (events, expected_exit) = frame.replay_plan(context, candidate, &checked)?;
+         // Move only owned converted values. No Current/CheckedTree reference is
+         // retained, extended or placed next to its owner in a self-reference.
+--- a/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
++++ b/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
+@@ -1 +1 @@
+-pub(super) const SOURCE_IDENTITY: &str = "7c6bc02810f5c3ed7cf09d4566253611a890ce51dd8e534a908862da382c39ea";
++pub(super) const SOURCE_IDENTITY: &str = "8946102708c589586d3be0169b409e4465b43c2d2498ab61aa26c125ecf22099";
+--- a/compiler/rustc_ast_lowering/src/body_cache/validate.rs
++++ b/compiler/rustc_ast_lowering/src/body_cache/validate.rs
+@@ -92,7 +92,11 @@
+     _current_resolutions: BTreeMap<u32, Res>,
+     _current_locals: BTreeMap<w::LocalRef, hir::HirId>,
+ }
+-impl CheckedTree { pub(super) fn tree(&self) -> &w::BodyTree { &self.tree } }
++impl CheckedTree {
++    pub(super) fn tree(&self) -> &w::BodyTree { &self.tree }
++    // Moving the raw value grants no current-context or materialization proof.
++    pub(super) fn into_tree(self) -> w::BodyTree { self.tree }
++}
+ 
+ pub(super) fn span(value: &w::SourceSpan, source: &str) -> Option<()> {
+     if let w::SourceSpan::Relative { lo, hi } = *value {

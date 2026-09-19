@@ -1,0 +1,56 @@
+--- a/compiler/rustc_ast_lowering/src/body_cache/prepared.rs
++++ b/compiler/rustc_ast_lowering/src/body_cache/prepared.rs
+@@ -81,6 +81,21 @@
+     let checked = validate::check(tree.tree().clone(), current)?;
+     let value = Convert { current }.expr(&checked.tree().value)?;
+     Some(PreparedBody { current, body: BodyValues { expected: checked.tree().clone(),
++        owner: current.owner, start: current.start, end: current.journal.end,
++        source_start: BytePos(current.source_start), source_end: BytePos(current.source_end),
++        source: current.source.to_owned(), prefix, value } })
++}
++
++/// Prepare the owned replay payload against this one immutable Current.
++/// Keep the first complete tree/order validation before current-state checks,
++/// then convert while both values are still borrowed. No old CheckedTree is
++/// accepted and this result still grants no access to a lowering context.
++fn prepare_owned_replay<'current, 'input>(tree: w::BodyTree,
++    current: &'current Current<'input>) -> Option<PreparedBody<'current, 'input>> {
++    let checked = validate::check(tree, current)?;
++    let prefix = current_state(current)?;
++    let value = Convert { current }.expr(&checked.tree().value)?;
++    Some(PreparedBody { current, body: BodyValues { expected: checked.into_tree(),
+         owner: current.owner, start: current.start, end: current.journal.end,
+         source_start: BytePos(current.source_start), source_end: BytePos(current.source_end),
+         source: current.source.to_owned(), prefix, value } })
+--- a/compiler/rustc_ast_lowering/src/body_cache/prepared_replay.rs
++++ b/compiler/rustc_ast_lowering/src/body_cache/prepared_replay.rs
+@@ -64,8 +64,7 @@
+         &journal::Entry { start: frame.start, nodes: &candidate.nodes, prefix_bindings: &frame.prefix })?;
+     let (body, events, expected_exit) = {
+         let current = Current::new(candidate, frame.start, &frame.prefix, &checked)?;
+-        let tree = validate::check(payload.tree, &current)?;
+-        let prepared = prepare(&tree, &current)?;
++        let prepared = prepare_owned_replay(payload.tree, &current)?;
+         let (events, expected_exit) = frame.replay_plan(context, candidate, &checked)?;
+         // Move only owned converted values. No Current/CheckedTree reference is
+         // retained, extended or placed next to its owner in a self-reference.
+--- a/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
++++ b/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
+@@ -1 +1 @@
+-pub(super) const SOURCE_IDENTITY: &str = "7c6bc02810f5c3ed7cf09d4566253611a890ce51dd8e534a908862da382c39ea";
++pub(super) const SOURCE_IDENTITY: &str = "b15371d2d4c95381528d29e5ade9a2a2fbdf01072c4fb83684c7cf4280860348";
+--- a/compiler/rustc_ast_lowering/src/body_cache/validate.rs
++++ b/compiler/rustc_ast_lowering/src/body_cache/validate.rs
+@@ -92,7 +92,11 @@
+     _current_resolutions: BTreeMap<u32, Res>,
+     _current_locals: BTreeMap<w::LocalRef, hir::HirId>,
+ }
+-impl CheckedTree { pub(super) fn tree(&self) -> &w::BodyTree { &self.tree } }
++impl CheckedTree {
++    pub(super) fn tree(&self) -> &w::BodyTree { &self.tree }
++    // Moving the raw value grants no current-context or materialization proof.
++    pub(super) fn into_tree(self) -> w::BodyTree { self.tree }
++}
+ 
+ pub(super) fn span(value: &w::SourceSpan, source: &str) -> Option<()> {
+     if let w::SourceSpan::Relative { lo, hi } = *value {
