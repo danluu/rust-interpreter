@@ -9,6 +9,9 @@ use std::{io::{Read,Write},path::Path,sync::{Arc,mpsc,atomic::{AtomicUsize,Order
 const MAX_FRAME:usize=4*1024*1024;
 const WORKERS:usize=2;
 type Environment=Vec<(Vec<u8>,Vec<u8>)>;
+#[cfg(all(target_arch="aarch64",target_os="macos"))]
+#[path="template_session_socket.rs"]
+mod socket;
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Binding {path:String,sha256:String}
@@ -211,21 +214,23 @@ fn run_request(pool:&mut Pool,id:u64,body:Body)->Result<Value,String> {
     Ok(json!({"kind":"result","id":id,"status":status,"poisoned":poisoned,"report":report,
         "report_sha256":format!("{:x}",Sha256::digest(&bytes))}))
 }
-fn serve()->Result<(),String> {
-    let args=std::env::args().skip(1).collect::<Vec<_>>();
-    if !(args.len()==3 || args.len()==4) || args[0]!="--serve-stdio" || args[1]!="--history-bytes"
-        || (args.len()==4 && args[3]!="--verify-hits") {return Err("usage: rust-interp-template-session --serve-stdio --history-bytes N [--verify-hits]".into());}
-    let bytes=args[2].parse::<usize>().map_err(|e|e.to_string())?;let verify=args.len()==4;
-    let startup=cpu()?;let mut pool=Pool::new(bytes,verify)?;
+fn executable_identity()->Result<String,String> {
     let executable=std::env::current_exe().map_err(|e|e.to_string())?;
     let file=std::fs::File::open(executable).map_err(|e|e.to_string())?;
     if file.metadata().map_err(|e|e.to_string())?.len()>128*1024*1024 {return Err("session executable exceeds identity bound".into());}
     let mut executable=vec![];file.take(128*1024*1024+1).read_to_end(&mut executable).map_err(|e|e.to_string())?;
     if executable.len()>128*1024*1024 {return Err("session executable grew beyond identity bound".into());}
+    Ok(format!("{:x}",Sha256::digest(&executable)))
+}
+fn readiness(bytes:usize,verify:bool,startup:Cpu)->Result<Value,String> {
+    Ok(json!({"kind":"ready","schema":1,"pid":std::process::id(),"workers":WORKERS,
+        "history_bytes_per_worker":bytes,"verify_hits":verify,"executable_sha256":executable_identity()?,
+        "cpu_at_entry":startup,"cpu_at_ready":cpu()?}))
+}
+fn serve_stdio(bytes:usize,verify:bool)->Result<(),String> {
+    let startup=cpu()?;let mut pool=Pool::new(bytes,verify)?;
     let mut input=std::io::stdin().lock();let mut output=std::io::stdout().lock();
-    write_frame(&mut output,&json!({"kind":"ready","schema":1,"pid":std::process::id(),"workers":WORKERS,
-        "history_bytes_per_worker":bytes,"verify_hits":verify,"executable_sha256":format!("{:x}",Sha256::digest(&executable)),
-        "cpu_at_entry":startup,"cpu_at_ready":cpu()?}))?;
+    write_frame(&mut output,&readiness(bytes,verify,startup)?)?;
     let mut expected=1u64;
     loop {
         let before=cpu()?;let Some(frame)=read_frame(&mut input)? else {break;};
@@ -245,6 +250,19 @@ fn serve()->Result<(),String> {
     }
     drop(pool);
     write_frame(&mut output,&json!({"kind":"closed","requests_consumed":expected-1,"cpu_at_close":cpu()?}))
+}
+fn serve()->Result<(),String> {
+    let args=std::env::args().skip(1).collect::<Vec<_>>();
+    if args.first().map(String::as_str)==Some("--serve-stdio") && (args.len()==3 || args.len()==4)
+        && args[1]=="--history-bytes" && (args.len()==3 || args[3]=="--verify-hits") {
+        return serve_stdio(args[2].parse::<usize>().map_err(|e|e.to_string())?,args.len()==4);
+    }
+    #[cfg(all(target_arch="aarch64",target_os="macos"))]
+    if args.first().map(String::as_str)==Some("--serve-socket") && (args.len()==4 || args.len()==5)
+        && args[2]=="--history-bytes" && (args.len()==4 || args[4]=="--verify-hits") {
+        return socket::serve(&args[1],args[3].parse::<usize>().map_err(|e|e.to_string())?,args.len()==5);
+    }
+    Err("usage: rust-interp-template-session (--serve-stdio | --serve-socket NEW_DIRECTORY) --history-bytes N [--verify-hits]".into())
 }
 fn main() {
     if let Err(error)=serve() {eprintln!("rust-interp-template-session: {}",error.chars().take(4096).collect::<String>());std::process::exit(1);}

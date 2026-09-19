@@ -12,19 +12,25 @@ fn directory(label:&str)->PathBuf {
 struct Session {child:Child,input:Option<ChildStdin>,output:ChildStdout,ready:Value,folder:PathBuf,next:u64}
 impl Session {
     fn start(label:&str,history:usize)->Self {
-        let folder=directory(label);let executable=env!("CARGO_BIN_EXE_rust-interp-template-session");
         let args=["--serve-stdio".to_owned(),"--history-bytes".into(),history.to_string(),"--verify-hits".into()];
+        let mut session=Self::launch(label,&args);session.initialize();session
+    }
+    fn launch(label:&str,args:&[String])->Self {
+        let folder=directory(label);let executable=env!("CARGO_BIN_EXE_rust-interp-template-session");
         let stderr=std::fs::OpenOptions::new().write(true).create_new(true).open(folder.join("stderr.log")).unwrap();
-        let mut child=Command::new(executable).args(&args).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(stderr).spawn().unwrap();
+        let mut child=Command::new(executable).args(args).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(stderr).spawn().unwrap();
         let receipt=json!({"pid":child.id(),"parent_pid":std::process::id(),"executable":executable,"args":args,
             "cwd":std::env::current_dir().unwrap(),"started_epoch":std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs_f64()});
         let input=child.stdin.take();let output=child.stdout.take().unwrap();
-        let mut session=Self{child,input,output,ready:Value::Null,folder,next:1};
+        let session=Self{child,input,output,ready:Value::Null,folder,next:1};
         std::fs::write(session.folder.join("child.json"),serde_json::to_vec(&receipt).unwrap()).unwrap();
-        session.ready=session.read();
+        session
+    }
+    fn initialize(&mut self) {
+        self.ready=self.read();let session=self;let executable=env!("CARGO_BIN_EXE_rust-interp-template-session");
         assert_eq!(session.ready["kind"],"ready");assert_eq!(session.ready["pid"],session.child.id());
         assert_eq!(session.ready["executable_sha256"],digest(&std::fs::read(executable).unwrap()));
-        std::fs::write(session.folder.join("ready.json"),serde_json::to_vec(&session.ready).unwrap()).unwrap();session
+        std::fs::write(session.folder.join("ready.json"),serde_json::to_vec(&session.ready).unwrap()).unwrap();
     }
     fn read(&mut self)->Value {
         let mut length=[0;4];self.output.read_exact(&mut length).unwrap();let n=u32::from_le_bytes(length) as usize;
@@ -47,6 +53,9 @@ impl Session {
         std::fs::write(self.folder.join("terminal.json"),serde_json::to_vec(&json!({"returncode":status.code(),"closed":result})).unwrap()).unwrap();
     }
 }
+
+#[path="template_session_socket/support.rs"]
+mod socket;
 impl Drop for Session {fn drop(&mut self) {drop(self.input.take());let _=self.child.wait();}}
 
 fn inputs(folder:&Path,label:&str,value:u128,data:u8)->(Value,Value) {

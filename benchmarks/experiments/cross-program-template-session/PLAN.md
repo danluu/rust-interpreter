@@ -1,5 +1,22 @@
 # Explicit session for cross-command template reuse
 
+Endpoint01 adds an explicit --serve-socket NEW_DIRECTORY adapter to the qualified
+request path. The new directory is0700, socket/readiness file0600; a random
+per-instance token and executable identity bind every connection. Public receipts
+never contain the token. A bounded framed greeting supplies the next request ID;
+malformed/unauthenticated requests do not consume it. An accepted request is never
+automatically replayed after a disconnect. Existing report reservation remains.
+The owner keeps stdin open and closes it for orderly shutdown; Darwin poll watches
+the owner pipe and listener without adding a worker or signals. Explicit shutdown
+also joins workers. Preserve old endpoint directories, including on startup error.
+
+Qualify25 controls/profile:4 wire controls,8 PreparedJit,6 history and7 session
+fixtures. Nine owned processes/profile include the existing four pipe fixtures,
+socket history off/on, socket rejection/lost-response recovery, owner EOF and an
+existing-directory startup rejection. All processes are reaped and receipts kept;
+four expected nonzero exits across both profiles. No source-build timing or runtime
+adoption. The subsequent client route remains unimplemented at this stage.
+
 The closed model and actual parser edit replay precede this candidate. All1,824
 test-body invocations match native expected outcomes and16,301 reused blocks
 match fresh emission before publication. This establishes correctness for the

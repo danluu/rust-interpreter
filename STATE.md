@@ -195,9 +195,9 @@ candidates associate with26.9–38.3ms original ordinary emission in worker0 and
 CPU, edited-run measurements or predicted savings, nor a populated-cache bound.
 [Assessment](docs/CROSS-EDIT-EMISSION-CENSUS-20260918.md).
 
-Main publication worktree .work/publication-main is clean at0668cd50, confirmed
-PUSHEDmain, preserving peerbb9ef449/cd19ee2e (and earlier296a927d/bd7e74a7). Published
-closed template/model/workspace/saved-suite docs/results/plan throughsuites01;
+Main publication worktree .work/publication-main is clean at2e289ddf, confirmed
+PUSHEDmain, preserving peer9b1166c1/bb9ef449/cd19ee2e (and earlier296a927d/bd7e74a7). Published
+closed template/model/workspace/saved-suite/API/transport docs/results/plan throughsessionparser01;
 no runtime candidate. Earlier census also published.
 Fetch before future publication and preserve peer commits; never force push.
 
@@ -241,3 +241,11 @@ previous-state chain. Do not retime unchanged candidates or reinterpret gates.
   Reread this turn. Dispositions docs/SUGGESTIONS-REVIEW-20260913-1245.md.
 - Preserve successful commands and captures. Inspect exact receipts after any
   interruption; never infer completion or rerun successful work for bookkeeping.
+
+Endpoint01 is prepared, not yet run: private explicit socket adapter, authenticated
+per-instance requests and server executable identity, no replay. Owner stdinEOF
+uses DarwinSDK poll ABI and joins workers; no process signals. New socket fixtures
+cover current inputs/reuse, malformed/auth/schema/sequence rejection, existing
+reports/cwd, lost response, ownerEOF and occupied directory preservation.
+Controller benchmarks/experiments/cross-program-template-session/endpoint.py will
+run25controls/profile under the existing build/lock gate. No client route yet.
