@@ -1,6 +1,6 @@
 # Whole-workspace qualification for the heap layout table
 
-Do not launch before the separately closed focused02 continuation proves16 heap controls
+Do not launch before the separately closed focused03 continuation proves16 heap controls
 (including the unchanged tree reference) and6 C allocator controls per profile.
 Bind exactly those runtime sources. Relative to adopted fca687eb, only Cargo's
 feature declaration, heap.rs's layout-table alias, the exact test-only reference

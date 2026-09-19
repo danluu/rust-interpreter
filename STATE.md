@@ -122,3 +122,8 @@ all3children0:heap16debug+16release,Callocator3debug. Count expectation erroneou
 because separate budget module excluded. New focused02 continuation runs missing
 budget3debug+all6release, no repeat completedprefix. Workspace01 dependsclosed02.
 No candidate guest/install/timing. See updatedRUNTIME-NEXT and continuationPLAN.
+
+Focused02 timed out at45s sharedlock before raw/tests; independently closed.
+Peer holder44851 now finished naturally; no process controlled. Readmit as03
+with unchanged tests and retained02 admission receipt. Workspace requires03.
+Heap-layout-profile01 registeredUNRUN using exact currenthost/code/map checks.

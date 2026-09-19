@@ -26,3 +26,8 @@ compact-switch-current-host01 adopted profiles (logical totals15849531264,
 checks before installation or original40changedsource primary. No gate changes.
 Both frame slot proof and local overwritten stores PARKED for zero added samples;
 broad/conditionaldemandJIT and earlier runtime attempts already failed, no repeats.
+
+Focused02 timed out at45s sharedlock before raw/tests; independently closed.
+Peer holder44851 now finished naturally; no process controlled. Readmit as03
+with unchanged tests and retained02 admission receipt. Workspace requires03.
+Heap-layout-profile01 registeredUNRUN using exact currenthost/code/map checks.

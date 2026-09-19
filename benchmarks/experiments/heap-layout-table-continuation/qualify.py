@@ -6,7 +6,7 @@ import focus
 ROOT=focus.ROOT
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='heap-layout-table-focused-02'
+RUN='heap-layout-table-focused-03'
 OLD='heap-layout-table-focused-01'
 read=focus.read
 
@@ -28,6 +28,13 @@ def prefix():
         assert row['label']==label and row['command'][-1]==pattern and row['returncode']==0
         assert f'test result: ok. {count} passed; 0 failed; 0 ignored;' in (raw/(label+'.stdout')).read_text()
     assert 'AssertionError' in (ROOT/'.work/experiments'/OLD/'command.log').read_text()
+    failed=ROOT/'results/heap-layout-table-focused-02'
+    receipt=read(failed/'closure.json');attempt=read(failed/'summary.json')
+    assert receipt['status']=='closed' and receipt['all_hashes_verified'] and receipt['no_qualification_stage_reached']
+    assert sha(failed/'summary.json')==receipt['summary_sha256'] and sha(failed/'terminal.json')==receipt['terminal_sha256']
+    assert attempt['status']=='admission-failed' and attempt['commands']==0 and attempt['raw_created'] is False
+    for p,h in attempt['evidence'].items():assert sha(ROOT/p)==h;paths.append(ROOT/p)
+    paths += [failed/'closure.json',failed/'summary.json',failed/'terminal.json']
     return plan,records,paths
 
 def main():

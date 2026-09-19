@@ -19,7 +19,7 @@ def main():
             assert free>=needed,(free,needed)
             return dict(allocated_target_bytes=allocated,required_free_bytes=needed,free_bytes=free)
         initial=admission()
-        focused=ROOT/'results/heap-layout-table-focused-02'
+        focused=ROOT/'results/heap-layout-table-focused-03'
         closure=read(focused/'closure.json');proof=read(focused/'summary.json')
         assert closure['status']=='closed' and closure['all_hashes_verified']
         assert sha(focused/'summary.json')==closure['summary_sha256']
