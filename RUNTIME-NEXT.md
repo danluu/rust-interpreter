@@ -44,3 +44,12 @@ Heaplayoutcandidate primarywallgatefailed=>parked; allocatorbridge2/1933and0/
 negative; preferES8broaderworkload. suggestions unchanged4d74b3dc...c2f,
 reviewedthisturn. Independentdiskcleaner29541 read-onlystatus scriptavailable.
 Noownedactivebenchmark after ES8closure. DetailedearlierhistoriesinSTATE.
+
+ES8publication done mainb3cfa77d pushverified. Currentrootbranch
+experiment/adopted-es8-diagnostics-20260919. Newfolderrun.py/PLAN.md ready,
+notlaunchedyet. Nextcommit/push then supervise adopted-es8-diagnostics-01 with
+absolute run.py; freezeallinputs untilterminal+run.py --close. 4guestexecs,
+6childcommands(2profiles,2samplers,2summarizers), first12GiB/child8. Profile/sampler
+controllers retainoutputs beforevalidation. ReusesLATEST composed-native-sampler-
+protocol01 proof forcurrent sampler/summarizer(11controls); oldvmmapproofalone
+predatedindirectoptionreceipt. No extra runtimefeatureenabled.

@@ -178,3 +178,12 @@ agrees, wrongfailuresincluded, bytecode/catalogbothcustomexact, source restored
 BEFOREfinalcompile. No candidate/adoption. Old2.678xunmatchednotbeforeafter.
 NextcurrentES8 original-tests operationprofiles/ordinarynative samples, no build.
 Restoredrow31RBC3bd95d7a...32d19/catalog76f774c1...e387. Runtimeunchangedfca.
+
+ES8workflow published mainb3cfa77d (pushverified), preservingpeeraa200d45.
+New experiment/adopted-es8-diagnostics-20260919: frozenfourguestcampaign ready;
+2logicalprofiles then2ordinarysinglewindow samples onrow31 retainedoriginal.
+Initialsampleridentitycheckfound oldcompatibilityproofpredates indirect-option
+recording; no guestsstarted. Resolvedto CLOSEDcomposed-native-sampler-protocol01
+11attribution/twoCLIrejection/14retainedmapcontrols matchingcurrentsources.
+No runtime/flagchange: nativeindirect remainsfalse. Newrun.py --close independently
+recomputesprofilelogical/codemapderivations thenallhashes/terminal.
