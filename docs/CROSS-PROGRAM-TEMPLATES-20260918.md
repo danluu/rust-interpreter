@@ -159,3 +159,19 @@ snapshots and explicit input/report bindings. A negative wire test found serde's
 unit-variant handling accepted extra Shutdown fields; the corrected variant keeps
 that rejection test. Saved-project session replay and command-level transport
 remain required. [Transport design](TEMPLATE-SESSION-TRANSPORT-20260918.md).
+
+
+The inherited-pipe session now passes30 focused controls/profile, including
+current request environments, framing rejection and eight owned session-process
+fixtures. The real saved parser history also passes through its production
+executable:16 suites/1,824 invocations, with16,282 cache hits individually verified
+against fresh emission. Failing-edit errors match exactly with history off/on.
+Server user/system CPU snapshots reconcile with kernel wait4 totals; this confirms
+accounting, not a speedup. The two request workers retain only bounded templates.
+[Transport qualification](../results/cross-program-template-session-transport-02/summary.json),
+[actual session replay](../results/cross-program-template-session-parser-01/summary.json).
+
+Next add an explicit private local endpoint and client route so separately invoked
+strict build/test commands can use the session. Qualify that route before the full
+changed-source primary. Session startup and all remote CPU remain part of the
+comparison, with session-without-history and adopted fresh-process controls.

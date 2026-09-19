@@ -144,21 +144,32 @@ attribute. No sessionprocessfixturestarted. CLOSED38967/38970,3ef74ebb. Correcti
 b1ccc5b7 uses emptystructShutdown{} and retainsnegativecontrol. LibraryRust/Cargo
 unchanged; successfuldebugenvironment command reusedafterhashverification.
 
-ACTIVE: transport02 sourceb1ccc5b7,supervisor41434. Controller
-benchmarks/experiments/cross-program-template-session/transport.py. SevennewCargo
-commands plusone reused; expected30focusedtests/profile. Four actualownedfixture
-sessionprocesses/profile (historyoff/on,invalidrequestrecovery,malformedframe).
-Inspect .work/experiments/cross-program-template-session-transport-02/status.json
-andrawrecords beforecontinuing. FreezeRust/controllers/PLANuntilclosed via
-transport.py --close. Capturefilesandbothsessionbinariesretainedonpass; no original
-projectguests atthisstage. No successfulcommandreruns forbookkeeping.
+Transport02 sourceb1ccc5b7 passed41434/41437, CLOSED46290/46294,c4d7e8c0.
+All30focusedcontrols/profile,7newcommands+1reused. Eightownedfixtureprocesses
+exited/reaped normally,includingtwoexpectedmalformedprotocolrejections.
+Retainedrelease .work/cross-program-template-session-transport-02/release-rust-interp-template-session
+SHA48b804a80047d0c72539103a6bb813f975b0353dad146343880a30d8ce559b34.
 
-NEXT afterclosedtransport: two release-sessionprocesses replayactualsavedparser
-8states each (historyoff/on,verifyallhits). Useclosed suites01 input/catalog/native
-outcomes. Strictfrontendartifacts remainbound. Recordownprocessidentity,wait4 CPU,
-monotonicserverCPU andexactcurrentoutcomes. No performanceclaim. Thenexplicit
-socket/launcher route and fullchanged-sourceprimary, includingallstartup/CPU.
-Transportdesign docs/TEMPLATE-SESSION-TRANSPORT-20260918.md.
+Actual parser session01 sourceb11690f5 passes58689/58692,CLOSED61577/61580;
+commitdee2416c. Controller benchmarks/experiments/cross-program-template-session/parser.py.
+Twoownedprocesses historyoff/on run16suites/1824bodyinvocations across8actualstates.
+Every16282hit matchesfreshstagingbeforepublication. Exactcurrentoutcomes/errors
+match; wrongedit8passes/106failures,othereach114passes. Servergetrusage counters
+reconcilewithkernelwait4totalswithin1msconversiontolerance. Rawenvironmenttravels
+onlyintheownedpipe; storedigestonly. No source-build/performanceclaim.
+Allstagecommandscompleteandclosed; noactiveexperimentnow. Keepgoalpaused.
+
+NEXT: explicit local socket endpoint and client route for independent strict
+build/test commands. Do not serialize nativecachefiles. Twoowningworkers andfresh
+perrequestinputs remain. Use newprivateendpointdirectory,authsecret,actualserver
+binaryidentity,protocolsequenceandboundedframe I/O; noexistingendpointremoval or
+autorestart. Clientfailed/lostresponsesmustneverauto-retry. Preserveexactserver
+runtimeidentity inlaunchreceipts; sourcefrontend staysstrictandunchanged. Qualify
+fixturesincludingwrongidentity/extraoptions, freshenvironment,cwd,reportreservation,
+serverexitandfailure-recovery beforeactualeditedcommands. Thenprimarycomparison
+needsfull24GiBreservation and chargesstartup/remoteCPU (currently~22GiBfree); retain
+session-nohistorycontrol andordinarynative. See transportdesign doc.
+
 Application/OS/FFI/compiler/Cargo expansion remainspeerowned; preserveboundaries.
 
 ## Completed cross-edit investigation
