@@ -314,3 +314,12 @@ No sourcebuild/speedupclaim. Read-only locked cachecensus saved
 .work/template-session-cache-census-01.json:two exactclosed failedparser primaries
 (emitterworkspace/sharedtemplates) have4.073GiB allocated eligible nonexecutables
 in8owned caches. Planning guarded retirement to restore24GiB primary admission.
+
+Closedtemplateprimarycache retirement source48ccbc49 ran74603/74606,
+CLOSED82107/82110. Removed25,502exactnonexecutable intermediates from8caches in
+2closedfailed32commandprimaries; logical4,319,150,643bytes, allocatedcensus4.073GiB.
+All13,654protectedhashes unchanged; binaries/RBC/catalogs/proof/sources retained.
+Free~25.7GiB, recheck before24GiB primary. Noactiveexperiment afterclosure.
+Nextfive-mode40command primary: native,adopted,A/A,sessionoff,sessionon; two extra
+untimedstrict type/borrow rejection controls in independentnamespace. Charge
+startup/teardownwall and allkernelserverCPU; keep prospectiveoriginalnoisegates.
