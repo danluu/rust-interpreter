@@ -52,9 +52,28 @@ token native gaps still guide optimization; no complete database/shell coverage
 or isolated scratch-cache speedup is claimed.
 
 The current manual branch is `experiment/shared-cold-tails-20260918`.
-Main still adopts df4006e0; the new runtime remains experimental. Main4b6ec8bf
-published only the separately qualified std-MIR device-readmission repair,
-preserving peer compiler work. Re-fetch main when integration is actually admitted.
+Main still adopts df4006e0; the new runtime remains experimental. Main1dec3a58
+contains the separately qualified vmmap-label parser repair, preserving peer
+compiler/runtime work. The old runtime composition below is rejected and closed.
+
+The current candidate shares exact complete cold fault returns within each
+resumable function. Both saved captures reconstruct exactly: 1,050/1,245 ordinary
+functions and 60/69 scalar bodies. Only duplicate fault tails and required local
+branch offsets change; original operations, entries, resumes and scalar bodies
+remain. Code shrinks720,192/837,504bytes (6.37%/6.09%). This is footprint evidence,
+not a speedup. Five focused controls pass in debug/release, including complete
+native state/ABI equivalence for shared and unshared faults. The earlier two
+fixture-assumption failures remain archived.
+
+Full build shared-cold-tail-build-01 is closed at7bba166d:615 Rust tests per
+profile (14 ignored),427 Python tests pass (22 skipped), four commands. Immutable
+tool8bce082f / VM93b75492 retains exporter cf4b3499 and wrapper45bca4f2. Next run
+121 strict/cache commands, then three original candidate profiles against the
+closed current-host adopted control rows in runtime-composition-profile-02.
+Only after correctness passes start the unchanged40-command edited-source primary.
+No guest performance is measured yet; no runtime adoption is authorized by these
+results. All larger histories remain conditional on the existing primary gate.
+[Build](results/shared-cold-tail-build-01/ASSESSMENT.md).
 
 The prospective composition combines native indirect transitions, checked readonly
 scalar leaves and successor-only spilling on the adopted scratch/scalar runtime.
