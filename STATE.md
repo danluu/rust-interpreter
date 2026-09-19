@@ -122,3 +122,15 @@ Nexttestexplicitexperimental size-tier policy: functions>65,536ops interpret,
 smallerfunctions keepJIT. Aheuristic (some largefunctions couldcompile), notclaim
 ofprovencapacitydecline. Newfeaturemustcompileoutofdefault; materialcandidate
 composesrequest-cost improvements withoutdiagnosticfeature forperformance.
+
+Size-tiercandidate30b70404 admission01 STOPPED beforeanywork:hostfree fellto12.9GiB
+belowdynamicbuildfloor~15.5GiB. Terminal73409/73412 preserved/closed by
+preserve_admission.py; zerotests/builds/guests. Boundarytest refined todisable
+scalarshortcut when counting ordinarycaller/callee publications, notperformance.
+
+Ownedretirement8efe279a completed7269/7272:27,910nonexecutables removed from10exact
+caches of CLOSEDFAILEDsessionprimaries01/02. Logical5,338,227,852bytes;
+15,876protectedhashesunchanged. Freeafter~17.47GiB; notenoughfor24GiBprimaryyet.
+Closureinprogress(checkstatus). Do notrepeatcleanup. Sharedtarget/tools/execs,
+artifacts/catalogs/proofs,strict-controlcachesandpeerworkpreserved.
+Nextqualification02 afterclosure/revalidatedspace. Noactivebuild/primary.

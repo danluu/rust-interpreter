@@ -227,13 +227,16 @@ fn size_tier_preserves_current_results_budgets_and_independently_compiled_callee
             Op::Imm{dst:1,value:0},Op::Return]);
         assert_eq!(p.functions[0].code.len(),count);
         let checked=ValidatedProgram::new(p).unwrap();let history=TemplateHistory::new(1024*1024,true).unwrap();
+        // Count ordinary caller/callee publications independently of the
+        // scalar native-call shortcut (covered by the real-suite replay).
+        let base=Limits{jit_scalar_calls:false,..limits()};
         for retained in [None,Some(&history)] {
-            let mut owner=PreparedJit::with_validated_session_inputs(&checked,&limits(),retained,&[]).unwrap();
+            let mut owner=PreparedJit::with_validated_session_inputs(&checked,&base,retained,&[]).unwrap();
             for instructions in [0,4,100_000,65_539,100_000] {
-                let current=Limits{instructions,..limits()};
+                let current=Limits{instructions,..base.clone()};
                 equal(owner.execute(&[],current.clone()),execute_with_engine(checked.program(),&[],current,Engine::Interpreter));
             }
-            let run=owner.execute(&[],limits()).unwrap();
+            let run=owner.execute(&[],base.clone()).unwrap();
             if count>65_536 {
                 assert_eq!(run.jit_declined_functions,1);assert_eq!(run.jit_compiled_functions,1);
             } else {assert_eq!(run.jit_declined_functions,0);assert_eq!(run.jit_compiled_functions,2);}

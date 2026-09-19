@@ -6,7 +6,7 @@ import focus
 ROOT=focus.ROOT
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='session-large-function-tier-qualification-01'
+RUN='session-large-function-tier-qualification-02'
 def read(p):return json.loads(p.read_text())
 
 def main():
@@ -18,7 +18,7 @@ def main():
         paths=[ROOT/p for p in subprocess.check_output(['git','ls-files','crates','scripts','tests','Cargo.toml','Cargo.lock','rust-toolchain.toml'],cwd=ROOT,text=True).splitlines()]
         paths += [p for p in Path(__file__).parent.iterdir() if p.suffix in ['.py','.md']]
         paths += [Path(focus.__file__)]
-        for name in ['cross-program-template-parser-screen-incremental-02','session-preparation-observer-parser-01','session-request-costs-qualification-01']:
+        for name in ['cross-program-template-parser-screen-incremental-02','session-preparation-observer-parser-01','session-request-costs-qualification-01','session-large-function-tier-qualification-01']:
             prior=ROOT/'results'/name;c=read(prior/'closure.json')
             assert c['status']=='closed' and c['all_hashes_verified'] and sha(prior/'summary.json')==c['summary_sha256']
             paths += [prior/'closure.json',prior/'summary.json']
