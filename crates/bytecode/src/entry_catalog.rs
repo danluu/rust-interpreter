@@ -24,6 +24,17 @@ pub struct EntryCatalog {
 }
 
 impl EntryCatalog {
+    /// Declared digest only; consumers must still validate the actual artifact
+    /// and catalog before execution with validated_entries.
+    #[cfg(feature = "jit-template-session")]
+    pub fn declared_artifact_sha256(&self) -> Result<&str, String> {
+        if self.artifact_sha256.len()!=64 || !self.artifact_sha256.bytes()
+            .all(|c|c.is_ascii_digit() || (b'a'..=b'f').contains(&c)) {
+            return Err("entry catalog has an invalid artifact digest".into());
+        }
+        Ok(&self.artifact_sha256)
+    }
+
     /// The exporter supplies IDs retained before optimizing the batch root.
     pub fn new(
         program: &Program,

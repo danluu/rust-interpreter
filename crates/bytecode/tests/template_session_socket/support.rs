@@ -204,3 +204,46 @@ fn vm_client_rejects_options_stale_identity_and_reserved_outputs_without_fallbac
     let report:Value=serde_json::from_slice(&std::fs::read(body["report"].as_str().unwrap()).unwrap()).unwrap();assert_eq!(report["request_id"],2);
     socket.close();
 }
+
+#[test]
+fn vm_client_catalog_declarations_never_replace_server_input_validation() {
+    let mut socket=Socket::start("vm-client-bindings",1024*1024);
+    let mut expected_id=1;
+    for case in 0..6 {
+        let label=format!("binding{case}");let body=request(&socket.session,&label,7,1,b"unused");
+        let artifact=Path::new(body["artifact"]["path"].as_str().unwrap());
+        let catalog=Path::new(body["catalog"]["path"].as_str().unwrap());
+        let mut declared:Value=serde_json::from_slice(&std::fs::read(catalog).unwrap()).unwrap();
+        match case {
+            0=>{
+                let (changed,_)=inputs(&socket.session.folder,"changed-artifact",8,1);
+                std::fs::write(artifact,std::fs::read(changed["path"].as_str().unwrap()).unwrap()).unwrap();
+            },
+            1=>declared["artifact_sha256"]="malformed digest".into(),
+            2=>declared["bytecode_version"]=0.into(),
+            3|5=>{
+                let mut program:Program=bincode::deserialize(&std::fs::read(artifact).unwrap()).unwrap();
+                if case==3 {program.functions[1].registers=0;} else {program.version|=rust_interp_bytecode::PARTIAL_VALIDATION;}
+                let bytes=bincode::serialize(&program).unwrap();declared["artifact_sha256"]=digest(&bytes).into();
+                if case==5 {declared["bytecode_version"]=program.version.into();}
+                std::fs::write(artifact,bytes).unwrap();
+            },
+            _=>{
+                let mut bytes=std::fs::read(artifact).unwrap();bytes.push(0);
+                declared["artifact_sha256"]=digest(&bytes).into();std::fs::write(artifact,bytes).unwrap();
+            },
+        }
+        std::fs::write(catalog,serde_json::to_vec(&declared).unwrap()).unwrap();
+        let output=client(&socket,&label,&body,"yes",&[]);assert!(!output.status.success());
+        let report=body["report"].as_str().unwrap();assert!(!Path::new(report).exists());
+        if case==1 {assert!(!Path::new(&format!("{report}.session.json")).exists());}
+        else {
+            expected_id+=1;
+            let receipt:Value=serde_json::from_slice(&std::fs::read(format!("{report}.session.json")).unwrap()).unwrap();
+            assert_eq!(receipt["status"],"unknown-or-error");assert_eq!(receipt["response"]["kind"],"error");
+        }
+        let (stream,greeting)=socket.connect();assert_eq!(greeting["next_id"],expected_id);drop(stream);
+    }
+    let body=request(&socket.session,"binding-recovery",7,1,b"unused");
+    assert!(client(&socket,"binding-recovery",&body,"yes",&[]).status.success());socket.close();
+}

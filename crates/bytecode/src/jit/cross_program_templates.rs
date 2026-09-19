@@ -155,6 +155,10 @@ impl TemplateHistory {
         Ok(std::rc::Rc::new(Context{checked:Checked(program),history:self.history.clone(),
             counts:Default::default(),verify_hits:self.verify_hits}))
     }
+    pub(crate) fn context_validated<'p>(&self,program:&'p crate::ValidatedProgram)->std::rc::Rc<Context<'p>> {
+        std::rc::Rc::new(Context{checked:Checked(program.program()),history:self.history.clone(),
+            counts:Default::default(),verify_hits:self.verify_hits})
+    }
 }
 
 // Compare all staged executable state before publication. Return a bounded

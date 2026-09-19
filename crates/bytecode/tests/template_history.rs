@@ -1,6 +1,6 @@
 #![cfg(all(feature="jit-template-session",target_arch="aarch64",target_os="macos"))]
 use rust_interp_bytecode::{Engine,Function,Limits,Op,PreparedJit,Program,Slot,TemplateHistory,
-    VERSION,PARTIAL_VALIDATION,execute_with_engine};
+    VERSION,PARTIAL_VALIDATION,ValidatedProgram,execute_with_engine};
 
 fn limits()->Limits {Limits{jit_resumable_calls:true,jit_persistent_registers:true,jit_scalar_calls:true,..Default::default()}}
 fn program(value:u128,data:u8)->Program {
@@ -143,4 +143,47 @@ fn request_snapshot_rejection_does_not_mutate_history_or_host_environment() {
     let mut owner=PreparedJit::with_session_inputs(&p,&limits(),Some(&history),&input).unwrap();
     assert_eq!(owner.execute(&[],limits()).unwrap().value,b'v' as u128);
     assert_eq!(std::env::var_os("SESSION_VALUE"),host);
+}
+
+#[test]
+fn shared_validation_preserves_worker_environments_budgets_and_fresh_guests() {
+    let checked=std::sync::Arc::new(ValidatedProgram::new(environment_program()).unwrap());
+    let mut handles=vec![];
+    for value in [b'a',b'b'] {
+        let checked=checked.clone();
+        handles.push(std::thread::spawn(move || {
+            let history=TemplateHistory::new(1024*1024,true).unwrap();
+            for current in [value,value+1,value] {
+                let input=vec![(b"SESSION_VALUE".to_vec(),vec![current])];
+                for retained in [None,Some(&history)] {
+                    let mut owner=PreparedJit::with_validated_session_inputs(&checked,&limits(),retained,&input).unwrap();
+                    let mut reference=PreparedJit::with_session_inputs(checked.program(),&limits(),None,&input).unwrap();
+                    for budget in [0,1000,1,1000] {
+                        let run=Limits{instructions:budget,..limits()};
+                        equal(owner.execute(&[],run.clone()),reference.execute(&[],run));
+                    }
+                    assert_eq!(owner.execute(&[],limits()).unwrap().value,current as u128);
+                }
+            }
+            assert!(history.storage().entries>0);
+        }));
+    }
+    for handle in handles {handle.join().unwrap();}
+}
+
+#[test]
+fn shared_validation_cannot_admit_invalid_programs_or_bypass_current_runtime_limits() {
+    let mut invalid=program(7,1);invalid.functions[0].registers=0;
+    assert!(ValidatedProgram::new(invalid).is_err());
+    let mut partial=program(7,1);partial.version|=PARTIAL_VALIDATION;
+    assert!(ValidatedProgram::new(partial).is_err());
+    let checked=ValidatedProgram::new(environment_program()).unwrap();
+    let history=TemplateHistory::new(1024*1024,true).unwrap();
+    for retained in [None,Some(&history)] {
+        assert!(PreparedJit::with_validated_session_inputs(&checked,&Limits::default(),retained,&[]).is_err());
+        let small=Limits{memory:1024,..limits()};
+        let bad=vec![(b"SESSION_VALUE".to_vec(),vec![1;4096])];
+        assert!(PreparedJit::with_validated_session_inputs(&checked,&small,retained,&bad).is_err());
+    }
+    assert_eq!(history.storage().entries,0);
 }

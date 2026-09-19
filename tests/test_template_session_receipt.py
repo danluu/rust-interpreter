@@ -8,7 +8,7 @@ class TemplateSessionReceipts(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.root=Path(self.temp.name)
         self.artifact=self.root/'program.rbc';self.artifact.write_bytes(b'current artifact')
-        self.catalog=self.root/'catalog.json';self.write(self.catalog,dict(entries=[dict(name='one'),dict(name='two')]))
+        self.catalog=self.root/'catalog.json';self.write(self.catalog,dict(artifact_sha256=self.sha(self.artifact),entries=[dict(name='one'),dict(name='two')]))
         self.ready=self.root/'ready.json';self.write(self.ready,dict(pid=123,executable_sha256='a'*64,auth='never-publish-this-token',
             history_bytes_per_worker=67108864,verify_hits=False,cpu_at_ready=dict(user_us=10,system_us=5)))
         self.report=self.root/'report.json';self.write(self.report,dict(schema_version=1,request_id=1,mode='prepared',workers=2,
@@ -45,5 +45,16 @@ class TemplateSessionReceipts(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,'uncertain outcome'):self.read()
         self.path.unlink();self.assertIsNone(self.read(1))
         with self.assertRaisesRegex(RuntimeError,'omitted its receipt'):self.read()
+
+    def test_receipt_describes_executed_bytes_and_requires_prelaunch_digest_when_supplied(self):
+        original=self.sha(self.artifact)
+        self.artifact.write_bytes(b'later bytes, never executed')
+        result=read_receipt(self.ready,self.report,self.artifact,self.catalog,0,expected_artifact_sha256=original)
+        self.assertEqual(result['artifact_sha256'],original)
+        with self.assertRaisesRegex(RuntimeError,'pre-execution artifact digest differs'):
+            read_receipt(self.ready,self.report,self.artifact,self.catalog,0,expected_artifact_sha256=self.sha(self.artifact))
+        for value in ['',None,'x'*64,4]:
+            self.write(self.catalog,dict(artifact_sha256=value,entries=[]))
+            with self.assertRaisesRegex(RuntimeError,'invalid catalog artifact digest'):self.read()
 
 if __name__=='__main__':unittest.main()

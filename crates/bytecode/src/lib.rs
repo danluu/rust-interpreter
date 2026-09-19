@@ -50,6 +50,8 @@ pub use float::{FloatBinary, FloatUnary, FloatConversion};
 pub use profile::{ExecutionProfile, FunctionProfile};
 pub use prepared::PreparedJit;
 #[cfg(feature = "jit-template-session")]
+pub use prepared::ValidatedProgram;
+#[cfg(feature = "jit-template-session")]
 pub use jit::cross_program_templates::{TemplateHistory, TemplateStorage, Counts as TemplateStatistics};
 pub use jit::{register_width_census, register_width_profile_census, register_lifetime_census, constant_call_argument_census};
 pub use jit::address_reuse_census;

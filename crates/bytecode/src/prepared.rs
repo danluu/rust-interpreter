@@ -1,6 +1,24 @@
 //! Reuse immutable code and analyses, with fresh guest state per invocation.
 use crate::{Execution, ExecutionMetadata, Limits, Program, jit};
 
+/// An owned, fully validated immutable Program that can be shared by workers.
+/// No mutable access or unchecked constructor is exposed. Each worker still
+/// performs current runtime admission and creates its own native/guest state.
+#[cfg(feature = "jit-template-session")]
+pub struct ValidatedProgram(Program);
+#[cfg(feature = "jit-template-session")]
+impl ValidatedProgram {
+    pub fn new(program: Program) -> Result<Self, String> {
+        if program.version & crate::PARTIAL_VALIDATION != 0 {
+            return Err("session inputs require fully checked bytecode".into());
+        }
+        crate::validate(&program)?;
+        Ok(Self(program))
+    }
+
+    pub fn program(&self) -> &Program { &self.0 }
+}
+
 /// A validated immutable program and its lazily compiled custom JIT code.
 ///
 /// This owner stays on its creating thread. Every invocation gets fresh data,
@@ -65,6 +83,24 @@ impl<'program> PreparedJit<'program> {
         }
         let context = if let Some(history) = history {Some(history.context(program)?)}
             else {crate::validate(program)?;None};
+        Self::session_validated(program, limits, context, environment, started)
+    }
+
+    /// Share one immutable validation proof across current-request workers.
+    /// The caller must include ValidatedProgram construction in request costs.
+    #[cfg(feature = "jit-template-session")]
+    pub fn with_validated_session_inputs(program: &'program ValidatedProgram, limits: &Limits,
+        history: Option<&crate::TemplateHistory>, environment: &[(Vec<u8>,Vec<u8>)]) -> Result<Self,String> {
+        let started = std::time::Instant::now();
+        Self::check_mode(limits)?;
+        let context = history.map(|history|history.context_validated(program));
+        Self::session_validated(program.program(), limits, context, environment, started)
+    }
+
+    #[cfg(feature = "jit-template-session")]
+    fn session_validated(program: &'program Program, limits: &Limits,
+        context: Option<std::rc::Rc<jit::cross_program_templates::Context<'program>>>,
+        environment: &[(Vec<u8>,Vec<u8>)], started: std::time::Instant) -> Result<Self,String> {
         let mut jit = crate::create_jit::<false, true, false, true>(program, limits)?;
         let metadata = ExecutionMetadata::with_environment(program, jit.as_ref(), limits.memory, environment)?;
         if let Some(context) = context {jit.as_mut().unwrap().attach_templates(context);}

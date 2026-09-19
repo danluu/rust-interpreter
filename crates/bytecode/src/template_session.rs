@@ -1,6 +1,6 @@
 //! Explicit inherited-pipe session. Native templates never enter the protocol.
 use bincode::Options;
-use rust_interp_bytecode::{EntryCatalog,Limits,PreparedJit,Program,TemplateHistory};
+use rust_interp_bytecode::{EntryCatalog,Limits,PreparedJit,Program,TemplateHistory,ValidatedProgram};
 use serde::{Deserialize,Serialize};
 use serde_json::{Value,json};
 use sha2::{Digest,Sha256};
@@ -83,7 +83,7 @@ fn environment_bound(pairs:&Environment)->Result<(),String> {
     Ok(())
 }
 
-struct Job {program:Arc<Program>,entries:Arc<Vec<(String,usize)>>,next:Arc<AtomicUsize>,limits:Limits,
+struct Job {program:Arc<ValidatedProgram>,entries:Arc<Vec<(String,usize)>>,next:Arc<AtomicUsize>,limits:Limits,
     environment:Arc<Environment>,reply:mpsc::SyncSender<Value>}
 struct Pool {senders:Vec<mpsc::SyncSender<Job>>,handles:Vec<std::thread::JoinHandle<()>>,poisoned:bool}
 impl Pool {
@@ -111,7 +111,7 @@ impl Pool {
         }
         Ok(pool)
     }
-    fn run(&mut self,program:Program,entries:Vec<(String,usize)>,limits:Limits,environment:Environment)->Result<Vec<Value>,String> {
+    fn run(&mut self,program:ValidatedProgram,entries:Vec<(String,usize)>,limits:Limits,environment:Environment)->Result<Vec<Value>,String> {
         let program=Arc::new(program);let entries=Arc::new(entries);let next=Arc::new(AtomicUsize::new(0));
         let environment=Arc::new(environment);let (tx,rx)=mpsc::sync_channel(WORKERS);
         for sender in &self.senders {
@@ -134,7 +134,7 @@ impl Drop for Pool {
     }
 }
 fn worker_run(job:&Job,history:Option<&TemplateHistory>)->Result<Value,String> {
-    let mut owner=PreparedJit::with_session_inputs(&job.program,&job.limits,history,&job.environment)?;
+    let mut owner=PreparedJit::with_validated_session_inputs(&job.program,&job.limits,history,&job.environment)?;
     let preparation=owner.preparation_nanos();let mut outcomes=vec![];
     loop {
         let index=job.next.fetch_add(1,Ordering::Relaxed);
@@ -189,7 +189,7 @@ fn run_request(pool:&mut Pool,id:u64,body:Body)->Result<Value,String> {
     let catalog_bytes=read_bound(&catalog,4*1024*1024)?;
     let catalog_value:EntryCatalog=serde_json::from_slice(&catalog_bytes).map_err(|e|e.to_string())?;
     let entries=catalog_value.validated_entries(&program,&bytes)?.into_iter().map(|(n,id)|(n.to_owned(),id)).collect::<Vec<_>>();
-    let total=entries.len();rust_interp_bytecode::validate(&program)?;
+    let total=entries.len();let program=ValidatedProgram::new(program)?;
     // Reject unsafe/unsupported session host I/O through the unchanged runtime
     // admission (no descriptor/getcwd options in this initial protocol).
     let mut file=std::fs::OpenOptions::new().write(true).create_new(true).open(absolute(&report)?).map_err(|e|e.to_string())?;
@@ -210,7 +210,9 @@ fn run_request(pool:&mut Pool,id:u64,body:Body)->Result<Value,String> {
         "scope":"selected test bodies; fresh native owners and guest state, per-request environment; no source build or libtest/thread/unwind semantics"});
     let bytes=serde_json::to_vec(&result).map_err(|e|e.to_string())?;
     if bytes.len()>MAX_FRAME {return Err("session report exceeds bound".into());}
-    file.write_all(&bytes).and_then(|_|file.flush()).and_then(|_|file.sync_data()).map_err(|e|e.to_string())?;
+    // Match ordinary suite reports: completed writes, without a power-loss
+    // durability promise. Reservation and the exact returned digest remain.
+    file.write_all(&bytes).and_then(|_|file.flush()).map_err(|e|e.to_string())?;
     Ok(json!({"kind":"result","id":id,"status":status,"poisoned":poisoned,"report":report,
         "report_sha256":format!("{:x}",Sha256::digest(&bytes))}))
 }

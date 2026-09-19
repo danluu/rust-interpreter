@@ -346,7 +346,8 @@ class InterpreterBuildMetricsTests(unittest.TestCase):
         self.assertEqual(len(self.invocations),2);self.assertEqual(self.invocations[0][0][0],'cargo')
         vm=self.invocations[1][0];self.assertEqual(vm[vm.index('--jit-template-session')+1],str(ready))
         self.assertEqual(vm[vm.index('--suite-catalog')+1],str(self.entry_catalog))
-        read_receipt.assert_called_once_with(ready,(self.root/'suite.json').resolve(),self.artifact,self.entry_catalog,0)
+        read_receipt.assert_called_once_with(ready,(self.root/'suite.json').resolve(),self.artifact,self.entry_catalog,0,
+            expected_artifact_sha256=hashlib.sha256(self.artifact.read_bytes()).hexdigest())
         [stats]=self.launch_stats();self.assertEqual(stats['template_session'],identity)
 
     def test_strict_cargo_failure_never_contacts_the_selected_session(self):

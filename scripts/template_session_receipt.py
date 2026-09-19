@@ -13,7 +13,11 @@ def validate_selection(args):
     receipt=Path(str(args.suite_report)+'.session.json')
     if receipt.exists() or receipt.is_symlink():raise ValueError('session receipt already exists')
 
-def read_receipt(ready_path,report_path,artifact_path,catalog_path,returncode):
+def read_receipt(ready_path,report_path,artifact_path,catalog_path,returncode,*,expected_artifact_sha256=None):
+    # The server binds its actual input bytes to the catalog and receipt before
+    # execution. With stats, also require the launcher's pre-execution digest.
+    # Re-reading artifact_path here would describe a later file, not add proof
+    # about the bytes that executed. Keep the argument for existing callers.
     def require(condition,message):
         if not condition:raise RuntimeError('session receipt: '+message)
     def bounded(path,limit):
@@ -32,8 +36,13 @@ def read_receipt(ready_path,report_path,artifact_path,catalog_path,returncode):
         integer(receipt.get('server_pid')) and receipt['server_pid']>0 and receipt['server_pid']==ready.get('pid') and
         hex_digest(receipt.get('server_executable_sha256')) and receipt['server_executable_sha256']==ready.get('executable_sha256') and
         receipt.get('readiness_sha256')==digest(ready_bytes),'server identity differs')
-    require(receipt.get('report')==str(report_path) and receipt.get('artifact_sha256')==digest(bounded(artifact_path,64*1024**2)) and
-        receipt.get('catalog_sha256')==digest(bounded(catalog_path,4*1024**2)),'selected artifact/catalog/report differs')
+    catalog_bytes=bounded(catalog_path,4*1024**2);catalog=json.loads(catalog_bytes)
+    require(isinstance(catalog,dict) and hex_digest(catalog.get('artifact_sha256')),'invalid catalog artifact digest')
+    require(receipt.get('report')==str(report_path) and receipt.get('artifact_sha256')==catalog['artifact_sha256'] and
+        receipt.get('catalog_sha256')==digest(catalog_bytes),'selected artifact/catalog/report differs')
+    if expected_artifact_sha256 is not None:
+        require(hex_digest(expected_artifact_sha256) and receipt['artifact_sha256']==expected_artifact_sha256,
+            'pre-execution artifact digest differs')
     require(receipt.get('history_bytes_per_worker')==ready.get('history_bytes_per_worker') and
         integer(receipt.get('history_bytes_per_worker')) and receipt['history_bytes_per_worker']<=64*1024**2 and
         type(receipt.get('verify_hits')) is bool and receipt['verify_hits']==ready.get('verify_hits'),'history mode differs')
@@ -50,7 +59,6 @@ def read_receipt(ready_path,report_path,artifact_path,catalog_path,returncode):
             report.get('poisoned') is False and report.get('status')==response.get('status') and
             report.get('status')==('passed' if returncode==0 else 'failed'),'suite outcome differs')
         from suite_reports import validate_report
-        catalog=json.loads(bounded(catalog_path,4*1024**2))
         validate_report(report,[entry['name'] for entry in catalog['entries']],'prepared',returncode==0)
         for field in ['user_us','system_us']:
             values=[ready.get('cpu_at_ready',{}).get(field),response.get('cpu_before',{}).get(field),response.get('cpu_after',{}).get(field)]

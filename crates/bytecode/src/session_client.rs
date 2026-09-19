@@ -23,12 +23,21 @@ fn persist(file:&mut std::fs::File,value:&Value)->Result<(),String> {
     let bytes=serde_json::to_vec(value).map_err(|e|e.to_string())?;
     if bytes.len()>MAX_FRAME {return Err("session receipt exceeds bound".into());}
     file.seek(SeekFrom::Start(0)).and_then(|_|file.write_all(&bytes)).and_then(|_|file.set_len(bytes.len() as u64))
-        .and_then(|_|file.sync_data()).map_err(|e|e.to_string())
+        .and_then(|_|file.flush()).map_err(|e|e.to_string())
 }
-fn binding(path:&str,limit:usize)->Result<Value,String> {
+fn input_path(path:&str)->Result<PathBuf,String> {
     let path=Path::new(path).canonicalize().map_err(|e|e.to_string())?;
     if path.as_os_str().len()>4096 {return Err("session input path exceeds bound".into());}
-    Ok(json!({"path":path,"sha256":digest(&read_bound(&path,limit)?)}))
+    Ok(path)
+}
+fn input_bindings(artifact:&str,catalog:&str)->Result<(Value,Value),String> {
+    let artifact=input_path(artifact)?;let catalog=input_path(catalog)?;
+    let bytes=read_bound(&catalog,MAX_FRAME)?;
+    let declared:rust_interp_bytecode::EntryCatalog=serde_json::from_slice(&bytes).map_err(|e|e.to_string())?;
+    // The server reads/hashes the actual bytes, checks this declaration against
+    // them and validates the complete Program before any guest can execute.
+    Ok((json!({"path":artifact,"sha256":declared.declared_artifact_sha256()?}),
+        json!({"path":catalog,"sha256":digest(&bytes)})))
 }
 fn new_report(path:&str)->Result<PathBuf,String> {
     let cwd=std::env::current_dir().map_err(|e|e.to_string())?;let path=cwd.join(path);
@@ -72,7 +81,7 @@ pub(super) fn run(ready_path:&str,artifact:&str,catalog:&str,report:&str,limits:
     let (ready,ready_hash)=private_readiness(ready_path)?;
     let cwd=std::env::current_dir().map_err(|e|e.to_string())?;
     if ready["cwd"]!=cwd.to_string_lossy().as_ref() {return Err("session working directory differs".into());}
-    let artifact=binding(artifact,64*1024*1024)?;let catalog=binding(catalog,MAX_FRAME)?;let report=new_report(report)?;
+    let (artifact,catalog)=input_bindings(artifact,catalog)?;let report=new_report(report)?;
     let mut environment=Vec::new();let mut charged=0usize;
     for (key,value) in std::env::vars_os() {
         let key=key.as_bytes().to_vec();let value=value.as_bytes().to_vec();
