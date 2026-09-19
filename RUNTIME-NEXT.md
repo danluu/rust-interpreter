@@ -7,18 +7,20 @@ constant folding, fused fills, instruction width, all other inputs and callee pr
 Focused05 c24e1eba passed34controls/profile+24featureoff, closed69859 after14584/14687.
 Includes live arithmetic/overflow, addresses/faults, memory forwarding and budgets.
 
-Full qualification01 (72986/72989) was NOT ADMITTED: peer held benchmark.lock;
-45s timeout before any build/test/raw directory. Preserved results/parameterized-
-literals-qualification-01. Qualification02 ACTIVE11961/controller11964 source75b0c498:
-673Rust/profile+17ignored,
-33diagnostic,10ordinarysession,24ordinarymodel/defaultVM; reuse442Python+22skip
-only through unchanged source/log bindings. Freeze crates/scripts/tests and
-parameterized-literals-workspace folder through closure.
-Then prepared parser-client01:1824actual saved invocations, fresh verification of
-every hit. Then literal-phases-parser01 evaluates key/miss/restore costs separately.
-Install controller prepared but do not launch until diagnostics support mechanism.
-Primary05 prerequisite bindings still point at old digest candidate: update only
-after qualified installation. Current runtime remains experimental, no adoption.
+Fullqualification02 source75b0c498 complete11961/11964 CLOSED2573:673Rust/profile
+17ignored,33diagnostic,10ordinarysession,24ordinarymodel/defaultVM;442Python+22skip
+hashbound reuse;48ownedservers92clients. Workspace01 lock timeout preserved.
+Actualparser579dbe4b complete12608/12686 CLOSED19542:1824invocations19531verifiedhits.
+Phase6fa56d92 complete24215/24218 CLOSED28773:1824/19584observedhits. Medianvalidworker
+key10.278ms,restore2.790,miss7.103,ordinary21.703 vs prior8.883/1.463/25.681/37.913;
+separate-time diagnostic, supports mechanism, not a causal speedup claim.
+Install46507be1 complete33964/33967 CLOSED40733:tool734fa9b5945951d42c37caa2c3906ba9a6825bd147e9f85c018afb81055d9c32,
+VM5d0d41d03171f512e306095f289ab894a75dd2237d205b6d012d672949f106c8,
+servere03b911d570c81453a224e1b6bef08aee3003591a6dfa5a976d1c8fc5c49d7a1.
+ParameterizationON,observerOFF,bufferingOFF,strictchecking andadoptedcompiler tools.
+Primary05 prerequisites nowbound tothiscandidate; prospectiveunchanged40command
+protocol+2strict, noadoption unlessprimaryandlaterguards pass. Readyto launch.
+Freeze crates/scripts/tests andcross-program-template-screen throughprimaryclosure.
 
 Motivation: closed actual miss trace/join shows3462changed-key misses/214.939ms;
 2563bodies differ only in immediate values/152.106ms. Eviction only22/1.421ms.
@@ -44,6 +46,6 @@ Do notrepeat completedcache retirement: primary01/02,03+strict01/02/03,
 primary04+strict, recenttoken02, frecustom01. Preserve all proofs/binaries/sources
 and sharedbuildtarget. Closed fullparser01 caches may be audited if needed.
 Main52920d8f pushed focused literal proofs, preserving peerb2a700ee.
-Closed fullparser01 cache retirement controller prepared, NOT run; only if disk
-admission needs room. Six exact owned retired namespaces,110commands/22requests;
-retain unmeasurable verdict and all protected artifacts. Never repeat old cleanups.
+Closed fullparser01 cleanup77176041 complete44387 CLOSED53355/53358:16734files,
+3,112,062,449logicalbytes;11667protectedhashesunchanged. Six exactownednamespaces,
+110commands/22requests;unmeasurableverdict preserved. NEVER repeat. Free26.6GiB.
