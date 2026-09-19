@@ -1,0 +1,20 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash/ruff-screen-launch-02/observe.py.before-allocated-budget-correction
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash/ruff-screen-launch-02/observe.py
+@@ -91,7 +91,7 @@
+                         path = Path(directory)/name
+                         if not any(path.is_relative_to(cache) for cache in caches):
+                             evidence += s.st_blocks*512
+-        p.require(allocated <= 8*p.GIB, 'owned history allocation exceeded8GiB')
++        p.require(allocated <= 7*p.GIB, 'owned history allocation exceeded7GiB')
+         p.require(evidence <= 512*p.MIB, 'retained history evidence exceeded512MiB')
+         return dict(allocated_bytes=allocated, logical_file_bytes=logical, entries=count,
+                     retained_evidence_allocated_bytes=evidence,
+@@ -146,7 +146,7 @@
+                 p.absent(cache)
+             # Completed strict caches must also have been separately retired.
+             p.absent(p.STRICT_WORK/'cache')
+-            record.update(status='admitted', admitted_at=time.time(), entry_free_bytes=owned.disk(p.R, 24),
++            record.update(status='admitted', admitted_at=time.time(), entry_free_bytes=owned.disk(p.R, 23),
+                           before=footprint(), previous=prior)
+             save()
+         record['admission_released_at'] = time.time()

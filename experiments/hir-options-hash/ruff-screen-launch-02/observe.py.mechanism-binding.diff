@@ -1,0 +1,24 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash/ruff-screen-launch-02/observe.py.before-mechanism-binding
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash/ruff-screen-launch-02/observe.py
+@@ -137,7 +137,11 @@
+         # claim of an atomic cache-absence check across those two acquisitions.
+         with owned.workload_lock(p.LOCK, 600):
+             guard()
+-            p.prerequisites(p.pinned(plan['binding']), {})
++            binding = p.pinned(plan['binding'])
++            p.prerequisites(binding, {})
++            p.require(plan['mechanism_eligibility'] == binding['proofs']['strict_mechanism']
++                      and plan['mechanism_only'] is True and plan['fastest_configuration_followup_required'] is True,
++                      'mechanism prerequisite or decision scope differs')
+             for cache in [h['work'], h['results'], *h['custom_caches'].values()]:
+                 p.absent(cache)
+             # Completed strict caches must also have been separately retired.
+@@ -194,6 +198,8 @@
+             canonical_verification=dict(admitted_at=admitted, released_at=released),
+             generated_cache_roots=sorted([h['native_cache'], *h['custom_caches'].values()]),
+             before=record['before'], after=record['after_verification'], previous=prior,
++            mechanism_eligibility=plan['mechanism_eligibility'], mechanism_only=True,
++            fastest_configuration_followup_required=True,
+             performance_qualified=False, observer_os_closure_observed=False)
+         p.write(result_path, result)
+         record.update(status='passed', finished_at=time.time(), result=p.ref(result_path))

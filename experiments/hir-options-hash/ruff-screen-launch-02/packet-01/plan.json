@@ -1,0 +1,368 @@
+{
+  "active_child_stop_gib": 9,
+  "allocation": {
+    "active_child_stop_bytes": 9663676416,
+    "cache_bytes": 4313612288,
+    "cache_bytes_with_allowance": 6470418432,
+    "command_floor_bytes": 17179869184,
+    "custom_estimate_each": 1275777024,
+    "custom_samples": {
+      "baseline": {
+        "allocated_bytes": 1231159296,
+        "bytes": 1218539007,
+        "file_count": 3579
+      },
+      "candidate": {
+        "allocated_bytes": 1275777024,
+        "bytes": 1251643687,
+        "file_count": 7911
+      }
+    },
+    "entry_free_bytes": 24696061952,
+    "evidence_reserve_bytes": 536870912,
+    "first_archive_reserve_bytes": 0,
+    "growth_percent": 50,
+    "history_count": 2,
+    "native_estimate_each": 1762058240,
+    "native_sample": {
+      "allocated_bytes": 1762058240,
+      "files": 7529,
+      "histories": 1,
+      "jobs": 2,
+      "logical_bytes": 2558244846,
+      "profile": "repository",
+      "rows": 24,
+      "test_threads": "1",
+      "toolchain": "nightly-2026-09-08"
+    },
+    "per_history_allocated_byte_limit": 7516192768,
+    "per_history_custom_caches": 2,
+    "per_history_native_caches": 1,
+    "policy": "ruff-fixed-screen-prospective-allocation-v2",
+    "policy_notes": [
+      "Use the larger observed strict custom cache independently for baseline and candidate; never assume sharing.",
+      "Use allocated bytes consistently. The saved native target uses normal same-target Cargo hardlinks (7,529 names,4,507 unique file inodes); the estimate explicitly assumes this ordinary behavior. It is not a guarantee of future allocations.",
+      "Prospective estimate, not a measured upper bound for the new compiler, native transient peaks or RSS/swap.",
+      "Allocation/evidence limits are checked outside timed histories; owned_stage samples free disk every5s and can stop only its revalidated owned process group below9GiB. These are not filesystem quotas.",
+      "Prior strict caches must be retired separately after their actual closure/verification and retained evidence.",
+      "AB caches retire only after normal closure, ordinary verification and saved artifacts; retain AB work outside native, results, observer and original sources. AA then starts fresh.",
+      "No archive copy is made during either history. Later retirement/publication archive staging must receive its own separate admission.",
+      "Runner allows individual RBC64MiB and catalogs8MiB. Saved observed artifacts are much smaller;512MiB is a prospective retained-evidence budget, not a claim that every maximum-size permitted artifact would fit. An actual excess fails rather than silently expands the budget.",
+      "Prospective correction before any screen timing: retain prior8/24 policy;7GiB owned includes the512MiB evidence sub-cap and leaves16GiB command reserve at23GiB entry. No histories, flags, checks, samples or decisions changed."
+    ],
+    "projected_owned_bytes": 7007289344,
+    "running_floor_bytes": 8589934592,
+    "saved_inputs": [
+      {
+        "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/ruff-options-hash-strict-cache-inventory-01.json",
+        "sha256": "582e2a338fabf33b4f228c3cda0131b1539df05097ac1dc2380abd5585016f7f"
+      },
+      {
+        "path": "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/ruff-diagnostic-target-cleanup-01/admitted-inventory.json",
+        "sha256": "7e4dc9c3e18c1cc2067f20e2b8f1f531b682ea2067def34a613beb44f530a03e"
+      },
+      {
+        "path": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/results/runtime-ruff-hir-diagnostic-01/summary.json",
+        "sha256": "bae7412f4b2b8700a2d9e555d1388b4ffa3f1d872e195f9b83615031a8ce5299"
+      },
+      {
+        "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/ruff-screen02-prospective-allocated-budget-independent-review-01.json",
+        "sha256": "f7930f3a74078c70e77dc41e7ad6907e155f58339507eeb1b51a409547ff77db"
+      }
+    ],
+    "total_created_custom_caches": 4,
+    "total_created_native_caches": 2
+  },
+  "binding": {
+    "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/ruff-options-hash-screen02-preparation-execution-01/binding.json",
+    "sha256": "98755781c0dadd4c7052dc41dc69614a06bb3fa14586d1a32c3219c9c6eb4803"
+  },
+  "canonical_lock": "/Users/danluu/dev/rust-interp/.work/benchmark.lock",
+  "canonical_wait_seconds": 600,
+  "fastest_configuration_followup_required": true,
+  "histories": {
+    "aa": {
+      "command": [
+        "/opt/homebrew/bin/python3",
+        "-B",
+        "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/experiments/workflow-runtime-arms-01/bench_e2e_workflow.py",
+        "--run-id",
+        "hir-options-hash-ruff-screen-aa-02",
+        "--project",
+        "ruff",
+        "--batch",
+        "--cycles",
+        "1",
+        "--jobs",
+        "2",
+        "--native-jobs",
+        "2",
+        "--baseline-jobs",
+        "2",
+        "--candidate-jobs",
+        "2",
+        "--native-profile",
+        "repository",
+        "--native-toolchain",
+        "nightly-2026-09-08",
+        "--native-test-threads",
+        "1",
+        "--comparison-engine",
+        "jit",
+        "--std-mir",
+        "--build-metrics",
+        "--verify-restoration",
+        "--expect-identical-bytecode",
+        "--guest-mir-opt-level",
+        "3",
+        "--inline-leaves",
+        "--baseline-inline-leaves",
+        "--candidate-jit-resumable-calls",
+        "--baseline-jit-resumable-calls",
+        "--candidate-jit-persistent-registers",
+        "--baseline-jit-persistent-registers",
+        "--instruction-limit",
+        "1000000000",
+        "--allocation-limit",
+        "150000",
+        "--guest-rustflag=-Zhir-body-cache-capture=true",
+        "--guest-rustflag=-Zhir-body-cache-reuse=true",
+        "--minimum-free-gib",
+        "16",
+        "--workload-lock",
+        "/Users/danluu/dev/rust-interp/.work/benchmark.lock",
+        "--lock-wait-seconds",
+        "600",
+        "--initial-mode-order",
+        "candidate,native,baseline",
+        "--baseline-tool-key",
+        "7610e295912b132303c95db6a587f9288c03a7f84b691de8ea60093e2829622a",
+        "--candidate-tool-key",
+        "7610e295912b132303c95db6a587f9288c03a7f84b691de8ea60093e2829622a",
+        "--baseline-runtime-compiler-key",
+        "eca3d1317ba4c852d64de435aa0f0e5d87ae63bd4eb96cfafacc7b0a85841d03",
+        "--candidate-runtime-compiler-key",
+        "eca3d1317ba4c852d64de435aa0f0e5d87ae63bd4eb96cfafacc7b0a85841d03",
+        "--baseline-std-mir-key",
+        "e4d1cd29bf4dbac5f9cbf6a92c77a562b89f7079c4474653f180346a00f24b63",
+        "--candidate-std-mir-key",
+        "e4d1cd29bf4dbac5f9cbf6a92c77a562b89f7079c4474653f180346a00f24b63",
+        "--aa-control"
+      ],
+      "custom_caches": {
+        "baseline": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/.work/interpreter-workspaces/7610e295912b132303c95db6a587f9288c03a7f84b691de8ea60093e2829622a/46fb8610533696e19a400833",
+        "candidate": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/.work/interpreter-workspaces/7610e295912b132303c95db6a587f9288c03a7f84b691de8ea60093e2829622a/3fed41e0440758655bf60602"
+      },
+      "environment": {
+        "CARGO_HOME": "/Users/danluu/.cargo",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_TERM_COLOR": "never",
+        "CARGO_TERM_VERBOSE": "true",
+        "DEVELOPER_DIR": "/Applications/Xcode.app/Contents/Developer",
+        "HOME": "/Users/danluu",
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/Users/danluu/.cargo/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "RUSTUP_DIST_SERVER": "file:///dev/null",
+        "RUSTUP_HOME": "/Users/danluu/.rustup",
+        "RUSTUP_TOOLCHAIN": "nightly-2026-09-08",
+        "RUST_INTERP_LAUNCH_STATS": "1",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/.work/hir-options-hash-ruff-screen-aa-02-observer/tmp/",
+        "TZ": "UTC",
+        "__CF_USER_TEXT_ENCODING": "0x1F5:0x0:0x0"
+      },
+      "native_cache": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/.work/runs/hir-options-hash-ruff-screen-aa-02/native",
+      "observer": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/.work/hir-options-hash-ruff-screen-aa-02-observer",
+      "outer": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/.work/experiments/hir-options-hash-ruff-screen-aa-02-supervisor",
+      "records": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/.work/runs/hir-options-hash-ruff-screen-aa-02/records.json",
+      "results": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/results/hir-options-hash-ruff-screen-aa-02",
+      "run_id": "hir-options-hash-ruff-screen-aa-02",
+      "summary": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/results/hir-options-hash-ruff-screen-aa-02/summary.json",
+      "verification": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/results/hir-options-hash-ruff-screen-aa-02/verification.json",
+      "verifier": [
+        "/opt/homebrew/bin/python3",
+        "-B",
+        "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/experiments/workflow-runtime-arms-01/verify_repeated_workflow.py",
+        "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/results/hir-options-hash-ruff-screen-aa-02/summary.json",
+        "--wait-for-lock",
+        "600"
+      ],
+      "work": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/.work/runs/hir-options-hash-ruff-screen-aa-02"
+    },
+    "ab": {
+      "command": [
+        "/opt/homebrew/bin/python3",
+        "-B",
+        "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/experiments/workflow-runtime-arms-01/bench_e2e_workflow.py",
+        "--run-id",
+        "hir-options-hash-ruff-screen-ab-02",
+        "--project",
+        "ruff",
+        "--batch",
+        "--cycles",
+        "1",
+        "--jobs",
+        "2",
+        "--native-jobs",
+        "2",
+        "--baseline-jobs",
+        "2",
+        "--candidate-jobs",
+        "2",
+        "--native-profile",
+        "repository",
+        "--native-toolchain",
+        "nightly-2026-09-08",
+        "--native-test-threads",
+        "1",
+        "--comparison-engine",
+        "jit",
+        "--std-mir",
+        "--build-metrics",
+        "--verify-restoration",
+        "--expect-identical-bytecode",
+        "--guest-mir-opt-level",
+        "3",
+        "--inline-leaves",
+        "--baseline-inline-leaves",
+        "--candidate-jit-resumable-calls",
+        "--baseline-jit-resumable-calls",
+        "--candidate-jit-persistent-registers",
+        "--baseline-jit-persistent-registers",
+        "--instruction-limit",
+        "1000000000",
+        "--allocation-limit",
+        "150000",
+        "--guest-rustflag=-Zhir-body-cache-capture=true",
+        "--guest-rustflag=-Zhir-body-cache-reuse=true",
+        "--minimum-free-gib",
+        "16",
+        "--workload-lock",
+        "/Users/danluu/dev/rust-interp/.work/benchmark.lock",
+        "--lock-wait-seconds",
+        "600",
+        "--initial-mode-order",
+        "native,baseline,candidate",
+        "--baseline-tool-key",
+        "7610e295912b132303c95db6a587f9288c03a7f84b691de8ea60093e2829622a",
+        "--candidate-tool-key",
+        "89cb2751d9e6cfd4a9572dd8ab5405fae7480350bc9198bc5f1bc79fc35bceac",
+        "--baseline-runtime-compiler-key",
+        "eca3d1317ba4c852d64de435aa0f0e5d87ae63bd4eb96cfafacc7b0a85841d03",
+        "--candidate-runtime-compiler-key",
+        "f031d981666f450f760ccf303dccba986053ec6b9a143a60f3d26680f9ac7c70",
+        "--baseline-std-mir-key",
+        "e4d1cd29bf4dbac5f9cbf6a92c77a562b89f7079c4474653f180346a00f24b63",
+        "--candidate-std-mir-key",
+        "f6366b5873636f47cdc3e9941a9b24ef612f94432baecb5d75ed5c4c54911928"
+      ],
+      "custom_caches": {
+        "baseline": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/.work/interpreter-workspaces/7610e295912b132303c95db6a587f9288c03a7f84b691de8ea60093e2829622a/43350d7b6d6cfb03366507b7",
+        "candidate": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/.work/interpreter-workspaces/89cb2751d9e6cfd4a9572dd8ab5405fae7480350bc9198bc5f1bc79fc35bceac/e3e16617ff17b28cf53afa60"
+      },
+      "environment": {
+        "CARGO_HOME": "/Users/danluu/.cargo",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_TERM_COLOR": "never",
+        "CARGO_TERM_VERBOSE": "true",
+        "DEVELOPER_DIR": "/Applications/Xcode.app/Contents/Developer",
+        "HOME": "/Users/danluu",
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": "/Users/danluu/.cargo/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "RUSTUP_DIST_SERVER": "file:///dev/null",
+        "RUSTUP_HOME": "/Users/danluu/.rustup",
+        "RUSTUP_TOOLCHAIN": "nightly-2026-09-08",
+        "RUST_INTERP_LAUNCH_STATS": "1",
+        "TMPDIR": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/.work/hir-options-hash-ruff-screen-ab-02-observer/tmp/",
+        "TZ": "UTC",
+        "__CF_USER_TEXT_ENCODING": "0x1F5:0x0:0x0"
+      },
+      "native_cache": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/.work/runs/hir-options-hash-ruff-screen-ab-02/native",
+      "observer": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/.work/hir-options-hash-ruff-screen-ab-02-observer",
+      "outer": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/.work/experiments/hir-options-hash-ruff-screen-ab-02-supervisor",
+      "records": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/.work/runs/hir-options-hash-ruff-screen-ab-02/records.json",
+      "results": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/results/hir-options-hash-ruff-screen-ab-02",
+      "run_id": "hir-options-hash-ruff-screen-ab-02",
+      "summary": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/results/hir-options-hash-ruff-screen-ab-02/summary.json",
+      "verification": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/results/hir-options-hash-ruff-screen-ab-02/verification.json",
+      "verifier": [
+        "/opt/homebrew/bin/python3",
+        "-B",
+        "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/experiments/workflow-runtime-arms-01/verify_repeated_workflow.py",
+        "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/results/hir-options-hash-ruff-screen-ab-02/summary.json",
+        "--wait-for-lock",
+        "600"
+      ],
+      "work": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/.work/runs/hir-options-hash-ruff-screen-ab-02"
+    }
+  },
+  "mechanism_eligibility": {
+    "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/ruff-options-hash-strict-mechanism-eligibility-01.json",
+    "sha256": "065d5dae560bc03f55a5eb9f7353488e26f7236bc08d8b1ee5460851f3fd1d9d"
+  },
+  "mechanism_only": true,
+  "order": [
+    "ab",
+    "aa"
+  ],
+  "performance_qualified": false,
+  "policy": "ruff-fixed-screen-plan-v1",
+  "preparation_free_bytes": 20736032768,
+  "preparation_parent_pid": 30010,
+  "preparation_pid": 30722,
+  "prepared_at": 1789838310.231509,
+  "retirement": "Separate reviewed task-owned cache retirement after closed verification; never performed by observer.",
+  "running_floor_gib": 8,
+  "sources": {
+    "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash/ruff-screen-launch-02/sources.json",
+    "sha256": "a25b8ff8ab4bf873c5a4ba8e6e74b985374281058bcd65263499e88c19ad14d6"
+  },
+  "status": "prepared-unexecuted",
+  "strict_proofs": {
+    "publication": {
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-exporter-publication-02/receipt.json",
+      "sha256": "77139a7c2194637ef5efe42bd88dc0e6a75dac3b5cdcb6759c751f703f96cc2e"
+    },
+    "publication_outer": {
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/experiments/hir-options-hash-exporter-publication-supervisor-02/status.json",
+      "sha256": "1b06f7e041f2d7c414f332e03e0ca9fbcb83b93406a831bcc1b31588b16dba6c"
+    },
+    "published_tools": {
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-exporter-publication-02/published-tools.json",
+      "sha256": "ebeabf425f12181bfe6d4e22993edb23cb546ad3f6e555e2aab1c38880e3431d"
+    },
+    "strict_inputs": {
+      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/runtime-application-admission/ruff-options-hash-strict-01/plan/inputs.json",
+      "sha256": "5140d056611a1552c7c4ef1ab6e1e3ee3e6600db7e728759e51c1750de580aca"
+    },
+    "strict_mechanism": {
+      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/ruff-options-hash-strict-mechanism-eligibility-01.json",
+      "sha256": "065d5dae560bc03f55a5eb9f7353488e26f7236bc08d8b1ee5460851f3fd1d9d"
+    },
+    "strict_outer": {
+      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/experiments/ruff-options-hash-strict-supervisor-01/status.json",
+      "sha256": "c9f9c05ed6759e85e4faaa2af6031d6cc3f49cbce767173d663ef1a373b882b6"
+    },
+    "strict_parent": {
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/ruff-options-hash-strict-execution-01/record.json",
+      "sha256": "970bdb92d3d7f558bfef7efe491fa3aa24176ace22d5e19967db889e0d4d6630"
+    },
+    "strict_plan": {
+      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/runtime-application-admission/ruff-options-hash-strict-01/plan/plan.json",
+      "sha256": "7b6f840c7542cf1fa7a0dd02850d9519be225a5aa548a713303874c234c72c0e"
+    },
+    "strict_result": {
+      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/ruff-options-hash-strict-01/result.json",
+      "sha256": "fc2ae5d0870f777410dd32c95e12be6d3c3b0900e96f8a412225aa55508eb54c"
+    },
+    "strict_supervision": {
+      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/ruff-options-hash-strict-01/supervision.json",
+      "sha256": "af22e76b7ed83ee2725146f58b68c282966b2452f2ac2ead0ac74ef819eab798"
+    }
+  }
+}

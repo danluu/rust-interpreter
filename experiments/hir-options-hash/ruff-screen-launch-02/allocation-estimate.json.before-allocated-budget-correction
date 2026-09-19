@@ -1,0 +1,66 @@
+{
+  "active_child_stop_bytes": 9663676416,
+  "cache_bytes": 5061372526,
+  "cache_bytes_with_allowance": 7592058789,
+  "command_floor_bytes": 17179869184,
+  "custom_estimate_each": 1251563840,
+  "custom_samples": {
+    "baseline": {
+      "files": 3579,
+      "logical_bytes": 1218452785
+    },
+    "candidate": {
+      "files": 7911,
+      "logical_bytes": 1251563840
+    }
+  },
+  "entry_free_bytes": 25769803776,
+  "evidence_reserve_bytes": 536870912,
+  "first_archive_reserve_bytes": 0,
+  "growth_percent": 50,
+  "history_count": 2,
+  "native_estimate_each": 2558244846,
+  "native_sample": {
+    "allocated_bytes": 1762058240,
+    "files": 7529,
+    "histories": 1,
+    "jobs": 2,
+    "logical_bytes": 2558244846,
+    "profile": "repository",
+    "rows": 24,
+    "test_threads": "1",
+    "toolchain": "nightly-2026-09-08"
+  },
+  "per_history_allocated_byte_limit": 8589934592,
+  "per_history_custom_caches": 2,
+  "per_history_native_caches": 1,
+  "policy": "ruff-fixed-screen-prospective-allocation-v1",
+  "policy_notes": [
+    "Use the larger observed strict custom cache independently for baseline and candidate; never assume sharing.",
+    "Use logical native bytes rather than allocated bytes to avoid relying on hardlinks/compression.",
+    "Prospective estimate, not a measured upper bound for the new compiler, native transient peaks or RSS/swap.",
+    "Allocation/evidence limits are checked outside timed histories; owned_stage samples free disk every5s and can stop only its revalidated owned process group below9GiB. These are not filesystem quotas.",
+    "Prior strict caches must be retired separately after their actual closure/verification and retained evidence.",
+    "AB caches retire only after normal closure, ordinary verification and saved artifacts; retain AB work outside native, results, observer and original sources. AA then starts fresh.",
+    "No archive copy is made during either history. Later retirement/publication archive staging must receive its own separate admission.",
+    "Runner allows individual RBC64MiB and catalogs8MiB. Saved observed artifacts are much smaller;512MiB is a prospective retained-evidence budget, not a claim that every maximum-size permitted artifact would fit. An actual excess fails rather than silently expands the budget."
+  ],
+  "projected_owned_bytes": 8128929701,
+  "running_floor_bytes": 8589934592,
+  "saved_inputs": [
+    {
+      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/ruff-runtime-strict-continuation-02/final-cache-inventory.json",
+      "sha256": "f61a2685500bfa637fedf5242940e3a56e61fa5e9ebedc15fd69d41b311b9b28"
+    },
+    {
+      "path": "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/ruff-diagnostic-target-cleanup-01/admitted-inventory.json",
+      "sha256": "7e4dc9c3e18c1cc2067f20e2b8f1f531b682ea2067def34a613beb44f530a03e"
+    },
+    {
+      "path": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/results/runtime-ruff-hir-diagnostic-01/summary.json",
+      "sha256": "bae7412f4b2b8700a2d9e555d1388b4ffa3f1d872e195f9b83615031a8ce5299"
+    }
+  ],
+  "total_created_custom_caches": 4,
+  "total_created_native_caches": 2
+}

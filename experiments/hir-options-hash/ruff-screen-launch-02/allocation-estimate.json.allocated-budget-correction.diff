@@ -1,0 +1,85 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash/ruff-screen-launch-02/allocation-estimate.json.before-allocated-budget-correction
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash/ruff-screen-launch-02/allocation-estimate.json
+@@ -1,25 +1,27 @@
+ {
+   "active_child_stop_bytes": 9663676416,
+-  "cache_bytes": 5061372526,
+-  "cache_bytes_with_allowance": 7592058789,
++  "cache_bytes": 4313612288,
++  "cache_bytes_with_allowance": 6470418432,
+   "command_floor_bytes": 17179869184,
+-  "custom_estimate_each": 1251563840,
++  "custom_estimate_each": 1275777024,
+   "custom_samples": {
+     "baseline": {
+-      "files": 3579,
+-      "logical_bytes": 1218452785
++      "allocated_bytes": 1231159296,
++      "bytes": 1218539007,
++      "file_count": 3579
+     },
+     "candidate": {
+-      "files": 7911,
+-      "logical_bytes": 1251563840
++      "allocated_bytes": 1275777024,
++      "bytes": 1251643687,
++      "file_count": 7911
+     }
+   },
+-  "entry_free_bytes": 25769803776,
++  "entry_free_bytes": 24696061952,
+   "evidence_reserve_bytes": 536870912,
+   "first_archive_reserve_bytes": 0,
+   "growth_percent": 50,
+   "history_count": 2,
+-  "native_estimate_each": 2558244846,
++  "native_estimate_each": 1762058240,
+   "native_sample": {
+     "allocated_bytes": 1762058240,
+     "files": 7529,
+@@ -31,26 +33,27 @@
+     "test_threads": "1",
+     "toolchain": "nightly-2026-09-08"
+   },
+-  "per_history_allocated_byte_limit": 8589934592,
++  "per_history_allocated_byte_limit": 7516192768,
+   "per_history_custom_caches": 2,
+   "per_history_native_caches": 1,
+-  "policy": "ruff-fixed-screen-prospective-allocation-v1",
++  "policy": "ruff-fixed-screen-prospective-allocation-v2",
+   "policy_notes": [
+     "Use the larger observed strict custom cache independently for baseline and candidate; never assume sharing.",
+-    "Use logical native bytes rather than allocated bytes to avoid relying on hardlinks/compression.",
++    "Use allocated bytes consistently. The saved native target uses normal same-target Cargo hardlinks (7,529 names,4,507 unique file inodes); the estimate explicitly assumes this ordinary behavior. It is not a guarantee of future allocations.",
+     "Prospective estimate, not a measured upper bound for the new compiler, native transient peaks or RSS/swap.",
+     "Allocation/evidence limits are checked outside timed histories; owned_stage samples free disk every5s and can stop only its revalidated owned process group below9GiB. These are not filesystem quotas.",
+     "Prior strict caches must be retired separately after their actual closure/verification and retained evidence.",
+     "AB caches retire only after normal closure, ordinary verification and saved artifacts; retain AB work outside native, results, observer and original sources. AA then starts fresh.",
+     "No archive copy is made during either history. Later retirement/publication archive staging must receive its own separate admission.",
+-    "Runner allows individual RBC64MiB and catalogs8MiB. Saved observed artifacts are much smaller;512MiB is a prospective retained-evidence budget, not a claim that every maximum-size permitted artifact would fit. An actual excess fails rather than silently expands the budget."
++    "Runner allows individual RBC64MiB and catalogs8MiB. Saved observed artifacts are much smaller;512MiB is a prospective retained-evidence budget, not a claim that every maximum-size permitted artifact would fit. An actual excess fails rather than silently expands the budget.",
++    "Prospective correction before any screen timing: retain prior8/24 policy;7GiB owned includes the512MiB evidence sub-cap and leaves16GiB command reserve at23GiB entry. No histories, flags, checks, samples or decisions changed."
+   ],
+-  "projected_owned_bytes": 8128929701,
++  "projected_owned_bytes": 7007289344,
+   "running_floor_bytes": 8589934592,
+   "saved_inputs": [
+     {
+-      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/ruff-runtime-strict-continuation-02/final-cache-inventory.json",
+-      "sha256": "f61a2685500bfa637fedf5242940e3a56e61fa5e9ebedc15fd69d41b311b9b28"
++      "path": "/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/ruff-options-hash-strict-cache-inventory-01.json",
++      "sha256": "582e2a338fabf33b4f228c3cda0131b1539df05097ac1dc2380abd5585016f7f"
+     },
+     {
+       "path": "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/ruff-diagnostic-target-cleanup-01/admitted-inventory.json",
+@@ -59,6 +62,10 @@
+     {
+       "path": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/results/runtime-ruff-hir-diagnostic-01/summary.json",
+       "sha256": "bae7412f4b2b8700a2d9e555d1388b4ffa3f1d872e195f9b83615031a8ce5299"
++    },
++    {
++      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/ruff-screen02-prospective-allocated-budget-independent-review-01.json",
++      "sha256": "f7930f3a74078c70e77dc41e7ad6907e155f58339507eeb1b51a409547ff77db"
+     }
+   ],
+   "total_created_custom_caches": 4,

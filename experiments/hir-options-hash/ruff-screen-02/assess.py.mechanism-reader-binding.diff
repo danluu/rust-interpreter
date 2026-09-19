@@ -1,0 +1,44 @@
+--- /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/ruff-screen02-before-mechanism-reader-binding-01/assess.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash/ruff-screen-02/assess.py
+@@ -298,6 +298,23 @@
+                 and parent['outer_plan']['path'] == str(outer_dir/'plan.json'), 'prepared input route differs')
+         launch, sources, plan, outer_plan = [read(parent[field]) for field in ('launch', 'sources', 'plan', 'outer_plan')]
+         h = plan['histories'][name]
++        binding = read(plan['binding'])
++        require(result['mechanism_eligibility'] == plan['mechanism_eligibility']
++                == binding['proofs']['strict_mechanism']
++                and result['mechanism_only'] is plan['mechanism_only'] is True
++                and result['fastest_configuration_followup_required']
++                is plan['fastest_configuration_followup_required'] is True,
++                'strict mechanism prerequisite or comparison scope differs')
++        eligibility = read(result['mechanism_eligibility'])
++        require(eligibility['policy'] == 'ruff-options-hash-mechanism-eligibility-v1'
++                and eligibility['status'] == 'passed' and eligibility['performance_qualified'] is False
++                and type(eligibility['successful_captures']) is int and eligibility['successful_captures'] > 0
++                and type(eligibility['verified_hits']) is int and eligibility['verified_hits'] > 0
++                and type(eligibility['off_arm_events']) is int and eligibility['off_arm_events'] == 0,
++                'strict correctness history did not establish mechanism eligibility')
++        for field in ('result', 'supervision', 'parent'):
++            require({key: eligibility[field][key] for key in ('path', 'sha256')}
++                    == binding['proofs']['strict_'+field], 'mechanism strict history differs')
+         require(parent['command'] == launch['argv']
+                 and parent['environment'] == observer['environment'] == launch['environment'] == h['environment']
+                 and parent['outer_plan'] == launch['plan'] and plan['sources'] == parent['sources']
+@@ -347,6 +364,7 @@
+         saved[name] = dict(parent=parent, result=result, plan=plan)
+     ab, aa = saved['ab'], saved['aa']
+     require(ab['parent']['plan'] == aa['parent']['plan'] and ab['parent']['sources'] == aa['parent']['sources']
++            and ab['result']['mechanism_eligibility'] == aa['result']['mechanism_eligibility']
+             and ab['parent']['finished_at'] <= aa['parent']['started_at'], 'fixed AB then AA order differs')
+     previous = aa['result']['previous']
+     require(ab['result']['previous'] is None and previous['ab_result'] == owners['ab']['result']
+@@ -365,7 +383,8 @@
+     for path, digest in list(inputs.items()):
+         read(at(path, digest), raw=True)
+     output.update(owner_closures=owners, session_totals=sessions, actual_input_refs=inputs,
+-                  qualification_gate_complete=True)
++                  qualification_gate_complete=True,
++                  mechanism_eligibility=ab['result']['mechanism_eligibility'])
+     output['notes'][0] = 'Both ordinary verifiers and normal parent/outer/observer closures are bound to exact saved input hashes.'
+     with args.output.open('x') as stream:
+         json.dump(output, stream, sort_keys=True, indent=2, allow_nan=False)

@@ -1,0 +1,130 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash/ruff-screen-launch-01/prepare.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash/ruff-screen-launch-02/prepare.py
+@@ -17,8 +17,8 @@
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ A = Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-PROTOCOL = HERE.parent / 'ruff-screen-01'
+-MAP = X / '.work/ruff-options-hash-screen-runner-source-map-01.json'
++PROTOCOL = HERE.parent / 'ruff-screen-02'
++MAP = HERE / 'runner-source-map-02.json'
+ ARMS = R / 'experiments/workflow-runtime-arms-01'
+ OWNED = A / 'experiments/stable-cgu/owned_stage.py'
+ SUPERVISOR = R / 'scripts/supervise_experiment.py'
+@@ -27,6 +27,8 @@
+ STRICT = A / 'experiments/runtime-application-admission/ruff-options-hash-strict-01/plan'
+ STRICT_WORK = A / '.work/ruff-options-hash-strict-01'
+ STRICT_OUTER = A / '.work/experiments/ruff-options-hash-strict-supervisor-01'
++STRICT_PARENT = ROOT / '.work/ruff-options-hash-strict-execution-01/record.json'
++HIR_DIAGNOSTIC = A / 'experiments/runtime-application-admission/run_ruff_diagnostic.py'
+ RUNTIME = 'f031d981666f450f760ccf303dccba986053ec6b9a143a60f3d26680f9ac7c70'
+ STD = 'f6366b5873636f47cdc3e9941a9b24ef612f94432baecb5d75ed5c4c54911928'
+ GIB = 2**30
+@@ -94,7 +96,7 @@
+     return sorted([*R.joinpath('scripts').glob('*.py'),
+         *(ARMS/name for name in ['bench_e2e_workflow.py', 'verify_repeated_workflow.py',
+                                 'workflow_runtime_arms.py', 'workflow_placement.py']),
+-        OWNED, HERE/'prepare.py', HERE/'observe.py', HERE/'allocation-estimate.json',
++        OWNED, HIR_DIAGNOSTIC, HERE/'prepare.py', HERE/'observe.py', HERE/'allocation-estimate.json',
+         MAP, PROTOCOL/'PROTOCOL.md', PROTOCOL/'binding-template.json'])
+ 
+ 
+@@ -111,7 +113,7 @@
+ 
+ def routes(history):
+     require(history in ['ab', 'aa'], 'unknown history')
+-    run_id = 'hir-options-hash-ruff-screen-' + history + '-01'
++    run_id = 'hir-options-hash-ruff-screen-' + history + '-02'
+     observer = R / '.work' / (run_id + '-observer')
+     return dict(run_id=run_id, work=str(R/'.work/runs'/run_id),
+         results=str(R/'results'/run_id), observer=str(observer),
+@@ -142,7 +144,8 @@
+ def prerequisites(binding, checked):
+     p = binding['proofs']
+     require(set(p) == {'publication', 'published_tools', 'publication_outer', 'strict_plan',
+-                      'strict_inputs', 'strict_result', 'strict_supervision', 'strict_outer'}, 'proof fields differ')
++                      'strict_inputs', 'strict_result', 'strict_supervision', 'strict_outer',
++                      'strict_parent', 'strict_mechanism'}, 'proof fields differ')
+     rows = {k: pinned(v, checked) for k, v in p.items() if not k.endswith('_outer')}
+     publication, published = rows['publication'], rows['published_tools']
+     key = binding['candidate_tool_key']
+@@ -156,7 +159,7 @@
+     plan, frozen, result, supervision = [rows[k] for k in ['strict_plan', 'strict_inputs', 'strict_result', 'strict_supervision']]
+     expected_paths = dict(strict_plan=STRICT/'plan.json', strict_inputs=STRICT/'inputs.json',
+                           strict_result=STRICT_WORK/'result.json', strict_supervision=STRICT_WORK/'supervision.json',
+-                          strict_outer=STRICT_OUTER/'status.json')
++                          strict_outer=STRICT_OUTER/'status.json', strict_parent=STRICT_PARENT)
+     require(all(p[k]['path'] == str(path) for k, path in expected_paths.items()), 'wrong fresh strict history')
+     require(plan['tool_key'] == key and plan['runtime_key'] == RUNTIME and plan['std_key'] == STD
+             and plan['tool_publication'] == p['publication'] and plan['published_tools'] == p['published_tools']
+@@ -169,7 +172,8 @@
+             and result['unchanged_six_test_bodies'] is True
+             and result['commands'] == supervision['commands'] == len(supervision['children']) == len(result['records']) == 16,
+             'complete new strict sixteen-call qualification required')
+-    for child, declared in zip(supervision['children'], plan['commands'], strict=True):
++    hir_rows = []
++    for child, declared, record in zip(supervision['children'], plan['commands'], result['records'], strict=True):
+         receipt = child['receipt']
+         path = Path(child['path'])
+         require(path.is_relative_to(STRICT_WORK/'raw') and child['label'] == declared['label']
+@@ -179,9 +183,47 @@
+                 and receipt['supervisor_pid'] == supervision['pid']
+                 and supervision['started_at'] <= receipt['started_at'] <= receipt['finished_at'] <= supervision['finished_at'],
+                 'strict command receipt or closure differs')
++        raw = {}
+         for channel in ['stdout', 'stderr']:
+-            pinned(dict(path=str(path/channel), sha256=receipt[channel+'_sha256']), checked, raw=True)
+-    closed_outer(p['strict_outer'], supervision, checked)
++            raw[channel] = pinned(dict(path=str(path/channel), sha256=receipt[channel+'_sha256']), checked, raw=True)
++        require(record['receipt'] == str(path/'receipt.json') and record['label'] == declared['label'],
++                'strict result/raw association differs')
++        hir_rows.append(dict(mode=record['mode'], state=record['state'], phase=record['phase'],
++            cycle=1 if record['state'] == -2 else 0, calls=[dict(stderr=raw['stderr'].decode('utf-8'))]))
++    outer = closed_outer(p['strict_outer'], supervision, checked)
++    parent = rows['strict_parent']
++    require(parent['status'] == 'finished' and parent['returncode'] == parent['controller_returncode'] == 0
++            and parent['supervisor_may_be_live'] is parent['controller_may_be_live'] is False
++            and parent['pid'] == outer['supervisor_pid']
++            and parent['parent_pid'] == outer['supervisor_parent_pid']
++            and parent['outer_status_sha256'] == p['strict_outer']['sha256']
++            and parent['started_at'] <= parent['child_started_at'] <= outer['started_at']
++            <= outer['finished_at'] <= parent['finished_at'], 'strict normal-parent closure differs')
++    for channel in ['stdout', 'stderr']:
++        pinned(dict(path=str(STRICT_PARENT.parent/channel), sha256=parent[channel+'_sha256']), checked, raw=True)
++    # Reuse the existing lossless pure parser on authenticated closed diagnostics.
++    # This imports no provider/controller and launches no instrumented timing run.
++    parsed = load(HIR_DIAGNOSTIC, '_ruff_screen_hir_diagnostics').observed_hir(hir_rows)
++    accepted = {'cold-tree-and-journal-after-stock-lowering', 'same-tree-and-journal-after-stock-lowering',
++                'changed-tree-or-journal-after-stock-lowering'}
++    captures = sum(n for kind, n in parsed['event_counts'].items() if kind in accepted)
++    mechanism = rows['strict_mechanism']
++    require(mechanism['policy'] == 'ruff-options-hash-mechanism-eligibility-v1'
++            and mechanism['status'] == 'passed' and mechanism['performance_qualified'] is False
++            and captures > 0 and parsed['observed_hits'] > 0
++            and mechanism['successful_captures'] == captures
++            and mechanism['verified_hits'] == parsed['observed_hits']
++            and mechanism['off_arm_events'] == 0
++            and mechanism['event_counts'] == parsed['event_counts'], 'actual HIR mechanism eligibility required')
++    for name in ['result', 'supervision', 'parent']:
++        require({k:mechanism[name][k] for k in ['path','sha256']} == p['strict_'+name],
++                'mechanism proof belongs to a different strict history')
++    require({k:mechanism['parser_source'][k] for k in ['path','sha256']} == ref(HIR_DIAGNOSTIC),
++            'mechanism parser source differs')
++    compiler = X/'.work/hir-options-hash-compiler-01/source/compiler/rustc_ast_lowering/src/body_cache/mod.rs'
++    require({k:mechanism['compiler_source'][k] for k in ['path','sha256']} ==
++            dict(path=str(compiler), sha256='cb91d3a723616866b5eebe650f28c6c7c894735f26decf7eeef37727d15b1481'),
++            'mechanism compiler source differs')
+     # Original successful strict source/configuration guards remain prerequisites.
+     for name, digest in plan['producer_sources'].items():
+         require(sha(name) == digest, 'strict producer source changed')
+@@ -287,7 +329,9 @@
+         plan = dict(policy='ruff-fixed-screen-plan-v1', status='prepared-unexecuted', prepared_at=time.time(),
+             preparation_pid=os.getpid(), preparation_parent_pid=os.getppid(), binding=binding_ref,
+             sources=binding['source_manifest'], histories=histories, order=['ab', 'aa'],
+-            strict_proofs=binding['proofs'], allocation=estimate, preparation_free_bytes=free,
++            strict_proofs=binding['proofs'], mechanism_eligibility=binding['proofs']['strict_mechanism'],
++            mechanism_only=True, fastest_configuration_followup_required=True,
++            allocation=estimate, preparation_free_bytes=free,
+             canonical_lock=str(LOCK), canonical_wait_seconds=600,
+             active_child_stop_gib=9, running_floor_gib=8,
+             retirement='Separate reviewed task-owned cache retirement after closed verification; never performed by observer.',

@@ -1,0 +1,57 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash/ruff-screen-launch-02/README.md.before-allocated-budget-correction
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash/ruff-screen-launch-02/README.md
+@@ -41,7 +41,7 @@
+ replacement sample.
+ 
+ The short prelaunch admission holds the shared canonical lock for source/proof,
+-freshness and 24 GiB checks, then releases it before the ordinary runner acquires
++freshness and 23 GiB checks, then releases it before the ordinary runner acquires
+ that lock. This is not an atomic assertion of cache absence across the handoff.
+ Exclusive task namespaces and the runner's fresh work creation prevent ordinary
+ reuse; the exact measured cache paths are checked again in the successful saved
+@@ -54,21 +54,26 @@
+ 
+ | Component | Bytes |
+ | --- | ---: |
+-| Each custom cache: larger observed strict arm | 1,251,563,840 |
+-| One ordinary repository-profile native cache, logical size | 2,558,244,846 |
+-| Two custom plus one native | 5,061,372,526 |
+-| Cache estimate with 50% growth | 7,592,058,789 |
++| Each custom cache: larger actual strict arm, allocated | 1,275,777,024 |
++| One ordinary repository-profile native cache, allocated | 1,762,058,240 |
++| Two custom plus one native | 4,313,612,288 |
++| Cache estimate with 50% growth | 6,470,418,432 |
+ | Retained raw/artifact/evidence reserve | 536,870,912 |
+-| Projected owned total | 8,128,929,701 |
+-| Rounded per-history owned allocation budget | 8,589,934,592 |
+-| Entry free bytes: 16 GiB command floor plus 8 GiB budget | 25,769,803,776 |
++| Projected owned total | 7,007,289,344 |
++| Rounded per-history owned allocation budget | 7,516,192,768 |
++| Entry free bytes: 16 GiB command floor plus 7 GiB budget | 24,696,061,952 |
+ 
+ The native sample is the retained ordinary 24-row Ruff diagnostic history with
+-repository profile, jobs 2 and nightly-2026-09-08. Logical sizes avoid relying
+-on compression/hardlink savings. The new candidate's cache peak, transient
++repository profile, jobs 2 and nightly-2026-09-08. Allocated bytes count each
++unique inode once. The native sample has 7,529 names and 4,507 unique file
++inodes, so this estimate explicitly assumes normal same-target Cargo hardlinks.
++This prospective resource-only correction replaces the earlier mixed logical
++estimate before any screen timing; the prior 8/24 GiB sources and diffs are
++retained. The 512 MiB evidence reserve is inside the total owned limit.
++The new candidate's cache peak, transient
+ native output, RSS and swap are unmeasured. Limits are checks at history and
+ verification boundaries, not filesystem quotas. Active free-space monitoring
+-retains 9 GiB stop/8 GiB floor. Actual allocation above 8 GiB or retained
++retains 9 GiB stop/8 GiB floor. Actual allocation above 7 GiB or retained
+ evidence above 512 MiB fails without expansion. Ordinary per-artifact limits
+ are larger than observed artifacts; the reserve does not assume every artifact
+ can simultaneously reach its maximum size. No full cache snapshot/archive is
+@@ -89,7 +94,7 @@
+ The separate `previous-template.json` is bound only after that actual operation.
+ The AA observer requires its exact hash, successful AB result/receipt/ordinary
+ outer closure, retained proof hashes and actual absence of all three AB cache
+-roots. It also requires its own new cache roots absent and 24 GiB entry again.
++roots. It also requires its own new cache roots absent and 23 GiB entry again.
+ To serialize the AA supervisor plan, use the same preparer with
+ `--aa-previous <actual.json> --aa-previous-sha256 <actual> --plan-sha256 <actual>
+ --inputs-sha256 <actual> --sources-sha256 <held>` from R. No histories launch

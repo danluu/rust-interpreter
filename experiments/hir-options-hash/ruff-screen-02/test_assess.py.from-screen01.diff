@@ -1,0 +1,90 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash/ruff-screen-01/test_assess.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash/ruff-screen-02/test_assess.py
+@@ -1,6 +1,7 @@
+ """Synthetic arithmetic/schema counterexamples, never benchmark qualification."""
+ import copy
+ import hashlib
++from pathlib import Path
+ import statistics
+ import unittest
+ 
+@@ -185,5 +186,79 @@
+         with self.assertRaises(ValueError): self.result()
+ 
+ 
++def synthetic_owners():
++    """Invented documents for pure rejection tests; no actual process evidence."""
++    plan = dict(path='/synthetic/plan.json', sha256=digest('synthetic plan'))
++    result_ref = dict(path='/synthetic/result.json', sha256=digest('synthetic result'))
++    parent = dict(history='ab', status='finished', observer_verified=True,
++        supervisor_may_be_live=False, controller_may_be_live=False,
++        returncode=0, controller_returncode=0, pid=102, parent_pid=101,
++        started_at=10.0, finished_at=16.0, plan=plan, result=result_ref,
++        session_wall_seconds=6.0, child_cpu=dict(user_seconds=1.5, system_seconds=0.5, total_seconds=2.0))
++    outer = dict(status='finished', returncode=0, supervisor_pid=102,
++        supervisor_parent_pid=101, child_pid=103, started_at=11.0, finished_at=15.0)
++    observer = dict(history='ab', status='passed', pid=103, parent_pid=102,
++        started_at=12.0, finished_at=14.0, plan=plan, result=result_ref,
++        previous=None, observer_os_closure_observed=False, performance_qualified=False)
++    result = dict(history='ab', status='passed', plan=plan, previous=None,
++        observer_os_closure_observed=False, performance_qualified=False)
++    return [parent, outer, observer, result]
++
++
++class SuccessorTests(unittest.TestCase):
++    def test_enabled_flags_and_fresh_routes_are_required(self):
++        ab, aa = synthetic_history(False), synthetic_history(True)
++        result = assess.assess(ab, aa, CANDIDATE_TOOL)
++        self.assertEqual(result['decision'], 'advance')
++        self.assertFalse(result['fastest_configuration_qualified'])
++        self.assertFalse(result['holdout_admitted'])
++        self.assertEqual(assess.FLAGS, ['-Zmir-opt-level=3', '-Zhir-body-cache-capture=true', '-Zhir-body-cache-reuse=true'])
++        for history in ('ab', 'aa'):
++            run, execution, observer, outer = assess.history_routes(Path('/synthetic/root'), history)
++            self.assertEqual(run, 'hir-options-hash-ruff-screen-'+history+'-02')
++            self.assertEqual([p.name for p in (execution, observer, outer)],
++                             [run+'-'+suffix for suffix in ('execution', 'observer', 'supervisor')])
++        with self.assertRaises(ValueError): assess.history_routes(Path('/synthetic/root'), 'replacement')
++        for selected, mode in ((ab, 'candidate'), (ab, 'baseline'), (aa, 'candidate')):
++            saved = selected['summary']['tool_builds'][mode]['guest_rustflags']
++            selected['summary']['tool_builds'][mode]['guest_rustflags'] = [f.replace('=true', '=false') for f in saved]
++            with self.assertRaises(ValueError): assess.assess(ab, aa, CANDIDATE_TOOL)
++            selected['summary']['tool_builds'][mode]['guest_rustflags'] = saved
++
++    def test_distinct_parent_os_closure_retains_session_totals(self):
++        result = assess.owner_closure(*synthetic_owners(), 'ab')
++        self.assertEqual(result['wall_seconds'], 6.0)
++        self.assertEqual(result['child_cpu']['total_seconds'], 2.0)
++        self.assertIn('queues', result['scope'])
++        self.assertIn('excludes parent CPU', result['scope'])
++
++    def test_live_failed_or_claimed_self_reap_rejects(self):
++        for row, field, value in ((0, 'supervisor_may_be_live', True), (0, 'controller_may_be_live', True),
++                (0, 'observer_verified', False), (0, 'returncode', False), (0, 'returncode', 1),
++                (0, 'controller_returncode', 1), (1, 'returncode', 1),
++                (2, 'observer_os_closure_observed', True), (3, 'performance_qualified', True),
++                (2, 'status', 'failed'), (0, 'error', 'post-wait publication failed')):
++            with self.subTest(row=row, field=field, value=value):
++                owners = synthetic_owners(); owners[row][field] = value
++                with self.assertRaises(ValueError): assess.owner_closure(*owners, 'ab')
++
++    def test_owner_identity_chronology_and_association_rejects(self):
++        for row, field, value in ((0, 'pid', 999), (1, 'child_pid', 999),
++                (1, 'supervisor_parent_pid', True), (2, 'started_at', 9.0),
++                (1, 'finished_at', 17.0), (3, 'plan', {}), (2, 'result', {}),
++                (3, 'previous', {}), (3, 'history', 'aa')):
++            with self.subTest(row=row, field=field):
++                owners = synthetic_owners(); owners[row][field] = value
++                with self.assertRaises(ValueError): assess.owner_closure(*owners, 'ab')
++
++    def test_invalid_session_cpu_or_wall_rejects(self):
++        for field, value in (('total_seconds', 999), ('system_seconds', -1), ('user_seconds', True)):
++            owners = synthetic_owners(); owners[0]['child_cpu'][field] = value
++            with self.assertRaises(ValueError): assess.owner_closure(*owners, 'ab')
++        for value in (0, -1, float('nan'), float('inf'), True):
++            owners = synthetic_owners(); owners[0]['session_wall_seconds'] = value
++            with self.assertRaises(ValueError): assess.owner_closure(*owners, 'ab')
++
++
+ if __name__ == '__main__':
+     unittest.main()

@@ -1,0 +1,20 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash/ruff-screen-launch-02/prepare.py.before-allocated-budget-correction
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash/ruff-screen-launch-02/prepare.py
+@@ -294,7 +294,7 @@
+     for row in source_map['sources']:
+         pinned(dict(path=row['path'], sha256=row['sha256']), checked, raw=True)
+     estimate = pinned(ref(HERE/'allocation-estimate.json'), checked)
+-    require(estimate['per_history_allocated_byte_limit'] == 8*GIB and estimate['entry_free_bytes'] == 24*GIB
++    require(estimate['per_history_allocated_byte_limit'] == 7*GIB and estimate['entry_free_bytes'] == 23*GIB
+             and estimate['command_floor_bytes'] == 16*GIB, 'reviewed per-history capacity differs')
+     for reference in estimate['saved_inputs']:
+         pinned(reference, checked)
+@@ -322,7 +322,7 @@
+                 absent(path)
+             histories[history] = row
+         require(len({p for h in histories.values() for p in h['custom_caches'].values()}) == 4, 'custom caches overlap')
+-        # The preparation is metadata-only; actual history admission requires24GiB.
++        # The preparation is metadata-only; actual history admission requires23GiB.
+         free = owned.disk(R, 9)
+         for name, row in checked.items():
+             require(sha(name) == row['sha256'] and stamp(name) == row['stamp'], 'input changed during preparation')
