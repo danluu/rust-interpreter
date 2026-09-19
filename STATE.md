@@ -127,3 +127,9 @@ allocator-exit-scope01 registered; no guest/build. Preliminaryadoptedprofiles co
 otherhost27/32, heap73/155 notsavedbybridge. Need exactallocation-adjacentgenerated
 samplejoin before consideringimplementation. Sharedlock45s,12GiBinitial,8GiBcase.
 Freeze source/evidence throughindependent--close. Noactiveownedcommands.
+
+ALLOCATOR SCOPE CLOSED/PUBLISHED main1853b8ec preservingpeerb361d178. Only2/1933
+and0/1429 nativeallocationadjacentsamples; deferbridge. Rootadoptedhardwarebranch
+registers fresh3Ccountercontrols then12originalguestcounts with currentdf4006,
+matched restoredprimaryrows38/39. No compiler/sourceedit/performanceadoption.
+SeeRUNTIME-NEXT for commands/admission; old7.13xcounterratio is old49746a22.

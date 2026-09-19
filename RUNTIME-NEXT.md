@@ -1,28 +1,29 @@
-# Continue adopted allocator-exit scope
+# Continue adopted process hardware diagnosis
 
-Manual indefinite task; savedgoalPAUSED, no subagents/peercontrol/AWS/browser.
-Root branch experiment/allocator-exit-scope-20260919. Bytecode restored EXACTLY to
-adopted fca687eb; installeddefaultdf4006 unchanged. HeapHashMap candidate PARKED
-on experiment/heap-layout-table-20260919 at927ea3d8. Closed40editedcommands:
-wall.981239792+AA.051989623=1.033229416 FAIL;CPUceilingspass. No unchangedretry.
-All unstartedheap full/private/parser/Nushellguards canceled. Main6165c6d1 pushed
-fullqualification+negativeevidence, preservingpeer97076a30.
+Manual indefinite task; goal PAUSED. No subagents, peer process control, AWS,
+browser, or shared-target cleanup. Root experiment/adopted-hardware-costs-20260919.
+Runtime crates exactly adopted fca687eb; installed default df4006 unchanged.
 
-Next commit this baseline restore and new diagnostic, then supervise
-allocator-exit-scope-01:
-/opt/homebrew/bin/python3 benchmarks/experiments/allocator-exit-scope/analyze.py
-Independent --close afterfinished0; freeze sources/evidence until closed.
-No guest/compiler/timing/nativepublication. Reuses closed original-PC decoder
-and full1933/1429sample sites fromadopted-hot-loop-census02. Counts allocatorops,
-followingnativeentries, and sampledentry/flush nearallocation; do NOT equate
-interpretedopfrequency withlatency. Wholeheapbodycost remains in a bridge.
-Preliminaryread:885372/1572514/74906allocatorops, but only39/33broadnativeboundary
-selfsamples and27/32otherhostself; existing73/155heapcontextcostnoteliminated.
-Nativebridge NOT implemented/admitted; decide fromthisscope first.
+Allocator-exit-scope01 CLOSED: 885372/1572514/74906 allocator operations but
+only 2/1933 and 0/1429 current generated samples adjoining them. Heap host
+cost would remain. Native allocator bridge DEFERRED. Main1853b8ec pushed,
+preserving peer b361d178. Heap table candidate PARKED on927ea3d8; 40-command
+wall gate failed (.98124 + .05199 AA = 1.03323); no retry or further guards.
 
-Sharedlock45s;analysis12GiB/children+closure8GiB;2build/testworkers. Sharedtarget
-NEVERclean; compilerfloor=max(14GiB,8GiB+2*allocatedtarget), last26629357568bytes.
-Currentfree~22GiB afterprimary. Fre16/parser24/Nushell66.55GiB. Noactiveowned
-commands afterprimaryclosure; publication18919 finished0. No priorcleanupreplay.
-SuggestionsunchangedSHA4d74b3dc8b79...c2f. ReadSTATE andarchivedhistories before
-newmechanisms; preparedworkerJITreuse alreadyexists, no reimplementation.
+New benchmarks/experiments/adopted-process-counters/{PLAN.md,run.py}:
+first supervise adopted-process-counter-controls-01 with run.py controls,
+then independent run.py controls --close. Three bounded controls requalify
+preserved C launcher's source/build identity, spin counts, and child exit7.
+After CLOSED success supervise adopted-process-counters-01 with run.py measure,
+then independent run.py measure --close. Twelve original fre assertion launches:
+3 alternating native/JIT pairs each block/exhaustive; same restored source from
+closed heap primary rows38/39. Current VM, ordinary entropy, no profiling,
+no source edit or rebuild. Whole-process hardware counters NOT pure guest or
+Cargo/edit-loop timings, NOT an adoption gate. Historical7.13x used old49746a22.
+Freeze controller and inputs until each terminal and independent closure.
+
+Sharedlock45s; initial12GiB, perchild/closure8GiB; currentfree19.4GiB. Compiler
+floor26629357568bytes; no compiler admission. Shared fixed-frame-clear-combined
+build target NEVER CLEAN. Cleaner independent running; read-only status only.
+Suggestions unchanged4d74b3dc8b79...c2f. No other owned jobs at checkpoint.
+See STATE.md/history for failed mechanisms before proposing another.
