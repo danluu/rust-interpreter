@@ -1,5 +1,6 @@
 import unittest
-from benchmark import case_states,native_outcomes
+from benchmark import case_states,native_outcomes,validate_protocol
+from admission import CANDIDATE
 from accounting import MODES,schedule
 
 def source_fixture():
@@ -9,6 +10,17 @@ def source_fixture():
     return original.encode(),case
 
 class Controller(unittest.TestCase):
+    def test_admission_requires_complete_portable_protocol_for_current_candidate(self):
+        proof=dict(status='passed',tests=27,new_tests=27,reused_tests=0,
+            commands=7,validated_commands=7,reused_commands=0,candidate_key=CANDIDATE,
+            original_project_guest_commands=0,performance_measurement=False)
+        self.assertTrue(validate_protocol(proof))
+        for key,value in [('tests',22),('tests',26),('new_tests',26),('reused_tests',1),
+                ('commands',3),('validated_commands',6),('reused_commands',1),
+                ('candidate_key','stale'),('status','failed'),
+                ('original_project_guest_commands',1),('performance_measurement',True)]:
+            with self.subTest(key=key,value=value),self.assertRaises(AssertionError):
+                validate_protocol(dict(proof,**{key:value}))
     def test_three_source_cycles_and_restore_preserve_the_original_assertions(self):
         original,case=source_fixture();states=case_states(original,case)
         self.assertEqual(len(states),22);self.assertEqual(states[-1]['source'],original)

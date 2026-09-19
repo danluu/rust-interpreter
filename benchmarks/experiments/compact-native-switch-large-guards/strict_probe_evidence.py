@@ -3,12 +3,12 @@ import ast,json
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[3]
 from compare_saved_runtime import sha
-PROOF='compact-native-switch-guard-protocol-01'
+PROOF='compact-native-switch-guard-protocol-02'
 def verified_paths():
     out=ROOT/'results'/PROOF;closure=json.loads((out/'closure.json').read_text());summary=json.loads((out/'summary.json').read_text())
     assert closure['status']=='closed' and closure['all_hashes_verified'] and closure['four_expected_compiler_rejections']
     assert sha(out/'summary.json')==closure['summary_sha256'] and sha(out/'terminal.json')==closure['terminal_sha256']
-    assert summary['status']=='passed' and summary['tests']==26
+    assert summary['status']=='passed' and summary['tests']==27
     raw=ROOT/summary['raw'];plan=json.loads((raw/'plan.json').read_text());assert sha(raw/'plan.json')==summary['plan_sha256']
     records=json.loads((raw/'records.json').read_text());assert sha(raw/'records.json')==summary['records_sha256']
     source=Path(__file__).with_name('benchmark.py')

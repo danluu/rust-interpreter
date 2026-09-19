@@ -13,7 +13,7 @@ from test_discovery import read_listing,read_selection
 from suite_reports import read_report,validate_report,validate_runtime_limits
 from interpreter import installed_tools,require_export_option
 from accounting import MODES,CUSTOM,SESSION_MODES,STATES,schedule,ratios
-from admission import load,CASES
+from admission import load,CASES,CANDIDATE
 from commands import command,validate_options
 sys.path.insert(0,str(ROOT/'benchmarks/experiments/cross-program-template-screen'))
 from session_owner import Session,read_frame
@@ -22,7 +22,15 @@ from screen import native_executable
 CASE_INPUTS={'token':('fre','token-phrase-allocation','token_phrase::tests::','prepared-suite-token-01'),
     'folded':('fre','folded-literal-trie','folded_literal_trie::tests::','prepared-suite-folded-01'),
     'pgrust':('pgrust',None,'','prepared-catalog-pgrust-03')}
-PROTOCOL='compact-native-switch-guard-protocol-01'
+PROTOCOL='compact-native-switch-guard-protocol-02'
+def validate_protocol(summary):
+    assert summary['status']=='passed' and summary['tests']==27
+    assert summary['new_tests']==27 and summary['reused_tests']==0
+    assert summary['commands']==summary['validated_commands']==7 and summary['reused_commands']==0
+    assert summary['candidate_key']==CANDIDATE
+    assert summary['original_project_guest_commands']==0 and summary['performance_measurement'] is False
+    return True
+
 def strict_probes():
     return [('type',b'\nfn rust_interp_strict_type_probe() { let _: u32 = "invalid"; }\n','E0308'),
                         ('borrow',b'\nfn rust_interp_strict_borrow_probe() { let mut x=0; let a=&mut x; let b=&mut x; core::hint::black_box((a,b)); }\n','E0499')]
@@ -55,7 +63,8 @@ def main():
         protocol_folder=ROOT/'results'/PROTOCOL;closure=read(protocol_folder/'closure.json')
         assert closure['status']=='closed' and closure['all_hashes_verified']
         protocol=read(protocol_folder/'summary.json');assert sha(protocol_folder/'summary.json')==closure['summary_sha256']
-        assert protocol['status']=='passed' and protocol['tests']==22
+        assert closure['four_expected_compiler_rejections'] and closure['no_code_or_metadata_emitted']
+        assert validate_protocol(protocol)
         protocol_plan=ROOT/protocol['raw']/'plan.json';assert sha(protocol_plan)==protocol['plan_sha256']
         for name,h in read(protocol_plan)['frozen'].items():assert sha(ROOT/name)==h,name;paths.append(ROOT/name)
         paths += [protocol_folder/name for name in ['closure.json','summary.json','terminal.json']]+[protocol_plan]

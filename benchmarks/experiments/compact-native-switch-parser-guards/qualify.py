@@ -56,7 +56,7 @@ def main():
         write(out/'summary.json',dict(status='passed',source_revision=revision,raw=str(raw.relative_to(ROOT)),
             plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),tests=14,reused_tests=8,new_tests=6,
             commands=1,reused_commands=1,validated_commands=2,original_project_guest_commands=0,
-            candidate_key=candidate['tool_key'],performance_measurement=False,default_runtime_adoption=False,portable_probe_source_verified=True,portable_probe_proof='compact-native-switch-guard-protocol-01'))
+            candidate_key=candidate['tool_key'],performance_measurement=False,default_runtime_adoption=False,portable_probe_source_verified=True,portable_probe_proof='compact-native-switch-guard-protocol-02'))
 if __name__=='__main__':
     if sys.argv[1:]==['--close']:focus.RUN=RUN;focus.close()
     else:assert len(sys.argv)==1;main()

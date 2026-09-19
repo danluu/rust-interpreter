@@ -22,7 +22,7 @@ A failed guard stops all later cases. The earlier default runtime remains main.
 
 Use the already fixed portable core::hint borrow probe for every project,
 including no_std pgrust. Freshly qualify12 accounting,6 command and4 controller
-controls plus4 pinned-rustc std/no_std type/borrow rejection fixtures (26total).
+controls, one protocol-admission control, plus4 pinned-rustc std/no_std type/borrow rejection fixtures (27total).
 The closer compares the persisted case configuration in its JSON representation,
 so pgrust's tuple declarations cannot cause a false post-timing audit failure.
 These two fixes preserve earlier failed-controller evidence and all timing gates.
@@ -32,3 +32,9 @@ Private/Nushell and both parser guards remain required before integration.
 Use the shared lock,16GiB fre/12GiB pgrust admission and8GiB child floor. Freeze
 inputs through independent closure and restore source on every exit. No peer
 process control or shared-target cleanup. No new services or worker-count changes.
+
+Protocol01 completed26 controls and was closed before changing its sources.
+A pre-launch review caught the benchmark's stale22-control admission check;
+no timed command was attempted. Protocol02 adds one regression control and
+passes its actual summary through the same admission function as the benchmark.
+Its27 controls run fresh; the original protocol01 evidence is retained.
