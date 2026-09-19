@@ -1,3 +1,40 @@
+# Current manual runtime checkpoint — 2026-09-19
+
+Indefinite task; goal remains PAUSED. No subagents, other-session process control,
+AWS activation or browser actions. Own root and .work/publication-main only.
+Branch experiment/adopted-es8-call-scope-20260919. Installed df4006 unchanged.
+
+Short-clear-tail scope and focused native tests are CLOSED. Two runtime files
+only differ from adopted fca687eb: native_calls.rs and resumable_tests.rs.
+The candidate retains the 16-byte chunk loop and clears exact tails using
+8/4/2/1 stores. Scope, contracts and tests passed; no performance result yet.
+
+Workspace01 CLOSED failure: Python468/446passed/22skipped and debug609passed/
+13ignored both succeeded. Controller expected615 erroneously; heap's old618
+included four added and six duplicated reference tests. Release/VM never ran.
+New short-clear-tail-workspace-resume/qualify.py registers workspace02: verify
+and reuse both passed commands, execute only release609/13 and standalone VM.
+Next commit/push then supervise workspace02, independent --close, guest profiles,
+explicit tool composition, strict controls, and predeclared ES8 real-edit gate.
+Keep inputs frozen through closure and never rerun successful executions for
+report repair. Candidate adoption requires all held-out project guards too.
+
+Runtime-only target .work/short-clear-tail-runtime-build-01/target has owner.json,
+cap3GiB, admission max(14GiB,8GiB+2*allocated). Free~21.3GiB. Protected compiler
+.work/fixed-frame-clear-combined-build-01/target NEVER CLEAN; its26.63GB floor
+unchanged. Shared lock45s, two Cargo/test workers. Analysis12GiB, children8GiB,
+fre16GiB, parser24GiB, Nushell66.55GiB. Independent cleaner29541 read-only.
+Python /opt/homebrew/bin/python3. Suggestions unchanged4d74b3dc...c2f/reviewed.
+
+Main2114a430 has current ES8 workflow and diagnostics, push verified. Publish
+closed evidence using explicit paths, fetch/ff preserving peer work; no whole
+branch merge and no overwriting peer STATE/RUNTIME-NEXT. Short-tail evidence
+still branch-only. Current ES8 baseline1.5156xnative wall; tail samples39/797,
+52/609 ES8 and66/1933,39/1429 token justify candidate, not speedup forecasts.
+
+---
+Earlier checkpoints (historical):
+
 # Continue runtime optimization with current ES8 evidence
 
 Manual indefinite task; saved goal PAUSED. No subagents/processcontrol/AWS/browser.
