@@ -1,7 +1,8 @@
 # Combining session preparation gains with guest execution changes
 
-This experimental composition has passed correctness qualification; performance
-has not yet been measured. Main keeps the adopted scratch/scalar runtime.
+This experimental composition passed correctness qualification and its initial
+changed-source fre screen. Main keeps the adopted scratch/scalar runtime while
+the longer project and parser guards remain outstanding.
 
 Two previous candidates have complementary limitations. Session history and
 previous-duration ordering passed the parser gates but failed fre's wall gate.
@@ -32,7 +33,25 @@ cached edits. The [primary protocol](../results/session-runtime-composition-scre
 has16 controls covering complete session CPU accounting, option isolation,
 source transitions and original native outcomes.
 
-Next verify every template hit on saved parser and fre edits, then run one fresh
-40-command fre primary with strict unreachable type/borrow rejection controls.
-No timing retries or main runtime adoption follow a failed gate. The experimental
-sources are retained on `experiment/session-runtime-composition-20260919`.
+[Parser replay](../results/session-runtime-composition-parser-replay-01/summary.json)
+passes1824 original invocations with19815 independently regenerated hits.
+[Fre replay](../results/session-runtime-composition-fre-replay-01/summary.json)
+passes192 invocations with14548 verified hits. Both preserve original failures,
+resource limits, bounded storage and full server CPU accounting and are closed.
+The exact normal binaries are installed as experimental tool3ebea1cd.
+
+The independently closed [40-command fre primary](../results/session-runtime-composition-screen-token-01/summary.json)
+passes: candidate/adopted wall ratio0.9537077504 plus the maximum individual A/A
+allowance0.0373937777 gives0.9911015281. CPU ratio0.9303316367 plus A/A0.0284700056
+gives0.9588016423. Candidate/native wall remains1.5416394568, CPU1.9224508795.
+All original12 outcomes and the two strict unreachable type/borrow controls pass.
+
+The full176-command, three-cycle fre history is running after
+[22 controller controls](../results/session-runtime-composition-guard-protocol-01/summary.json),
+including10 freshly executed and12 exact unchanged accounting controls. It uses
+eight arms, including the identical runtime with history disabled, native builds,
+and Cargo check. Full kernel CPU and session startup/shutdown are charged.
+A primary pass admits these guards; it does not establish adoption. Later project
+and both parser gates remain required. No timing retries or main runtime adoption
+follow a failed gate. Experimental sources remain on
+`experiment/session-runtime-composition-20260919`.
