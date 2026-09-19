@@ -1,54 +1,74 @@
 # Start previously slow tests earlier
 
-The saved parser census shows the longest test last in all ten valid reports.
-With history enabled it spends a median203.713 ms running after41.111 ms of
-preceding test work on its worker. The other worker finishes much earlier.
-This supports evaluating generic duration-based scheduling, not a predicted gain.
-[Observed queue](SESSION-WORKER-TAIL-20260919.md).
+The parser's longest test was last in all ten valid reports from the previous
+changed-source comparison. With template history enabled, it ran for a median
+203.713 ms after 41.111 ms of preceding work on its worker. The other worker
+finished much earlier. This supports testing a generic scheduling change; it does
+not predict the resulting command speedup. See the [worker census](SESSION-WORKER-TAIL-20260919.md).
 
-The explicit experimental feature learns only advisory name/duration pairs from
-a complete previous request. It validates both worker records, exact coverage,
-current names and finite nonnegative durations; malformed, incomplete, duplicate
-or oversized observations clear the hints. Retained vector/string payload is
-bounded to4MiB and16384entries, with4096bytes/name. Replacing the table can briefly
-retain both old and new bounded tables. Unknown names have zero priority; equal
-priorities retain original index order. Current function IDs are never borrowed
-from the previous request. No guest result, validation, code or state is cached by
-this scheduler. Every current entry executes once with its current environment
-and limits; final reports retain original indices and canonical order.
+The experimental `jit-session-duration-order` feature learns advisory name/duration
+pairs from the most recent complete request. Before retaining them, it checks both
+worker records, exact coverage, current names, and finite nonnegative durations.
+Malformed, incomplete, duplicate, or oversized observations clear the hints.
+Retained vector and string payload is bounded to 4 MiB and 16,384 entries, with a
+4,096-byte name limit. Replacement can briefly retain both bounded tables.
 
-Five pure policy controls and an actual native Pool control join four existing
-server controls. Focused02 passes10controls per profile plus4with the feature off.
-The live control dirties mutable guest statics, exercises low instruction budgets,
-and verifies successful fresh recovery and original index coverage under changed
-ordering. Focused01's nine passes and one failure are preserved: the new fixture
-had attempted to write immutable Program.data;02 fixes only the fixture to use
-writable tagged statics. [Focused proof](../results/session-duration-order-focused-02/summary.json).
+The next request runs longer prior tests first. Unknown names receive zero
+priority; ties retain original index order. Every current entry runs once, using
+its current function ID, fresh guest state, environment, and resource limits.
+Final reports retain original indices and canonical order. The scheduler retains
+no guest results, validation decisions, code, or guest state.
 
-Full qualification01 passed all679Rust tests/profile with17ignored, then stopped
-before diagnostic on disk admission. Its three completed commands were closed and
-retained. Qualification02 verified and reused them, bound the retained binaries
-to target bytes before any new build, and passed the four remaining commands:
-39diagnostic controls,10feature-off session controls,31ordinary models and default
-VM build. The combined proof includes442Python passes and22skips through exact
-source/log reuse;24new servers46clients plus24retained servers46clients.
-[Complete qualification](../results/session-duration-order-qualification-02/summary.json).
+Five policy controls and an actual native worker-pool control join four existing
+server controls. The live control dirties writable guest statics, exercises low
+instruction budgets, and checks fresh recovery and exact coverage after reordering.
+The first focused attempt had nine passes and one fixture failure: it tried to
+write immutable program data. The corrected fixture uses writable tagged statics.
+Both attempts are retained. The [corrected focused qualification](../results/session-duration-order-focused-02/summary.json)
+passes ten controls in each profile and four with the feature disabled.
 
-The actual parser replay passed1824invocations with19,597template hits independently
-regenerated and verified, including expected assertion failures, current limits,
-canonical outcomes and kernel CPU accounting. Diagnostic replay also passed1824
-invocations, with19,964observed hits. An independent saved-report audit reconstructed
-previous-duration priorities and verified each worker's increasing ranks and exact
-coverage for all16requests, including the intentionally failing edit.
+The [complete workspace qualification](../results/session-duration-order-qualification-02/summary.json)
+includes:
 
-The longest test moved from last to first in all ten valid edited reports. It was
-then the only test on its worker. In history-enabled diagnostic observations, its
-median preceding test work fell38.811ms to zero, but its own interval rose198.176ms
-to221.008ms; the full worker interval fell264.122ms to242.255ms. History-disabled
-worker intervals were327.549ms and282.120ms. These separate instrumented runs
-support a new end-to-end screen; they do not establish a command speedup. Worker
-assignment and cache warmth change with scheduling.
+- 679 Rust tests in each profile, with 17 ignored.
+- 39 diagnostic controls, 10 feature-off session controls, 31 ordinary-model
+  controls, and a default VM build.
+- 442 Python passes and 22 skips reused only after matching source and log hashes.
+- 48 owned session processes and 92 clients across the retained and new commands.
 
-The shared-key variant is disabled; literal parameterization, key-v1, current
-checks and the adopted compiler tools remain. Next install the qualified normal
-binaries and run changed-source primary06. No default change or speedup claim.
+The original controller stopped on disk admission after both full Rust profiles
+passed. Recovery verified their closed logs, fixture receipts, and retained
+binaries against the current target, then ran only the four remaining commands.
+No passed test command was repeated.
+
+The [real parser replay](../results/session-duration-order-parser-client-01/summary.json)
+passed 1,824 invocations and independently regenerated all 19,597 template hits.
+It checks expected assertion failures, current limits, canonical outcomes, and
+kernel CPU accounting. A separate diagnostic replay passed another 1,824
+invocations with 19,964 observed hits. The [independent ordering audit](../results/session-duration-order-evidence-01/summary.json)
+reconstructed previous-duration priorities and verified each worker's increasing
+ranks and exact coverage for all 16 requests, including the intentionally failing
+edit.
+
+The longest test moved from last to first in all ten valid edited diagnostic
+reports, becoming the only test on its worker. With history enabled, its median
+preceding work fell from 38.811 ms to zero, but its own interval rose from 198.176 ms
+to 221.008 ms. The complete worker interval fell from 264.122 ms to 242.255 ms.
+History-disabled worker intervals were 327.549 ms and 282.120 ms. These separate
+instrumented observations justify an end-to-end screen, not a speedup claim:
+worker assignment and cache warmth change with scheduling.
+
+The qualified normal binaries retain literal parameterization and key domain v1;
+shared key caching and instrumentation are disabled. Compiler, exporter, and
+wrapper binaries match the adopted baseline. The [40-command changed-source screen](../results/cross-program-template-parser-screen-incremental-06/summary.json)
+passed, including both strict rejection controls, all original outcomes, artifact
+identity, source restoration, and complete session accounting. Its median edited
+candidate/adopted wall ratio is 0.93117; adding the maximum A/A deviation of 0.03082
+gives 0.96199, below the required 1.0. CPU ratio is 0.91047 and its corresponding
+sum is 0.94133. Candidate/native wall ratio remains 1.27188. Thus this screen shows
+a 6.9% wall improvement against the adopted custom runtime while still trailing
+native Rust on this workload.
+
+The next gate is the unchanged three-cycle, 110-command full parser protocol in
+fresh namespaces. Default behavior remains unchanged; adoption requires that guard
+and the remaining project comparisons.
