@@ -79,14 +79,16 @@ fault/replay and private memory; call/branch/resource controls retained.
   independently CLOSED95676. Wall/adopted.9863968592+A/A.0197796103=1.0061764695;
   CPU/adopted.9649114604+A/A.0221465280=.9870579884. Regression gate PASS;
   no wall-gain claim beyond noise. Candidate/nativewall1.0105716567.
-- Full token cache retirement sourcebb657235 is ACTIVE:6128, started03:50:04.
-  Only nine exact closed full-token namespaces. Wait/close with bb657235 before
-  pgrust; no folded/later/peer/source/artifact cleanup.
+- Full token cache retirement sourcebb657235:6128/6131, independently CLOSED33463.
+  Nine exact completed token namespaces,13399files/3949807963logical bytes;
+  3759 protected hashes unchanged, about2.39GiB reclaimed. NEVER REPEAT.
+- Full pgrust01 sourced6ef6474 is ACTIVE:39230/39298, launched03:51:48.
+  Same public controller,176commands+2strict; freeze inputs/source through closure.
 
 ## Next actions
 
-Finish and independently close token cache retirement, then run pgrust under the
-qualified public protocol. A failure stops every later guard. The private/Nushell adapters and both parser guards
+Finish and independently close pgrust. A pass admits private rg-aot via the
+qualified large-project controller. A failure stops every later guard. The private/Nushell adapters and both parser guards
 remain required before integration. Their controllers are prepared in
 session-runtime-composition-large-guards and session-runtime-composition-parser-guards;
 parser and large protocols are independently closed; timing is
@@ -105,7 +107,7 @@ Shared .work/benchmark.lock,45s admission; two Cargo/test workers. Shared target
 .work/fixed-frame-clear-combined-build-01/target MUST NEVER be cleaned. Builds
 require max(14GiB,8GiB+2*current allocated target), re-evaluated before each child.
 Replay/analysis12GiB, closure/children8GiB; fre16GiB, parser24GiB plus namespace
-allowance, pgrust12GiB, Nushell>=47GiB. Last free~19.5GiB; recheck continuously.
+allowance, pgrust12GiB, Nushell>=47GiB. Last free~18.9GiB; recheck continuously.
 Cleaner read-only: /usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status.
 Never compete with it, repair it, signal peers or use broad cleanup.
 
@@ -120,16 +122,17 @@ suggestions.txt remains user-owned/untracked, SHA256
 4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f;
 reread this turn. Detailed dispositions docs/SUGGESTIONS-REVIEW-20260913-1245.md.
 
-Main publication44b2494e pushed the closed full fre comparison and primary cache
-retirement, preserving peer60fa9f5c. Experimental branch pushed through97de6f71. The six-namespace primary cache retirement is CLOSED60900 and must never repeat.
+Main publication282fdca1 includes qualified parser/large adapters; publication
+worktree now fast-forwarded to peerd1f27ff3 before pending folded/token-retirement
+proof publication. Experimental branch pushed through97de6f71. The six-namespace primary cache retirement is CLOSED60900 and must never repeat.
 Publish qualified evidence regularly.
 Publish exact proof/docs paths on main, fetch/ff first; do not copy experimental
 runtime or overwrite compiler work. Prior detail archived at
  docs/history/STATE-20260919-before-session-runtime-composition.md.
 
-New ACTIVE exact full-token retirement:
+New CLOSED exact full-token retirement:
 benchmarks/experiments/session-runtime-token-cache-retirement. Only nine completed
-full-token namespaces, no folded/later cache. Running after independently closed folded, under lock and fresh build/parser
-disk admission; do not duplicate it. Older
+full-token namespaces, no folded/later cache. Completed after independently closed folded; every protected hash is unchanged.
+Never repeat it. Older
 Nushell/custom/native/native-lines/check retirement receipts already exist; do
 not revisit those caches blindly or repeat them for a hoped-for larger result.

@@ -10,8 +10,10 @@ Candidate/native wall1.5416394568. Full176-command fre history also passed and
 is closed35515: wall/adopted.9414513615 + A/A.0268743944 = .9683257559;
 CPU margin.9629909017, nativewall1.5806520070. Exact closed-primary compiler-cache
 retirement is CLOSED60900. Parser14 controls and large/private23 controls are
-closed. Full folded history is ACTIVE91338/91341. Finish and independently
-close it before admitting pgrust. See STATE.md for paths.
+closed. Folded176-command regression guard passed and CLOSED95676 (wall change
+within A/A). Full-token cache retirement CLOSED33463 preserves3759hashes.
+Pgrust176-command history is ACTIVE39230/39298. Finish/close it before private
+rg-aot. All parser/Nushell gates remain required. See STATE.md for paths.
 
 Both parent experiments remain failed; no combined speedup is inferred. The new
 cache key binds indirect signature ordinals, and session options are explicitly
