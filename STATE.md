@@ -1,3 +1,12 @@
+LATEST: scalar-entry-empty-work01 CLOSED success, sourcee3abece0,
+supervisor9065/controller9103; independent closure exists and all hashesverified.
+2models/profile+4typedmetadata commands passed; no guest/nativepublication.
+Staticempty padding samples0/0/0/1; commonbudget upperbound2/6/11/6. DEFERboth
+runtime subsets. ES8hot245/70 caller align16 size120 ->callee10 align16: fresh
+padding8, priorcallhistoryunknown. Nextnewboundedtyped CFG/historyscope before
+anyruntimecandidate. Free16.7GiB; boundedtarget624631808bytes/max3GiB andfloor14;
+protectedtargetuntouched. No cleanupperformed. SavedgoalremainsPAUSED.
+
 LATEST: main ece5658a pushed currentprotocol test-onlypatch+closed evidence,
 preservingpeerac9117e9 andexistingjit.rs observerhooks. Rootnewbranch
 experiment/scalar-entry-empty-work-20260919. Newtyped scope/model ready, unrun:
