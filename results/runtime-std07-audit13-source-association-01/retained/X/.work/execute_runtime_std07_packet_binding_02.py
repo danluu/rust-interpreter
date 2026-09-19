@@ -1,0 +1,179 @@
+"""Once-only exact-environment transport for the reviewed std07 packet binder.
+
+No workload lock, provider probe, compiler, signal or retry. The sole child is
+the packet binder. The parent observes its own CF environment value rather than
+copying the historical std01 value or inventing a child observation.
+"""
+import argparse
+import copy
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import time
+
+ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+SELF = X/'.work/execute_runtime_std07_packet_binding_02.py'
+BUILDER = X/'.work/bind_runtime_std07_packet_02.py'
+BUILDER_SHA = '207387c61af5740a2daf5f48e1a5618d6174d73da366c41ffd81456853cd83a1'
+OUT = X/'.work/runtime-std07-packet-binding-execution-02'
+REPORT = X/'.work/runtime-std07-packet-binding-01.json'
+PYTHON = Path('/opt/homebrew/bin/python3')
+CF = '__CF_USER_TEXT_ENCODING'
+MAXIMUM = 4*2**20
+
+
+def require(value, message):
+    if not value:
+        raise RuntimeError(message)
+
+
+def encoded(value):
+    return (json.dumps(value, sort_keys=True, indent=2, allow_nan=False)+'\n').encode()
+
+
+def stamp(value):
+    return [value.st_dev,value.st_ino,value.st_mode,value.st_size,
+            value.st_mtime_ns,value.st_ctime_ns,value.st_nlink]
+
+
+def digest(value):
+    require(type(value) is str and re.fullmatch('[0-9a-f]{64}', value) is not None,
+            'actual transport digest remains unbound')
+    return value
+
+
+def raw(path, expected=None):
+    path = Path(path)
+    require(path.resolve(strict=True) == path and path.is_file() and not path.is_symlink(),
+            'ordinary canonical transport input required')
+    before = stamp(path.lstat())
+    require(before[3] <= MAXIMUM, 'transport input exceeds 4 MiB')
+    payload = path.read_bytes()
+    require(stamp(path.lstat()) == before and len(payload) == before[3], 'transport input changed')
+    row = dict(path=str(path),sha256=hashlib.sha256(payload).hexdigest(),bytes=len(payload),identity=before)
+    if expected is not None:
+        require(row['sha256'] == digest(expected), 'transport input SHA differs')
+    return payload, row
+
+
+def write(path, payload):
+    with Path(path).open('xb') as stream:
+        stream.write(payload);stream.flush();os.fsync(stream.fileno())
+    return raw(path, hashlib.sha256(payload).hexdigest())[1]
+
+
+def main():
+    parser = argparse.ArgumentParser(__doc__)
+    parser.add_argument('--request', type=Path, required=True)
+    parser.add_argument('--request-sha256', required=True)
+    args = parser.parse_args()
+    require(Path.cwd() == R and sys.dont_write_bytecode and sys.flags.optimize == 0,
+            'fixed owner and unoptimized Python -B required')
+    request_bytes, request_row = raw(args.request, args.request_sha256)
+    request = json.loads(request_bytes)
+    require(request['status'] == 'reviewed-std07-packet-binding'
+            and request['builder'] == dict(path=str(BUILDER),sha256=BUILDER_SHA)
+            and request['observed_environment'] is None and request['std_execution'] is False
+            and request['admission_authorized'] is False, 'reviewed binding request required')
+    require(request['transport']['path'] == str(SELF) and Path(__file__).resolve() == SELF,
+            'exact reviewed transport route required')
+    source_bytes, source_row = raw(SELF, request['transport']['sha256'])
+    builder_bytes, builder_row = raw(BUILDER, BUILDER_SHA)
+    for name in ['installation_audit','installation_audit_execution','runtime_readiness',
+                 'runtime_admission','runtime_qualification']:
+        digest(request[name]['sha256'])
+    digest(request['runtime_key'])
+    require(request['passed_environment'][CF] is None and 'environment_source' not in request,
+            'request must leave the actual CF observation unbound')
+    value = os.environ.get(CF)
+    require(type(value) is str and re.fullmatch('0x[0-9A-Fa-f]+:0x[0-9A-Fa-f]+:0x[0-9A-Fa-f]+', value),
+            'current transport environment has no supported observed CF value')
+    observation = dict(kind='observed-transport-environment',pid=os.getpid(),parent_pid=os.getppid(),
+                       name=CF,value=value,observed_at=time.time())
+    invocation = copy.deepcopy(request)
+    invocation['passed_environment'][CF] = value
+    invocation['environment_source'] = observation
+    require(all(type(k) is str and type(v) is str for k,v in invocation['passed_environment'].items()),
+            'complete explicit passed environment required')
+    require(not os.path.lexists(OUT) and not os.path.lexists(REPORT), 'fresh binding execution required')
+    OUT.mkdir(mode=0o700)
+    retained_request = write(OUT/'request.json', request_bytes)
+    retained_source = write(OUT/'transport.py', source_bytes)
+    retained_builder = write(OUT/'builder.py', builder_bytes)
+    invocation_row = write(OUT/'invocation.json', encoded(invocation))
+    command = [str(PYTHON),'-B',str(BUILDER),'--invocation',str(OUT/'invocation.json'),
+               '--invocation-sha256',invocation_row['sha256']]
+    record = dict(status='starting',parent_pid=os.getpid(),parent_parent_pid=os.getppid(),
+        parent_command=list(sys.argv),started_at=time.time(),command=command,cwd=str(R),
+        request=request_row,retained_request=retained_request,transport=source_row,
+        retained_transport=retained_source,builder=builder_row,retained_builder=retained_builder,
+        invocation=invocation_row,environment_source=observation,
+        passed_environment=invocation['passed_environment'],maximum_wait_seconds=120,
+        may_be_live=False,compiler_calls=0,inspector_calls=0,signals=0,retries=0,std_execution=False)
+    def save():
+        temporary = OUT/'record.tmp'
+        require(not os.path.lexists(temporary), 'unretired transport record temporary')
+        write(temporary, encoded(record));os.replace(temporary, OUT/'record.json')
+    save()
+    child = None
+    try:
+        with (OUT/'stdout').open('xb') as stdout, (OUT/'stderr').open('xb') as stderr:
+            child = subprocess.Popen(command,cwd=R,env=invocation['passed_environment'],
+                                     stdin=subprocess.DEVNULL,stdout=stdout,stderr=stderr)
+            deadline = time.monotonic()+120
+            record.update(status='running',child_pid=child.pid,child_parent_pid=os.getpid(),
+                          child_started_at=time.time(),may_be_live=True)
+            try:
+                save()
+            finally:
+                try:
+                    child.wait(timeout=max(.001, deadline-time.monotonic()))
+                finally:
+                    record.update(returncode=child.returncode,observation_finished_at=time.time(),
+                                  may_be_live=child.returncode is None)
+                    if child.returncode is not None:
+                        record['child_closed_at'] = time.time()
+        require(child.returncode == 0, 'binder failed or remains unclosed; no retry or std launch')
+        stdout_bytes, stdout_row = raw(OUT/'stdout')
+        stderr_bytes, stderr_row = raw(OUT/'stderr')
+        require(stderr_bytes == b'', 'successful binder emitted stderr')
+        output = json.loads(stdout_bytes)
+        require(output['status'] == 'bound-unexecuted-std07-packet'
+                and output['report']['path'] == str(REPORT), 'binding stdout association differs')
+        result_bytes, result_row = raw(REPORT, output['report']['sha256'])
+        result = json.loads(result_bytes)
+        require(result['status'] == output['status'] and result['pid'] == child.pid
+                and result['parent_pid'] == os.getpid() and result['std_execution'] is False
+                and result['invocation'] == dict(path=str(OUT/'invocation.json'),sha256=invocation_row['sha256'])
+                and result['passed_environment'] == invocation['passed_environment']
+                and result['observed_before'] == result['observed_after_imports']
+                    == result['observed_after_publication'] == invocation['passed_environment'],
+                'actual binder observation or process association differs')
+        for path, expected in [(SELF,source_row),(BUILDER,builder_row),(args.request,request_row)]:
+            require(raw(path, expected['sha256'])[1] == expected, 'transport source/request changed')
+        require(os.environ.get(CF) == value, 'transport CF observation changed')
+        record.update(status='finished',finished_at=time.time(),result=result_row,
+                      stdout=stdout_row,stderr=stderr_row,observed_child_environment=result['observed_before'])
+        save()
+        print(json.dumps(dict(status='finished',returncode=0,record=raw(OUT/'record.json')[1],
+                              report=result_row),sort_keys=True))
+    except BaseException as error:
+        record.update(status='failed' if child is None or child.returncode is not None else 'unclosed-task-not-signaled',
+            error=repr(error),finished_at=time.time(),may_be_live=child is not None and child.returncode is None)
+        for name in ['stdout','stderr']:
+            if (OUT/name).exists():
+                try:
+                    record[name] = raw(OUT/name)[1]
+                except BaseException as observation_error:
+                    record[name+'_observation_error'] = repr(observation_error)
+        save();raise
+
+
+if __name__ == '__main__':
+    main()
