@@ -15,8 +15,12 @@ The consumer-only upper-store proof is closed and deferred (33/13samples).
 The broader logical-width census covers126/1,933 and119/1,429 generated samples,
 with conservative6.54M/8.51M interpreter read repairs. Its7commands,7Rustcontrols
 per profile and6trafficcontrols pass; both current profiles and retained captures
-reconcile exactly. Prototype implicit-zero high words with a complete native
-and interpreter read contract. Preserve stale-storage safety, initial-zero
+reconcile exactly. The implicit-zero prototype now passes9focused controls/profile and628full
+Rusttests/profile (15ignored),427Pythonpasses/22skips. Tool3e53b127 /VM8e369c0f
+is installed experimentally. Close the existing build evidence after peer-lock
+admission, then run121strict/cache commands and3current-host exact profiles.
+Only then admit the unchanged40-command primary. Do not rerun the completed
+build merely because its evidence closure waits. Preserve stale-storage safety, initial-zero
 semantics, all budgets/faults and strict checking. Main remains unchanged.
 [Contract](docs/IMPLICIT-ZERO-REGISTER-DESIGN-20260918.md),
 [census](results/narrow-register-storage-census-01/ASSESSMENT.md).

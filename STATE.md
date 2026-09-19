@@ -66,9 +66,16 @@ value into actual backing before frame reuse.03 passes9/profile, including
 poisoned slots/large offsets, host ABI, TLS and indirect handles, all budget
 prefixes, exact profiles and re-emission after metadata exhaustion. Closed
 source5d4b1c5c, supervisor63791/child63794. No timing result or adoption exists.
-Next `benchmarks/experiments/implicit-zero-storage/build.py` requires628tests per
-profile,15ignored,427Pythonpasses/22skips and isolated VM installation. Strict
-121-command workflows and3exact current-host profiles follow before the primary.
+The full build now passes628Rusttests/profile,15ignored and427Pythonpasses/22skips.
+Source d7de70da, supervisor91817/child91860,4commands,111.4seconds of setup.
+Isolated tool3e53b127220f71115eec7b18e2ed452577471ab48cfd5d4c669c0ae3a295f32a,
+VM8e369c0f3a6f6fd0b793372d27c26f4848db8536f4cb8bfcf8672b0d0a12ca72,
+unchanged exporter/wrapper. The first evidence-closing command timed out45s
+waiting for peer compiler-build PID92782; all build commands remain successful.
+Retry only the closer after fresh admission; do not repeat tests/build. Then
+strict121-command workflows and3exact current-host profiles before the primary. Controllers are in
+`benchmarks/experiments/implicit-zero-storage-workflows` and
+`benchmarks/experiments/implicit-zero-storage-screen`.
 [Contract](docs/IMPLICIT-ZERO-REGISTER-DESIGN-20260918.md),
 [focused](results/implicit-zero-storage-focused-03/ASSESSMENT.md).
 
