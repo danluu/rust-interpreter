@@ -1,0 +1,154 @@
+{
+  "assertions": {
+    "all_stages": {
+      "allow_compiler_version_override": false,
+      "full_raw_stdout_stderr": true,
+      "note": "Process success alone does not establish test coverage or artifact provenance.",
+      "returncode": 0,
+      "source_provider_guards_before_after": true
+    },
+    "build_compiler_std": {
+      "compiler_commit_environment": {
+        "CFG_VER_DATE": "2026-09-18",
+        "CFG_VER_HASH": "4de35bdacef0e3cd18a66bc30b5459c19e09b118"
+      },
+      "required_outputs": [
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/bin/rustc",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1/lib/rustlib/aarch64-apple-darwin/lib"
+      ],
+      "requirements": [
+        "bind actual stage1 rustc/native-driver/LLVM loader closure",
+        "bind actual std rlib/rmeta inventory and matching candidate source role",
+        "verify new extracted seed binaries against admitted archive members",
+        "no source-LLVM build, network fallback, old stage reuse or downloaded rustc"
+      ]
+    },
+    "build_run_make_support": {
+      "bootstrap_subcommand": "build",
+      "requirements": [
+        "record actual new support rlib/rmeta and Cargo build-script out directories",
+        "bind their byte hashes and native dependencies before direct recipe compilation",
+        "do not execute capture-limited compiletest run-make first"
+      ],
+      "selected_package": "run_make_support"
+    },
+    "check_lowering": {
+      "bootstrap_subcommand": "check",
+      "cargo_evidence": "Actual emitted check command must select rustc_ast_lowering; preserve verbose bootstrap output and admitted stage0 compiler/provider identities.",
+      "note": "Bootstrap marker is corroborating evidence, not a replacement for actual expanded Cargo command/artifact records.",
+      "output_marker": "compiler artifacts",
+      "selected_package": "rustc_ast_lowering"
+    },
+    "rustc_sysroot": {
+      "stderr": "",
+      "stdout": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1\n"
+    },
+    "rustc_unstable_help": {
+      "note": "Match names as individual option tokens; preserve full output.",
+      "required_option_names": [
+        "hir-body-cache-capture",
+        "hir-body-cache-reuse",
+        "incremental-info"
+      ],
+      "stderr": ""
+    },
+    "rustc_version": {
+      "llvm_version": "Must match admitted CI LLVM provider version; derive from its separately qualified metadata, not a guessed stage0 LLVM version.",
+      "required_lines": [
+        "binary: rustc",
+        "commit-hash: 4de35bdacef0e3cd18a66bc30b5459c19e09b118",
+        "commit-date: 2026-09-18",
+        "host: aarch64-apple-darwin",
+        "release: 1.100.0-dev"
+      ],
+      "stderr": ""
+    },
+    "test_interface": {
+      "each_name_exactly_once_with_status": "ok",
+      "exact_names_from": "interface.names",
+      "exact_success_summary_regex": "^test result: ok\\. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [^\\n]+$",
+      "note": "Includes test_codegen_options_tracking_hash, test_top_level_options_tracked_no_crate and test_unstable_options_tracking_hash. Does not replace the later concrete cached-hash serial/parallel driver."
+    },
+    "test_lowering": {
+      "each_name_exactly_once_with_status": "ok",
+      "exact_names_from": "lowering.names",
+      "exact_success_summary_regex": "^test result: ok\\. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [^\\n]+$",
+      "note": "Allow distinct zero-doctest summaries; require actual named 27-unit-test execution without filtering or ignored cases."
+    }
+  },
+  "interface": {
+    "count": 18,
+    "names": [
+      "tests::test_assumptions_on_binders_enables_next_solver_globally",
+      "tests::test_can_print_warnings",
+      "tests::test_codegen_options_tracking_hash",
+      "tests::test_edition_parsing",
+      "tests::test_externs_tracking_hash_different_construction_order",
+      "tests::test_lint_cap_hash_different",
+      "tests::test_lints_tracking_hash_different_construction_order",
+      "tests::test_lints_tracking_hash_different_values",
+      "tests::test_native_libs_tracking_hash_different_order",
+      "tests::test_native_libs_tracking_hash_different_values",
+      "tests::test_output_types_tracking_hash_different_construction_order",
+      "tests::test_output_types_tracking_hash_different_paths",
+      "tests::test_remap_cwd_prefix_not_in_remap_path_prefix",
+      "tests::test_search_paths_tracking_hash_different_order",
+      "tests::test_switch_implies_cfg_test",
+      "tests::test_switch_implies_cfg_test_unless_cfg_test",
+      "tests::test_top_level_options_tracked_no_crate",
+      "tests::test_unstable_options_tracking_hash"
+    ]
+  },
+  "lowering": {
+    "count": 27,
+    "names": [
+      "body_cache::effects::replay_tests::preflight_binding_and_debug_reservations_never_overwrite",
+      "body_cache::effects::replay_tests::preflight_rejects_occupied_body_slots_and_preserves_exclusive_end",
+      "body_cache::effects::replay_tests::replay_trait_equality_retains_imports_lints_order_and_duplicates",
+      "body_cache::entry::tests::allowed_array_order_duplicates_and_field_association_bind",
+      "body_cache::entry::tests::base_input_and_entry_presence_are_part_of_final_key",
+      "body_cache::entry::tests::feature_order_normalizes_but_category_duplicates_and_version_bind",
+      "body_cache::entry::tests::feature_union_mismatch_and_invalid_budget_reject",
+      "body_cache::journal::tests::honors_actual_item_local_id_sentinel_and_exclusive_end",
+      "body_cache::journal::tests::rejects_forward_bind_duplicate_ast_and_counter_gaps",
+      "body_cache::journal::tests::rejects_prefix_aliases_body_prefixes_and_overflow",
+      "body_cache::journal::tests::validates_s_relative_relocation_and_trait_presence",
+      "body_cache::prepared::cold::tests::cold_arena_literal_roundtrip_preserves_bytes_suffixes_and_independent_spans",
+      "body_cache::prepared::cold::tests::cold_identity_requires_exact_exit_counter_context_owner_and_source",
+      "body_cache::prepared::tests::checked_tree_is_revalidated_against_exact_current_without_unchecked_token",
+      "body_cache::prepared::tests::preparation_uses_current_ids_and_absolute_checked_utf8_coordinates",
+      "body_cache::prepared::tests::typed_operators_suffixes_and_integer_boundaries_are_fallible",
+      "body_cache::prepared::tests::unused_prefix_bindings_still_require_exact_current_owner_and_resolution",
+      "body_cache::storage::tests::corrupt_truncated_wrong_key_and_hardlinked_old_inode",
+      "body_cache::storage::tests::valid_checksum_does_not_bypass_tree_preflight",
+      "body_cache::tests::candidate_identity_uses_worker_arena_and_rejects_wrapper_or_foreign_arena",
+      "body_cache::validate::tests::complete_tree_ids_and_exclusive_root_are_required",
+      "body_cache::validate::tests::journal_order_cannot_be_changed_while_preserving_tree_ids",
+      "body_cache::validate::tests::ordinary_assignment_uses_lhs_then_rhs_lowering_order",
+      "body_cache::validate::tests::references_are_current_binding_and_resolution_specific",
+      "body_cache::validate::tests::spans_reject_split_utf8_reversal_and_outside_owner",
+      "body_cache::validate::tests::typed_literal_domain_is_bounded_without_rounding",
+      "body_cache::wire::tests::assign_op_preserves_actual_pinned_hir_enum_spelling"
+    ]
+  },
+  "source_files": {
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/bootstrap.toml": "71b495da8fc35ca1321322f56065eb149ecd82fa3c8ff7ef4d4c10ec53f0df9b",
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_ast_lowering/src/body_cache/effects.rs": "5745b837ed3861bc360c6903ee66fd2ad1ce28407a221609b14e1bd2ad525709",
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_ast_lowering/src/body_cache/entry.rs": "044b0d1cb99bec19f1ef5b6bd5989a61558cbb74482ad2b325474851e5fb903c",
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_ast_lowering/src/body_cache/journal.rs": "7231aabe3a9a17cc6fd3ff7bb14ded5206288db984780f9bd5a55d6d4eef4d4b",
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_ast_lowering/src/body_cache/mod.rs": "cb91d3a723616866b5eebe650f28c6c7c894735f26decf7eeef37727d15b1481",
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_ast_lowering/src/body_cache/prepared.rs": "df365674549ac89eb2ecb6bcbbc9d5f661fdde8ee38f2bf8baf7f960712532b6",
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_ast_lowering/src/body_cache/prepared_audit.rs": "2c47a3352538aaff1322b5ad2086c1e967e291305c399a80a9969ff36c64cefc",
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_ast_lowering/src/body_cache/storage.rs": "f44b8287b58475f49ca6ae213784b9f5088e972157b9822c71046d7da5935869",
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_ast_lowering/src/body_cache/validate.rs": "8cd46f7282ddbef937c7868c785a5b2c8e0263fedc5043a3390ff52b30396494",
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_ast_lowering/src/body_cache/wire.rs": "424124fe9d46113ffab484d9cae7dfe05c9d2c08e4f82c8bf9b87c4695ebe48e",
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_driver_impl/src/lib.rs": "688c7923bee09361438366cf092aefa1d4b89d7971b83efcc966dd67de17fdb5",
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_interface/src/tests.rs": "e43ebcb780d66e83338d54e3b30840325f37b34070f1245766e8417068aa4339",
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_session/src/options.rs": "da6236b27edc0fe1edc7dddbf3b0a3bff8fa41df091332c87787819f716cb9d8",
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/bootstrap/src/core/build_steps/check.rs": "f1b2c7ccf91eb39804f679175aac3e2932cdd89ba5469028990e7c140742090b",
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/bootstrap/src/core/build_steps/compile.rs": "3ac8cc96ce9ad5c432dc1d55d24cacf282406ff522148febec69abca25599c7e",
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/bootstrap/src/core/build_steps/test.rs": "62b7aadb658b2ec7a54fdd410bd946d55cf6f1d343f33bf86bf9c37d2b5de9a9",
+    "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/src/version": "61f1ffeb35f086978057973777bef224c93f437fb057f879ed98e91b53f36d8f"
+  },
+  "source_revision": "4de35bdacef0e3cd18a66bc30b5459c19e09b118"
+}
