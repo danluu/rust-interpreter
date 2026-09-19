@@ -18,36 +18,68 @@ passes. VerdictFAILED; observed1%wallchangeisinsidevariation, no causalregressio
 claim. Bothparserprofiles andNushell CANCELLED/UNSTARTED. No unchangedretiming,
 relaxedgate orruntimeadoption. Main runtime remains adopteddf4006e0.
 
-NEXT: isolate only compact-switch emitter on adopted runtimefca687ebac0ea9374a1426addd01169fe707f608.
-That emitter alreadyhas complete128-bit/duplicate/budget/fallbackcontrols, but
-its fullbenchmarksofarmeasureacomposition. Newindependentordinary-VMcandidate
-willtestemitteralone withfreshqualification andsameE2Egates. Inspectactual
-sourcebeforeediting; keepcurrentPython/compilerworkandothermainchanges. Only
-crates/bytecode differs inRustsourcesbetweenfcaandcurrentruntime. Do NOT reset
-main/publicationworktree ordiscardpeerchanges; eventualintegrationmustpreservethem.
-The installedadoptedVM/compileridentitiesbelowremainfixedcomparisoncontrols.
-No newcandidateimplementation/branch/build yet; recoveradmissionheadroomfirst.
+## Active isolated candidate
 
-## Active resource work
+The isolated emitter is implemented in3cf176ed on branch
+experiment/compact-switch-adopted-20260919. Against adopted Rust source
+fca687ebac0ea9374a1426addd01169fe707f608, exactly three files differ: jit.rs,
+jit/compact_switch.rs and jit/compact_switch_tests.rs. All other Rust sources
+match adopted. Current Python/compiler work remains intact. Main has additional
+peer compiler/diagnostic changes; preserve those at eventual integration.
+The older composed runtime remains in its original branch and installed tools;
+do not run its controllers against these changed current Rust sources.
 
-Primarycache retirement closed95656, source0654b553, run
-closed-compact-native-switch-primary-cache-retirement-01:3191nonexecutables,
-2047542520logicalbytes;all2792protectedhashesunchanged. Actualfree14,692,028,416
-->16,401,956,864bytes (~1.59GiB). NEVER REPEAT. Result18f406c2.
+Focused compact-switch-adopted-focused-01, source50b20c54, supervisor13772,
+passed7 tests per profile; setup20.22s. Independently CLOSED28426. Tests cover
+full128-bit zero/small/general/empty cases, duplicates, backward edges, every
+budget, profile/interpreter agreement, capacity fallback and native encodings.
 
-ACTIVE closed-compact-switch-token-cache-retirement-01,supervisor96543,
-started2026-09-19 06:02:57local. Controller
-benchmarks/experiments/compact-switch-full-fre-cache-retirement/retire.py token,
-sourceee489373. It binds closedfulltoken176+2strict and9exactnamespaces. Read
-terminalbeforeclosure. Onsuccess, supervisornewname ...-close executes
-close.py token ee489373 fromsamefolder. Thenifstillbelowbuild/parserheadroom,
-run same retire.py folded under closed-compact-switch-folded-cache-retirement-01,
-then close.py folded ee489373. Each atmostonce. No guest/timingreplays.
-Fullfrecontroller isderivedfromclosedoldfoldedretirer withcase/testcount,
-namespace/endpoints/currentcandidatebindingsonly;diffreviewedandPythonparsed.
-Alloutcomes/proofs/ownership/openfiles/invocationlocks/inodeidentity/protected
-hashesareverifiedbeforeunlink. No private/sharedtarget/executable/source/evidence
-removal. Moreheadroommaystillbeneeded;inventoryonlyexactclosedownedcachesnext.
+ACTIVE compact-switch-adopted-workspace-01, sourcecae542ff,
+supervisor51392/controller51396, started2026-09-19 06:11:54 local. Python468
+found/446passed/22skip; debug615passed/13ignored. Release in progress at last
+check. Read terminal, then independently run same qualify.py --close under
+compact-switch-adopted-workspace-01-close. Folder
+benchmarks/experiments/compact-switch-adopted-workspace. Freeze inputs through
+closure. Four commands total: Python, debug, release, normal release VM build.
+Expected615Rust/profile13ignored. Retain .work/compact-switch-adopted-workspace-01/rust-interp-vm.
+
+Next prepare real-workload semantic/profile qualification for this ordinary VM:
+replay the three original public tests against retained adopted exact per-PC,
+memory and entropy evidence in scratch-memory-values-profile-01, using its
+qualified native_observation validator and current-runtime-boundaries-02 tapes.
+No old guest/profile rerun; only the new VM executes. The existing pinned frontend
+can reuse its closed121 strict/cache controls because exporter/wrapper are byte
+identical; actual unreachable type/borrow controls must also precede the new
+40-command changed-source primary. Installation and primary controllers are NOT
+prepared yet. Preserve ordinary native/adopted/A-A/anchor arms and all gates.
+
+## Resource work completed this turn (NEVER repeat)
+
+- Primary CLOSED95656, source0654b553, runclosed-compact-native-switch-primary-
+  cache-retirement-01:3191nonexecutables/2047542520logicalbytes,2792protected;
+  actualfree14692028416->16401956864 (~1.59GiB).
+- Token CLOSED14454, sourceee489373, closed-compact-switch-token-cache-retirement-01:
+  13399files/3949807964logicalbytes,3757protected;free16392863744->18961141760
+  (~2.39GiB). Controllercompact-switch-full-fre-cache-retirement.
+- Folded CLOSED29254, same source/controller, closed-compact-switch-folded-cache-retirement-01:
+  13399files/3528406787logicalbytes,3748protected;free19010670592->21167337472
+  (~2.01GiB). Both full-fre options are DONE.
+- Parent parser CLOSED42531, source53b6c580, closed-session-runtime-parser-cache-retirement-01:
+  16734files/3112062431logicalbytes,11721protected;free21154033664->23937933312
+  (~2.59GiB). This is the previously parked3ebea1cd parent parser, not digestparser.
+- Fresh read-only inventory closed66212, sourcebcf0639a:
+  closed-compact-switch-evidence-inventory-01,109eligiblefiles. Its inode
+  identities are now HISTORICAL after the following compression; do not replay.
+- New73 publicRBC copies compressed, source37a2fff2, supervisor69836,
+  CLOSED93735: closed-compact-switch-evidence-compression-01. Allocatedbytes
+  1725566976->485982208 (~1.15GiB), allplaintext/read/mmap hashes, paths, required
+  metadata and exactnativecreationtimes preserved. Uses alreadyqualified
+  recovery02 O_RDONLY helper. No failed prefix this time. NEVER rerun.
+
+Total observed space recovered about9.73GiB. Free23.36GiB at latest build check;
+buildfloor~23.02GiB (target~7.51GiB). Recompute before each build, no sharedtarget
+cleaning. Current successful focus replaced older same-profile outputs with
+similar allocation. No cleanup command remains active.
 
 ## New compact composition evidence (all independently CLOSED)
 
@@ -116,12 +148,12 @@ preserved,7.31GiBallocatedsaved,CLOSED52338. Originalfailed132prefix,recovery01,
 recovery02and241continuationproofsretained. NEVER rerunoldinodeinventories or
 mutations. Oldparentprimary/token/foldedandoldfailedparsercompilerretirements
 CLOSED60900/33463/30514/96652;olderNushellcachesalreadyretired. Currentparent
-session-runtime-composition-parser-incremental-01cachesstillretained.
+session-runtime-composition-parser-incremental-01compiler caches now retired as above.
 Historydocs/history/STATE-20260919-before-switch-isolation.md hasexactolderdetails.
 
 Main51967bb2 publishesallfourfullhistories/failedgate, preservingpeerf040a175.
-Rootbranch experiment/composed-native-costs-20260919;current18f406c2,lastpushedce5fb653.
-No activebenchmark;onlytokenretirementabove. Privateevidencestayslocal.
+Rootbranch experiment/compact-switch-adopted-20260919;cae542ff pushed.
+Only active command is the isolated workspace qualification above. Private evidence stays local.
 Cleanerreadonly:/usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status;
 PID29541; no competingcleanup/guard/processcontrol. Recheckdisk/memory/lock.
 suggestions.txtunmodified/untrackedSHA
