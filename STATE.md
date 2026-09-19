@@ -160,3 +160,9 @@ Fullparser guard e4e3809a ACTIVE supervisor39944/controller39947:
 Freeze crates/scripts/tests andcross-program-template-full-parser+screen source
 until independentclosure. Nootherexperimentactive. Main22048b98 pushed allclosed
 proof/protocol/cleanup, noadoption. Resources~21.5GiB free,8GiBperchildfloor.
+
+Fullparser e4e3809a completed39944/39947 CLOSED2513/2522,110sourcecommands+2strict
+allcorrect/restored. UNMEASURABLE: wall.9437843138+.1156560910=1.0594404049;
+CPU.9129773888+.0722446023=.9852219911. Noretry/adoption/laterprojecttiming.
+Newbranch analysis/session-full-costs-20260919; next read-only60reportcostobserver.
+Noactiveexperiment. Main22048b98 pushed, rootprevious254e94aa statecommitlocal.

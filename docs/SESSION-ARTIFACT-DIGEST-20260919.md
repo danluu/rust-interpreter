@@ -58,3 +58,16 @@ these same binaries,15edited pairs and unchanged acceptance gates. Later project
 guards remain required. The screen does not establish general runtime adoption. The8.6ms prior catalog phase is a
 motivation, not a claimed command speedup. No experimental runtime is adopted;
 the earlier unmeasurable and failed comparisons remain unchanged.
+
+The full three-cycle guard e4e3809a completed39944/39947 and closed2513/2522.
+All110source commands and two strict controls pass correctness, exact artifacts,
+114original outcomes and restoration. Its original timing gate is **unmeasurable**:
+wallratio0.943784314 + maximumA/A0.115656091 =1.059440405. CPUratio0.912977389
++A/A0.072244602 =0.985221991. The nominal5.62% wall improvement is smaller than
+observed11.57% baseline variation; it does not establish the required gain.
+Candidate/native wall is1.299355; candidate/history-off wall0.981458. Keep these
+separate, without causal subtraction. [Full result](../results/cross-program-template-parser-full-incremental-01/summary.json).
+
+No unchanged retry, adoption or later project timing follows. The primary pass
+remains true within its original scope. Next inspect the retained full-command
+stage costs, then choose a materially different runtime change with evidence.
