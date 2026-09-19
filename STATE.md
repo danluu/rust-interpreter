@@ -187,3 +187,18 @@ recording; no guestsstarted. Resolvedto CLOSEDcomposed-native-sampler-protocol01
 11attribution/twoCLIrejection/14retainedmapcontrols matchingcurrentsources.
 No runtime/flagchange: nativeindirect remainsfalse. Newrun.py --close independently
 recomputesprofilelogical/codemapderivations thenallhashes/terminal.
+
+
+## 2026-09-19 ES8 execution diagnostics CLOSED
+
+adopted-es8-diagnostics01 source96d9da57 supervisor94157/controller94160 finished0.
+Fourguests/sixcommands(twooriginalprofiles/twoordinarysamples/twosummaries);
+independentrun.py --close rederivedallcounts/maps, passed0. Generated797/609,
+Call202/207, Return56/55, Copy149/115, Load96/50, flush66/43, budget46/17.
+OriginalPC totals10.632850523B/8.750545115B; interpreted962375/49229;zero declines.
+Currenthotfunction245Range::spec_next calls10unchecked-addprecondition checker:
+32/64transitionsamples; scalarbody124bytes. Callsmap_fold216/222->extend_trusted
+265/27140/55samples; fold195/198->map_fold29/43. Do notremoveoriginalchecks.
+Nextpartitionexistingunprofiledcalls resource/args/dispatch/commit beforechoose
+newgenericmechanism; existingcapacitycreditandwholecallinline parkedverdicts
+notreinterpreted. No newtoolbuild. ProfileJSONnameshuge:truncateprintednames.

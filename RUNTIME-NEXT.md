@@ -53,3 +53,18 @@ absolute run.py; freezeallinputs untilterminal+run.py --close. 4guestexecs,
 controllers retainoutputs beforevalidation. ReusesLATEST composed-native-sampler-
 protocol01 proof forcurrent sampler/summarizer(11controls); oldvmmapproofalone
 predatedindirectoptionreceipt. No extra runtimefeatureenabled.
+
+LATEST: ES8diagnostics01 CLOSED;6commands4guestsallpassed, source96d9da57,
+supervisor94157/controller94160. run.py --close completed0 independently.
+results/adopted-es8-sample-{0,1}-01 operation-attribution.json; rawcapture
+.work/adopted-es8-sample-{0,1}-01/0/jit-code/{code.bin,map.json,operations.json}.
+Profiles .work/adopted-es8-diagnostics-01/{0,1}-profile.json. 797/609generated
+samples allassigned. Call202/207+Return56/55; hottestcallee10 from245precondition
+32/64samples; scalarbody124bytes. Anotherlargeordinarycall216/222->265/271
+40/55samples. Allcodeunchanged. Nextpublishcloseddiagnostics+twosamplereports to
+mainexplicitpaths, then readonlyfinerCallpartitionfromretainedPCs tochoose
+newgenericboundarymechanism. No unchangedretime ofparkedcapacitycredit or
+wholecallinline. Thoseearlierexperimentsalreadyfailedgates; scalar-resource
+hoistingwouldneednewproof/scope andlargeendtoendgate. Reuseexistingworddecoder
+butno broad claimsfromunknowninstructions. Current sharedtoolbuildfloorstill
+26.63GB;free~21.8GiB. Noactiveownedcommands.
