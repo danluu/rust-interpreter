@@ -1,0 +1,41 @@
+Traceback (most recent call last):
+  File "/Users/danluu/dev/rust-interp/benchmarks/experiments/shared-cold-tails/focus.py", line 76, in <module>
+    if __name__=='__main__': main()
+                             ~~~~^^
+  File "/Users/danluu/dev/rust-interp/benchmarks/experiments/shared-cold-tails/focus.py", line 64, in main
+    assert child.returncode==0,(out+err)[-5000:]
+           ^^^^^^^^^^^^^^^^^^^
+AssertionError: 
+running 4 tests
+test jit::shared_fault_tails::native_tests::shared_fault_maps_reconstruct_real_backward_tail_branches ... FAILED
+test jit::shared_fault_tails::tests::bounded_or_unreachable_tail_keys_keep_original_words ... ok
+test jit::shared_fault_tails::tests::identical_terminal_tails_share_only_inside_their_function ... ok
+test jit::shared_fault_tails::native_tests::shared_fault_native_status_assertions_and_all_budget_prefixes_match ... FAILED
+
+failures:
+
+---- jit::shared_fault_tails::native_tests::shared_fault_maps_reconstruct_real_backward_tail_branches stdout ----
+
+thread 'jit::shared_fault_tails::native_tests::shared_fault_maps_reconstruct_real_backward_tail_branches' (9295775) panicked at crates/bytecode/src/jit/shared_fault_tails_tests.rs:92:9:
+assertion failed: shared >= 3
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- jit::shared_fault_tails::native_tests::shared_fault_native_status_assertions_and_all_budget_prefixes_match stdout ----
+
+thread 'jit::shared_fault_tails::native_tests::shared_fault_native_status_assertions_and_all_budget_prefixes_match' (9295776) panicked at crates/bytecode/src/jit/shared_fault_tails_tests.rs:55:42:
+assertion `left == right` failed
+  left: "invalid guest memory access"
+ right: "JIT guest memory access failed"
+
+
+failures:
+    jit::shared_fault_tails::native_tests::shared_fault_maps_reconstruct_real_backward_tail_branches
+    jit::shared_fault_tails::native_tests::shared_fault_native_status_assertions_and_all_budget_prefixes_match
+
+test result: FAILED. 2 passed; 2 failed; 0 ignored; 0 measured; 359 filtered out; finished in 0.07s
+
+   Compiling rust-interp-bytecode v0.1.0 (/Users/danluu/dev/rust-interp/crates/bytecode)
+    Finished `test` profile [unoptimized] target(s) in 4.00s
+     Running unittests src/lib.rs (.work/fixed-frame-clear-combined-build-01/target/debug/build/rust-interp-bytecode/ea04abcc1b8ae843/out/rust_interp_bytecode-ea04abcc1b8ae843)
+error: test failed, to rerun pass `-p rust-interp-bytecode --lib`
+

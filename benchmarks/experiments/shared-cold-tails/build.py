@@ -33,8 +33,8 @@ def main():
         retained,key=installed_tools(BASELINE);assert key==BASELINE
         assert all(sha(retained/n)==h for n,h in integration['binaries'].items())
         paths=[integration_path]+[retained/n for n in [*integration['binaries'],'ready.json','source.json','capabilities.json']]
-        for stage in ['focused','reconstruction']:
-            folder=ROOT/'results'/f'shared-cold-tail-{stage}-01'
+        for stage,number in [('focused','02'),('reconstruction','01')]:
+            folder=ROOT/'results'/f'shared-cold-tail-{stage}-{number}'
             closed,summary=read(folder/'closure.json'),read(folder/'summary.json')
             assert closed['status']=='closed' and closed['all_hashes_verified']
             assert summary['status']=='passed' and sha(folder/'summary.json')==closed['summary_sha256']
@@ -51,7 +51,7 @@ def main():
         write(raw/'plan.json',dict(owner=str(ROOT),source_revision=revision,frozen=frozen,
             controller_command=[sys.executable,*sys.argv],target=str(target.relative_to(ROOT)),
             allocated_target_bytes=allocated,required_free_bytes=needed,minimum_child_gib=8,
-            expected_commands=4,expected_workspace_tests_per_profile=614,expected_ignored_per_profile=14,
+            expected_commands=4,expected_workspace_tests_per_profile=615,expected_ignored_per_profile=14,
             baseline_tool_key=BASELINE,original_project_guest_commands=0,native_guest_unit_tests=True,performance_measurement=False))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_','CARGO_'))
             and k not in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER','RUST_TEST_THREADS','PYTHONPATH']}
@@ -78,7 +78,7 @@ def main():
                 counts=re.findall(r'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;',out)
                 assert counts and all(int(f)==0 for _,f,_ in counts)
                 total=sum(int(p) for p,_,_ in counts);ignored=sum(int(i) for _,_,i in counts)
-                assert (total,ignored)==(614,14),(total,ignored)
+                assert (total,ignored)==(615,14),(total,ignored)
                 rust_counts[label]=total
                 for test in ['shared_fault_native_status_assertions_and_all_budget_prefixes_match',
                     'shared_fault_maps_reconstruct_real_backward_tail_branches',

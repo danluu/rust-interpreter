@@ -11,7 +11,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='shared-cold-tail-focused-01'
+RUN='shared-cold-tail-focused-02'
 BASE='fca687ebac0ea9374a1426addd01169fe707f608'
 
 
@@ -25,7 +25,8 @@ def main():
         modified=subprocess.check_output(['git','diff','--name-only',BASE,'HEAD','--','crates','Cargo.toml','Cargo.lock','rust-toolchain.toml'],cwd=ROOT,text=True).splitlines()
         assert sorted(modified)==sorted(['crates/bytecode/src/jit.rs',
             'crates/bytecode/src/jit/shared_fault_tails.rs','crates/bytecode/src/jit/shared_fault_tails_tests.rs',
-            'crates/bytecode/src/jit/code_spans.rs','crates/bytecode/src/jit/code_spans/cold_tails.rs']),modified
+            'crates/bytecode/src/jit/code_spans.rs','crates/bytecode/src/jit/code_spans/cold_tails.rs',
+            'crates/bytecode/src/jit/slot_arguments_tests.rs']),modified
         paths=[ROOT/p for p in subprocess.check_output(['git','ls-files','crates','Cargo.toml','Cargo.lock','rust-toolchain.toml'],cwd=ROOT,text=True).splitlines()]
         paths += [p for p in Path(__file__).parent.iterdir() if p.suffix in ['.py','.md']]
         paths += [ROOT/'scripts'/p for p in ['compare_saved_runtime.py','workflow_io.py']]
@@ -42,7 +43,7 @@ def main():
             controller_command=[sys.executable,*sys.argv],
             adopted_rust_base=BASE,modified_rust_inputs=modified,target=str(target.relative_to(ROOT)),
             allocated_target_bytes=allocated,required_free_bytes=needed,minimum_child_gib=8,
-            expected_commands=2,tests_per_profile=4,original_project_guest_commands=0,
+            expected_commands=2,tests_per_profile=5,original_project_guest_commands=0,
             native_fixture_execution=True,performance_measurement=False))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_','CARGO_'))
             and k not in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER','RUST_TEST_THREADS']}
@@ -62,12 +63,12 @@ def main():
                 seconds=time.time()-start,stdout_sha256=sha(raw/(profile+'.stdout')),stderr_sha256=sha(raw/(profile+'.stderr'))))
             write(raw/'records.json',records)
             assert child.returncode==0,(out+err)[-5000:]
-            assert 'test result: ok. 4 passed; 0 failed; 0 ignored;' in out,out[-3000:]
+            assert 'test result: ok. 5 passed; 0 failed; 0 ignored;' in out,out[-3000:]
             assert all(sha(ROOT/p)==h for p,h in frozen.items())
-            print(profile,'4 focused cold-tail controls passed',flush=True)
+            print(profile,'5 focused cold-tail controls passed',flush=True)
         destination=ROOT/'results'/RUN;destination.mkdir(exist_ok=False)
         write(destination/'summary.json',dict(status='passed',source_revision=revision,
-            tests=dict(debug=4,release=4),commands=2,raw=str(raw.relative_to(ROOT)),
+            tests=dict(debug=5,release=5),commands=2,raw=str(raw.relative_to(ROOT)),
             plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),
             setup_seconds=sum(r['seconds'] for r in records),original_project_guest_commands=0,
             production_runtime_changes=1,performance_measurement=False))

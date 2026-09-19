@@ -29,9 +29,9 @@ def main():
             if expected is not None:assert digest==expected,path
             frozen[str(path.relative_to(ROOT))]=digest
             return read(path) if path.suffix=='.json' else digest
-        focused=ROOT/'results/shared-cold-tail-focused-01'
+        focused=ROOT/'results/shared-cold-tail-focused-02'
         fc=bind(focused/'closure.json');fs=bind(focused/'summary.json',fc['summary_sha256'])
-        assert fc['status']=='closed' and fc['all_hashes_verified'] and fs['tests']==dict(debug=4,release=4)
+        assert fc['status']=='closed' and fc['all_hashes_verified'] and fs['tests']==dict(debug=5,release=5)
         fp=bind(ROOT/fs['raw']/'plan.json',fs['plan_sha256'])
         for path,digest in fp['frozen'].items():
             if path.startswith('crates/') or path in ['Cargo.toml','Cargo.lock','rust-toolchain.toml']:bind(ROOT/path,digest)
