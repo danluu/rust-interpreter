@@ -1,0 +1,12 @@
+--- .work/prepare_ruff_options_hash_strict_01_once.py.before-result-shape
++++ .work/prepare_ruff_options_hash_strict_01_once.py
+@@ -71,7 +71,8 @@
+         require(sha(EXECUTION/name) == e[name+'_sha256'], 'publication parent raw differs')
+     require(sha(OUTER/'command.log') == outer['log_sha256'], 'publication outer raw differs')
+     require(p['published_tools_sha256'] == PINS[PUB/'published-tools.json']
+-            and p['result'] == ref(PUB/'published-tools.json')
++            and {k:p['result'][k] for k in ['path','sha256']} == ref(PUB/'published-tools.json')
++            and p['result']['bytes'] == (PUB/'published-tools.json').stat().st_size
+             and p['tool_key'] == tools['tool_key']
+             and len(p['commands']) == 3, 'publication tool association differs')
+     children = []

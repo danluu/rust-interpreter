@@ -1,0 +1,59 @@
+--- /Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/runtime-application-admission/ruff-strict-03/run.py
++++ /Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/runtime-application-admission/ruff-options-hash-strict-01/run.py
+@@ -19,13 +19,13 @@
+ from workflow_measurements import source_states
+ from workflow_io import SourceEdit
+ 
+-NAME = 'ruff-runtime-strict-03'
++NAME = 'ruff-options-hash-strict-01'
+ POLICY = 'runtime-ruff-strict-history-v1'
+ WORK = OWNER / '.work' / NAME
+ SOURCE = R_OWNER / '.work/sources/ruff'
+-RUNTIME_KEY = 'eca3d1317ba4c852d64de435aa0f0e5d87ae63bd4eb96cfafacc7b0a85841d03'
+-STD_KEY = 'e4d1cd29bf4dbac5f9cbf6a92c77a562b89f7079c4474653f180346a00f24b63'
+-TOOL_KEY = '7610e295912b132303c95db6a587f9288c03a7f84b691de8ea60093e2829622a'
++RUNTIME_KEY = 'f031d981666f450f760ccf303dccba986053ec6b9a143a60f3d26680f9ac7c70'
++STD_KEY = 'f6366b5873636f47cdc3e9941a9b24ef612f94432baecb5d75ed5c4c54911928'
++TOOL_KEY = None  # Only the actual bound plan and installed-tools reader select this key.
+ FORBIDDEN = ['RUST_INTERP_TRAP_UNSUPPORTED_CALLS', 'RUST_INTERP_RUN_TRY_CALLBACKS']
+ 
+ 
+@@ -64,6 +64,22 @@
+ 
+ 
+ class Admission(RuntimeAdmission):
++    def __init__(self, name, policy):
++        super().__init__(name, policy)
++        require(self.plan['runtime_key'] == RUNTIME_KEY and self.plan['std_key'] == STD_KEY,
++                'qualified option-hash runtime or prepared standard library differs')
++        global TOOL_KEY
++        TOOL_KEY = self.key
++        require(TOOL_KEY == self.plan['tool_key'], 'bound installed exporter key differs')
++
++    def guard_sources(self):
++        super().guard_sources()
++        expected = getattr(self, 'expected_source_sha256', self.plan['editable_source']['original_sha256'])
++        source = Path(self.plan['editable_source']['path'])
++        require(source.resolve(strict=True) == source and source.stat().st_nlink == 1
++                and file_digest(source) == expected, 'intentional source state differs')
++        require(str(source) not in self.freeze['files'], 'intentional edited source frozen as immutable')
++
+     def guard(self):
+         super().guard()
+         require(not any(name in self.environment for name in FORBIDDEN), 'diagnostic policy in launch environment')
+@@ -218,6 +234,7 @@
+             try:
+                 with SourceEdit(source, original) as editor:
+                     for state in states:
++                        a.expected_source_sha256 = hashlib.sha256(state['source']).hexdigest()
+                         if editor.current != state['source']:
+                             editor.replace(state['source'])
+                         for spec in [item for item in schedule if item['state'] == state['state']]:
+@@ -233,6 +250,7 @@
+                             previous[spec['mode']] = spec['source_sha256']
+                             save()
+             finally:
++                a.expected_source_sha256 = a.plan['editable_source']['original_sha256']
+                 result['source_restoration'] = source_check()
+                 save()
+             prior = read(a.plan['prior_records']['path'])

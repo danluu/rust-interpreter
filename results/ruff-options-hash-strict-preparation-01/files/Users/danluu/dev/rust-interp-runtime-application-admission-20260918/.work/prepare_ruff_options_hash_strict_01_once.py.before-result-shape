@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+"""One closed-proof binding and normally waited strict metadata preparation."""
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import sys
+import time
+
+A = Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918')
+X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+HERE = A/'experiments/runtime-application-admission/ruff-options-hash-strict-01'
+OUT = ROOT/'.work/ruff-options-hash-strict-preparation-execution-01'
+BINDING = A/'.work/ruff-options-hash-strict-preparation-binding-01.json'
+PUB = X/'.work/hir-options-hash-exporter-publication-02'
+EXECUTION = ROOT/'.work/runtime-exporter07-publication-execution-02'
+OUTER = X/'.work/experiments/hir-options-hash-exporter-publication-supervisor-02'
+PINS = {
+    HERE/'prepare.py': '7b1fe39b94cabfeb6e1c3f27b660b25b80e98f0e7f2e4af9e4db92f33847397a',
+    HERE/'source-manifest-01.json': 'b5bd2ffa6bcd8b42f18d93971be99122adff390b35fd0d9cd2bf4e96bd928734',
+    HERE/'binding-template-01.json': 'ef83e844f81c4a37109235b1dfd07037f6a86c601cef75971481c1ed7b0481db',
+    PUB/'receipt.json': '77139a7c2194637ef5efe42bd88dc0e6a75dac3b5cdcb6759c751f703f96cc2e',
+    PUB/'published-tools.json': 'ebeabf425f12181bfe6d4e22993edb23cb546ad3f6e555e2aab1c38880e3431d',
+    EXECUTION/'record.json': '827bb363a927299838e2a692ce5507ce9910bb1cca8f0a65b91664f08fd08847',
+}
+
+
+def require(ok, message):
+    if not ok:
+        raise RuntimeError(message)
+
+
+def sha(path):
+    with Path(path).open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+
+def read(path, digest=None):
+    path = Path(path)
+    require(path.resolve(strict=True) == path and path.is_file() and path.stat().st_size <= 32*2**20,
+            'ordinary bounded metadata required')
+    payload = path.read_bytes()
+    if digest is not None:
+        require(hashlib.sha256(payload).hexdigest() == digest, 'input changed: '+str(path))
+    return json.loads(payload)
+
+
+def ref(path):
+    return dict(path=str(path), sha256=sha(path))
+
+
+def publication():
+    for path, digest in PINS.items():
+        require(sha(path) == digest, 'reviewed input differs: '+str(path))
+    e = read(EXECUTION/'record.json')
+    p = read(PUB/'receipt.json')
+    tools = read(PUB/'published-tools.json')
+    outer = read(OUTER/'status.json', e['outer_status_sha256'])
+    plan = read(OUTER/'plan.json', e['outer_plan_sha256'])
+    require(e['status'] == outer['status'] == 'finished' and e['returncode'] == e['controller_returncode'] == outer['returncode'] == 0
+            and e['supervisor_may_be_live'] is e['controller_may_be_live'] is False
+            and e['pid'] == outer['supervisor_pid'] == p['parent_pid']
+            and e['parent_pid'] == outer['supervisor_parent_pid']
+            and outer['child_pid'] == p['pid'] and outer['command'] == plan['command']
+            and p['status'] == 'passed' and p['frontend_qualified'] is True
+            and e['started_at'] <= p['started_at'] <= p['finished_at'] <= outer['finished_at'] <= e['finished_at'],
+            'publication normal parent/controller closure differs')
+    for name in ['stdout', 'stderr']:
+        require(sha(EXECUTION/name) == e[name+'_sha256'], 'publication parent raw differs')
+    require(sha(OUTER/'command.log') == outer['log_sha256'], 'publication outer raw differs')
+    require(p['published_tools_sha256'] == PINS[PUB/'published-tools.json']
+            and p['result'] == ref(PUB/'published-tools.json')
+            and p['tool_key'] == tools['tool_key']
+            and len(p['commands']) == 3, 'publication tool association differs')
+    children = []
+    for index, item in enumerate(p['commands']):
+        path = PUB/'commands'/f'{index:03d}'/'receipt.json'
+        require(item['path'] == str(path), 'publication child route differs')
+        child = read(path, item['sha256'])
+        require(child['status'] == 'finished' and child['returncode'] == item['returncode'] == 0
+                and child['pid'] == item['pid'] and child['supervisor_pid'] == p['pid']
+                and p['started_at'] <= child['started_at'] <= child['finished_at'] <= p['finished_at'],
+                'publication child closure differs')
+        for name in ['stdout', 'stderr']:
+            require(sha(path.parent/name) == child[name+'_sha256'], 'publication child raw differs')
+        children.append(dict(label=item['label'], receipt=ref(path), pid=child['pid']))
+    require([x['label'] for x in children] == ['published-exporter', 'published-wrapper', 'ordinary-installed-reader'],
+            'publication recipe labels differ')
+    validation = read(PUB/'commands/002/stdout')
+    require(validation == dict(status='passed', directory=tools['directory'], runtime_key=p['runtime_key'], tool_key=p['tool_key']),
+            'ordinary installed consumer did not validate the published tools')
+    return p, dict(status='verified', publication=ref(PUB/'receipt.json'), published_tools=ref(PUB/'published-tools.json'),
+        execution=ref(EXECUTION/'record.json'), outer=ref(OUTER/'status.json'), children=children,
+        scope='Saved metadata/raw/closure only; binary payloads are rehashed by the authorized ordinary preparer.')
+
+
+def main():
+    require(Path.cwd() == A and sys.dont_write_bytecode and not sys.flags.optimize, 'A cwd and unoptimized Python -B required')
+    pub, readback = publication()
+    sources = read(HERE/'source-manifest-01.json')
+    require(len(sources['files']) == 123, 'reviewed strict source count differs')
+    for name, digest in sources['files'].items():
+        require(sha(name) == digest, 'strict source changed: '+name)
+    helper = A/'experiments/stable-cgu/owned_stage.py'
+    require(sha(helper) == sources['files'][str(helper)], 'owned helper changed')
+    spec = importlib.util.spec_from_file_location('_strict_preparation_owned', helper)
+    owned = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(owned)
+    for path in [OUT, BINDING, HERE/'plan']:
+        require(not os.path.lexists(path), 'fresh preparation namespace required')
+    OUT.mkdir()
+    (OUT/'tmp').mkdir()
+    record = dict(status='waiting', pid=os.getpid(), parent_pid=os.getppid(), started_at=time.time(),
+        cwd=str(A), source_sha256=sha(__file__), source_manifest_sha256=PINS[HERE/'source-manifest-01.json'],
+        publication_readback=readback, preparation_children=0, compiler_children=0, retries=0)
+    owned.write(OUT/'record.json', record)
+    try:
+        with owned.workload_lock(owned.CANONICAL_LOCK, 600):
+            record.update(status='admitted', admitted_at=time.time(), free_bytes_before=owned.disk(A, 16))
+            owned.write(OUT/'record.json', record)
+            publication()
+            binding = read(HERE/'binding-template-01.json')
+            original = json.loads(json.dumps(binding))
+            old = read(binding['proofs']['history']['strict_plan']['path'], binding['proofs']['history']['strict_plan']['sha256'])
+            cf = os.environ.get('__CF_USER_TEXT_ENCODING')
+            require(type(cf) is str and cf, 'actual CF startup environment observation missing')
+            environment = dict(old['child_environment'], TMPDIR=str(OUT/'tmp')+'/', __CF_USER_TEXT_ENCODING=cf)
+            binding.update(tool_key=pub['tool_key'], preparation_environment=environment)
+            binding['proofs']['exporter'] = dict(publication=ref(PUB/'receipt.json'), published_tools=ref(PUB/'published-tools.json'))
+            with BINDING.open('x') as output:
+                json.dump(binding, output, indent=2, sort_keys=True)
+                output.write('\n')
+            check = json.loads(json.dumps(binding))
+            check['tool_key'] = check['preparation_environment'] = None
+            check['proofs']['exporter'] = dict(publication=None, published_tools=None)
+            require(check == original, 'binding changed beyond four authorized fields')
+            command = ['/opt/homebrew/bin/python3', '-B', str(HERE/'prepare.py'),
+                       '--binding', str(BINDING), '--binding-sha256', sha(BINDING)]
+            record.update(binding=ref(BINDING), command=command, environment=environment)
+            owned.write(OUT/'record.json', record)
+            try:
+                child = owned.run(command, cwd=A, env=environment, out=OUT/'child', capacity_root=A)
+            finally:
+                if (OUT/'child/receipt.json').exists():
+                    record.update(child=ref(OUT/'child/receipt.json'), preparation_children=1)
+                    owned.write(OUT/'record.json', record)
+            require(child['status'] == 'finished' and child['returncode'] == 0, 'preparation child did not close successfully')
+            require(sorted(x.name for x in (HERE/'plan').iterdir()) == ['inputs.json','launch.json','metadata-preflight.json','plan.json'],
+                    'strict preparation packet membership differs')
+            outputs = {p.name:ref(p) for p in sorted((HERE/'plan').iterdir())}
+            require(read(HERE/'plan/metadata-preflight.json')['status'] == 'passed', 'ordinary metadata preflight did not pass')
+            for name, digest in sources['files'].items():
+                require(sha(name) == digest, 'strict source changed during preparation')
+            record.update(status='passed', packet=outputs, finished_at=time.time(), free_bytes_after=owned.disk(A, 8))
+            owned.write(OUT/'record.json', record)
+        record['canonical_released_at'] = time.time()
+        owned.write(OUT/'record.json', record)
+        print(json.dumps(record, sort_keys=True))
+    except BaseException as error:
+        record.update(status='failed', error=repr(error), finished_at=time.time())
+        owned.write(OUT/'record.json', record)
+        raise
+
+
+if __name__ == '__main__':
+    main()

@@ -78,8 +78,8 @@ No exporter build or application timing ran in the failed attempt.
 The successor preparation retains five exact sparse-checkout proof paths across
 main merges. Metadata02 passed all 36 commands, and build02 passed its ordinary
 locked/offline exporter build and six tool checks. All 34 frontend correctness controls passed, including bytecode parity and
-nine diagnostic comparisons. Tool publication passed all three fresh checks; strict Ruff
-application qualification remains pending. These preparation checks provide no application timing result.
+nine diagnostic comparisons. Tool publication passed all three fresh checks; the 16-call strict Ruff
+application history is running. These preparation checks provide no application timing result.
 
 Evidence entry points:
 
@@ -115,3 +115,13 @@ test count is not a new execution result.
 - [Successor exporter preparation and held frontend/publication sources](../results/runtime-exporter07-successor02-preparation-01/STATUS.md)
 
 - [Closed metadata and exporter build evidence](../results/runtime-exporter07-metadata-build02-01/STATUS.md)
+
+The original prospective hash screen was corrected before any timed history.
+Its HIR-off settings bypassed the only changed hash call. Successor screen02
+uses HIR capture/reuse in both compiler arms and preserves the five-edit A/B
+plus A/A criterion. A mechanism win must then beat the original HIR-off
+configuration in a fresh comparison under the same rule before admission to
+holdouts or any claim of a faster application configuration.
+
+- [Strict Ruff preparation and source binding](../results/ruff-options-hash-strict-preparation-01/STATUS.md)
+- [Corrected prospective mechanism screen](hir-options-hash/ruff-screen-02/PROTOCOL.md)
