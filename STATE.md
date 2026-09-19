@@ -401,3 +401,10 @@ preservednativepatch onlyaftertypedclosure and allbase/drafthashes matched.
 Actualemitter NOWfeature-onlywired, stilldefaultoffandinstalledVMunchanged.
 Registered branch-budget-native-focused01:8nativecontrols eachdebug/release.
 Main05a1c998 pushed16storagepaths preservingpeer4fd6e73c. Root27dac896 pushed.
+
+Nativefocused01 source532d5d52 supervisor91619/controller91728 passed8native
+controls ineachdebug/release, independentlyclosedexec42159 exit0. No originalguest
+or timingyet. Registeredwhole-workspace feature-enabledgate, expected622Rust
+passed13ignored/profile,468Pythondiscovered22skipped, retainedfeature-enabledVM.
+Freezeactualsources throughthatclosure. Latestsharedtarget7934932KiB floor23.135GiB,
+free24.20GiB. Nativeproductiondefaultstilloff, installedruntimeunchanged.
