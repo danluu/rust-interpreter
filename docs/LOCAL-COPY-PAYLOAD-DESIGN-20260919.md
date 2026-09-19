@@ -1,9 +1,10 @@
 # Reserved payload registers for local copies: conditional prototype
 
-Status: design only. The first saved-load census attempt stopped at the shared
-lock without analyzing data. Do not implement or benchmark this proposal merely
-because the register bookkeeping is straightforward. Require useful actual-load
-coverage from the registered continuation first.
+Status: PARKED after the closed continuation found only2/2 actual load samples
+(0.10%/0.14%). No production implementation or timing is warranted for this
+specific design. [Recorded outcome](../results/local-copy-payload-02/assessment.md).
+The original01 shared-lock admission failure remains retained. The conditional
+contract below documents the investigated mechanism, not a next-step instruction.
 
 The existing local-copy path can emit three instructions for an aligned eight-
 byte frame-to-frame copy: form the frame base, load through x9, store through x9.

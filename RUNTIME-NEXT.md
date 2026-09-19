@@ -1,46 +1,27 @@
-# Continue with saved-evidence loop census
+# Continue with typed private-pointer promotion investigation
 
-Manual indefinite optimization; goal PAUSED. No subagents, goal tools or peer
-process control. Isolated compact-switch primary CLOSED45718, failed; all later
-guards cancelled/unstarted. Do not retime it. Main runtime remains adopted.
+Manual indefinite task; goal PAUSED, no goaltools/subagents/peercontrol.
+No active command. All loop/copy/payload diagnostics CLOSED. Isolated switch
+runtime remains parked after failed complete primary; no unchanged retiming.
 
-New preregistered controller: benchmarks/experiments/adopted-hot-loop-census-v2.
-Census02 COMPLETE, independent closure25261; do not rerun.
-Freeze experiment sources through closure. Offline only: 17 controls, existing
-closed adopted normal-entropy native captures and separate fixed-entropy counts.
-Do not infer loop optimization safety or speedup from coverage. Next direction
-requires measured scope, typed correctness proof and complete-edit benchmarks.
+Last payload02 CLOSED47849:10controls,55bindings,exact-loadsamples2/2 of1933/1429.
+Park the narrow SIMD payload cache; do not implement/time its conditional design.
+Copy equality CLOSED75783 only26/7wholeoperation samples. Loop census CLOSED25261:
+503/304cyclic samples, withcalls468/184; currentcallfree scalar tier misses scope.
 
-Saved composed lifecycle review found <1.3 ms startup/shutdown per edit on each
-completed guard; private row about0.6ms and candidate execution already lower.
-This does not support another startup policy as the fix for its guard failure.
+Next: typed MIR eligibility for private8byte Ref/RawPtr locals, beyond existing
+numeric scalar promotion. Inspect pinned visitor first-Deref semantics, preserve
+slot address-escape rejection, argument/result/direct-call/aggregate exclusions,
+existingnumericpacking andstrictchecking. No optimization implemented/admitted.
+Historical folded MIR locals observation at.work/mir-scalar-promotion-observation-01
+mayguide scope butisnotcurrentartifactproof. Existing scalar_promote transform
+alreadyhandles8bytevalues; runtime/emitterneednotchange for this direction.
 
-Root Rust still isolated3cf176ed; restore adopted only on a new runtime branch
-when implementation requires. Preserve current compiler work and peer main.
-Main114f6f02 now publishes all closed isolated failures/proofs/cancellations,
-retaining peer e639f93a. Root aaa356ff pushed. suggestions.txt unchanged4d74b3dc.
-
-Free~20GiB; no Rust build admitted under last dynamic~23GiB reserve. Recompute.
-Shared target NEVER CLEAN. All previous cleanup/compression operations CLOSED,
-never replay them. Shared lock45s, analysis12GiB/child8GiB, two build workers.
-Current paused goal remains untouched. Full state STATE.md.
-
-First census01 rejected valid bare ResetThreadLocals after16controls passed;
-failed attempt independently closed14287. v2 adds exact unit-variant control.
-
-Next: bounded local-memory copy-equality scope from existing closed samples.
-Loops direct503/1933 and304/1429; callfreeonly35/120. No runtimepassyet.
-
-Run local-copy-equality-01 controller analyze.py, then --close aftersuccess.
-14controls; no compiler/guest. Freeze sources; preserveanyfailure.
-
-Copy equality01 COMPLETE/CLOSED75783; low26/7samples, deferstandalonepass.
-Next possibility: reserved SIMD memory payload cache across volatile scratch
-clobbers. First exactsavedload-PC census +clobberreview; no runtimecandidateyet.
-
-Next run local-copy-payload-01 analyze.py, then independent --close.
-Exactnative3wordcopyrecognizer;10controls;nonewguest/build. Main7b92ad16pushed.
-
-Payload01 ADMISSIONBLOCKED, closedreceipt; noanalysis/controlran. Usev2
-analyze.py --run-id local-copy-payload-02 aftersharedlockbecomesavailable,
-then samecommand --close. Modelunchanged10controls. Nopeerprocesscontrol.
+RootRuststillisolated3cf176ed. Onnewexperimentbranch restoreONLY the3compact-switch
+Rustfiles toadoptedfca687eb beforefurtherimplementation, preservingallcompiler/
+diagnosticwork andpeer main. Need dynamicdiskadmission beforebuilding anyRust.
+Free~20GiB; floorlast~23GiB. SharedtargetNEVERclean. Exactclosedisolatedprimary
+compiler caches are possible nextretirement, butnoinventory/deletionstarted.
+Lock45s,analysis12GiB/child8GiB,twobuildworkers. Cleanerread-only,peersuntouched.
+Main7b92ad16 publishesloop/copyequality; latestpayloadresultsnotyetpublished.
+Rootd4fa262cpushedbeforelatestresultcommit. suggestions.txtunchanged4d74b3dc.

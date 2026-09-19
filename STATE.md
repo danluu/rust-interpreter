@@ -230,3 +230,18 @@ before rawdirectory/control/case. Receipt-onlyfailure closure verifiesoriginal
 sourcee28125e4 andterminal/log/plan; nootherprocess controlled. Newv2controller
 bindsclosedadmissionfailure,unchangedmodel10controls,requiresunique--run-id.
 Wait forsharedlock admission; peer52034/52747 preflightactive,outofscope.
+
+Payload02 sourced4fa262c completed26083,10controls,CLOSED47849.55bindings,
+bothderivations. Exact3wordcopies9951/12006,cachehits382/454static,wholecopy
+samples3/3,actualLDRsamples2/2 (0.10%/0.14%),0ambiguous. PARKthisspecificdesign;
+noguests/builds/newruntime. Payload01admissionfailurepreserved. No commandsactive.
+
+Next source review: private thin-pointer MIR promotion. Existingnumericpromotion
+excludes Ref/RawPtr types and projectionuses. Need typedcandidateeligibility for
+non-address-exposed8bytepointertemporaries; preserveABI exclusions/layout/strict
+checking. Older folded MIR observation retainedat.work/mir-scalar-promotion-
+observation-01 (1045functions),diagnostic.rs recordsalltypedlocalcontexts/types.
+Usefulhistoricalscopeonly, notcurrentartifactproof. Pinnedrustcvisitor source
+/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/rustc-src/rust/compiler/rustc_middle/src/mir/visit.rs.
+Needbuildadmission beforetypedexporterbuild; free~20.1GiB<~23GiBfloor. Ownclosed
+isolatedprimarycompiler caches remainpotentialretirement, noinventory/mutationyet.
