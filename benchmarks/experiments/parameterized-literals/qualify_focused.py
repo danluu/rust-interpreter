@@ -45,9 +45,9 @@ def main():
             CARGO_PROFILE_TEST_DEBUG='0',RUST_TEST_THREADS='2',CARGO_TERM_COLOR='never',PYTHONDONTWRITEBYTECODE='1')
         records=[]
         for label,extra,feature,select,expected in [
-            ('debug-model',[],'jit-parameterized-literals','jit::cross_program_templates::tests::',30),
+            ('debug-model',[],'jit-parameterized-literals','jit::cross_program_templates::tests::',31),
             ('debug-policy',[],'jit-parameterized-literals','jit::parameterized_literals::tests::',3),
-            ('release-model',['--release'],'jit-parameterized-literals','jit::cross_program_templates::tests::',30),
+            ('release-model',['--release'],'jit-parameterized-literals','jit::cross_program_templates::tests::',31),
             ('release-policy',['--release'],'jit-parameterized-literals','jit::parameterized_literals::tests::',3),
             ('feature-off',['--release'],'jit-artifact-digest-reuse','jit::cross_program_templates::tests::',24)]:
             require_space(ROOT,8);assert shutil.disk_usage(ROOT).free>=needed
@@ -61,7 +61,7 @@ def main():
             assert all(sha(ROOT/p)==h for p,h in frozen.items());print(label,'passed',flush=True)
         output=ROOT/'results'/RUN;output.mkdir(exist_ok=False)
         write(output/'summary.json',dict(status='passed',source_revision=revision,raw=str(raw.relative_to(ROOT)),commands=5,
-            controls_per_profile=33,feature_off_controls=24,
+            controls_per_profile=34,feature_off_controls=24,
             plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),
             original_project_guest_commands=0,native_fixture_execution=True,performance_measurement=False,
             parameterized_literals=True,default_runtime_adoption=False))

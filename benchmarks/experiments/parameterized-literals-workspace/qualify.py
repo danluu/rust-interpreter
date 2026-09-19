@@ -23,7 +23,7 @@ def main():
             assert c['status']=='closed' and c['all_hashes_verified'] and sha(prior/'summary.json')==c['summary_sha256']
             paths += [prior/'closure.json',prior/'summary.json']
         focused=ROOT/'results/parameterized-literals-focused-04';proof=read(focused/'summary.json')
-        assert proof['status']=='passed' and proof['controls_per_profile']==33 and proof['feature_off_controls']==24
+        assert proof['status']=='passed' and proof['controls_per_profile']==34 and proof['feature_off_controls']==24
         focused_plan=ROOT/proof['raw']/'plan.json';assert sha(focused_plan)==proof['plan_sha256'];paths.append(focused_plan)
         for name,h in read(focused_plan)['frozen'].items():
             if name.startswith('crates/') or name in ['Cargo.toml','Cargo.lock','rust-toolchain.toml']:
@@ -108,7 +108,7 @@ def main():
                 counts=re.findall(r'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;',out)
                 assert counts and all(int(f)==0 for _,f,_ in counts)
                 passed=sum(int(p) for p,_,_ in counts);ignored=sum(int(i) for _,_,i in counts)
-                assert (passed,ignored)==((10,0) if label=='feature-off' else (33,0) if label=='diagnostic' else (672,17)),(label,passed,ignored)
+                assert (passed,ignored)==((10,0) if label=='feature-off' else (33,0) if label=='diagnostic' else (673,17)),(label,passed,ignored)
                 if label!='feature-off':assert 'test changed_callee_initial_registers_cannot_reuse_stale_caller_templates ... ok' in out
                 if label in ['debug','release']:assert 'test jit::cross_program_templates::tests::cross_program_template_callee_initial_zero_requirement_is_an_emission_input ... ok' in out
                 for test in ['shared_validation_preserves_worker_environments_budgets_and_fresh_guests',

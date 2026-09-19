@@ -1,7 +1,7 @@
 # Full qualification of explicit large-literal parameters
 
-Require the closed focused proof:30template+3policy controls/profile,24ordinary
-controls, complete current Rust/Cargo bindings. Then672workspace tests/profile
+Require the closed focused proof:31template+3policy controls/profile,24ordinary
+controls, complete current Rust/Cargo bindings. Then673workspace tests/profile
 (17explicit ignored),33diagnostic integrations,10ordinary session controls,
 24ordinary template models, defaultVM build. Reuse442Python+22skipped only through
 unchanged script/test hashes and retained exact logs.48ownedservers92clients.

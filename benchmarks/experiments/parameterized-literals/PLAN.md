@@ -57,4 +57,5 @@ Focused03 timed out at sharedlock beforeanyrawstage/test/build; terminal-only
 closure retained. Before04, strengthen capture by carrying an independent typed
 literal-site manifest fromAssembler throughCompiledFunction. A new control
 rejects missing/reassociated relocation records and missing/duplicate manifests
-at capture, in addition to restoration checks.30template+3policy/profile,24off.
+at capture, in addition to restoration checks.31template+3policy/profile,24off. A direct signed/unsigned arithmetic and overflow
+control adds40fresh/cached/interpreted comparisons, verifying everyhit.

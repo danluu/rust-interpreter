@@ -684,6 +684,29 @@ fn parameterized_literal_live_current_data_addresses_and_faults_match() {
     assert!(hits>0);
 }
 #[test]
+#[cfg(all(feature = "jit-parameterized-literals",target_arch="aarch64",target_os="macos"))]
+fn parameterized_literal_live_direct_arithmetic_and_overflow_match() {
+    let history=std::rc::Rc::new(std::cell::RefCell::new(History::new(MAX_RETAINED).unwrap()));let mut hits=0;
+    for op in [Binary::Add,Binary::Sub,Binary::Mul,Binary::Div,Binary::Rem] {for signed in [false,true] {
+        for (left,right) in [(0x12345678,0x10001),(0x22345679,0x10003),(0xffffffffffff0123,0x10005),(0xfffffffffff00123,0x10007)] {
+            let mut p=fixture();p.functions.truncate(1);let f=&mut p.functions[0];f.registers=5;f.result.size=16;
+            f.code=vec![Op::Imm{dst:0,value:left},Op::Imm{dst:1,value:right},
+                Op::Binary{dst:2,overflow:3,op,a:0,b:1,bits:64,signed},
+                Op::Local{dst:4,offset:0},Op::Store{address:4,src:2,size:8},
+                Op::Local{dst:4,offset:8},Op::Store{address:4,src:3,size:8},Op::Return];
+            let context=Context::new_verified(&p,history.clone(),true).unwrap();let mut j=owner(&p);j.template_model_context=Some(context.clone());
+            let limits=crate::Limits{jit_scalar_calls:false,..live_limits()};
+            let reference=crate::Limits{jit_resumable_calls:false,jit_persistent_registers:false,..limits.clone()};
+            let actual=live_execute(&p,&mut Some(j),limits.clone()).unwrap();let expected=crate::execute(&p,&[],reference).unwrap();
+            let fresh=crate::execute_with_engine(&p,&[],limits,crate::Engine::Jit).unwrap();
+            assert_eq!((actual.value,actual.instructions),(expected.value,expected.instructions),"{op:?} signed={signed}");
+            assert_eq!((actual.value,actual.instructions),(fresh.value,fresh.instructions));
+            let counts=context.counts.borrow();assert_eq!(counts.hits,counts.verified_hits);hits+=counts.hits;
+        }
+    }}
+    assert!(hits>0);
+}
+#[test]
 fn cross_program_template_verifier_rejects_changed_words_and_metadata() {
     let program=fixture();let owner=owner(&program);let original=stage(&owner,0);
     verify_staging(&original,&stage(&owner,0)).unwrap();
