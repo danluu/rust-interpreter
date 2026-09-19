@@ -17,7 +17,21 @@ request digest, malformed headers/entries, trailing/partial/invalid Programs and
 recovery. The corrected template key v3 and65,536-op size tier are included.
 
 [Qualification](../results/session-artifact-digest-qualification-01/summary.json).
-Actual saved parser verification, diagnostic attribution, tool composition and a
-new changed-source primary remain pending. The8.6ms prior catalog phase is a
+Actual saved parser replay297defbe also passed:16suites,1,824invocations and
+16,865independently verified hits. Supervision88307/88310 closed91948/91951.
+Exact outcomes, wrong-edit failure text, fresh guests/current limits and kernel
+CPU reconcile. [Replay](../results/session-artifact-digest-parser-client-01/summary.json).
+
+The separate diagnostic replay3cb83f0e (92450/92453, closed5661/5664) passes the same
+1,824invocations, with16,244observed hits and verification off for phase attribution.
+For the five valid cached edits, median catalog validation is0.015ms versus8.602ms
+in the previous diagnostic. Input total is30.151ms versus37.273ms. Actual-byte
+read/hash12.575ms, decode11.358ms and full Program validation5.991ms remain.
+These different-time diagnostic runs establish that the targeted duplicate phase
+has gone; their total-time difference is not a controlled command-speedup estimate.
+Worker assignment makes cache-hit counts unsuitable as an improvement metric.
+[Attribution](../results/session-artifact-digest-phases-parser-01/summary.json).
+
+Tool composition and a new changed-source primary remain pending. The8.6ms prior catalog phase is a
 motivation, not a claimed command speedup. No experimental runtime is adopted;
 the earlier unmeasurable and failed comparisons remain unchanged.

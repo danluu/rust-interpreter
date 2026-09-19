@@ -126,3 +126,9 @@ Artifactdigest qualification4bc2123c passed656Rust/profile+16ignored,33diag,
 10featureoff/defaultVM, exact442Python+22skip;48servers92clients. CLOSED77522/77525
 (supervisor56222/controller56225). Parserverify/diagnostic/installprepared. Main
 56b77d06pushconfirmed. Nextactual16savedparserreplay; freeabout17.9GiB.
+
+Artifactdigest savedparser297defbe passed1,824invocations/16,865verifiedhits;
+CLOSED91948/91951. Diagnostic3cb83f0e passed1,824/16,244observedhits, CLOSED5661/5664:
+catalogvalidation.015ms vsprior8.602;input30.151vs37.273ms (separateruns,notE2Eclaim).
+Nextinstallcandidate thenaudited8retirednamespaces(primary03five+01/02/03strict).
+Cleanupcontrollerprepared,NOTstarted; floorsunchanged, primaryneeds24GiB.
