@@ -145,6 +145,7 @@ pub fn run(program: &Program, mode: Mode, limits: &Limits, path: &str,
             "preparation_ns":template_preparation_ns,"storage":templates.as_ref().and_then(PreparedTemplates::statistics),
             "scope":"one immutable Program; separate native arenas; one effective worker uses ordinary preparation; retained accounting is not allocator RSS"});
     }
+    report["seconds_before_report_write"]=json!(started.elapsed().as_secs_f64());
     let mut output = std::io::BufWriter::new(file);
     serde_json::to_writer_pretty(&mut output, &report)?;
     output.write_all(b"\n")?;

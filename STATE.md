@@ -145,6 +145,15 @@ prepared-only option/one-worker compatibility, explicit mode/store/counter bound
 failed-test deltas and rejection of unrequested/inconsistent reuse claims.
 These changes have not been tested, and the new production Rust integration
 has not been compiled yet (the19-control run never admitted).
+Further review adds a bounded-capture preflight before native/entry buffers are
+copied, using remaining store budget, fallible exact reservations and a final
+retained-capacity check. Arc allocation now happens outside the store mutex.
+One new bound control makes20focused Rust controls; the Python modules contain
+16focused tests total (7new). A future focused05 should freeze the new launcher/
+receipt helpers/tests, run20controls/profile,16Python controls, then preserve a
+non-test VM executable. Do not change focus.py until focused04 admission failure
+has been preserved. scripts/interpreter.py now validates shared receipts and
+adds configuration/store metadata to timing receipts only when requested.
 
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally

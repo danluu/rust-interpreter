@@ -467,8 +467,8 @@ impl<'a> Jit<'a> {
             }
             self.template_stats.misses+=1;
             let staged=self.emit_function(&self.program.functions[id],(self.capacity-self.bytes)/4);
-            let candidate=if store.may_retain(id) {staged.as_ref().ok().and_then(|s|s.as_ref())
-                .and_then(|s|emission_templates::Template::capture(self,id,s))} else {None};
+            let candidate=store.available(id).and_then(|available|staged.as_ref().ok().and_then(|s|s.as_ref())
+                .and_then(|s|emission_templates::Template::capture_bounded(self,id,s,available)));
             let before=self.compiled_functions;
             let result=self.finish_preparation(id,staged)?;
             if self.compiled_functions>before {if let Some(candidate)=candidate {store.retain(candidate);}}

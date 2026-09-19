@@ -58,11 +58,22 @@ impl<'p> Template<'p> {
             self.scalar_inputs.capacity().checked_mul(std::mem::size_of::<(usize,Option<ScalarInput>)>())?];
         buffers.into_iter().try_fold(std::mem::size_of::<Self>()+7*64,usize::checked_add)
     }
-    pub(super) fn capture(jit:&Jit<'p>,id:usize,staged:&CompiledFunction<'_>)->Option<Self> {
+    #[cfg(test)]
+    fn capture(jit:&Jit<'p>,id:usize,staged:&CompiledFunction<'_>)->Option<Self> {
+        Self::capture_bounded(jit,id,staged,MAX_TEMPLATE_STORAGE)
+    }
+    pub(super) fn capture_bounded(jit:&Jit<'p>,id:usize,staged:&CompiledFunction<'_>,limit:usize)->Option<Self> {
         let options=Options::of(jit)?;let f=jit.program.functions.get(id)?;
         if staged.words.is_empty() || staged.words.len()>MAX_CODE_BYTES/4
             || staged.entries.len()!=f.code.len() || staged.resumes.len()!=f.code.len()+1
             || staged.template_assertion_pcs.len()!=staged.assertions.len() {return None;}
+        let buffers=[staged.words.len().checked_mul(std::mem::size_of::<u32>())?,
+            staged.entries.len().checked_mul(std::mem::size_of::<Option<Block>>())?,
+            staged.resumes.len().checked_mul(std::mem::size_of::<Option<usize>>())?,
+            staged.template_relocations.len().checked_mul(std::mem::size_of::<Relocation>())?,
+            staged.template_assertion_pcs.len().checked_mul(std::mem::size_of::<usize>())?];
+        let base=buffers.into_iter().try_fold(std::mem::size_of::<Self>()+7*64,usize::checked_add)?;
+        if base>limit.min(MAX_TEMPLATE_STORAGE) {return None;}
         for (pc,b) in staged.entries.iter().enumerate() {
             if let Some(b)=b {if b.offset%4!=0 || b.offset/4>=staged.words.len() || !(pc<b.end && b.end<=f.code.len()) {return None;}}
         }
@@ -74,6 +85,7 @@ impl<'p> Template<'p> {
         let mut ids=BTreeSet::new();
         for op in &f.code {if let Op::Call{function,..}=op {ids.insert(*function);}}
         let scalar_inputs=ids.into_iter().map(|id|(id,jit.template_scalar_input(id))).collect::<Vec<_>>();
+        if base.checked_add(scalar_inputs.capacity().checked_mul(std::mem::size_of::<(usize,Option<ScalarInput>)>())?)?>limit.min(MAX_TEMPLATE_STORAGE) {return None;}
         let mut assertion_ids=BTreeSet::new();let mut scalar_sites=0usize;let mut end=0;
         for r in &staged.template_relocations {
             if r.word<end || r.words==0 {return None;}
@@ -93,10 +105,14 @@ impl<'p> Template<'p> {
         }
         let expected_sites=f.code.iter().filter(|op|matches!(op,Op::Call{function,..} if jit.scalar_entry(*function).is_some())).count();
         if assertion_ids.len()!=staged.assertions.len() || scalar_sites!=expected_sites {return None;}
-        Some(Self {program:jit.program,function:id,options,words:staged.words.clone(),entries:staged.entries.clone(),
-            resumes:staged.resumes.clone(),relocations:staged.template_relocations.clone(),
-            assertion_pcs:staged.template_assertion_pcs.clone(),scalar_inputs,
-            operations:staged.operations,register_pairs:staged.register_pairs,liveness_declined:staged.liveness_declined})
+        fn copy<T:Clone>(source:&[T])->Option<Vec<T>> {
+            let mut out=Vec::new();out.try_reserve_exact(source.len()).ok()?;out.extend_from_slice(source);Some(out)
+        }
+        let template=Self {program:jit.program,function:id,options,words:copy(&staged.words)?,entries:copy(&staged.entries)?,
+            resumes:copy(&staged.resumes)?,relocations:copy(&staged.template_relocations)?,
+            assertion_pcs:copy(&staged.template_assertion_pcs)?,scalar_inputs,
+            operations:staged.operations,register_pairs:staged.register_pairs,liveness_declined:staged.liveness_declined};
+        (template.retained_charge()?<=limit.min(MAX_TEMPLATE_STORAGE)).then_some(template)
     }
 
     pub(super) fn restore(&self,jit:&Jit<'p>,id:usize)->Option<CompiledFunction<'p>> {
@@ -161,8 +177,9 @@ impl<'p> Store<'p> {
         if !std::ptr::eq(self.program,program) {return None;}
         self.contents.lock().ok()?.slots.get(id)?.clone()
     }
-    pub(super) fn may_retain(&self,id:usize)->bool {
-        self.contents.lock().ok().is_some_and(|c|c.charged<self.limit && c.slots.get(id).is_some_and(Option::is_none))
+    pub(super) fn available(&self,id:usize)->Option<usize> {
+        let c=self.contents.lock().ok()?;
+        c.slots.get(id)?.is_none().then_some(self.limit-c.charged)
     }
     pub(crate) fn statistics(&self)->Option<TemplateStorageStats> {
         let c=self.contents.lock().ok()?;
@@ -171,12 +188,13 @@ impl<'p> Store<'p> {
     pub(super) fn retain(&self,template:Template<'p>)->bool {
         if !std::ptr::eq(self.program,template.program) {return false;}
         let Some(charge)=template.retained_charge() else {return false;};
+        let template=Arc::new(template);
         let Ok(mut contents)=self.contents.lock() else {return false;};
         let Some(slot)=contents.slots.get(template.function) else {return false;};
         if slot.is_some() {return false;}
         let Some(total)=contents.charged.checked_add(charge).filter(|&n|n<=self.limit) else {return false;};
         let id=template.function;
-        contents.slots[id]=Some(Arc::new(template));contents.charged=total;true
+        contents.slots[id]=Some(template);contents.charged=total;true
     }
 }
 
@@ -302,6 +320,15 @@ fn template_store_full_capacity_keeps_normal_emission_available() {
     let store=Store::new(&p,base+charge-1).unwrap();assert!(!store.retain(t));assert!(store.snapshot(&p,0).is_none());
     assert_eq!(store.contents.lock().unwrap().charged,base);
     assert!(!stage(&j,0).words.is_empty());assert!(j.code.is_none() && j.bytes==0);
+}
+
+#[test]
+fn template_capture_preflights_remaining_store_space_before_copying_native_buffers() {
+    let p=fixture();let j=owner(&p);let staged=stage(&j,0);
+    let t=Template::capture(&j,0,&staged).unwrap();let charge=t.retained_charge().unwrap();
+    assert!(Template::capture_bounded(&j,0,&staged,charge-1).is_none());
+    assert!(Template::capture_bounded(&j,0,&staged,charge).is_some());
+    assert!(Template::capture_bounded(&j,0,&staged,0).is_none());
 }
 
 #[test]
