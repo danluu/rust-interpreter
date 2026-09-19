@@ -6,7 +6,7 @@ import focus
 ROOT=focus.ROOT
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='session-large-function-tier-qualification-02'
+RUN='session-large-function-tier-qualification-03'
 def read(p):return json.loads(p.read_text())
 
 def main():
@@ -23,6 +23,23 @@ def main():
             assert c['status']=='closed' and c['all_hashes_verified'] and sha(prior/'summary.json')==c['summary_sha256']
             paths += [prior/'closure.json',prior/'summary.json']
         frozen={str(p.relative_to(ROOT)):sha(p) for p in paths}
+        prior=ROOT/'results/session-large-function-tier-qualification-02';c=read(prior/'closure.json')
+        assert c['status']=='closed' and c['all_hashes_verified'] and sha(prior/'summary.json')==c['summary_sha256']
+        old=read(prior/'summary.json');assert old['status']=='focused-failed' and old['returncodes']==[0,101]
+        old_raw=ROOT/old['raw'];old_plan=read(old_raw/'plan.json');old_records=read(old_raw/'records.json')
+        assert sha(old_raw/'plan.json')==old['plan_sha256'] and sha(old_raw/'records.json')==old['records_sha256']
+        changed='crates/bytecode/tests/template_history.rs'
+        original=subprocess.check_output(['git','show',old_plan['source_revision']+':'+changed],cwd=ROOT,text=True)
+        before='equal(owner.execute(&[],current.clone()),execute_with_engine(checked.program(),&[],current,Engine::Interpreter));'
+        after='equal(owner.execute(&[],current.clone()),execute_with_engine(checked.program(),&[],Limits{jit_resumable_calls:false,jit_persistent_registers:false,..current},Engine::Interpreter));'
+        assert original.count(before)==1 and (ROOT/changed).read_text()==original.replace(before,after)
+        for name,h in old_plan['frozen'].items():
+            if name.startswith(('crates/','scripts/','tests/')) or name in ['Cargo.toml','Cargo.lock','rust-toolchain.toml']:
+                if name!=changed:assert sha(ROOT/name)==h,name
+        previous_python=old_records[0];assert previous_python['label']=='python' and previous_python['returncode']==0
+        for name in ['stdout','stderr']:assert sha(old_raw/('python.'+name))==previous_python[name+'_sha256']
+        for path in [prior/'closure.json',prior/'summary.json',old_raw/'plan.json',old_raw/'records.json',old_raw/'python.stdout',old_raw/'python.stderr']:
+            frozen[str(path.relative_to(ROOT))]=sha(path)
         assert not subprocess.check_output(['git','diff','--name-only','HEAD'],cwd=ROOT).strip()
         revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
         raw=ROOT/'.work'/RUN;raw.mkdir(exist_ok=False)
@@ -47,7 +64,15 @@ def main():
         for label,command in commands:
             require_space(ROOT,8);assert shutil.disk_usage(ROOT).free>=needed
             folder=raw/label;folder.mkdir();child_env=dict(env,RUST_INTERP_SESSION_FIXTURES=str(folder),RUST_INTERP_SOCKET_FIXTURES=str(sockets))
-            start=time.time();child,out,err=capture(command,cwd=ROOT,env=child_env,receipt_path=raw/'active.json',receipt=dict(label=label))
+            if label=='python':
+                assert command==previous_python['command']
+                out=(old_raw/'python.stdout').read_text();err=(old_raw/'python.stderr').read_text()
+                from types import SimpleNamespace
+                child=SimpleNamespace(pid=previous_python['pid'],returncode=0)
+                elapsed=previous_python['seconds']
+            else:
+                start=time.time();child,out,err=capture(command,cwd=ROOT,env=child_env,receipt_path=raw/'active.json',receipt=dict(label=label))
+                elapsed=time.time()-start
             for stream,value in [('stdout',out),('stderr',err)]:(raw/(label+'.'+stream)).write_text(value)
             retained={str(p.relative_to(ROOT)):sha(p) for p in folder.rglob('*') if p.is_file()}
             for receipt in folder.glob('*/child.json'):
@@ -56,8 +81,9 @@ def main():
                     endpoint=Path(args[1]);assert endpoint.parent==sockets
                     for p in endpoint.iterdir():
                         if p.is_file():retained[str(p.relative_to(ROOT))]=sha(p)
-            records.append(dict(label=label,command=command,pid=child.pid,returncode=child.returncode,seconds=time.time()-start,
+            records.append(dict(label=label,command=command,pid=child.pid,returncode=child.returncode,seconds=elapsed,
                 stdout_sha256=sha(raw/(label+'.stdout')),stderr_sha256=sha(raw/(label+'.stderr')),outputs=retained))
+            if label=='python':records[-1]['reused_from']=str((old_raw/'records.json').relative_to(ROOT))
             write(raw/'records.json',records);assert child.returncode==0,(out+err)[-6000:]
             if label=='python':
                 count,=re.findall(r'Ran (\d+) tests? in ',err);skipped,=re.findall(r'^OK(?: \(skipped=(\d+)\))?$',err,re.M)
@@ -85,8 +111,8 @@ def main():
             assert all(sha(ROOT/p)==h for p,h in frozen.items());print(label,'passed',totals.get(label),flush=True)
         destination=ROOT/'results'/RUN;destination.mkdir(exist_ok=False)
         write(destination/'summary.json',dict(status='passed',source_revision=revision,raw=str(raw.relative_to(ROOT)),
-            plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),tests=totals,commands=len(records),outputs=outputs,
-            setup_seconds=sum(r['seconds'] for r in records),owned_session_processes=24,owned_vm_clients=46,
+            plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),tests=totals,commands=3,reused_commands=1,validated_commands=len(records),outputs=outputs,
+            setup_seconds=sum(r['seconds'] for r in records if 'reused_from' not in r),owned_session_processes=24,owned_vm_clients=46,
             original_project_guest_commands=0,native_fixture_execution=True,diagnostic_feature=False,large_function_interpreter_threshold=65536,experimental_feature=True,
             default_runtime_adoption=False,performance_measurement=False))
 

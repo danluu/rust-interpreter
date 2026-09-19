@@ -234,7 +234,7 @@ fn size_tier_preserves_current_results_budgets_and_independently_compiled_callee
             let mut owner=PreparedJit::with_validated_session_inputs(&checked,&base,retained,&[]).unwrap();
             for instructions in [0,4,100_000,65_539,100_000] {
                 let current=Limits{instructions,..base.clone()};
-                equal(owner.execute(&[],current.clone()),execute_with_engine(checked.program(),&[],current,Engine::Interpreter));
+                equal(owner.execute(&[],current.clone()),execute_with_engine(checked.program(),&[],Limits{jit_resumable_calls:false,jit_persistent_registers:false,..current},Engine::Interpreter));
             }
             let run=owner.execute(&[],base.clone()).unwrap();
             if count>65_536 {
