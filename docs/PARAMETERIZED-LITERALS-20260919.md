@@ -37,8 +37,28 @@ and the defaultVM build. The unchanged442Python controls (22skips) are reused
 through exact source and log hashes.48owned sessions and92clients have recorded
 terminal outcomes. [Workspace proof](../results/parameterized-literals-qualification-02/summary.json).
 
-Next gates are1824saved parser invocations with fresh re-emission of every cache
-hit and separate phase attribution. The change
+The actual parser replay also passes all 1,824 invocations across 16 suites.
+Every one of 19,531 cache hits matches fresh native emission; current outcomes,
+wrong-edit failure text, resource limits and complete server CPU reconcile.
+[Parser proof](../results/parameterized-literals-parser-client-01/summary.json).
+
+The separate diagnostic replay passes all 1,824 invocations with 19,584 observed
+hits. Across the ten workers in valid edited requests, median phase intervals are:
+
+| Phase | Earlier unbuffered digest, ms | Literal parameters, ms |
+| --- | ---: | ---: |
+| Key construction | 8.883 | 10.278 |
+| Lookup | 0.426 | 0.494 |
+| Restoration | 1.463 | 2.790 |
+| Miss emission | 25.681 | 7.103 |
+| Capture/insertion | 1.186 | 0.254 |
+| Ordinary preparation | 37.913 | 21.703 |
+
+Workers overlap, medians are not additive, and these are separately collected
+instrumented runs. The result supports a real reduction in recompilation work;
+it does not isolate an end-to-end speedup or the cost of lost constant folding.
+[Diagnostic evidence](../results/parameterized-literals-phases-parser-01/summary.json).
+Install the qualified normal binaries and evaluate changed-source primary05. The change
 can reduce compilation while making execution slower by losing constant folds;
 key construction, manifests and restoration also cost time and retained memory.
 Only a newly qualified, changed-source end-to-end comparison can justify adoption.
