@@ -22,4 +22,10 @@ no unchanged retry or adoption before all later project guards.
 
 RunIDcross-program-template-parser-screen-incremental-05, new endpointsprimary-05-*.
 Require24GiB admission with16GiB cache allowance,8GiB perchild,two workers and shared
-benchmark lock. The literal candidate has not yet been installed or measured.
+benchmark lock. Installed tool734fa9b5945951d42c37caa2c3906ba9a6825bd147e9f85c018afb81055d9c32,
+VM5d0d41d03171f512e306095f289ab894a75dd2237d205b6d012d672949f106c8,
+servere03b911d570c81453a224e1b6bef08aee3003591a6dfa5a976d1c8fc5c49d7a1.
+Full673/profile proof and1824invocations/19531verified hits are closed. Phase
+attribution shows median miss emission7.103ms versus previous25.681ms and ordinary
+preparation21.703ms versus37.913ms, despite increased key/restoration cost. These
+separate instrumented observations justify this new primary, not a speedup claim.
