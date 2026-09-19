@@ -1,0 +1,42 @@
+--- /Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/launch_native_loader_route_controls_01.py
++++ /Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/launch_proof_snapshot_controls_v2_01.py
+@@ -1,4 +1,4 @@
+-"""Launch the reviewed nine-loader-control proposal and observe its detached supervisor to closure.
++"""Launch the reviewed twenty-two-snapshot-control proposal and observe its detached supervisor to closure.
+ 
+ The exact launch digest is bound after concrete packet preparation and before separate launch review. No provider,
+ compiler or controller starts before the unchanged fresh 16 GiB entry check.
+@@ -16,11 +16,11 @@
+ import time
+ 
+ ROOT = Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918')
+-HERE = ROOT/'experiments/native-loader-route-controls-01'
++HERE = ROOT/'experiments/bounded-proof-snapshot-controls-v2-01'
+ LAUNCH = HERE / 'launch.json'
+-WORK = ROOT / '.work/native-loader-route-controls-launch-execution-01'
+-OUTER = ROOT / '.work/experiments/native-loader-route-controls-supervisor-01'
+-CONTROLLER = ROOT / '.work/native-loader-route-controls-01'
++WORK = ROOT / '.work/proof-snapshot-controls-v2-launch-execution-01'
++OUTER = ROOT / '.work/experiments/bounded-proof-snapshot-controls-v2-supervisor-01'
++CONTROLLER = ROOT / '.work/bounded-proof-snapshot-controls-v2-01'
+ MAXIMUM_OBSERVATION_SECONDS = 1800
+ MAXIMUM_WRAPPER_SECONDS = 30
+ 
+@@ -40,7 +40,7 @@
+ 
+ 
+ def main():
+-    expected = '5f268084151a5d7cc98caa34998d2d7da9b0bce52e5b8f7f1b3b0898246bf69d'
++    expected = '8c3b162a55ee17468d4f722d2c9d9d970babc3ba09c4c4f53ad7078a081258f1'
+     require(Path.cwd() == ROOT and sys.dont_write_bytecode and not sys.flags.optimize,
+             'fixed owner and unoptimized Python -B required')
+     require(re.fullmatch('[a-f0-9]{64}', expected) and sha(LAUNCH) == expected,
+@@ -52,7 +52,7 @@
+                '--run-id', OUTER.name, '--', python, '-B', str(HERE / 'run.py'),
+                '--inputs-sha256', proposal['inputs_sha256']]
+     require(proposal['owner'] == str(ROOT) and proposal['command'] == command
+-            and frozen['python'] == python and proposal['expected_children'] == 1 and proposal['controls']==9,
++            and frozen['python'] == python and proposal['expected_children'] == 1 and proposal['controls']==22,
+             'exact reviewed one-child nine-control proposal required')
+     require(sha(HERE / 'inputs.json') == proposal['inputs_sha256']
+             and sha(HERE / 'run.py') == frozen['files'][str(HERE/'run.py')]['sha256'],
