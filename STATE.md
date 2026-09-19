@@ -54,11 +54,10 @@ Integrated02 at545a2cfd passes seven controls/profile under38657/38661 and is
 CLOSED58801 (child in terminal). The two new controls check combined bounds and
 exact sparse/dense staging across joins/loops/long regions, memory/assertions,
 profile/persistent/heap options and six code capacities. No native/guest execution.
-Next reconstruction01 reuses these controls and reconstructs the two exact
-current adopted unprofiled fre block/exhaustive arenas, scalar targets, assertions
-and operation maps. Two ignored saved-code observers; no native publication or
-guest execution. Keep Rust/controller sources frozen until closure. Then full
-workspace/Python/strict qualification and a new real-edit primary are required.
+Reconstruction01 subsequently reproduced both exact adopted unprofiled fre
+block/exhaustive arenas, scalar targets, assertions and operation maps. Full
+workspace/Python/strict qualification also passed and is closed; see below.
+The next remaining gate is the new real-edit parser primary.
 
 Shared templates remain PARKED: completed32-command parser primary under71290/
 71293 passed114 outcomes but wallratio0.999311805 + A/A0.044733804 fails. CPU
@@ -90,7 +89,7 @@ zero unassigned. Preserve every successful capture without reruns.
   `acquire_lock(lock,45)`. Two Cargo/test workers. Only root target is
   `.work/fixed-frame-clear-combined-build-01/target`; NEVER clean it.
 - Build floor max(14GiB,8GiB+2*allocated target); analysis12GiB; children8GiB;
-  primary14GiB; closures8–10GiB as declared. Current free space about22.8GiB;
+  current parser primary24GiB; closures8–10GiB as declared. Current free space fluctuates;
   admit every stage freshly. Nushell real six-cache reservation is about47GiB.
 - Independent cleaner read-only status:
   `/usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status`.
@@ -129,16 +128,16 @@ for a future exact ownership/protection audit if needed.
 Reconstruction01 at1bec189d passed both commands under68671/68674:1050/1245
 ordinary functions,60/69 scalar bodies and11,313,812/13,757,056 codebytes exactly;
 full operation-map spans preserved. CLOSED93895 (child in receipt),76.42s setup.
-Build01 is prepared/current:615minimum workspace tests/profile,13ignored;
-456Pythondiscovered/22skip; ordinary releaseVM then compose with adoptedcompiler.
-No original guest/latency command yet. Sources stay frozen until build closure.
-Strict121 and a new genuine-edit primary remain required. Current free about21GiB.
-
 Build01 at7a5a6725 passed615Rust/profile (13ignored),434Pythonpass/22skip,
 and ordinary releaseVM, under95636/95673; tool78176777e223ad180f5c47c2a2c28f040a806e63979965c46e0f2bee0614b879,
 VM5ec0cc0ef6b3f26335f383ea160e26b63290407f3ab7fde9392fe25da84b0297.
-Exact adopted exporter/wrapper. CLOSED36499 (child in terminal). Next strict
-qualification01 uses unchanged121fixture/cache/unreachable-type/borrow/actual-
-partial controls. Prepare parser primary protocol but do not admit below24GiB
-initial reservation; free currentlyabout20GiB. Candidate/runtime remains
+Exact adopted exporter/wrapper. CLOSED36499 (child in terminal). Strict
+qualification01 atb83997aa passed121fixture/cache/unreachable-type/borrow/actual-
+partial controls under43404/43408 and is CLOSED80833. Parser protocol01 at
+688e2ea2 passed19controls under99106/99156. The first closer and Nushell-check
+cleanup both timed out before lock admission; terminals are preserved and
+admission-only closures succeeded under69900/69940. No successful command was
+repeated. Protocol closer02 is75915/75918; cleanup attempt02 is77691/77718,
+sourceafa80866. Recheck terminal receipts before proceeding. The genuine-edit
+primary is unstarted and still requires24GiB initially. Candidate/runtime remains
 unadopted; no performance measurement yet. Saved pause/ownership boundaries hold.
