@@ -356,3 +356,14 @@ between diagnostic intervals and end-to-end latency. No lazy Rust checking,
 foreign guest backend, higher concurrency, or default-runtime change is implied.
 [Miss attribution](TEMPLATE-MISS-HISTORY-20260919.md),
 [literal candidate](PARAMETERIZED-LITERALS-20260919.md).
+
+September19 continuation: the file hash is still unchanged. Generic duration
+ordering plus template history passed both parser source-edit gates, but the
+held-out176-command fre guard failed:2.94% observed wall gain is below its5.57%
+A/A allowance. Later guards are stopped and main runtime stays adopted. Saved
+costs and a qualified diagnostic replay show that history reduces compilation
+while multi-second guest execution remains. Two current normal-VM native-PC
+captures support finer Copy/Call attribution; no new budget-per-region or generic
+address-check variant is justified by the coarse categories alone. All counters,
+failed attempts and ownership/resource limits remain explicit.
+[Fre evidence and next diagnostic](SESSION-FRE-EXECUTION-20260919.md).
