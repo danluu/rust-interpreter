@@ -120,8 +120,8 @@ used entry only when a new bounded entry needs space. No disk/IPC API is added.
 Two additional controls bring focused qualification to14/profile: bounded
 recency/replacement/eviction and exact reuse of two checked caller-body variants
 across four distinct owners with different assertion bases/scalar addresses.
-Repeated hits must not grow metadata. Close these controls before extending the
-saved-artifact replay to populate the history after misses.
+Repeated hits must not grow metadata. Close these controls before running the
+saved-artifact replay that populates the history after misses.
 
 The first history-model admission (Model03 at153e3057) timed out on the shared
 lock before creating a stage directory or starting any build/test. Its exact
@@ -129,3 +129,20 @@ terminal/controller bindings are preserved in results/cross-program-template-mod
 Model04 retries only that unstarted14-control qualification under unchanged
 source semantics, worker count and disk/lock gates. Do not repeat any earlier
 completed model or saved-artifact replay.
+
+While the peer lock remains held, the history replay driver is implemented but
+not run. Model04 compiles that ignored diagnostic alongside the14 controls;
+history.py requires its completed passing closure before admission. This adjusts
+implementation order only; qualification still precedes the actual replay.
+
+The populated replay retains the exact same eight input artifacts and fixed
+original numeric function sets as Replay01. Visit each function once in ascending
+ID order per state, including original seeding and the wrong edit. On each miss,
+freshly stage and capture the current variant; charge and evict under the same
+64MiB cap. Every hit must equal fresh staging. Record missing function IDs,
+key/restore misses, insertion/emission/capture declines, evictions and current
+entry count/charge. No later execution reachability or admission order is claimed.
+Do not associate a newer cached variant with the old function's preparation
+interval: names/bodies at a numeric ID may have changed. Report diagnostic
+lookup/restore, fresh and capture/insert intervals separately, with no command
+speedup calculation. Native file/IPC storage and publication remain absent.
