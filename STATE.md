@@ -1,3 +1,15 @@
+LATEST: closed-es8-compiler-cache-retirement01 CLOSED success sourcea122f806,
+supervisor1679/controller interminal; independentcloseverified5256removedpaths
+and3538protectedhashes. Nineexactcaches(adoptedES8+shorttailES8), no snapshots/
+executables removed. Nextcommit/pushprofilecontroller then supervise bounded-
+scalar-padding-profile-01 absolutequalify.py;5pairs/10originalguestsfreshentropy,
+exactperPC/non-timingcounters/maps, scalarhelper48bytes->boundedshapeorzero,
+onlyexactCallspan shrinkageallowed. No timing/defaultchange. Workspacecandidate
+VMfc71b1b280aea1f5e6614dfea8eddcad6abd8244bc347a0ad058662446b5f702.
+Freeze runtime/controllers throughterminal+independentclose. Protectedtarget
+untouched, savedgoalPAUSED. Publishclosedfocus/workspace+retirementwithoutcandidate
+runtime afterprofilelaunch, preservingpeer main. Mainlast4d0446ad.
+
 LATEST: bounded-scalar-padding-focused01 CLOSED21tests/profilepassed,
 sourcee0fa7f28 supervisor8859/controller8862; close81422passed. Workspace01
 CLOSED source34247a28 supervisor38761/controller38764; close10837passed:
