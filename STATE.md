@@ -1,3 +1,15 @@
+LATEST: main d836c9c3 pushed scalar-empty scope preservingpeer31261b16.
+Root experiment/bounded-scalar-padding-20260919. Newscope02 CLOSED success,
+sourceb1a3728d supervisor20250/controller20253; close29583passed. Scope01import
+collision failedbeforemain andpreserved. Model1,318,032histories/51,904canaries,
+all81scalarpaddingsamplesqualified: ES8[8]14/37,token18/[8]10+empty1+fulltail1.
+Nextimplementscalaronlyboundedpadding withgcd(caller_align,max(size,1)) preserved
+byallretainedpower2alignments; A<=16 givesexactsubsetstores, largerfallbackold.
+No runtimechange yet. Two runtimefilesexpected scalar_calls.rs/resumable.rs plus
+focusedtests. Freezeallrunsuntilterminal+close. SavedgoalPAUSED;free16.6GiB,
+boundedtargetfloor14;protectedtargetneverclean. Cacheinventory~1.2GiB fromclosed
+shorttailES8 identified read-only, no retirementyet. Nootherprocesscontrols.
+
 LATEST: scalar-entry-empty-work01 CLOSED success, sourcee3abece0,
 supervisor9065/controller9103; independent closure exists and all hashesverified.
 2models/profile+4typedmetadata commands passed; no guest/nativepublication.
