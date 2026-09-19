@@ -800,7 +800,19 @@ impl ExecutionMetadata {
         let environment = if program.functions.iter().any(|f| f.code.iter().any(|op| matches!(op, Op::EnvironmentGet {..}))) {
             Some(environment::Snapshot::capture(memory_limit)?)
         } else { None };
-        Ok(Self {
+        Ok(Self::with_snapshot(program, jit, resumable, environment))
+    }
+    #[cfg(feature = "jit-template-session")]
+    fn with_environment(program: &Program, jit: Option<&jit::Jit<'_>>, memory_limit: usize,
+        pairs: &[(Vec<u8>, Vec<u8>)]) -> Result<Self, String> {
+        let environment = if program.functions.iter().any(|f| f.code.iter().any(|op| matches!(op, Op::EnvironmentGet {..}))) {
+            Some(environment::Snapshot::from_pairs(pairs.iter().cloned(), memory_limit)?)
+        } else { None };
+        Ok(Self::with_snapshot(program, jit, true, environment))
+    }
+    fn with_snapshot(program: &Program, jit: Option<&jit::Jit<'_>>, resumable: bool,
+        environment: Option<environment::Snapshot>) -> Self {
+        Self {
             needs_register_zeroes: if resumable {
                 jit.unwrap().resumable_register_zeroes().to_vec()
             } else { program.functions.iter().map(registers::needs_initial_zeroes).collect() },
@@ -808,7 +820,7 @@ impl ExecutionMetadata {
             environment,
             has_descriptor_io: program.functions.iter().any(|f| f.code.iter().any(descriptor_io::is_descriptor_op)),
             has_getcwd: program.functions.iter().any(|f| f.code.iter().any(|op| matches!(op, Op::CurrentDirectory { .. }))),
-        })
+        }
     }
 }
 

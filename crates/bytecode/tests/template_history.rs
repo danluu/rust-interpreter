@@ -99,3 +99,48 @@ fn full_or_dropped_storage_preserves_fresh_execution() {
         equal(owner.execute(&[],limits()),execute_with_engine(&current,&[],Limits::default(),Engine::Interpreter));
     }
 }
+
+fn environment_program()->Program {
+    let mut p=program(7,0);p.data.extend_from_slice(b"SESSION_VALUE\0");
+    p.functions[0].result.size=8;
+    p.functions[0].code=vec![Op::Imm{dst:0,value:16},Op::EnvironmentGet{dst:1,name:0},
+        Op::Load{dst:2,address:1,size:1},Op::Local{dst:3,offset:0},Op::Store{address:3,src:2,size:8},Op::Return];p
+}
+
+#[test]
+fn request_environment_is_owned_current_and_independent_of_reused_code() {
+    let history=TemplateHistory::new(1024*1024,true).unwrap();let p=environment_program();let mut hits=0;
+    for value in [b'a',b'b',b'c'] {
+        let mut input=vec![(b"SESSION_VALUE".to_vec(),vec![value])];
+        let mut owner=PreparedJit::with_session_inputs(&p,&limits(),Some(&history),&input).unwrap();
+        let mut fresh=PreparedJit::with_session_inputs(&p,&limits(),None,&input).unwrap();
+        input[0].1[0]=b'z';drop(input);
+        for _ in 0..2 {
+            let actual=owner.execute(&[],limits()).unwrap();assert_eq!(actual.value,value as u128);
+            equal(Ok(actual),fresh.execute(&[],limits()));
+        }
+        let counts=owner.template_statistics().unwrap();hits+=counts.hits;assert_eq!(counts.hits,counts.verified_hits);
+    }
+    assert!(hits>0);
+    let mut missing=PreparedJit::with_session_inputs(&p,&limits(),Some(&history),&[]).unwrap();
+    let mut reference=PreparedJit::with_session_inputs(&p,&limits(),None,&[]).unwrap();
+    equal(missing.execute(&[],limits()),reference.execute(&[],limits()));
+}
+
+#[test]
+fn request_snapshot_rejection_does_not_mutate_history_or_host_environment() {
+    let history=TemplateHistory::new(1024*1024,true).unwrap();let p=environment_program();
+    let host=std::env::var_os("SESSION_VALUE");
+    for pairs in [vec![(b"BAD\0".to_vec(),vec![])],vec![(b"SESSION_VALUE".to_vec(),vec![1;4096])]] {
+        let small=Limits{memory:1024,..limits()};
+        assert!(PreparedJit::with_session_inputs(&p,&small,Some(&history),&pairs).is_err());
+        assert!(PreparedJit::with_session_inputs(&p,&small,None,&pairs).is_err());
+        assert_eq!(history.storage().entries,0);
+    }
+    let mut partial=p.clone();partial.version|=PARTIAL_VALIDATION;
+    assert!(PreparedJit::with_session_inputs(&partial,&limits(),None,&[]).is_err());
+    let input=vec![(b"SESSION_VALUE".to_vec(),b"v".to_vec())];
+    let mut owner=PreparedJit::with_session_inputs(&p,&limits(),Some(&history),&input).unwrap();
+    assert_eq!(owner.execute(&[],limits()).unwrap().value,b'v' as u128);
+    assert_eq!(std::env::var_os("SESSION_VALUE"),host);
+}

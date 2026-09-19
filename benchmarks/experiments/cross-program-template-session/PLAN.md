@@ -77,3 +77,27 @@ API04 also corrects the as-yet-unexecuted feature-only integration oracle to pas
 ordinary interpreter options, rather than JIT flags that its public API rejects.
 The controller checks these exact fixture substitutions againstAPI03 source;
 no default test is affected. This correction precedes the first fixture run.
+
+API04 is closed:633 feature workspace tests/profile,16ignored, ordinary and
+feature release VMs built and retained. Transport01 adds per-request environment
+snapshots (no host set_var) and an explicit inherited-pipe session binary. Two
+owning threads retain histories while native owners/guest state are recreated.
+Requests bind artifact/catalog hashes, current directory, explicit bounded limits
+and a new report path; frames are capped at4MiB and sequence/count at4096requests.
+There is no socket, daemon auto-start, native-code loading or launcher route yet.
+
+Transport01 runs30 focused controls/profile:5 existing environment controls with
+the feature and5 without,3 wire/CPU controls,8 existing PreparedJit controls,
+6 history/current-input controls and3 real session-process fixtures. The latter
+launch four owned sessions/profile: history off/on execute six changed32-test
+fixture suites, rejection recovery executes one suite, and malformed framing
+closes its session. All processes exit through the protocol or EOF and are waited
+for; no signals. Preserve their files/receipts and both session executables.
+No original project guest or source-build benchmark is run in this stage.
+
+The server records process user/system CPU using the installed Darwin SDK's
+getrusage ABI; request snapshots exclude response-writing tail CPU. Final kernel
+process accounting must reconcile startup/tails/teardown in the later E2E driver.
+Error responses conservatively report that execution may have occurred; clients
+never automatically retry. A worker/channel failure closes this owned session
+after joining its workers; guest assertion failures leave later requests usable.

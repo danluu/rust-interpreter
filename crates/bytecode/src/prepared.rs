@@ -51,6 +51,28 @@ impl<'program> PreparedJit<'program> {
         self.jit.as_ref().unwrap().template_statistics()
     }
 
+    /// Explicit per-request environment without changing host process globals.
+    /// Raw names/values use the ordinary bounded guest snapshot contract. The
+    /// input is copied into this owner and then into fresh readonly guest storage
+    /// per invocation. An absent history selects ordinary fresh emission.
+    #[cfg(feature = "jit-template-session")]
+    pub fn with_session_inputs(program: &'program Program, limits: &Limits,
+        history: Option<&crate::TemplateHistory>, environment: &[(Vec<u8>,Vec<u8>)]) -> Result<Self,String> {
+        let started = std::time::Instant::now();
+        Self::check_mode(limits)?;
+        if program.version & crate::PARTIAL_VALIDATION != 0 {
+            return Err("session inputs require fully checked bytecode".into());
+        }
+        let context = if let Some(history) = history {Some(history.context(program)?)}
+            else {crate::validate(program)?;None};
+        let mut jit = crate::create_jit::<false, true, false, true>(program, limits)?;
+        let metadata = ExecutionMetadata::with_environment(program, jit.as_ref(), limits.memory, environment)?;
+        if let Some(context) = context {jit.as_mut().unwrap().attach_templates(context);}
+        Ok(Self {program,jit,metadata,code_bytes:limits.jit_code_bytes,
+            persistent_registers:limits.jit_persistent_registers,scalar_calls:limits.jit_scalar_calls,
+            preparation_nanos:started.elapsed().as_nanos()})
+    }
+
     // Both callers above have validated this immutable Program. Keep this
     // helper private so no caller can bypass validation through the public API.
     fn new_validated(program: &'program Program, limits: &Limits,
