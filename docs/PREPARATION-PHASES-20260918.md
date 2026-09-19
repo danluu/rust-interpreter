@@ -1,0 +1,49 @@
+# Preparation costs on original pgrust and fre workloads
+
+The adopted runtime's ordinary emission is the main preparation cost in the
+explicit diagnostic observations. This gives a more useful next target than
+scalar proof/lowering or the parked shared-template store constructor.
+
+The feature-gated observer4097408c ran the original114-test pgrust gram_core
+parser suite, its known wrong-source114-test suite, and original12-test fre
+token suite. Every outcome matched saved native and adopted results. Seven
+validator controls and six before-guest CLI rejections passed. The closure is
+results/preparation-phase-workloads-01/closure.json; no project source changed.
+Nine focused Rust controls passed in each profile, with the successful debug
+capture retained across an exact-count controller correction. The ordinary
+no-feature lib/VM also compiled. There is no instrumentation in ordinary builds.
+
+Elapsed diagnostic milliseconds, shown per prepared worker:
+
+| Original workload | Worker | Constructor | Compile functions | Ordinary emission | Scalar callees | Ordinary publication |
+|---|---:|---:|---:|---:|---:|---:|
+| pgrust parser | 0 | 21.57 | 126.28 | 108.15 | 11.22 | 5.51 |
+| pgrust parser | 1 | 21.57 | 88.91 | 76.85 | 8.96 | 2.47 |
+| fre token | 0 | 33.26 | 152.58 | 143.30 | 3.03 | 5.52 |
+| fre token | 1 | 33.26 | 110.45 | 103.70 | 2.40 | 3.78 |
+
+These are elapsed host intervals with diagnostic overhead. Compile intervals
+contain emission, scalar-callee preparation and publication. Worker intervals
+overlap. The values cannot be added as CPU time or claimed as recoverable
+command savings. Dynamic test scheduling also changes worker allocations.
+
+For pgrust, function1357, actions::Parser::reduce_cold, has140,615 bytecode
+operations and takes28.36/28.73ms of preparation on the two workers. Both
+owners report one decline; this is their only prepared function without native
+entries. The report deliberately retains prepared/no-entry facts separately
+from aggregate decline counts rather than conflating those representations.
+Scalar proof totals3.21/2.69ms and lowering2.78/2.38ms. The wrong-source suite
+never reaches this cold reducer and has no declined owner.
+
+For fre, no owner declines. Several large regex builder/automaton and sorting
+functions individually take2–4ms, while ordinary emission dominates across
+many functions. Scalar proof totals0.96/0.79ms. Constructor costs include
+validation, JIT metadata and execution metadata; these are separately recorded.
+
+Next split ordinary emission into read analysis, liveness, local-fill analysis,
+call-slot analysis, layout, region generation and relocation. All remain in the
+explicit diagnostic binary. This distinguishes reusable analysis from machine
+code generation before choosing a production change. A negative cache for the
+pgrust reducer alone would target only roughly28ms of overlapping work, and
+requires a correct capacity/dependency key; the present evidence does not
+justify presenting it as a solution to the full changed-source gap.
