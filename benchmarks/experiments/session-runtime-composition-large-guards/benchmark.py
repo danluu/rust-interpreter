@@ -20,7 +20,7 @@ sys.path.insert(0,str(ROOT/'benchmarks/experiments/cross-program-template-screen
 from session_owner import Session,read_frame
 sys.path.insert(0,str(ROOT/'benchmarks/experiments/runtime-composition-screen'))
 from screen import native_executable
-PROTOCOL='session-runtime-composition-large-protocol-01'
+PROTOCOL='session-runtime-composition-large-protocol-02'
 def read(p):return json.loads(p.read_text())
 def case_states(original,case):
     states=list(source_states(original.decode(),case,3,['baseline','duplicate','candidate'],True))
@@ -106,7 +106,7 @@ def main():
                     assert ready['parameterized_literals'] is True and ready['buffered_template_keys'] is False
                 endpoints={m:s.endpoint/'ready.json' for m,s in owners_by_mode.items()}
                 for label,code,diagnostic in [('type',b'\nfn rust_interp_strict_type_probe() { let _: u32 = "invalid"; }\n','E0308'),
-                        ('borrow',b'\nfn rust_interp_strict_borrow_probe() { let mut x=0; let a=&mut x; let b=&mut x; std::hint::black_box((a,b)); }\n','E0499')]:
+                        ('borrow',b'\nfn rust_interp_strict_borrow_probe() { let mut x=0; let a=&mut x; let b=&mut x; core::hint::black_box((a,b)); }\n','E0499')]:
                     require_space(ROOT,8);assert b'rust_interp_strict_' not in original;edit.replace(original+code)
                     cmd=command(ROOT,source,case,reference,names,pattern,raw,'strict-'+label,'candidate',builds,endpoints,raw.name+':strict')
                     child,out,err=capture(cmd,cwd=source,env=guest,receipt_path=raw/'active-strict.json',receipt=dict(label=label))
