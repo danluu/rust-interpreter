@@ -1,0 +1,129 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-prerequisite-controls-04/run.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-saved-audit-controls-05/run.py
+@@ -10,11 +10,11 @@
+ 
+ HERE = Path(__file__).resolve().parent
+ OWNER = HERE.parents[1]
+-SOURCE = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-04')
++SOURCE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-05')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ sys.path.insert(0, str(X / 'experiments/stable-cgu'))
+ import owned_stage as owned
+-WORK = OWNER / '.work/runtime-prerequisite-controls-04'
++WORK = OWNER / '.work/runtime-saved-audit-controls-05'
+ 
+ 
+ def read(path):
+@@ -71,10 +71,10 @@
+             stderr = (WORK / 'command/stderr').read_text()
+             names = re.findall(r'^test_[A-Za-z0-9_]+ \(([^)]+)\) \.\.\. ok$', stderr, re.M)
+             assert sorted(names) == freeze['expected_names']
+-            assert re.search(r'^Ran 52 tests in [0-9.]+s\n\nOK\n$', stderr, re.M)
++            assert re.search(r'^Ran 53 tests in [0-9.]+s\n\nOK\n$', stderr, re.M)
+             assert not (WORK / 'command/stdout').read_bytes()
+             result = read(WORK / 'result.json')
+-            assert result['status'] == 'passed' and result['tests_run'] == 52 and result['expected_names'] == freeze['expected_names']
++            assert result['status'] == 'passed' and result['tests_run'] == 53 and result['expected_names'] == freeze['expected_names']
+             assert all(result[name] == 0 for name in ['failures', 'errors', 'skipped', 'expected_failures', 'unexpected_successes', 'child_processes', 'compiler_calls'])
+             assert not list((WORK / 'tmp').iterdir()), 'synthetic fixture cleanup incomplete'
+             total = 0
+@@ -87,7 +87,7 @@
+                     assert path.is_dir()
+             assert total <= 2 * 1024 * 1024, 'retained pure-control output cap exceeded'
+             guard(freeze)
+-            receipt.update(status='passed', controls_passed=52, result_sha256=owned.sha(WORK / 'result.json'),
++            receipt.update(status='passed', controls_passed=53, result_sha256=owned.sha(WORK / 'result.json'),
+                            retained_file_bytes=total, free_bytes_after=owned.disk(OWNER, 9))
+     except BaseException as error:
+         receipt.update(status='failed', error=repr(error)); raise
+
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-prerequisite-controls-04/prepare.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-saved-audit-controls-05/prepare.py
+@@ -11,16 +11,16 @@
+     here, source, owner = control.HERE, control.SOURCE, control.OWNER
+     assert Path.cwd() == owner and sys.dont_write_bytecode
+     assert not any((here / name).exists() for name in ['inputs.json', 'launch.json'])
+-    assert not control.WORK.exists() and not (owner / '.work/experiments/runtime-prerequisite-controls-supervisor-04').exists()
++    assert not control.WORK.exists() and not (owner / '.work/experiments/runtime-saved-audit-controls-supervisor-05').exists()
+     names = []
+-    modules = ['test_prerequisite_successor', 'test_copy_references']
++    modules = ['test_reader', 'test_audit_io']
+     for module in modules:
+         tree = ast.parse((source / (module + '.py')).read_text())
+         for node in tree.body:
+             if isinstance(node, ast.ClassDef):
+                 names.extend(module + '.' + node.name + '.' + child.name for child in node.body
+                              if isinstance(child, ast.FunctionDef) and child.name.startswith('test_'))
+-    assert len(names) == len(set(names)) == 52
++    assert len(names) == len(set(names)) == 53
+     files, routes = {}, {}
+     def add(path):
+         path = Path(path); resolved = path.resolve(strict=True)
+@@ -36,7 +36,7 @@
+     for path in sorted(here.iterdir()):
+         assert path.is_file() and not path.is_symlink()
+         add(path)
+-    for name in ['prerequisites.py', 'imports.py', 'copies.py', 'entry.py', 'test_prerequisite_successor.py', 'test_copy_references.py', 'README.md', 'source-bindings.json']:
++    for name in ['reader.py', 'audit_io.py', 'test_reader.py', 'test_audit_io.py']:
+         add(source/name)
+     python = Path(sys.executable).resolve(strict=True)
+     for path in [python, '/opt/homebrew/bin/python3', '/bin/ps', '/usr/sbin/lsof',
+@@ -54,19 +54,19 @@
+                               maximum_writable_names=256, maximum_directory_names=2048,
+                               maximum_cumulative_child_file_payload_bytes=258 * 256 * 1024,
+                               maximum_retained_stage_file_bytes=2 * 2**20),
+-                  source_only_runtime04_reader_copy_reference_controls=True, compiler_calls=0, provider_probes=0, B3_compositions=0)
++                  source_only_runtime05_saved_reader_io_controls=True, compiler_calls=0, provider_probes=0, B3_compositions=0)
+     control.owned.write(here / 'inputs.json', freeze)
+     launch = dict(status='prepared-unrun-awaiting-review', owner=str(owner), environment=environment,
+                   command=[str(python), '-B', str(owner / 'scripts/supervise_experiment.py'), '--run-id',
+-                           'runtime-prerequisite-controls-supervisor-04', '--', str(python), '-B',
++                           'runtime-saved-audit-controls-supervisor-05', '--', str(python), '-B',
+                            str(here / 'run.py'), '--inputs-sha256', control.owned.sha(here / 'inputs.json')],
+                   inputs_sha256=control.owned.sha(here / 'inputs.json'), helper_sha256=control.owned.sha(here / 'run.py'),
+-                  expected_children=1, controls=52, capacity=freeze['capacity'], bounds=freeze['bounds'])
++                  expected_children=1, controls=53, capacity=freeze['capacity'], bounds=freeze['bounds'])
+     control.owned.write(here / 'launch.json', launch)
+     control.guard(freeze)
+     print(json.dumps(dict(status='prepared-unrun', launch_sha256=control.owned.sha(here / 'launch.json'),
+                          inputs_sha256=launch['inputs_sha256'], files=len(files),
+-                         bytes=sum(row['stamp'][3] for row in files.values()), controls=52), indent=2))
++                         bytes=sum(row['stamp'][3] for row in files.values()), controls=53), indent=2))
+ 
+ 
+ if __name__ == '__main__':
+
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-prerequisite-controls-04/child.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-saved-audit-controls-05/child.py
+@@ -8,10 +8,10 @@
+ import unittest
+ 
+ HERE = Path(__file__).resolve().parent
+-SOURCE = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-04')
++SOURCE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-05')
+ OWNER = HERE.parents[1]
+-WORK = OWNER / '.work/runtime-prerequisite-controls-04'
+-MODULES = ['test_prerequisite_successor', 'test_copy_references']
++WORK = OWNER / '.work/runtime-saved-audit-controls-05'
++MODULES = ['test_reader', 'test_audit_io']
+ MAX_FILE = 256 * 1024
+ 
+ 
+@@ -58,7 +58,7 @@
+         if isinstance(item, unittest.TestSuite):
+             return [name for test in item for name in names(test)]
+         return [item.id()]
+-    assert sorted(names(suite)) == expected and len(expected) == 52
++    assert sorted(names(suite)) == expected and len(expected) == 53
+     result = unittest.TextTestRunner(verbosity=2).run(suite)
+     freeze = json.loads((HERE / 'inputs.json').read_bytes())
+     for module in list(sys.modules.values()):
+@@ -72,7 +72,7 @@
+                   maximum_file_bytes=MAX_FILE, maximum_writable_names=256,
+                   maximum_directory_names=2048, child_processes=0, compiler_calls=0)
+     (WORK / 'result.json').write_text(json.dumps(report, sort_keys=True, indent=2) + '\n')
+-    assert result.wasSuccessful() and result.testsRun == 52 and not result.skipped
++    assert result.wasSuccessful() and result.testsRun == 53 and not result.skipped
+     assert not result.expectedFailures and not result.unexpectedSuccesses
+     signal.alarm(0)
+ 

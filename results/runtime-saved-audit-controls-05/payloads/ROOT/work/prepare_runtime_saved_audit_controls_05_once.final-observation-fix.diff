@@ -1,0 +1,15 @@
+--- before
++++ after
+@@ -57,7 +57,11 @@
+       r.update(status='unresolved-live-child-not-signaled',observation_finished_at=time.time(),returncode=child.returncode,may_be_live=child.returncode is None)
+       observe_save(); break
+    if code is None: raise RuntimeError('bounded observation expired; child not signaled and closure not asserted')
+-  r.update(status='finished',returncode=code,finished_at=time.time(),stdout_sha256=sha(E/'stdout'),stderr_sha256=sha(E/'stderr'),free_bytes_after=shutil.disk_usage(O).free); save()
++  r.update(status='finished',returncode=code,finished_at=time.time())
++  for key,callback in [('stdout_sha256',lambda:sha(E/'stdout')),('stderr_sha256',lambda:sha(E/'stderr')),('free_bytes_after',lambda:shutil.disk_usage(O).free)]:
++   try: r[key]=callback()
++   except BaseException as error: r['observation_errors'].append(dict(stage=key,error=repr(error),time=time.time()))
++  observe_save()
+   assert not r['observation_errors'], 'observation/publication error; child closed and evidence preserved'
+   assert code==0 and not (E/'stderr').read_bytes()
+   assert r['free_bytes_after']>=9*2**30 and all(row['free_bytes']>=9*2**30 for row in r['disk_samples'])

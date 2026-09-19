@@ -1,0 +1,29 @@
+--- /Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/runtime05-before-inspection-alias-fix-01-audit_io.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-05/audit_io.py
+@@ -106,7 +106,8 @@
+         else:
+             merged[name] = row; added[name] = row
+     table(merged)
+-    value = dict(original, files=merged)
++    value = copy.deepcopy(original)
++    value['files'] = copy.deepcopy(merged)
+     require(same({k:v for k,v in value.items() if k != 'files'},
+                  {k:v for k,v in original.items() if k != 'files'}), 'prepared metadata changed')
+     return dict(value=value, prepared=original, supplemental=extra,
+--- /Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/runtime05-before-inspection-alias-fix-01-test_audit_io.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-05/test_audit_io.py
+@@ -218,7 +218,14 @@
+         self.assertEqual(answer['report']['additional_paths'], ['/fixture/auditor'])
+         self.assertEqual(answer['report']['additional_bytes'], 1)
+         answer['value']['files']['/fixture/original']['identity']['ino'] += 1
++        answer['value']['snapshot_inputs'].append('/fixture/changed')
++        answer['value']['absent_paths'].clear()
++        answer['value']['links']['/fixture/changed'] = {}
++        answer['value']['unusual_typed_header']['nested'][0] = True
++        answer['value']['files']['/fixture/auditor']['sha256'] = 'c'*64
+         self.assertTrue(self.io.same(self.prepared, original))
++        self.assertTrue(self.io.same(answer['prepared'], original))
++        self.assertTrue(self.io.same(answer['supplemental'], extra))
+ 
+     def test_identical_overlap_gets_no_new_file_or_byte_credit(self):
+         answer = self.io.inspection_union(self.prepared, copy.deepcopy(self.prepared['files']), historical_paths=[])

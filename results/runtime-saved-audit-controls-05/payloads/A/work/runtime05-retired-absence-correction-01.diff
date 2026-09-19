@@ -1,0 +1,53 @@
+--- /Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/runtime05-before-retired-absences-01-audit_io.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-05/audit_io.py
+@@ -82,6 +82,9 @@
+     prepared packet. Its non-file metadata, including snapshot_inputs, is
+     byte-for-byte equal under typed canonical JSON. The report identifies only
+     genuinely additional paths; an overlapping row must be exactly identical.
++    Real prepared absences after qualified retirement remain unchanged. This
++    pure union neither adds absences nor qualifies retirement; its caller must
++    authenticate that actual retirement and check the named absences physically.
+     """
+     original, extra = copy.deepcopy(prepared), copy.deepcopy(supplemental)
+     require(type(original) is dict and 'file_table_base' not in original
+@@ -93,8 +96,8 @@
+         path(name)
+     forbidden = set(historical)
+     require(not forbidden & (set(original['files']) | set(extra)
+-            | set(original.get('snapshot_inputs', [])) | set(original.get('absent_paths', []))),
+-            'historical copy cannot be a physical input, selection or synthetic absence')
++            | set(original.get('snapshot_inputs', []))),
++            'historical copy cannot be a physical input or selected payload')
+     merged = copy.deepcopy(original['files'])
+     added = {}
+     for name, row in extra.items():
+--- /Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/runtime05-before-retired-absences-01-test_audit_io.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-05/test_audit_io.py
+@@ -247,7 +247,7 @@
+                 self.io.inspection_union(self.prepared, extra, historical_paths=[])
+ 
+     def test_historical_path_cannot_enter_any_current_representation(self):
+-        for role in ['files', 'snapshot_inputs', 'absent_paths', 'extra']:
++        for role in ['files', 'snapshot_inputs', 'extra']:
+             prepared = copy.deepcopy(self.prepared); extra = {}; name = '/fixture/historical'
+             if role == 'files':
+                 prepared['files'][name] = copy.deepcopy(self.row)
+@@ -257,6 +257,18 @@
+                 prepared[role].append(name)
+             with self.assertRaisesRegex(RuntimeError, 'historical copy'):
+                 self.io.inspection_union(prepared, extra, historical_paths=[name])
++
++    def test_real_prepared_retirement_absence_is_preserved_without_invention(self):
++        prepared = copy.deepcopy(self.prepared); historical = '/fixture/retired-copy'
++        prepared['absent_paths'].append(historical); before = copy.deepcopy(prepared)
++        answer = self.io.inspection_union(prepared, {'/fixture/auditor':self.row},
++                                         historical_paths=[historical])
++        self.assertTrue(self.io.same(answer['prepared'], before))
++        self.assertTrue(self.io.same(answer['value']['absent_paths'], before['absent_paths']))
++        self.assertNotIn(historical, answer['value']['files'])
++        self.assertNotIn(historical, answer['value']['snapshot_inputs'])
++        without = self.io.inspection_union(self.prepared, {}, historical_paths=[historical])
++        self.assertNotIn(historical, without['value']['absent_paths'])
+ 
+     def test_compact_or_ambiguous_input_is_not_a_complete_union(self):
+         for field in ['file_table_base', 'file_table_integrity']:

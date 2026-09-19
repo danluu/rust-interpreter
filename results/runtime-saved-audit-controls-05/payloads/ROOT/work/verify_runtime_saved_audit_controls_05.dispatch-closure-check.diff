@@ -1,0 +1,11 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/verify_runtime_saved_audit_controls_05.before-dispatch-closure-check.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/verify_runtime_saved_audit_controls_05.py
+@@ -28,6 +28,8 @@
+ assert Path(l['launcher_source_path'])==A/'.work/launch_runtime_saved_audit_controls_05_bounded.py' and l['launcher_source_sha256']==sha(Path(l['launcher_source_path']))
+ assert l['status']=='terminal-observed' and l['returncode']==0 and l['launcher_returncode']==0 and l['command']==launch['command'] and l['environment']==launch['environment'] and l['cwd']==str(A)
+ assert l['launcher_source_sha256']==EXPECTED_DISPATCHER
++assert l['observation_errors']==[] and l['wrapper_may_be_live'] is False and l['actual_task_may_be_live'] is False
++assert all(sample['free_bytes']>=9*2**30 for sample in l['disk_samples'])
+ assert l['outer_sha256']==sha(S/'status.json') and l['controller_pid']==r['pid'] and l['supervisor_pid']==o['supervisor_pid']
+ assert l['finished_at']==o['finished_at']<=l['terminal_observed_at'] and l['started_at']<=l['launcher_finished_at']<=l['terminal_observed_at']
+ assert l['started_at']<=o['started_at'] and l['launcher_identity']['method']=='in-process'

@@ -1,0 +1,30 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/execute_runtime_saved_audit_controls_audit_05.before-final-observation-fix.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/execute_runtime_saved_audit_controls_audit_05.py
+@@ -33,7 +33,7 @@
+ command = [str(P), '-B', str(SOURCE)]
+ record = dict(status='starting', started_at=time.time(), parent_pid=os.getpid(),
+     command=command, cwd=str(ROOT), environment=environment, source_sha256=EXPECTED,
+-    execution_source_sha256=sha(__file__),
++    execution_source_sha256=sha(__file__), observation_errors=[],
+     mode='one authorized independent read-only actual53 verification; no test or provider calls',
+     identity_limitation='Popen PID and in-process parent retained; no extra identity probes or signals.')
+ 
+@@ -63,11 +63,16 @@
+                           publication_error=publication_error)
+             save()
+             raise
+-    record.update(status='finished', returncode=code, finished_at=time.time(),
+-                  stdout_sha256=sha(E/'stdout'), stderr_sha256=sha(E/'stderr'))
++    record.update(status='finished', returncode=code, finished_at=time.time())
++    for stream in ['stdout', 'stderr']:
++        try:
++            record[stream+'_sha256'] = sha(E/stream)
++        except BaseException as error:
++            record['observation_errors'].append(dict(stage=stream+'-hash', error=repr(error), time=time.time()))
+     if publication_error is not None:
+         record['publication_error'] = publication_error
+     save()
++    assert not record['observation_errors'], 'post-wait observation error; child closure retained'
+     assert code == 0 and not (E/'stderr').read_bytes() and publication_error is None
+     assert sha(SOURCE) == EXPECTED == sha(E/'source.py')
+     record['verified_output'] = read(E/'stdout'); save()

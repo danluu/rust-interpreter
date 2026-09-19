@@ -1,0 +1,56 @@
+--- /Users/danluu/dev/rust-interp-runtime-application-admission-20260918/.work/runtime05-reader-before-blob-schema-01.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-05/test_reader.py
+@@ -304,8 +304,10 @@
+         rows=[dict(path=str(p),sha256=s.sha(p),size=len(s.raw(p)),identity=s.identity(p)) for p in [*aliases,own]]
+         self.freeze=dict(snapshot_inputs=list(map(str,aliases)),files={r['path']:{k:v for k,v in r.items() if k!='path'} for r in rows[:-1]})
+         key,ownkey=s.sha(aliases[0]),s.sha(own)
++        compressed=b'fake compressed row'  # Metadata fixture only; never a gzip EOF claim.
+         def blob(k,size):
+-            return dict(filename=k+'.gz',logical_sha256=k,logical_bytes=size,compressed_bytes=19,compressed_sha256='b'*64)
++            return dict(filename=k+'.gz',logical_sha256=k,logical_bytes=size,
++                compressed_bytes=len(compressed),sha256=digest(compressed))
+         blobs={key:blob(key,len(s.raw(aliases[0]))),ownkey:blob(ownkey,len(s.raw(own)))}
+         reference=dict(path=str(self.prior/(key+'.gz')),identity=stamp(19,401),blob=blobs[key],evidence_root=str(self.prior))
+         roots={str(self.prior):stamp(64,402,stat.S_IFDIR|0o700)}
+@@ -332,7 +334,11 @@
+             compressed_bytes=38,new_compressed_bytes=19,reused_compressed_bytes=19)
+         self.terminal=dict(snapshot_admission=dict(existing_evidence_bytes=1000,reserved_bytes=reservation))
+         self.directory=dict(identity=stamp(64,403,stat.S_IFDIR|0o700),children=[ownkey+'.gz'])
+-        s.bytes(self.root/(ownkey+'.gz'),b'fake compressed row')
++        s.bytes(self.prior/(key+'.gz'),compressed);s.stamps[reference['path']]=copy.deepcopy(reference['identity'])
++        s.bytes(self.root/(ownkey+'.gz'),compressed)
++        self.expected_physical={reference['path']:copy.deepcopy(reference),
++            str(self.root/(ownkey+'.gz')):dict(path=str(self.root/(ownkey+'.gz')),
++                identity=s.identity(self.root/(ownkey+'.gz')),blob=copy.deepcopy(blobs[ownkey]),evidence_root=str(self.root))}
+         self.verified=[];self.guard_calls=0;self.directory_calls=0;self.fail_reference=False;self.change_directory=False
+         self.catalog=types.SimpleNamespace(select=self.select)
+         self.snapshots=types.SimpleNamespace(verify_reference=self.verify_reference)
+@@ -353,6 +359,17 @@
+         guard()
+         if self.fail_reference:raise RuntimeError('fixture full-reference rejection')
+         if reference['evidence_root'] not in roots:raise RuntimeError('fixture reference root omitted')
++        if (set(reference)!={'path','identity','blob','evidence_root'}
++                or set(reference['blob'])!={'filename','logical_sha256','logical_bytes','sha256','compressed_bytes'}
++                or reference['path'] not in self.expected_physical
++                or encoded(reference)!=encoded(self.expected_physical[reference['path']])):
++            raise RuntimeError('fixture exact physical descriptor differs')
++        b=reference['blob'];p=reference['path']
++        if (b['sha256']!=self.saved.sha(p) or b['compressed_bytes']!=len(self.saved.raw(p))
++                or encoded(reference['identity'])!=encoded(self.saved.identity(p))
++                or Path(p).parent!=Path(reference['evidence_root'])
++                or Path(p).name!=b['filename'] or b['filename']!=b['logical_sha256']+'.gz'):
++            raise RuntimeError('fixture compressed bytes or identity differs')
+         self.verified.append(copy.deepcopy(reference))
+ 
+     def guard(self):self.guard_calls+=1
+@@ -380,6 +397,10 @@
+     def test_reference_verifier_failure_is_not_hidden(self):
+         f=SnapshotFixture();f.fail_reference=True
+         with self.assertRaisesRegex(RuntimeError,'full-reference rejection'):f.check()
++        f=SnapshotFixture();row=copy.deepcopy(next(iter(f.expected_physical.values())))
++        row['blob']['compressed_sha256']=row['blob'].pop('sha256')
++        with self.assertRaisesRegex(RuntimeError,'exact physical descriptor'):
++            f.verify_reference(row,f.selection['evidence_roots'],f.guard)
+ 
+     def test_missing_logical_alias_or_physical_blob_rejects(self):
+         f=SnapshotFixture();f.manifest['files'].pop('/fixture/alias.py');f.sync()

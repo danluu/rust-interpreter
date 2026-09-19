@@ -1,0 +1,97 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/launch_runtime_saved_audit_controls_05_bounded.before-closure-fix.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/launch_runtime_saved_audit_controls_05_bounded.py
+@@ -28,7 +28,8 @@
+     launcher_parent_pid=os.getppid(), command=plan['command'], cwd=str(ROOT), environment=plan['environment'],
+     launcher_identity=dict(method='in-process', pid=os.getpid(), parent_pid=os.getppid(), pgid=os.getpgrp(),
+                            cwd=str(Path.cwd()), argv=list(sys.argv)),
+-    wrapper_identity_limitation='Popen PID retained; no separate contemporaneous wrapper ps/cwd probe.')
++    wrapper_identity_limitation='Popen PID retained; no separate contemporaneous wrapper ps/cwd probe.',
++    observation_errors=[], disk_samples=[], actual_task_may_be_live=False)
+ 
+ 
+ def write():
+@@ -37,22 +38,53 @@
+     (WORK/'record.staged').replace(WORK/'record.json')
+ 
+ 
++def observe_save():
++    try:
++        write()
++    except BaseException as error:
++        record['observation_errors'].append(dict(stage='publication', error=repr(error), time=time.time()))
++
++
+ write()
+ with (WORK/'stdout').open('xb') as stdout, (WORK/'stderr').open('xb') as stderr:
+     child = subprocess.Popen(plan['command'], cwd=ROOT, env=plan['environment'], stdin=subprocess.DEVNULL,
+                              stdout=stdout, stderr=stderr, start_new_session=True)
+-    record.update(status='wrapper-running', pid=child.pid); write()
++    deadline = time.monotonic()+30
++    record.update(status='wrapper-running', pid=child.pid, actual_task_may_be_live=True)
++    observe_save()
++    while True:
++        try:
++            code = child.wait(timeout=min(1, max(.001, deadline-time.monotonic())))
++            break
++        except subprocess.TimeoutExpired:
++            try:
++                record['disk_samples'].append(dict(time=time.time(), free_bytes=shutil.disk_usage(ROOT).free))
++            except BaseException as error:
++                record['observation_errors'].append(dict(stage='disk-sample', error=repr(error), time=time.time()))
++            observe_save()
++            if time.monotonic() >= deadline:
++                code = None
++                record.update(status='wrapper-observation-expired-task-not-signaled',
++                    observation_finished_at=time.time(), wrapper_returncode=child.returncode,
++                    wrapper_may_be_live=child.returncode is None)
++                observe_save()
++                break
++    if code is None:
++        raise RuntimeError('bounded wrapper observation expired; no signal or closure claim')
++# Preserve actual wait closure before any post-wait byte or disk observation.
++record.update(status='wrapper-finished', launcher_returncode=code, launcher_finished_at=time.time(),
++              wrapper_may_be_live=False)
++observe_save()
++for stream in ['stdout', 'stderr']:
+     try:
+-        code = child.wait(timeout=30)
+-    except subprocess.TimeoutExpired:
+-        record.update(status='wrapper-observation-expired-task-not-signaled', observation_finished_at=time.time()); write()
+-        raise
+-record.update(status='wrapper-finished', launcher_returncode=code, launcher_finished_at=time.time(),
+-              stdout_sha256=sha(WORK/'stdout'), stderr_sha256=sha(WORK/'stderr')); write()
++        record[stream+'_sha256'] = sha(WORK/stream)
++    except BaseException as error:
++        record['observation_errors'].append(dict(stage='wrapper-'+stream+'-hash', error=repr(error), time=time.time()))
++observe_save()
+ assert code == 0 and not (WORK/'stderr').read_bytes()
+ handoff = json.loads((WORK/'stdout').read_bytes())
+ assert type(handoff['supervisor_pid']) is int and handoff['supervisor_pid'] > 0 and handoff['directory'] == str(OUTER)
+-record['supervisor_pid'] = handoff['supervisor_pid']; write()
++record['supervisor_pid'] = handoff['supervisor_pid']; observe_save()
+ deadline = time.monotonic()+900
+ while time.monotonic() < deadline:
+     if (OUTER/'status.json').exists():
+@@ -61,10 +93,19 @@
+         assert outer['command'] == plan['command'][6:]
+         if outer['status'] == 'finished':
+             record.update(status='terminal-observed', returncode=outer['returncode'], finished_at=outer['finished_at'],
+-                terminal_observed_at=time.time(), outer_sha256=sha(OUTER/'status.json'), controller_pid=outer['child_pid'])
+-            write(); print(json.dumps(record, sort_keys=True)); assert outer['returncode'] == 0
++                terminal_observed_at=time.time(), controller_pid=outer['child_pid'], actual_task_may_be_live=False)
++            observe_save()
++            try:
++                record['outer_sha256'] = sha(OUTER/'status.json')
++            except BaseException as error:
++                record['observation_errors'].append(dict(stage='actual-outer-hash', error=repr(error), time=time.time()))
++            observe_save()
++            print(json.dumps(record, sort_keys=True))
++            assert outer['returncode'] == 0
++            assert not record['observation_errors'], 'observation/publication error; actual closure retained'
++            assert all(sample['free_bytes'] >= 9*2**30 for sample in record['disk_samples']), 'observed live floor violation'
+             break
+     time.sleep(2)
+ else:
+-    record.update(status='observation-expired-task-not-signaled', observation_finished_at=time.time()); write()
++    record.update(status='observation-expired-task-not-signaled', observation_finished_at=time.time(), actual_task_may_be_live=True); observe_save()
+     raise RuntimeError('actual terminal not observed within 900 seconds; task not signaled')

@@ -1,0 +1,33 @@
+--- before
++++ after
+@@ -39,17 +39,26 @@
+   resource.setrlimit(resource.RLIMIT_CPU,(60,60)); resource.setrlimit(resource.RLIMIT_FSIZE,(256*1024,256*1024))
+   with (E/'stdout').open('xb') as stdout,(E/'stderr').open('xb') as stderr:
+    child=subprocess.Popen(command,cwd=O,env=env,stdin=subprocess.DEVNULL,stdout=stdout,stderr=stderr,pass_fds=(fd,))
+-   r.update(status='running',pid=child.pid,child_started_at=time.time()); save()
+    deadline=time.monotonic()+120
++   r.update(status='running',pid=child.pid,child_started_at=time.time(),observation_errors=[])
++   def observe_save():
++    try: save()
++    except BaseException as error: r['observation_errors'].append(dict(stage='publication',error=repr(error),time=time.time()))
++   observe_save()
+    while True:
+     try:
+      code=child.wait(timeout=min(1,max(.001,deadline-time.monotonic()))); break
+     except subprocess.TimeoutExpired:
+-     free=shutil.disk_usage(O).free
+-     r['disk_samples'].append(dict(time=time.time(),free_bytes=free)); save()
++     try: r['disk_samples'].append(dict(time=time.time(),free_bytes=shutil.disk_usage(O).free))
++     except BaseException as error: r['observation_errors'].append(dict(stage='disk-sample',error=repr(error),time=time.time()))
++     observe_save()
+      if time.monotonic()>=deadline:
+-      r.update(status='unresolved-live-child-not-signaled',observation_finished_at=time.time()); save(); raise
++      code=None
++      r.update(status='unresolved-live-child-not-signaled',observation_finished_at=time.time(),returncode=child.returncode,may_be_live=child.returncode is None)
++      observe_save(); break
++   if code is None: raise RuntimeError('bounded observation expired; child not signaled and closure not asserted')
+   r.update(status='finished',returncode=code,finished_at=time.time(),stdout_sha256=sha(E/'stdout'),stderr_sha256=sha(E/'stderr'),free_bytes_after=shutil.disk_usage(O).free); save()
++  assert not r['observation_errors'], 'observation/publication error; child closed and evidence preserved'
+   assert code==0 and not (E/'stderr').read_bytes()
+   assert r['free_bytes_after']>=9*2**30 and all(row['free_bytes']>=9*2**30 for row in r['disk_samples'])
+   for name,digest in EXPECTED.items(): assert sha(H/name)==digest
