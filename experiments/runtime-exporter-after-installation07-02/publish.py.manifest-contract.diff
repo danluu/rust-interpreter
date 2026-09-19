@@ -1,0 +1,16 @@
+--- publish.py.before-manifest-contract
++++ publish.py
+@@ -23,7 +23,12 @@
+     path=HERE/'publication-sources.json';payload=path.read_bytes()
+     if hashlib.sha256(payload).hexdigest()!=args.publication_sources_sha256:
+         raise RuntimeError('publication source selection differs')
+-    inventory=json.loads(payload);files=inventory['files'];front=HERE/'frontend-sources.json'
++    inventory=json.loads(payload)
++    if (set(inventory)!={'policy','frontend_sources','files'}
++            or inventory['policy']!='runtime-exporter07-publication-sources-v1'
++            or type(inventory['files']) is not dict or len(inventory['files'])!=25):
++        raise RuntimeError('publication source manifest schema differs')
++    files=inventory['files'];front=HERE/'frontend-sources.json'
+     data=front.read_bytes()
+     if hashlib.sha256(data).hexdigest()!=args.frontend_sources_sha256:
+         raise RuntimeError('frontend source selection differs')

@@ -72,8 +72,14 @@ missing from the sparse working tree. The initial failed attempt remains saved.
 All 36 subsequent metadata commands completed successfully, but the result
 reader rejected dyld's delayed-load transition messages. That metadata attempt
 is closed and failed. The lossless parser correction passed all 24 controls,
-including both complete saved streams; a fresh metadata attempt remains pending.
+including both complete saved streams; the corrected metadata attempt has now passed.
 No exporter build or application timing ran in the failed attempt.
+
+The successor preparation retains five exact sparse-checkout proof paths across
+main merges. Metadata02 passed all 36 commands, and build02 passed its ordinary
+locked/offline exporter build and six tool checks. Frontend correctness controls
+are running; tool publication and strict Ruff application qualification remain
+pending. These preparation checks provide no application timing result.
 
 Evidence entry points:
 
@@ -105,3 +111,5 @@ Evidence entry points:
 Historical plans and source manifests retain their original status text. The
 linked actual-result records establish which work has since run; an old plan's
 test count is not a new execution result.
+
+- [Successor exporter preparation and held frontend/publication sources](../results/runtime-exporter07-successor02-preparation-01/STATUS.md)

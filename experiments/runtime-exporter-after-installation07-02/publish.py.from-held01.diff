@@ -1,0 +1,24 @@
+--- experiments/runtime-exporter-after-installation07-01/publish.py
++++ experiments/runtime-exporter-after-installation07-02/publish.py
+@@ -12,7 +12,7 @@
+ import time
+ from types import SimpleNamespace
+ 
+-HERE=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-01')
++HERE=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-02')
+ OPTIONS=('stable-cgu-partitioning','compiler-argv-record-v1','function-cache-auto',
+          'inline-leaves','trap-unsupported-calls','run-try-callbacks','host-proc-macro-opt-v1',
+          'entry-catalog','list-tests')
+@@ -61,9 +61,9 @@
+                 and self.plan['source_root']==str(c.PREFIX),'current exporter packet differs')
+             c.require(c.file(Path(sys.executable).resolve(strict=True))==self.inputs['python'],'Python executor differs')
+             self.building=True
+-            self.work=c.X/'.work/hir-options-hash-exporter-publication-01'
+-            self.front_work=c.X/'.work/hir-options-hash-exporter-frontend-01'
+-            self.build_work=c.X/'.work/hir-options-hash-exporter-build-01'
++            self.work=c.X/'.work/hir-options-hash-exporter-publication-02'
++            self.front_work=c.X/'.work/hir-options-hash-exporter-frontend-02'
++            self.build_work=c.X/'.work/hir-options-hash-exporter-build-02'
+             c.require(not os.path.lexists(self.work),'fresh publication work required')
+             self.work.mkdir();(self.work/'tmp').mkdir()
+             self.protected={};self.cache={};self.binaries={};self.closed=[];self.closures=[];self.published={}

@@ -1,0 +1,38 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-01/metadata.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-02/metadata.py
+@@ -14,7 +14,7 @@
+ import sys
+ import time
+ 
+-HERE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-01')
++HERE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-02')
+ 
+ 
+ def bootstrap(digest):
+@@ -43,16 +43,7 @@
+ 
+ 
+ def loaded_libraries(c, raw, pid, allowed, driver):
+-    rows = []
+-    for line in raw.decode().splitlines():
+-        match = re.fullmatch(r'dyld\[(\d+)\]: <([0-9A-Fa-f-]{36})> (/.+)',line)
+-        c.require(match is not None and int(match[1]) == pid,'unrecognized actual dyld observation')
+-        path = match[3]
+-        if not path.startswith(('/usr/lib/','/System/Library/')):
+-            c.require(path in allowed,'unadmitted loaded non-system library: '+path)
+-        rows.append(dict(path=path,uuid=match[2]))
+-    c.require(driver in {r['path'] for r in rows},'actual driver was not loaded')
+-    return rows
++    return imported('dyld_parser').loaded_libraries(c, raw, pid, allowed, driver)
+ 
+ 
+ class Stage:
+@@ -65,7 +56,7 @@
+             and self.plan['source_root']==str(c.PREFIX),'current exporter packet differs')
+         c.require(c.file(Path(sys.executable).resolve(strict=True))==self.inputs['python'], 'Python executor differs')
+         self.building=args.phase=='build'
+-        self.work=c.X/'.work/hir-options-hash-exporter-build-01' if self.building else c.WORK
++        self.work=c.X/'.work/hir-options-hash-exporter-build-02' if self.building else c.WORK
+         c.require(not os.path.lexists(self.work),'fresh exporter stage required')
+         c.require(not os.path.lexists(c.TARGET),'fresh Cargo target required')
+         self.work.mkdir();(self.work/'tmp').mkdir()

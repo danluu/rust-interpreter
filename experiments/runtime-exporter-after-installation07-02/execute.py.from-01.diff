@@ -1,0 +1,80 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-01/execute.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-02/execute.py
+@@ -10,10 +10,10 @@
+ 
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-HERE = ROOT/'experiments/runtime-exporter-after-installation07-01'
++HERE = ROOT/'experiments/runtime-exporter-after-installation07-02'
+ SUPERVISOR_SHA = '019608c2d37fcecb55ed436fafe3753498bfe11e1a1805a46ae49a59c7d6a1b2'
+-SOURCES_SHA = '944a06741d51536a2b33d2312794dcd517e21f5ed290fca0b0136eb7392fad4d'
+-BUILD_SOURCES_SHA = '1a4cb6224560e4f8f3476b0506683160811ec0132a67dd24e6a6973ee3d1e85a'
++SOURCES_SHA = '1517b945e4ef190aa9960db4b62564a5da5dc922260501f8306ce38fb591c044'
++BUILD_SOURCES_SHA = 'bce87300954ed5eefddfb80cb7a43e6f467be37e0e440838dc023c87fb7db589'
+ 
+ 
+ def sha(path):
+@@ -35,9 +35,12 @@
+ 
+ def main():
+     parser = argparse.ArgumentParser(__doc__)
+-    parser.add_argument('phase', choices=['metadata', 'build'])
++    parser.add_argument('phase', choices=['metadata', 'build', 'frontend'])
+     parser.add_argument('--launch-sha256', required=True)
+     parser.add_argument('--metadata-receipt-sha256')
++    parser.add_argument('--frontend-sources-sha256')
++    parser.add_argument('--build-receipt-sha256')
++    parser.add_argument('--built-tools-sha256')
+     args = parser.parse_args()
+     launch = read(HERE/'packet-01/launch.json', args.launch_sha256)
+     inputs = read(launch['inputs']['path'], launch['inputs']['sha256'])
+@@ -45,20 +48,27 @@
+     assert inputs['plan'] == launch['plan'] and launch['environment'] == plan['launch_environment']
+     assert launch['cwd'] == str(X) and Path.cwd() == X
+     command = list(launch['command'])
+-    if args.phase == 'build':
++    if args.phase in ('build', 'frontend'):
+         assert args.metadata_receipt_sha256
+-        prior = read(X/'.work/hir-options-hash-exporter-metadata-01/receipt.json', args.metadata_receipt_sha256)
++        prior = read(X/'.work/hir-options-hash-exporter-metadata-02/receipt.json', args.metadata_receipt_sha256)
+         assert prior['status'] == 'passed' and prior['phase'] == 'metadata'
+-        command = ['/opt/homebrew/bin/python3', '-B', str(HERE/'build.py'),
++        command = ['/opt/homebrew/bin/python3', '-B', str(HERE/(args.phase+'.py')),
+             '--inputs-sha256', launch['inputs']['sha256'], '--sources-sha256', SOURCES_SHA,
+             '--build-sources-sha256', BUILD_SOURCES_SHA,
+             '--metadata-receipt-sha256', args.metadata_receipt_sha256]
++        if args.phase == 'frontend':
++            assert args.frontend_sources_sha256 and args.build_receipt_sha256 and args.built_tools_sha256
++            command += ['--frontend-sources-sha256', args.frontend_sources_sha256,
++                        '--build-receipt-sha256', args.build_receipt_sha256,
++                        '--built-tools-sha256', args.built_tools_sha256]
+     else:
+         assert args.metadata_receipt_sha256 is None
++    if args.phase != 'frontend':
++        assert args.frontend_sources_sha256 is args.build_receipt_sha256 is args.built_tools_sha256 is None
+     supervisor = X/'scripts/supervise_experiment.py'
+     assert sha(supervisor) == SUPERVISOR_SHA
+-    outer = X/'.work/experiments'/('hir-options-hash-exporter-'+args.phase+'-supervisor-01')
+-    execution = ROOT/'.work'/('runtime-exporter07-'+args.phase+'-execution-01')
++    outer = X/'.work/experiments'/('hir-options-hash-exporter-'+args.phase+'-supervisor-02')
++    execution = ROOT/'.work'/('runtime-exporter07-'+args.phase+'-execution-02')
+     assert not outer.exists() and not execution.exists()
+     outer.mkdir(); execution.mkdir()
+     outer_plan = dict(owner=str(X), command=command, supervisor_sha256=SUPERVISOR_SHA)
+@@ -68,6 +78,8 @@
+         source_sha256=sha(__file__), command=argv, cwd=str(X), environment=launch['environment'],
+         outer_plan_sha256=sha(outer/'plan.json'), launch_sha256=args.launch_sha256,
+         metadata_receipt_sha256=args.metadata_receipt_sha256, signals=0, retries=0,
++        frontend_sources_sha256=args.frontend_sources_sha256,
++        build_receipt_sha256=args.build_receipt_sha256, built_tools_sha256=args.built_tools_sha256,
+         resource_policy='Ordinary jobs=2 and sampled disk guards; no CPU, wall-time or memory cap.')
+     write(execution/'record.json', record)
+     with (execution/'stdout').open('xb') as stdout, (execution/'stderr').open('xb') as stderr:
+@@ -80,6 +92,7 @@
+             code = child.wait()
+     record.update(status='finished', returncode=code, finished_at=time.time(), supervisor_may_be_live=False,
+                   stdout_sha256=sha(execution/'stdout'), stderr_sha256=sha(execution/'stderr'))
++    write(execution/'record.json', record)  # Persist known OS wait before decoding the outer terminal.
+     status = json.loads((outer/'status.json').read_text())
+     record.update(outer_status_sha256=sha(outer/'status.json'), controller_may_be_live=True)
+     closed = (status['status'] == 'finished' and status['supervisor_pid'] == child.pid
