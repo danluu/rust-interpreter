@@ -1,0 +1,246 @@
+--- 06/bounded_stage.py
++++ 07/bounded_stage.py
+@@ -10,7 +10,7 @@
+ sys.modules[spec.name] = shared
+ spec.loader.exec_module(shared)
+ OWNER, NAMESPACE, owned = shared.OWNER, shared.NAMESPACE, shared.owned
+-EVIDENCE = A/'.work/hir-options-hash-beta-composition-06'
++EVIDENCE = A/'.work/hir-options-hash-beta-composition-07'
+ 
+ def sample(prior_evidence):
+     return shared.sample(evidence_root=EVIDENCE, evidence_roots=prior_evidence)
+--- 06/prepare.py
++++ 07/prepare.py
+@@ -19,6 +19,7 @@
+ import history
+ import producer
+ import provider_observations
++import sysroot_inventory
+ 
+ HERE, X, S, N = c.HERE, c.X, c.S, c.N
+ SOURCE = X/'experiments/hir-options-hash/compiler-build-continuation-03'
+@@ -83,7 +84,7 @@
+                 self.inherited(path, row)
+ 
+     def inventory(self, root):
+-        values = self.m.inventory(root, True)
++        values = sysroot_inventory.inventory(root, S, self.m.stamp, self.m.file)
+         result = {name: row for name, row in values.items() if row['kind'] != 'directory'}
+         self.actual_files({str(root/name): row for name, row in result.items()})
+         return result
+@@ -278,7 +279,7 @@
+         write(HERE/'inputs.json', freeze)
+         launch = dict(status='prepared-unrun-awaiting-review', owner=str(c.OWNER), environment=plan['environment'],
+             command=[freeze['python'], '-B', str(c.OWNER/'scripts/supervise_experiment.py'), '--run-id',
+-                     'hir-options-hash-beta-composition-supervisor-06', '--', freeze['python'], '-B', str(HERE/'compose.py'),
++                     'hir-options-hash-beta-composition-supervisor-07', '--', freeze['python'], '-B', str(HERE/'compose.py'),
+                      '--inputs-sha256', c.owned.sha(HERE/'inputs.json')],
+             inputs_sha256=c.owned.sha(HERE/'inputs.json'), plan_sha256=c.owned.sha(HERE/'plan.json'),
+             expected_children=19, capacity=plan['capacity'], actual_composition=False)
+--- 06/compose.py
++++ 07/compose.py
+@@ -20,6 +20,7 @@
+ import ancestor_workspace as workspace
+ import history
+ import provider_observations as providers
++import sysroot_inventory
+ from strip_object import check_strip
+ 
+ HERE = Path(__file__).resolve().parent
+@@ -361,7 +362,8 @@
+             else:
+                 require(row['kind'] == 'link' and path.is_symlink() and os.readlink(path) == row['target']
+                         and str(path.resolve(strict=True)) == row['resolved'] and self.m.stamp(path) == row['stamp']
+-                        and Path(row['resolved']).is_relative_to(S), 'compiler-build source route differs')
++                        and sysroot_inventory.link_allowed(name, row['resolved'], build_sysroot, S),
++                        'compiler-build source route differs')
+         # Test Cargo searches exactly D2/lib, admitted CI LLVM/lib and the
+         # build-std lib directory. Freeze every direct search entry, and require
+         # file/link membership and bytes to come from the qualified providers or
+--- 06/sysroot_inventory.py
++++ 07/sysroot_inventory.py
+@@ -0,0 +1,63 @@
++"""No-follow compiler-build sysroot inventory, separate from the SDK policy.
++
++compile.rs Sysroot creates lib/rustlib/rustc-src/rust pointing to builder.src
++when download-rustc is disabled. Its ordinary rust-src link is stage>0 only.
++The one stage0 source route may leave stage0-sysroot only for the exact owned
++compiler source; its target is never walked by this code.
++The caller separately guards the complete immutable compiler source closure.
++"""
++import os
++from pathlib import Path
++import stat
++
++HOST = 'aarch64-apple-darwin'
++SOURCE_LINKS = frozenset({'lib/rustlib/rustc-src/rust'})
++
++
++def require(value, message):
++    if not value:
++        raise ValueError(message)
++
++
++def link_allowed(relative, resolved, root, source):
++    root, source, resolved = map(Path, (root, source, resolved))
++    require(root == source/'build'/HOST/'stage0-sysroot', 'exact compiler-build sysroot required')
++    require(not Path(relative).is_absolute() and '..' not in Path(relative).parts,
++            'ordinary relative source-link name required')
++    if relative in SOURCE_LINKS:
++        require(resolved == source, 'compiler-build source alias does not name its exact source')
++        return True
++    require(relative != 'lib/rustlib/src/rust' and resolved.is_relative_to(root),
++            'compiler-build link escapes its exact source contract')
++    return True
++
++
++def inventory(root, source, stamp, file):
++    root, source = Path(root), Path(source)
++    require(root == source/'build'/HOST/'stage0-sysroot' and source.resolve(strict=True) == source
++            and root.resolve(strict=True) == root and root.is_dir(), 'ordinary fixed sysroot/source required')
++    result = {'': dict(kind='directory', stamp=stamp(root))}
++    def inaccessible(error):
++        raise error
++    for parent, directories, files in os.walk(root, followlinks=False, onerror=inaccessible):
++        for name in sorted(directories+files):
++            path = Path(parent)/name
++            require(path.parent.resolve(strict=True) == path.parent, 'sysroot ancestor became a link')
++            before = stamp(path); mode = before[2]; relative = str(path.relative_to(root))
++            require(len(result) < 20000, 'bounded compiler-build sysroot membership required')
++            if stat.S_ISLNK(mode):
++                resolved = path.resolve(strict=True)
++                link_allowed(relative, resolved, root, source)
++                result[relative] = dict(kind='link', stamp=before, target=os.readlink(path), resolved=str(resolved))
++            elif stat.S_ISREG(mode):
++                result[relative] = dict(kind='file', **file(path))
++            else:
++                require(stat.S_ISDIR(mode), 'special compiler-build sysroot entry')
++                result[relative] = dict(kind='directory', stamp=before)
++            require(stamp(path) == before, 'sysroot entry changed during inventory')
++    require(SOURCE_LINKS <= set(result) and all(result[name]['kind'] == 'link' for name in SOURCE_LINKS),
++            'required bootstrap source alias absent')
++    # Reject directory/entry mutations over the whole no-follow traversal.
++    for relative, row in result.items():
++        require(stamp(root/relative) == row['stamp'], 'sysroot changed during complete inventory')
++    return result
+--- 06/test_sysroot_inventory.py
++++ 07/test_sysroot_inventory.py
+@@ -0,0 +1,88 @@
++"""Bound actual source-route metadata and tiny no-follow inventory fixtures."""
++import hashlib
++import json
++import os
++from pathlib import Path
++import tempfile
++import unittest
++
++import sysroot_inventory as inventory
++
++
++def stamp(path):
++    value = path.lstat()
++    return [value.st_dev, value.st_ino, value.st_mode, value.st_size,
++            value.st_mtime_ns, value.st_ctime_ns, value.st_nlink]
++
++
++def file(path):
++    return dict(stamp=stamp(path), sha256=hashlib.sha256(path.read_bytes()).hexdigest())
++
++
++class SysrootInventory(unittest.TestCase):
++    def test_actual_stage0_source_link_and_stage1_only_absence(self):
++        saved = json.loads((Path(__file__).with_name('actual-source-links.json')).read_bytes())
++        self.assertEqual(set(saved['links']), {'lib/rustlib/rustc-src/rust'})
++        for relative, row in saved['links'].items():
++            path = Path(row['path'])
++            self.assertEqual(stamp(path), row['stamp'])
++            self.assertEqual(os.readlink(path), row['target'])
++            self.assertEqual(str(path.resolve(strict=True)), row['resolved'])
++            self.assertTrue(inventory.link_allowed(relative, row['resolved'], saved['root'], saved['source']))
++            self.assertEqual(stamp(path), row['stamp'])
++        for name in saved['absent']:
++            self.assertFalse(Path(name).exists() or Path(name).is_symlink())
++
++    def fixture(self, temporary):
++        source = Path(temporary).resolve()/'source'
++        root = source/'build'/inventory.HOST/'stage0-sysroot'
++        (root/'lib/rustlib/rustc-src').mkdir(parents=True)
++        (source/'outside-sysroot.txt').write_bytes(b'never inventory through the source link')
++        (root/'lib/example.rlib').write_bytes(b'fixture library')
++        (root/'lib/rustlib/rustc-src/rust').symlink_to(source, target_is_directory=True)
++        return source, root
++
++    def test_complete_inventory_keeps_source_link_without_traversing_it(self):
++        with tempfile.TemporaryDirectory() as temporary:
++            source, root = self.fixture(temporary)
++            observed = inventory.inventory(root, source, stamp, file)
++            self.assertEqual({name for name, row in observed.items() if row['kind']=='file'}, {'lib/example.rlib'})
++            self.assertEqual({name for name, row in observed.items() if row['kind']=='link'}, {'lib/rustlib/rustc-src/rust'})
++            self.assertEqual(observed['lib/rustlib/rustc-src/rust']['resolved'], str(source))
++            self.assertEqual(observed['lib/example.rlib']['sha256'], hashlib.sha256(b'fixture library').hexdigest())
++
++    def test_internal_link_preserves_exact_route_and_target_file(self):
++        with tempfile.TemporaryDirectory() as temporary:
++            source, root = self.fixture(temporary)
++            (root/'lib/alias.rlib').symlink_to('example.rlib')
++            observed = inventory.inventory(root, source, stamp, file)
++            self.assertEqual(observed['lib/alias.rlib']['target'], 'example.rlib')
++            self.assertEqual(observed['lib/alias.rlib']['resolved'], str(root/'lib/example.rlib'))
++
++    def test_foreign_and_same_source_subdirectory_routes_reject(self):
++        source = Path('/owned/source'); root = source/'build'/inventory.HOST/'stage0-sysroot'
++        for target in [Path('/foreign/source'), source/'compiler', Path('/owned/source-other'), root/'lib']:
++            with self.subTest(target=target), self.assertRaises(ValueError):
++                inventory.link_allowed('lib/rustlib/rustc-src/rust', target, root, source)
++
++    def test_arbitrary_or_stage1_only_source_alias_rejects(self):
++        source = Path('/owned/source'); root = source/'build'/inventory.HOST/'stage0-sysroot'
++        for relative in ['lib/other', 'lib/rustlib/src/rust', '../escape', '/absolute']:
++            with self.subTest(relative=relative), self.assertRaises(ValueError):
++                inventory.link_allowed(relative, source, root, source)
++
++    def test_inventory_rejects_foreign_and_missing_source_links(self):
++        for fault in ['foreign', 'missing-source']:
++            with self.subTest(fault=fault), tempfile.TemporaryDirectory() as temporary:
++                source, root = self.fixture(temporary)
++                if fault == 'foreign':
++                    foreign = Path(temporary).resolve()/'foreign'; foreign.mkdir()
++                    (root/'lib/foreign').symlink_to(foreign, target_is_directory=True)
++                else:
++                    (root/'lib/rustlib/rustc-src/rust').unlink()
++                with self.assertRaises(ValueError):
++                    inventory.inventory(root, source, stamp, file)
++
++
++if __name__ == '__main__':
++    unittest.main()
+--- 06/README.md
++++ 07/README.md
+@@ -115,3 +115,27 @@
+ Source05, its93 actual control history, failed discovery04, and the original
+ 82 passes remain unchanged. The ordinary actual composition discovery still
+ requires the complete full-provider/producer history after these controls.
++
++
++## Successor07: compiler-build source alias inventory
++
++All97 controls passed once and their actual audit passed. Read-only discovery06
++then stopped before any proposal/B3 creation because the SDK-specific inventory
++helper rejects links leaving its root. The actual compiler-build stage0 sysroot
++contains lib/rustlib/rustc-src/rust pointing to the exact N/source, as created
++by bound compile.rs when download-rustc is false. The ordinary rust-src alias
++is stage>0 only and is absent from this stage0 sysroot.
++
++A separate no-follow sysroot inventory retains exact file bytes, entry stamps
++and complete membership, allowing this one named source directory alias only
++to the exact owned source. Other links must remain inside the sysroot; foreign
++or alternate-source routes and missing mandatory source aliases reject. The
++complete immutable source remains independently guarded. The SDK inspector is
++unchanged. The compositor applies the same narrow source-link predicate.
++
++Six meaningful controls cover actual saved/current source-link metadata and
++absence, complete fixture membership without following source, internal alias,
++foreign/alternate targets and unknown aliases. They are written but unrun; the
++97 unrelated completed controls are not repeated solely for this change.
++Final read-only preparation waits for O's actual recipe closure so aggregate
++evidence roots include that completed history. No B3 composition occurred.

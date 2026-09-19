@@ -1,0 +1,132 @@
+--- 05/bounded_stage.py
++++ 06/bounded_stage.py
+@@ -10,7 +10,7 @@
+ sys.modules[spec.name] = shared
+ spec.loader.exec_module(shared)
+ OWNER, NAMESPACE, owned = shared.OWNER, shared.NAMESPACE, shared.owned
+-EVIDENCE = A/'.work/hir-options-hash-beta-composition-05'
++EVIDENCE = A/'.work/hir-options-hash-beta-composition-06'
+ 
+ def sample(prior_evidence):
+     return shared.sample(evidence_root=EVIDENCE, evidence_roots=prior_evidence)
+--- 05/prepare.py
++++ 06/prepare.py
+@@ -278,7 +278,7 @@
+         write(HERE/'inputs.json', freeze)
+         launch = dict(status='prepared-unrun-awaiting-review', owner=str(c.OWNER), environment=plan['environment'],
+             command=[freeze['python'], '-B', str(c.OWNER/'scripts/supervise_experiment.py'), '--run-id',
+-                     'hir-options-hash-beta-composition-supervisor-05', '--', freeze['python'], '-B', str(HERE/'compose.py'),
++                     'hir-options-hash-beta-composition-supervisor-06', '--', freeze['python'], '-B', str(HERE/'compose.py'),
+                      '--inputs-sha256', c.owned.sha(HERE/'inputs.json')],
+             inputs_sha256=c.owned.sha(HERE/'inputs.json'), plan_sha256=c.owned.sha(HERE/'plan.json'),
+             expected_children=19, capacity=plan['capacity'], actual_composition=False)
+--- 05/producer.py
++++ 06/producer.py
+@@ -45,6 +45,23 @@
+         environment[name] = value
+     require(words and Path(words[0]).is_absolute(), 'absolute producer executable required')
+     return dict(argv=words, environment=environment)
++
++
++def crate_types(argv):
++    """Match config.rs Multi/comma parsing and lib->rlib alias deduplication."""
++    values = []
++    for index, word in enumerate(argv):
++        if word == '--crate-type':
++            require(index+1 < len(argv), 'missing crate type value')
++            values.extend(argv[index+1].split(','))
++        elif word.startswith('--crate-type='):
++            values.extend(word.removeprefix('--crate-type=').split(','))
++    require(values and all(value in ['lib', 'rlib', 'dylib', 'proc-macro', 'bin'] for value in values),
++            'unsupported or empty crate type')
++    normalized = list(dict.fromkeys('rlib' if value == 'lib' else value for value in values))
++    require(not (set(normalized) & {'bin', 'proc-macro'}) or len(normalized) == 1,
++            'mixed executable/proc-macro output role')
++    return normalized
+ 
+ 
+ def rust_outputs(argv, *, native=True):
+@@ -68,7 +85,7 @@
+     # rustc_session::output::filename_for_input separates Executable from libs.
+     # Retain the command in output_catalog, never admit it as a private producer.
+     if not extra and crate == 'build_script_build':
+-        require(single(argv, '--crate-type') == 'bin' and '--test' not in argv
++        require(crate_types(argv) == ['bin'] and '--test' not in argv
+                 and emits == ['dep-info', 'link'], 'ambiguous build-script output role')
+         return set()
+     require(len(extra) == 1 and re.fullmatch(r'-[a-zA-Z0-9]+', extra[0]),
+@@ -79,12 +96,12 @@
+     if '--test' in argv:
+         require('metadata' not in emits, 'test metadata output naming needs a separate proof')
+         return set()
+-    crate_types = single(argv, '--crate-type').split(',')
++    types = crate_types(argv)
+     result = set()
+     if 'metadata' in emits:
+         result.add(str(directory / (stem + '.rmeta')))
+     if 'link' in emits:
+-        for kind in crate_types:
++        for kind in types:
+             require(kind in ['lib', 'rlib', 'dylib', 'proc-macro', 'bin'],
+                     'unsupported native Rust producer type')
+             if kind in ['lib', 'rlib']:
+--- 05/test_nonprivate_outputs.py
++++ 06/test_nonprivate_outputs.py
+@@ -13,6 +13,34 @@
+ 
+ 
+ class NonPrivateOutputs(unittest.TestCase):
++    def test_repeated_library_types_cover_every_rustc_output(self):
++        argv = ['/source/rustc', '--crate-name', 'std', '--crate-type', 'dylib',
++                '--crate-type', 'rlib', '--emit=dep-info,metadata,link',
++                '-Cextra-filename=-abc', '--out-dir', '/source/out']
++        expected = {'/source/out/libstd-abc.'+suffix for suffix in ['rlib', 'rmeta', 'dylib']}
++        self.assertEqual(producer.rust_outputs(argv), expected)
++        joined = [*argv[:3], '--crate-type=dylib,rlib', *argv[7:]]
++        self.assertEqual(producer.rust_outputs(joined), expected)
++
++    def test_lib_alias_and_repeated_types_have_identical_output_sets(self):
++        self.assertEqual(producer.crate_types(['--crate-type', 'lib', '--crate-type=rlib,dylib,lib']),
++                         ['rlib', 'dylib'])
++
++    def test_empty_unknown_and_mixed_output_types_reject(self):
++        for argv in [[], ['--crate-type'], ['--crate-type='], ['--crate-type=rlib,'],
++                     ['--crate-type=unknown'], ['--crate-type=bin,rlib'], ['--crate-type=proc-macro,lib']]:
++            with self.subTest(argv=argv), self.assertRaises(ValueError):
++                producer.crate_types(argv)
++
++    def test_repeated_types_do_not_hide_later_private_overwrite(self):
++        composition, streams, cargo, rows, pair = test_output_catalog.CompleteOutputControls().fixture()
++        extra = rows[0]+['--crate-type', 'rlib']
++        composition, streams, cargo, _, _ = test_output_catalog.CompleteOutputControls().fixture([extra])
++        catalog = producer.output_catalog(composition, streams, cargo)
++        selected, _ = producer.last_producers(composition, catalog)
++        self.assertEqual(len(catalog[1]['outputs']), 3)
++        self.assertTrue(all(selected[path]['command']['line'] == 2 for path in pair))
++
+     def test_complete_saved_actual_catalog_has_all_256_final_private_producers(self):
+         bindings = json.loads((HERE/'source-bindings.json').read_bytes())['references']
+         def bound(name):
+--- 05/README.md
++++ 06/README.md
+@@ -98,3 +98,20 @@
+ The complete competing-output history, latest private producer, two-shim route,
+ full effective environment, actual stamp and provider guards remain required.
+ No new compiler workload, B3 composition or qualification occurred.
++
++
++## Successor06: repeated crate types in the complete saved history
++
++The one approved93-control run retained92 passes and one parser error in the
++full saved actual256-producer control. The47 binary and2 documentation cases
++passed. Two actual compiler rows use repeated crate-type flags: std requests
++dylib+rlib; run_make_support requests lib+dylib. config.rs declares crate-type
++as Multi and splits each value on commas, normalizing lib to rlib and removing
++duplicate types. Successor06 implements that exact output-set operation for
++the existing supported library types and rejects empty/unknown or mixed
++executable/proc-macro roles. No older control result is relabeled. Four new
++adversarial controls make97 total; all are unrun in this successor.
++
++Source05, its93 actual control history, failed discovery04, and the original
++82 passes remain unchanged. The ordinary actual composition discovery still
++requires the complete full-provider/producer history after these controls.
