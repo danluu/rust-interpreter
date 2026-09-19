@@ -1,0 +1,247 @@
+{
+  "defects_found": [],
+  "existing_measurement_assertions_and_protocol_calls": {
+    "exact_protocol_call_AST_counts": {
+      "SourceEdit": 1,
+      "acquire_lock": 1,
+      "capture": 3,
+      "check_aa_settings": 1,
+      "child_cpu_since": 2,
+      "child_usage": 2,
+      "initial_modes": 1,
+      "mode_order": 1,
+      "native_environment": 2,
+      "per_edit_spread": 1,
+      "require_space": 3,
+      "restored_sample": 1,
+      "sample_path": 3,
+      "source_states": 2,
+      "time.perf_counter": 6
+    },
+    "exact_source_edit_context_unchanged": true,
+    "existing_saved_verifier_require_calls_unchanged_except_transport": true,
+    "functions": {
+      "bench_e2e_workflow.py": {
+        "all_original_assertions_unchanged": 50,
+        "changed_functions": [
+          "run_workflow",
+          "run_workflow.invoke"
+        ],
+        "unchanged_functions": [
+          "build_metrics",
+          "build_metrics.number",
+          "build_metrics.cpu",
+          "check_aa_settings",
+          "cache_workspace",
+          "restored_sample",
+          "main",
+          "run_workflow.identity_command",
+          "run_workflow.check_reference"
+        ]
+      },
+      "verify_repeated_workflow.py": {
+        "all_original_assertions_unchanged": 0,
+        "changed_functions": [
+          "verify"
+        ],
+        "unchanged_functions": [
+          "require",
+          "read",
+          "verify_entry_catalog",
+          "main"
+        ]
+      }
+    },
+    "literal_derivation_matches_candidates": true,
+    "literal_replacement_counts": {
+      "bench_e2e_workflow.py": 17,
+      "verify_repeated_workflow.py": 3
+    },
+    "original_cli_arguments_unchanged": 50,
+    "original_shared_branch_AST_matches": [
+      {
+        "condition": "args.runtime_compiler_key is not None",
+        "line": 155
+      },
+      {
+        "condition": "args.runtime_compiler_key is not None",
+        "line": 302
+      },
+      {
+        "condition": "runtime is not None",
+        "line": 631
+      },
+      {
+        "condition": "runtime is not None",
+        "line": 671
+      },
+      {
+        "condition": "runtime is not None",
+        "line": 476
+      }
+    ],
+    "test_count": 35,
+    "test_methods": [
+      "test_legacy_default_is_delegated_unchanged",
+      "test_legacy_shared_runtime_and_std_are_delegated",
+      "test_complete_distinct_arms_route_exact_arguments",
+      "test_prepared_std_routes_to_its_own_arm",
+      "test_one_runtime_arm_is_rejected",
+      "test_shared_runtime_conflicts_even_if_equal",
+      "test_shared_std_conflicts_with_per_arm_mode",
+      "test_std_cannot_select_per_arm_mode_without_runtimes",
+      "test_std_requires_two_keys_and_explicit_policy",
+      "test_batch_and_both_toolsets_are_required",
+      "test_host_profile_override_is_rejected",
+      "test_malformed_and_nonstring_keys_are_rejected",
+      "test_aa_rejects_different_runtime_or_std",
+      "test_aa_allows_identical_runtime_and_std",
+      "test_native_mode_cannot_receive_custom_flags",
+      "test_cli_four_explicit_keys_roundtrip",
+      "test_cli_duplicate_even_identical_value_is_rejected",
+      "test_cli_malformed_key_is_rejected",
+      "test_each_arm_tool_is_validated_with_selected_runtime",
+      "test_same_runtime_load_is_shared_but_both_tools_checked",
+      "test_wrong_loaded_key_is_rejected_before_tool",
+      "test_actual_tool_validation_failure_propagates",
+      "test_wrong_runtime_receipt_is_rejected",
+      "test_missing_or_extra_tool_arm_is_rejected",
+      "test_complete_runtime_std_tool_associations_roundtrip",
+      "test_returned_receipts_are_detached",
+      "test_swapped_runtime_arm_is_rejected",
+      "test_swapped_std_arm_is_rejected",
+      "test_swapped_tool_receipt_is_rejected",
+      "test_unexpected_receipt_fields_are_rejected",
+      "test_nonactual_compiler_version_shape_is_rejected",
+      "test_false_prepared_std_policy_is_rejected",
+      "test_each_call_reaches_exact_existing_validator",
+      "test_foreign_call_tool_is_rejected_before_runtime_validator",
+      "test_existing_command_runtime_rejection_propagates"
+    ],
+    "three_intentional_per_arm_transport_condition_extensions": [
+      {
+        "body": "script_paths += [ROOT / 'scripts' / name for name in ['runtime_compiler.py', 'runtime_tools.py', 'custom_compiler.py', 'std_mir_source_paths.py']]",
+        "line": 342
+      },
+      {
+        "body": "result['guest_rustflag_encoding'] = 'launcher-arguments'",
+        "line": 669
+      },
+      {
+        "body": "base += ['--rustflag=' + flag for flag in config['guest_flags']]",
+        "line": 421
+      }
+    ]
+  },
+  "findings": [
+    {
+      "finding": "CLI selection is validated before provider loading; explicit baseline/candidate tool keys construct the same two mode names consumed by bind.",
+      "lines": [
+        153,
+        281,
+        294,
+        310
+      ]
+    },
+    {
+      "finding": "Each mode selects its own runtime and std; setup sharing requires both runtime and std keys equal, while tool validation still occurs once per arm.",
+      "lines": [
+        347,
+        351,
+        353,
+        357
+      ]
+    },
+    {
+      "finding": "invoke(mode, sample) uses its local mode parameter for tool config, compiler arguments, flags and std. Baseline/candidate names cannot inherit the last setup-loop mode.",
+      "lines": [
+        444,
+        448,
+        449,
+        450,
+        459
+      ]
+    },
+    {
+      "finding": "Runtime/std arguments are constructed before the existing command timer. Guest flags use launcher arguments for both arm runtimes; Cargo flag injection remains only for the original non-runtime route. Each completed call is checked after timer capture with that mode runtime/std/tool.",
+      "lines": [
+        464,
+        467,
+        475,
+        487,
+        504,
+        507
+      ]
+    },
+    {
+      "finding": "Mode-specific artifact roots, cache namespaces, selected tests and cache-isolation checks remain unchanged.",
+      "lines": [
+        527,
+        529,
+        575,
+        590
+      ]
+    },
+    {
+      "finding": "Source state loop/restoration remain unchanged. Final runtime, tool and std revalidation runs per mode outside edited medians.",
+      "lines": [
+        605,
+        667,
+        671,
+        672,
+        674
+      ]
+    },
+    {
+      "finding": "Shared fields remain on the original branch. New route records both runtime identities, tool keys and prepared std descriptors, with setup metrics separate.",
+      "lines": [
+        709,
+        711,
+        712
+      ]
+    },
+    {
+      "file": "verify_repeated_workflow.py",
+      "finding": "Saved verifier rejects mixed shared/paired claims, checks exact two-arm receipts, binds tool keys and std selections, and delegates every custom call to the unchanged runtime validator. Native has no per-arm selection.",
+      "lines": [
+        69,
+        75,
+        83,
+        303,
+        305
+      ]
+    }
+  ],
+  "independent_binding_review": {
+    "bytes": 4840,
+    "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/workflow-runtime-arms-binding-independent-source-review-01.json",
+    "sha256": "48e6eee838d61550573952cbb0912e1aebb9bacf921e46748fc0d712d3aecaa7"
+  },
+  "native_command_branch_AST_identical": true,
+  "remaining": "Pure helper is tested; complete benchmark runner/provider integration remains unexecuted and the patch remains unapplied.",
+  "scope": "Changed measurement-loop routing only; no runner/provider imports or application execution",
+  "source_assessment": {
+    "bytes": 10422,
+    "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/workflow-runtime-arms-01/SOURCE-PROPOSAL.json",
+    "sha256": "f6168f5aa877fb3daa30b2f4ff0cf3ef434560be888af1f2687e31b8289b0b7a"
+  },
+  "source_changes_needed": false,
+  "sources": {
+    "bench_e2e_workflow.py": {
+      "bytes": 74370,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/workflow-runtime-arms-01/proposed/bench_e2e_workflow.py",
+      "sha256": "3a6a59ca864644f44e25690d39921fab2d4b4c0389cfa2b15b421ba467fb3daa"
+    },
+    "verify_repeated_workflow.py": {
+      "bytes": 33477,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/workflow-runtime-arms-01/proposed/verify_repeated_workflow.py",
+      "sha256": "26acec05d0d7f461c9594a2a93baa28c276846622d85d6bea383037912c7e22a"
+    },
+    "workflow_runtime_arms.py": {
+      "bytes": 8602,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/workflow-runtime-arms-01/proposed/workflow_runtime_arms.py",
+      "sha256": "57c7b2e1d5127a90d39599a9910bbac18c51c679a57656eff16556c621758822"
+    }
+  },
+  "status": "source-review-clear"
+}

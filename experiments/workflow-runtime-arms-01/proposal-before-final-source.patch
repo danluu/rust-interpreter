@@ -1,0 +1,374 @@
+--- a/scripts/bench_e2e_workflow.py
++++ b/scripts/bench_e2e_workflow.py
+@@ -26,6 +26,7 @@
+ from compare_saved_runtime import acquire_lock, lock_wait_seconds
+ from suite_reports import guest_test_failure, read_report, validate_report
+ import workflow_compiler
++import workflow_runtime_arms
+ 
+ 
+ def build_metrics(launch):
+@@ -146,8 +147,10 @@
+     parser.add_argument('--candidate-jit-native-calls',action='store_true',help='enable experimental native call trees in the paired candidate only')
+     parser.add_argument('--comparison-engine',choices=['interpreter','jit'],help='engine for both tool builds; defaults to jit when comparing')
+     parser.add_argument('--expect-identical-bytecode',action='store_true',help='require matching executed bytecode when isolating a runtime change')
++    workflow_runtime_arms.add_arguments(parser)
+     args=parser.parse_args()
+     try:
++        arm_selection=workflow_runtime_arms.select(args)
+         compiler_arguments=workflow_compiler.arguments(args.runtime_compiler_key,args.std_mir_key)
+         workflow_compiler.rustflags(args.guest_rustflag)
+         if args.baseline_guest_rustflag is not None:workflow_compiler.rustflags(args.baseline_guest_rustflag)
+@@ -299,6 +302,15 @@
+         config['guest_flags']=baseline_guest_flags if mode=='baseline' else guest_flags
+     runtime=None
+     runtime_proof=None
++    arm_runtimes={}; arm_proofs={}; arm_standards={}; arm_std_options={}
++    arm_std_selections={}; arm_receipts=None
++    if arm_selection is not None:
++        from runtime_compiler import load_runtime_compiler
++        from runtime_tools import validate_tool_runtime
++        arm_runtimes,arm_proofs=workflow_runtime_arms.bind(arm_selection,mode_tools,
++            load_runtime=lambda key:load_runtime_compiler(ROOT,key),
++            validate_tool=validate_tool_runtime,environment=os.environ,
++            runtime_receipt=workflow_compiler.runtime_receipt)
+     if args.runtime_compiler_key is not None:
+         from runtime_compiler import load_runtime_compiler
+         from runtime_tools import validate_tool_runtime
+@@ -323,11 +335,28 @@
+                  exporter_sha256=hashlib.sha256((config['directory']/'rust-interp-mir-export').read_bytes()).hexdigest())
+                  for mode,config in mode_tools.items()}
+     std=None
+-    if args.std_mir:
++    if args.std_mir and arm_selection is None:
+         from std_mir import checked_std_mir
+         std_options={} if runtime is None else dict(custom=runtime,policy='source-paths-v2-shared',prepared_key=args.std_mir_key)
+         std=checked_std_mir(TOOLCHAIN,**std_options) # Shared setup is recorded separately.
+     std_selection=None if std is None else dict(key=std[2],sysroot=str(std[0]),target=std[1])
++    if arm_selection is not None:
++        standard_cache={}
++        if args.std_mir:
++            from std_mir import checked_std_mir
++        for mode in workflow_runtime_arms.MODES:
++            row=arm_selection['arms'][mode]
++            selected=None
++            if args.std_mir:
++                options=dict(custom=arm_runtimes[mode],policy='source-paths-v2-shared',prepared_key=row['std_key'])
++                arm_std_options[mode]=options
++                pair=(row['runtime_key'],row['std_key'])
++                if pair not in standard_cache:
++                    standard_cache[pair]=checked_std_mir(TOOLCHAIN,**options)
++                selected=standard_cache[pair]
++            arm_standards[mode]=selected
++            arm_std_selections[mode]=None if selected is None else dict(key=selected[2],sysroot=str(selected[0]),target=selected[1])
++        arm_receipts=workflow_runtime_arms.receipts(arm_selection,arm_proofs,arm_std_selections,mode_tools)
+     source=ROOT/'.work/sources'/args.project
+     marker=json.loads((source/'.rust-interp-owned.json').read_text())
+     if marker['owner']!=str(ROOT) or marker['revision']!=revision:
+@@ -338,8 +367,8 @@
+         raise RuntimeError('snapshot has tracked changes')
+     script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_case_file.py',ROOT/'scripts/workflow_projects.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/workflow_controls.py',ROOT/'scripts/workflow_io.py',ROOT/'scripts/std_mir.py',ROOT/'scripts/workflow_jobs.py']
+     script_paths+=[ROOT/'scripts/native_suite.py',ROOT/'scripts/suite_reports.py',ROOT/'scripts/compare_saved_runtime.py',
+-                  ROOT/'scripts/workspace_cache.py',ROOT/'scripts/test_discovery.py',ROOT/'scripts/workflow_compiler.py']
+-    if runtime is not None:
++                  ROOT/'scripts/workspace_cache.py',ROOT/'scripts/test_discovery.py',ROOT/'scripts/workflow_compiler.py',ROOT/'scripts/workflow_runtime_arms.py']
++    if runtime is not None or arm_selection is not None:
+         script_paths += [ROOT/'scripts'/name for name in ['runtime_compiler.py','runtime_tools.py','custom_compiler.py','std_mir_source_paths.py']]
+     if case_proof is not None:
+         payload=case_path.read_bytes()
+@@ -417,8 +446,8 @@
+                   '--package',package,'--jobs',str(resolved_jobs[mode]),'--test-body','--engine',config['engine'],'--instruction-limit',str(args.instruction_limit),
+                   '--cache-namespace',cache_namespaces[mode]]
+             if args.baseline_tool_key is not None:base+=['--tool-key',config['tool_key']]
+-            base+=compiler_arguments
+-            if runtime is not None:base+=['--rustflag='+flag for flag in config['guest_flags']]
++            base+=compiler_arguments if arm_selection is None else workflow_runtime_arms.arguments(arm_selection,mode)
++            if runtime is not None or arm_selection is not None:base+=['--rustflag='+flag for flag in config['guest_flags']]
+             if args.allocation_limit is not None:base+=['--allocation-limit',str(args.allocation_limit)]
+             if config['inline_leaves']:base+=['--inline-leaves']
+             if config['jit_resumable_calls']:base+=['--jit-resumable-calls']
+@@ -427,7 +456,7 @@
+             if config['jit_native_call_stubs']:base+=['--jit-native-call-stubs']
+             if args.trap_unsupported_calls:base+=['--trap-unsupported-calls']
+             if args.run_try_callbacks:base+=['--run-try-callbacks']
+-            if std:base+=['--std-mir']
++            if std or (arm_selection is not None and arm_standards[mode] is not None):base+=['--std-mir']
+             if args.cargo_timings:base+=['--timings']
+             if suite_path is not None:
+                 base+=['--isolated-batch','fresh' if mode=='baseline' else 'prepared','--suite-report',str(suite_path)]
+@@ -435,7 +464,7 @@
+         start=time.perf_counter();calls=[]
+         child_env=env.copy()
+         if mode=='native':child_env=native_environment(env,args.native_profile,args.native_rustflag,compiler=native_identity)
+-        if mode!='native' and runtime is None:
++        if mode!='native' and runtime is None and arm_selection is None:
+             child_env=workflow_compiler.flag_environment(child_env,config['guest_flags'],encoded_guest_flags)
+         for command in commands:
+             require_space(work,args.minimum_free_gib)
+@@ -472,8 +501,10 @@
+                 launches=[json.loads(line.split('rust-interp-launch: ',1)[1]) for line in call['stderr'].splitlines() if line.startswith('rust-interp-launch: ')]
+                 assert len(launches)==1,'missing executed-artifact provenance'
+                 launch=launches[0];call['launch']=launch
+-                workflow_compiler.verify_flags(call,config['guest_flags'],encoded_guest_flags,runtime is not None)
++                workflow_compiler.verify_flags(call,config['guest_flags'],encoded_guest_flags,runtime is not None or arm_selection is not None)
+                 if runtime is not None:workflow_compiler.verify_runtime_call(call,runtime_proof,std_selection)
++                if arm_selection is not None:
++                    workflow_runtime_arms.verify_call(arm_receipts,mode,call,verify_runtime_call=workflow_compiler.verify_runtime_call)
+                 assert launch['tool_key']==config['tool_key'] and launch['engine']==config['engine']
+                 assert launch.get('inline_leaves',False)==config['inline_leaves']
+                 assert launch.get('jit_resumable_calls',False)==config['jit_resumable_calls']
+@@ -633,6 +664,13 @@
+         for config in mode_tools.values():validate_tool_runtime(config['directory'],config['tool_key'],runtime)
+         if std is not None and checked_std_mir(TOOLCHAIN,**std_options)!=std:
+             raise RuntimeError('prepared standard library changed during workflow')
++    if arm_selection is not None:
++        for mode,compiler in arm_runtimes.items():
++            if load_runtime_compiler(ROOT,compiler.key)!=compiler:
++                raise RuntimeError('arm runtime compiler changed during workflow')
++            validate_tool_runtime(mode_tools[mode]['directory'],mode_tools[mode]['tool_key'],compiler)
++            if arm_standards[mode] is not None and checked_std_mir(TOOLCHAIN,**arm_std_options[mode])!=arm_standards[mode]:
++                raise RuntimeError('arm prepared standard library changed during workflow')
+     med={m:statistics.median(r['seconds'] for r in records if r['mode']==m and r['state']>0) for m in modes}
+     result=dict(schema_version=2,project=args.project,workflow=workflow_label,revision=revision,cycles=args.cycles,initial_mode_order=scheduled_modes,
+                 minimum_free_gib=args.minimum_free_gib,
+@@ -666,9 +704,14 @@
+                 samples=[{k:v for k,v in r.items() if k!='calls' and not (private and k=='tests')} for r in records])
+     if args.aa_control:result['aa_control']=True
+     if args.workload_lock is not None:result['workload_lock']=str(workload_lock)
+-    if runtime is not None:result['guest_rustflag_encoding']='launcher-arguments'
++    if runtime is not None or arm_selection is not None:result['guest_rustflag_encoding']='launcher-arguments'
+     elif encoded_guest_flags:result['guest_rustflag_encoding']='cargo-unit-separator'
+     if runtime is not None:result['runtime_compiler']=dict(runtime_proof,prepared_std=std_selection)
++    if arm_selection is not None:
++        result['runtime_arms']=arm_receipts
++        result['std_mir_by_mode']={mode:None if selected is None else dict(key=selected[2],
++            setup_seconds=selected[3]['setup_seconds'],build_seconds=selected[3]['build_seconds'],
++            metadata_bytes=selected[3]['metadata_bytes']) for mode,selected in arm_standards.items()}
+     if native_identity is not None:
+         result['native_control'].update(toolchain=native_selection,identity=native_identity,
+             identity_evidence=str(native_identity_path.relative_to(ROOT)),
+@@ -759,9 +802,9 @@
+         report+='Unavailable foreign calls and catch_unwind intrinsics are explicit terminal stops. Successful tests avoided those boundaries; their call-site metadata and exact executed bytecode are retained with the command records. Ordinary type and borrow checking remained enabled.\n\n'
+     if args.build_tool_opt_level is not None:
+         report+=f'Host build scripts, procedural macros, and their build dependencies use optimization level {args.build_tool_opt_level} in every mode. Their first compilation is included in cold command times.\n\n'
+-    if runtime is not None or encoded_guest_flags:
++    if runtime is not None or arm_selection is not None or encoded_guest_flags:
+         report+=f"Custom compiler arguments are recorded separately for each mode: baseline `{json.dumps(baseline_guest_flags)}`, candidate `{json.dumps(guest_flags)}`. "
+-        report+=('The launcher applies these arguments only to application Cargo, after tool and standard-library selection. ' if runtime is not None else 'Cargo receives each argument through its unit-separator encoding. ')
++        report+=('The launcher applies these arguments only to application Cargo, after tool and standard-library selection. ' if runtime is not None or arm_selection is not None else 'Cargo receives each argument through its unit-separator encoding. ')
+         report+='Native retains its declared Cargo profile and compiler flags.\n\n'
+     elif args.baseline_guest_mir_opt_level is not None:
+         report+=f"Baseline custom commands use `RUSTFLAGS={' '.join(baseline_guest_flags)}`; candidate commands use `RUSTFLAGS={' '.join(guest_flags)}`. Native retains its Cargo profile. Both configurations preserve strict checking. Exact per-mode flags and all resulting artifacts are retained.\n\n"
+--- a/scripts/verify_repeated_workflow.py
++++ b/scripts/verify_repeated_workflow.py
+@@ -12,6 +12,7 @@
+ from workflow_jobs import recorded_build_jobs, verify_command_jobs
+ from bench_e2e_workflow import build_metrics, cache_workspace, guest_test_failure
+ import workflow_compiler
++import workflow_runtime_arms
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ 
+@@ -65,7 +66,25 @@
+     flag_encoding=report.get('guest_rustflag_encoding')
+     require(flag_encoding in (None,'cargo-unit-separator','launcher-arguments'), 'unknown guest flag transport')
+     runtime=report.get('runtime_compiler')
+-    require((runtime is not None)==(flag_encoding=='launcher-arguments'), 'runtime compiler transport differs')
++    arm_receipts=report.get('runtime_arms')
++    require(runtime is None or arm_receipts is None,'shared and per-arm runtime receipts cannot coexist')
++    require((runtime is not None or arm_receipts is not None)==(flag_encoding=='launcher-arguments'), 'runtime compiler transport differs')
++    if arm_receipts is not None:
++        require('comparison' in report and report['batch'] and report.get('std_mir') is None,
++                'per-arm runtime comparison must not claim a shared std')
++        arm_receipts=workflow_runtime_arms.validate_receipts(arm_receipts,report['tool_builds'])
++        standards=report.get('std_mir_by_mode')
++        require(type(standards) is dict and set(standards)==set(workflow_runtime_arms.MODES),
++                'complete per-arm standard-library report required')
++        for mode,row in arm_receipts['arms'].items():
++            standard=row['prepared_std']; summary=standards[mode]
++            require((standard is None)==(summary is None) and
++                (standard is None or standard['key']==summary['key']),'prepared arm std report differs')
++        if report.get('aa_control',False):
++            require(arm_receipts['arms']['baseline']==arm_receipts['arms']['candidate'],
++                    'A/A runtime/std/tool associations differ')
++    else:
++        require('std_mir_by_mode' not in report,'per-arm std report lacks per-arm runtime proof')
+     if runtime is not None:
+         require('comparison' in report and report['batch'] and runtime['policy']=='owned-native-runtime-compiler-v1',
+                 'invalid runtime compiler comparison')
+@@ -282,6 +301,8 @@
+                     workflow_compiler.verify_flags(call,settings['guest_rustflags'],
+                         flag_encoding=='cargo-unit-separator',flag_encoding=='launcher-arguments')
+                     if runtime is not None:workflow_compiler.verify_runtime_call(call,runtime,prepared_std)
++                    if arm_receipts is not None:
++                        workflow_runtime_arms.verify_call(arm_receipts,mode,call,verify_runtime_call=workflow_compiler.verify_runtime_call)
+             if controlled_caches or restoring:
+                 for call in row['calls']:
+                     launches = [json.loads(line.split('rust-interp-launch: ',1)[1]) for line in call['stderr'].splitlines()
+--- /dev/null
++++ b/scripts/workflow_runtime_arms.py
+@@ -0,0 +1,164 @@
++"""Pure explicit compiler-arm selection; callbacks own all provider validation.
++
++There are no compiler imports, filesystem reads, ambient environment changes,
++timers or workload calls here. The existing shared CLI is left to its original
++implementation when no new arm argument is present.
++"""
++import argparse
++import copy
++import re
++
++MODES = ('baseline', 'candidate')
++POLICY = 'explicit-workflow-runtime-arms-v1'
++
++
++def require(ok, message):
++    if not ok:
++        raise RuntimeError(message)
++
++
++def key(value):
++    require(type(value) is str and re.fullmatch('[a-f0-9]{64}', value) is not None,
++            'runtime/std keys must be exact lowercase SHA256 strings')
++    return value
++
++
++class UniqueKey(argparse.Action):
++    def __call__(self, parser, namespace, value, option_string=None):
++        if getattr(namespace, self.dest, None) is not None:
++            parser.error('duplicate explicit arm option: '+option_string)
++        try:
++            value = key(value)
++        except RuntimeError as error:
++            parser.error(str(error))
++        setattr(namespace, self.dest, value)
++
++
++def add_arguments(parser):
++    for mode in MODES:
++        parser.add_argument('--'+mode+'-runtime-compiler-key', action=UniqueKey,
++                            help='explicit installed runtime for this custom arm; requires both arm keys')
++        parser.add_argument('--'+mode+'-std-mir-key', action=UniqueKey,
++                            help='prepared std for this arm runtime; requires both std keys and --std-mir')
++
++
++def select(args):
++    """Return None for the untouched legacy CLI, otherwise a detached selection."""
++    runtimes = {m: getattr(args, m+'_runtime_compiler_key', None) for m in MODES}
++    standards = {m: getattr(args, m+'_std_mir_key', None) for m in MODES}
++    if all(v is None for v in [*runtimes.values(), *standards.values()]):
++        return None
++    require(args.runtime_compiler_key is None and args.std_mir_key is None,
++            'shared and per-arm runtime/std declarations cannot be combined')
++    require(all(v is not None for v in runtimes.values()), 'both explicit arm runtime keys are required')
++    for value in runtimes.values():
++        key(value)
++    require(args.batch and args.baseline_tool_key is not None and args.candidate_tool_key is not None,
++            'per-arm runtimes require a batched comparison with explicit toolsets')
++    require(args.build_tool_opt_level is None, 'per-arm runtimes require repository host build profiles')
++    require(type(args.std_mir) is bool, 'explicit standard-library selection required')
++    require(all((v is not None) == args.std_mir for v in standards.values()),
++            '--std-mir requires both explicit arm std keys; without it neither is allowed')
++    for value in standards.values():
++        if value is not None:
++            key(value)
++    if args.aa_control:
++        require(runtimes['baseline'] == runtimes['candidate']
++                and standards['baseline'] == standards['candidate'],
++                'A/A requires identical runtime and standard-library selections')
++    return dict(policy=POLICY, arms={m: dict(runtime_key=runtimes[m], std_key=standards[m]) for m in MODES})
++
++
++def selection(value):
++    require(type(value) is dict and set(value) == {'policy', 'arms'} and value['policy'] == POLICY,
++            'exact per-arm selection schema required')
++    require(type(value['arms']) is dict and set(value['arms']) == set(MODES), 'two exact custom arms required')
++    for row in value['arms'].values():
++        require(type(row) is dict and set(row) == {'runtime_key', 'std_key'}, 'exact arm key schema required')
++        key(row['runtime_key'])
++        if row['std_key'] is not None:
++            key(row['std_key'])
++    require((value['arms']['baseline']['std_key'] is None) == (value['arms']['candidate']['std_key'] is None),
++            'both arms must use the same declared std policy')
++    return copy.deepcopy(value)
++
++
++def arguments(value, mode):
++    value = selection(value)
++    require(mode in MODES, 'native or unknown mode cannot use a custom runtime')
++    row = value['arms'][mode]
++    result = ['--runtime-compiler-key', row['runtime_key']]
++    if row['std_key'] is not None:
++        result += ['--std-mir-policy', 'source-paths-v2-shared', '--std-mir-key', row['std_key']]
++    return result
++
++
++def bind(value, tools, *, load_runtime, validate_tool, environment, runtime_receipt):
++    """Validate each selected toolset with its actual runtime before any sample.
++
++    Load/read callbacks are supplied by the ordinary runner. Sharing a runtime
++    key may reuse the loaded immutable object, but never skips either tool check.
++    """
++    value = selection(value)
++    require(type(tools) is dict and set(tools) == set(MODES), 'exact paired toolsets required')
++    loaded, runtimes, proofs = {}, {}, {}
++    for mode in MODES:
++        expected = value['arms'][mode]['runtime_key']
++        if expected not in loaded:
++            compiler = load_runtime(expected)
++            require(compiler.key == expected, 'loaded runtime key differs from explicit selection')
++            compiler.environment(environment)
++            loaded[expected] = compiler
++        compiler = loaded[expected]
++        validate_tool(tools[mode]['directory'], tools[mode]['tool_key'], compiler)
++        proof = runtime_receipt(compiler)
++        require(type(proof) is dict and proof.get('key') == expected
++                and proof.get('policy') == 'owned-native-runtime-compiler-v1', 'actual runtime receipt differs')
++        runtimes[mode], proofs[mode] = compiler, copy.deepcopy(proof)
++    return runtimes, proofs
++
++
++def receipts(value, proofs, standards, tools):
++    value = selection(value)
++    require(all(type(v) is dict and set(v) == set(MODES) for v in [proofs, standards, tools]),
++            'complete proof/std/tool maps required')
++    answer = {}
++    for mode in MODES:
++        row, runtime, standard = value['arms'][mode], proofs[mode], standards[mode]
++        require(type(runtime) is dict and set(runtime) == {'key', 'policy', 'rustc', 'rustc_sha256', 'compiler'}
++                and runtime['key'] == row['runtime_key'] and runtime['policy'] == 'owned-native-runtime-compiler-v1',
++                'exact runtime proof must bind this arm')
++        key(runtime['rustc_sha256'])
++        require(type(runtime['rustc']) is str and runtime['rustc'].startswith('/')
++                and type(runtime['compiler']) is dict, 'actual runtime route/compiler metadata required')
++        require((standard is None) == (row['std_key'] is None), 'prepared standard policy differs')
++        if standard is not None:
++            require(type(standard) is dict and set(standard) == {'key', 'sysroot', 'target'}
++                    and standard['key'] == row['std_key'] and type(standard['sysroot']) is str
++                    and standard['sysroot'].startswith('/') and type(standard['target']) is str
++                    and standard['target'], 'prepared std selection differs from this arm')
++        answer[mode] = dict(runtime=copy.deepcopy(runtime), prepared_std=copy.deepcopy(standard),
++                            tool_key=key(tools[mode]['tool_key']))
++    return dict(policy=POLICY, selection=value, arms=answer)
++
++
++def validate_receipts(value, tools):
++    require(type(value) is dict and set(value) == {'policy', 'selection', 'arms'} and value['policy'] == POLICY,
++            'exact per-arm receipt envelope required')
++    require(type(value['arms']) is dict and set(value['arms']) == set(MODES), 'two exact arm receipts required')
++    for row in value['arms'].values():
++        require(type(row) is dict and set(row) == {'runtime', 'prepared_std', 'tool_key'}, 'exact arm receipt required')
++    require(type(tools) is dict and set(tools) == set(MODES), 'two actual tool records required')
++    require(all(value['arms'][m]['tool_key'] == tools[m]['tool_key'] for m in MODES),
++            'recorded toolset is associated with another arm')
++    rebuilt = receipts(value['selection'], {m:value['arms'][m]['runtime'] for m in MODES},
++                       {m:value['arms'][m]['prepared_std'] for m in MODES}, tools)
++    require(rebuilt == value, 'per-arm receipt differs from its explicit selection')
++    return copy.deepcopy(rebuilt)
++
++
++def verify_call(value, mode, call, *, verify_runtime_call):
++    require(mode in MODES, 'custom runtime proof cannot attach to native')
++    row = value['arms'][mode]
++    require(call['launch']['tool_key'] == row['tool_key'], 'executed tool belongs to another arm')
++    verify_runtime_call(call, row['runtime'], row['prepared_std'])
