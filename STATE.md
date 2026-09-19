@@ -237,3 +237,5 @@ Literal full02 source75b0c498 complete11961/11964 CLOSED2573:673Rust/profile17ig
 Literal parser579dbe4b complete12608/12686 CLOSED19542:1824invocations19531verifiedhits. Phase6fa56d92 complete24215/24218 CLOSED28773:1824/19584observedhits; validworker medianms key10.278 restore2.790 miss7.103 ordinary21.703 vs prior8.883/1.463/25.681/37.913. Separate-time diagnostics support mechanism, not E2E claim. Nextinstall thenpreparedclosedfullparsercachecleanup for24GiB admission, thennewprimary05. Noadoption.
 
 Literal installedtool734fa9b5945951d42c37caa2c3906ba9a6825bd147e9f85c018afb81055d9c32 complete33964/33967 CLOSED40733. Fullparser01 cleanup77176041 complete44387 CLOSED53355/53358:16734files3,112,062,449logicalbytes11667protectedhashesunchanged. NEVERrepeat. Free26.6GiB. Primary05 bound, ready; sourcecrates/scripts/tests/screenfolder frozen through closure.
+
+Primary05 sourcee21ad564 ACTIVE71416/controller71419;20/40completed01:36;2strict101/nextrequest1. Freeze source/screenfolder throughclosure, no restart. Mainf0444533 pushed full literal proofs (no runtimeadoption), branchpushed e21ad564.

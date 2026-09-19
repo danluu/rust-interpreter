@@ -19,7 +19,10 @@ VM5d0d41d03171f512e306095f289ab894a75dd2237d205b6d012d672949f106c8,
 servere03b911d570c81453a224e1b6bef08aee3003591a6dfa5a976d1c8fc5c49d7a1.
 ParameterizationON,observerOFF,bufferingOFF,strictchecking andadoptedcompiler tools.
 Primary05 prerequisites nowbound tothiscandidate; prospectiveunchanged40command
-protocol+2strict, noadoption unlessprimaryandlaterguards pass. Readyto launch.
+protocol+2strict, noadoption unlessprimaryandlaterguards pass.
+Primary05 ACTIVE71416/controller71419 sourcee21ad564;20/40completed at01:36,
+bothstrict101/nextrequest1 passed. Current receipts under .work/experiments/
+cross-program-template-parser-screen-incremental-05. Do not restart or retime.
 Freeze crates/scripts/tests andcross-program-template-screen throughprimaryclosure.
 
 Motivation: closed actual miss trace/join shows3462changed-key misses/214.939ms;
@@ -45,7 +48,8 @@ Free~25GiB variable. SuggestionsSHA4d74b3dc... unchanged/re-read September19.
 Do notrepeat completedcache retirement: primary01/02,03+strict01/02/03,
 primary04+strict, recenttoken02, frecustom01. Preserve all proofs/binaries/sources
 and sharedbuildtarget. Closed fullparser01 caches may be audited if needed.
-Main52920d8f pushed focused literal proofs, preserving peerb2a700ee.
+Mainf0444533 pushed full literal qualification/parser/phase/install/cleanup proofs,
+preserving peerb2a700ee. Branchruntime remains experimental.
 Closed fullparser01 cleanup77176041 complete44387 CLOSED53355/53358:16734files,
 3,112,062,449logicalbytes;11667protectedhashesunchanged. Six exactownednamespaces,
 110commands/22requests;unmeasurableverdict preserved. NEVER repeat. Free26.6GiB.
