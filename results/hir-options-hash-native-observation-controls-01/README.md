@@ -1,0 +1,5 @@
+All 14 pure controls passed in one bounded Python process. They verify raw compiler diagnostic parity, qualified beta-library error paths, cold and warm HIR event accounting, the Apple linker environment prefix, and synthetic Mach-O dependency parsing. The parser accepts both qualified driver and LLVM edges and rejects malformed load-command offsets, foreign dependencies, inconsistent tool output, and unexpected diagnostics.
+
+The exact inputs and launch are retained in `experiments/hir-options-hash-native-observation-controls-01`. This directory retains the raw test output, controller/child/supervisor records, and an independent readback of all 11 input hashes, test names, process identities, and time ordering. The test child had successful contemporaneous process and working-directory observations. Temporary fixtures were removed and the canonical lock was released.
+
+No compiler, provider probe, native executable, or actual signal was run by the tests. These results do not qualify the native compiler stage or any application build time.
