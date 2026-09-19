@@ -1,0 +1,109 @@
+//! Experimental promotion of private thin-pointer slots, not their pointees.
+//! The existing typed transform still certifies every emitted address use.
+use super::*;
+
+fn context_for_base(context:PlaceContext,first_deref:bool)->PlaceContext {
+    if first_deref && context.is_use() {
+        // Writing/borrowing/dropping *p reads p. Taking &p does not enter this
+        // case and must retain p's addressable slot.
+        PlaceContext::NonMutatingUse(NonMutatingUseContext::Copy)
+    } else { context }
+}
+
+struct PointerUses<'a> { eligible:&'a mut [bool] }
+impl<'tcx> Visitor<'tcx> for PointerUses<'_> {
+    fn visit_place(&mut self,place:&Place<'tcx>,context:PlaceContext,location:mir::Location) {
+        if self.eligible[place.local.as_usize()]
+            && matches!(place.projection.first(),Some(mir::ProjectionElem::Deref)) {
+            self.visit_local(place.local,context_for_base(context,true),location);
+            // Index operands and types must still be visited. Only the base
+            // slot's context changes; its pointee retains the original use.
+            self.visit_projection(place.as_ref(),context,location);
+        } else { self.super_place(place,context,location); }
+    }
+    fn visit_local(&mut self,local:mir::Local,context:PlaceContext,_:mir::Location) {
+        match context {
+            PlaceContext::NonUse(..)|PlaceContext::MutatingUse(MutatingUseContext::Store)
+            |PlaceContext::NonMutatingUse(NonMutatingUseContext::Copy|NonMutatingUseContext::Move)=>{},
+            _=>self.eligible[local.as_usize()]=false,
+        }
+    }
+}
+
+pub(super) fn extend(lower:&Lower<'_, '_>,eligible:&mut [bool])->Vec<bool> {
+    let mut pointers=vec![false;lower.locals.len()];
+    let events=lower.body.basic_blocks.iter().try_fold(0usize,|n,b|n.checked_add(b.statements.len()+1));
+    if lower.locals.len()>4096 || events.is_none_or(|n|n>32768) { return pointers; }
+    for (local,_) in lower.body.local_decls.iter_enumerated() {
+        let i=local.as_usize();
+        pointers[i]=i>lower.body.arg_count && lower.locals[i].size==8
+            && matches!(lower.local_ty(local).kind(),ty::Ref(..)|ty::RawPtr(..));
+    }
+    for (block,body) in lower.body.basic_blocks.iter_enumerated() {
+        for (statement_index,statement) in body.statements.iter().enumerate() {
+            PointerUses{eligible:&mut pointers}.visit_statement(statement,mir::Location{block,statement_index});
+        }
+        PointerUses{eligible:&mut pointers}.visit_terminator(body.terminator(),
+            mir::Location{block,statement_index:body.statements.len()});
+    }
+    for (old,&pointer) in eligible.iter_mut().zip(&pointers) { *old|=pointer; }
+    pointers
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rustc_middle::mir::visit::NonUseContext;
+    fn apply(initial:bool,context:PlaceContext,first_deref:bool)->bool {
+        let mut eligible=[initial];
+        PointerUses{eligible:&mut eligible}.visit_local(mir::Local::from_usize(0),
+            context_for_base(context,first_deref),mir::Location{block:mir::START_BLOCK,statement_index:0});
+        eligible[0]
+    }
+    #[test]
+    fn pointee_accesses_read_pointer_while_slot_borrows_escape() {
+        for context in [
+            PlaceContext::NonMutatingUse(NonMutatingUseContext::SharedBorrow),
+            PlaceContext::NonMutatingUse(NonMutatingUseContext::RawBorrow),
+            PlaceContext::MutatingUse(MutatingUseContext::Borrow),
+            PlaceContext::MutatingUse(MutatingUseContext::RawBorrow),
+            PlaceContext::MutatingUse(MutatingUseContext::Drop)] {
+            assert!(apply(true,context,true),"{context:?}");
+            assert!(!apply(true,context,false),"{context:?}");
+        }
+    }
+    #[test]
+    fn direct_call_destinations_remain_addressable() {
+        let context=PlaceContext::MutatingUse(MutatingUseContext::Call);
+        assert!(!apply(true,context,false));
+        assert!(apply(true,context,true)); // callee writes pointee, not pointer slot
+    }
+    #[test]
+    fn rejected_slot_is_never_readmitted() {
+        for context in [PlaceContext::NonMutatingUse(NonMutatingUseContext::Copy),
+            PlaceContext::MutatingUse(MutatingUseContext::Store),
+            PlaceContext::NonMutatingUse(NonMutatingUseContext::Projection)] {
+            for deref in [false,true] { assert!(!apply(false,context,deref)); }
+        }
+    }
+    #[test]
+    fn nonuse_and_ordinary_slot_value_accesses_keep_policy() {
+        for context in [PlaceContext::NonUse(NonUseContext::StorageLive),
+            PlaceContext::NonUse(NonUseContext::StorageDead),
+            PlaceContext::NonUse(NonUseContext::VarDebugInfo),
+            PlaceContext::MutatingUse(MutatingUseContext::Store),
+            PlaceContext::NonMutatingUse(NonMutatingUseContext::Copy),
+            PlaceContext::NonMutatingUse(NonMutatingUseContext::Move)] {
+            for deref in [false,true] {assert!(apply(true,context,deref));}
+        }
+    }
+    #[test]
+    fn other_projections_and_inspections_do_not_gain_admission() {
+        for context in [PlaceContext::NonMutatingUse(NonMutatingUseContext::Projection),
+            PlaceContext::MutatingUse(MutatingUseContext::Projection),
+            PlaceContext::NonMutatingUse(NonMutatingUseContext::Inspect),
+            PlaceContext::NonMutatingUse(NonMutatingUseContext::FakeBorrow)] {
+            assert!(!apply(true,context,false));
+        }
+    }
+}
