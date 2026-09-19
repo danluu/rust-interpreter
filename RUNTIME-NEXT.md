@@ -2,7 +2,7 @@
 
 Manual indefinite task; goal remains PAUSED. No subagents or peer process control.
 No active task-owned command. Attempt01 is CLOSED admission-only: peer lock
-occupied45s, zero controls/cases. Readmission PLAN recorded; keep model unchanged. Root branch experiment/linear-budget-reservation-20260919.
+occupied45s, zero controls/cases. Readmission PLAN recorded; keep model unchanged. Root branch experiment/branch-budget-reservation-20260919.
 Main d73ab139 includes closed loop, copy equality and payload diagnostics; root df4aebf6
 restored the entire bytecode crate to adopted fca687eb. Installed runtime unchanged.
 
@@ -21,7 +21,8 @@ CLOSED47849: actual removable LDR samples2/2; specific narrow design parked.
 Isolated compact switch failed full primary, archived old branch38c51f5d.
 No unchanged retiming or cancelled guards. All raw failures retained.
 
-Next: consider branch-aware reservation only with explicit per-edge refunds,
+Next: execute/close registered branch-budget-reservation-01,14controls.
+Branch-aware reservation with explicit per-edge refunds,
 extra branch costs and entry-path uncertainty. Linear-reservation02 CLOSED12
 controls/56bindings, potential39/23 samples (2.02/1.61%); standalone version
 deferred. Native budget samples are mainly first MOV174/77, not SUB7/0. Do not

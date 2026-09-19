@@ -321,3 +321,10 @@ Single-successor fastlogicalvisits32,436,817/42,031,915 versuseligible targetall
 75,673,712/98,510,491; scopewindows/entropyremainseparate. Nextconsiderbroader
 branchreservationonlywithexplicit edge-refundcosts andstrongerentryambiguity
 accounting. No activecommand/Rustbuild/guest/cleanup.
+
+Registered branch-budget-reservation-01 onnewbranch experiment/branch-budget-
+reservation-20260919. Fourteencontrols, generalforwardDAG reservation with
+peredge knownrefund; conservativelycharge2wordsthunk pernonzeroedge refund.
+Classify potentialsamples byallnormalCFGpredecessorscertified vsmixed; external
+VM entries remainpossible inboth. Usesclosedlinear02. NoRust/nativeimplementation.
+Freeze newmodel/scope/controller until independentclosure.
