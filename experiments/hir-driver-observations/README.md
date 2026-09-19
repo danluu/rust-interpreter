@@ -1,4 +1,4 @@
-# Hash-driver stdout validation
+# Hash-driver output validation
 
 This source component validates the nine stdout records emitted by the unchanged
 [options-hash driver](../hir-options-hash/controls/driver.rs). It does not execute
@@ -20,3 +20,20 @@ those facts. The finite-wait component remains in
 
 `test_observations.py` contains synthetic positive and adversarial controls.
 They perform no process launch, signal, compiler invocation, or benchmark.
+
+`loader_trace.py` additionally validates the two retained dyld line forms, the
+exact driver PID, and every expected private library path. Delayed-load notes
+must name a uniquely identified earlier system image. Unexpected diagnostics,
+foreign or missing private images, malformed UUIDs, and incomplete streams fail
+validation. System libraries retain the declared macOS shared-cache assumption.
+
+Its process readback joins both raw streams to an `owned_driver` receipt, checking
+the exact command, environment, mode, stream hashes, successful exit and ordinary
+started/terminal wait events. It rejects unresolved identity probes and timeout
+or stop handling. This cannot qualify the bytes behind a reported library path;
+the enclosing stage must still check its actual static closure and immutable
+providers, and prove that precisely two driver processes ran.
+
+The eight pure controls in `test_loader_trace.py` passed; their retained result
+and raw output are `loader-controls-01.json` and `loader-controls-01.stderr`.
+No real driver or provider probe was executed for these controls.
