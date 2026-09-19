@@ -47,3 +47,19 @@ VM200148cd93a412b9b323121d67632e335b94f1a5917763e1a1d3dee489baad4c;
 servere39cda827ba050869370e93500a281c543d248778c0128efd7fb4422931920a0.
 Exporter and wrapper remain byte-identical to the adopted build. The runtime
 candidate is retained on experiment/session-request-costs-20260918, unadopted.
+
+The closed retained-cost observer89d9bf8f reads20 reports without rerunning the
+workload. Cached execution median360.5ms versus adopted394.1ms; client time outside
+server4.75ms; launcher after execution11.72ms versus adopted11.00ms. Server work
+outside the worker interval remains38.92ms. Summed worker preparation35.62ms and
+summed test compilation146.88ms can overlap; they are not CPU or a wall-time
+savings estimate. Build-to-ready medians differ across the paired modes, so the
+complete changed-command gate remains decisive. Results:
+results/session-request-costs-primary-costs-01.
+
+Next diagnose remaining native preparation, especially exact declines. Earlier
+closed traces associate about23.9ms per worker with a large reached function that
+publishes no ordinary entries. Its exact decline reason is still unknown; the
+suggestion that it is simply the16MiB code limit has not been established. Add
+bounded diagnostic-only phase counters and decline reasons, then replay actual
+saved suites. No timing claim or runtime policy change follows from the guess.

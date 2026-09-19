@@ -90,3 +90,10 @@ CPU.961514387+.021485469=.983000. Cached/offwall.999367745,CPU.974262244;
 cached/nativewall1.306254340. Do notadopt/retimeunchanged orstartlargercomparisons.
 Closure11132 running/checkterminal. Allsource restored, sessionsreaped; NOACTIVE
 PRIMARY. Nextread-onlyretainedcostobserver. Assessmentdocs/SESSION-REQUEST-COSTS-20260918.md.
+
+Costobserver89d9bf8f completed16586/16629,CLOSED17567/17570.20retainedreports;
+clientoutside4.75ms/postlauncher11.72ms; remainingserveroutsideworker38.92ms,
+workerprepsum35.62ms/testcompilesum146.88ms (overlap;notCPU). Noactiveexperiment.
+Nextboundeddiagnosticonlypreparationphases/exactdeclinereasons onactualsaved
+suites; oldgiantreducerordinarydecline23.9ms/worker stillunexplained, do notassume
+16MiB. Newmaterialcandidate follows measuredcause. OptionalcleanupUNSTARTED.
