@@ -53,15 +53,19 @@ Recorder focused01 under65651/65654 timed out45seconds on the shared lock
 before any plan, build or test. The zero-command admission failure is CLOSED
 againstc3012e01. Focused02 retries only this unstarted work after fresh admission.
 Focused02 passed six controls/profile under88348/88351 and is CLOSED
-39950/39955 at source834339fe. Stage2 integrates cfg-only timers and a
-standalone observer with eight controls/profile, a retained release binary,
-and an ordinary no-feature compilation check. Original workloads are not yet
-admitted. The Stage1 recorder is prepared in preparation_observation.rs and
-benchmarks/experiments/preparation-phases: six controls/profile,65,536bucket
-cap, separate nested phases, incomplete/overflow flags, Rc confinement and
-owned snapshots. It is compiled only for tests/explicit feature and is not yet
-connected to any runtime path. No diagnostic guest or native-code publication
-is admitted in this first recorder-only stage. Exact old
+39950/39955 at source834339fe. Integrated01 debug passed nine controls
+(the intended eight plus an existing frame control); exact-count bookkeeping
+expected eight and stopped. CLOSED75809/75812. Integrated02 reused that debug
+capture after Rust/Cargo hash verification, passed nine release controls, built
+observer4097408c101e0fe16e9275aa650b994165f48b8060d77d42849d8f70aab869e0,
+and checked normal no-feature lib/VM under82507/82510. CLOSED92610;source7f8b0572.
+Next preparation-phase-workloads01 runs seven validation controls, original
+pgrust114 and wrong114 plus fre token12 tests, six CLI rejections. Native
+outcomes/catalogs/artifacts are reused from closed comparisons. No source
+edits or latency claim. Bound diagnostic report64MiB, trace65,536buckets/owner,
+2prepared workers and original entropy. Preserve completed guest commands if
+later diagnostic validation fails. Ordinary runtime has no instrumentation.
+Exact old
 candidate qualification, failed attempts, audit details and ownership are in
 [previous state](docs/history/STATE-20260918-before-preparation-phases.md).
 
