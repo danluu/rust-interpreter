@@ -1,0 +1,41 @@
+--- .work/prepare_hash_driver_01.before-bounded-wait.py
++++ .work/prepare_hash_driver_01.py
+@@ -8,7 +8,7 @@
+ PREREQUISITES=ROOT/'.work/hash-driver-preparation-predecessors-01.json'
+ AUDIT=A/'.work/native-reconciliation-independent-verification-01.json'
+ RECEIPT=A/'.work/hir-options-hash-native-controls-reconciliation-01/receipt.json'
+-FIELDS=('dev','ino','mode','size','mtime_ns','ctime_ns','nlink')
++MAXIMUM_OBSERVATION_SECONDS=1800
+ SOURCES={'prepare.py':'679bcccbddfadbda1e0ebb891f73f7bb19aad2e72e5655ddeaae1b5798082948',
+  'stage.py':'8daf98086fd3eabb3e2a403f0f19995140956edf52178345a3fd11493d999b2d',
+  'prerequisites.py':'30a5e0d0f686d0568f919aa0532bc2b8b206c26eed4fc737e3187d0c05ed9cd5',
+@@ -56,12 +56,26 @@
+  save(record)
+  with (WORK/'stdout').open('xb') as out,(WORK/'stderr').open('xb') as err:
+   child=subprocess.Popen(argv,cwd=ROOT,env=env,stdin=subprocess.DEVNULL,stdout=out,stderr=err,start_new_session=True)
+-  record.update(status='running',pid=child.pid);save(record)
+-  try:code=child.wait()
++  record.update(status='running',pid=child.pid,maximum_observation_seconds=MAXIMUM_OBSERVATION_SECONDS)
++  try:
++   try:save(record)
++   except BaseException as error:record['initial_child_publication_error']=repr(error)
++   try:
++    code=child.wait(timeout=MAXIMUM_OBSERVATION_SECONDS)
++   except subprocess.TimeoutExpired:
++    code=None;record.update(status='observation-expired-task-not-signaled',may_be_live=True)
+   finally:
+-   record.update(status='finished' if child.returncode is not None else 'unclosed',returncode=child.returncode,finished_at=time.time(),stdout_sha256=sha(WORK/'stdout'),stderr_sha256=sha(WORK/'stderr'));save(record)
++   record.update(returncode=child.returncode,observation_finished_at=time.time(),stdout_sha256=sha(WORK/'stdout'),stderr_sha256=sha(WORK/'stderr'))
++   if child.returncode is not None:record.update(status='finished',finished_at=time.time())
++   else:record.update(status='unclosed-task-not-signaled',may_be_live=True)
++   try:save(record)
++   except BaseException as error:
++    print(json.dumps(dict(status='publication-failed',error=repr(error),observed_record=record)),flush=True)
++    raise
+  print(json.dumps(dict(record=str(WORK/'record.json'),sha256=sha(WORK/'record.json'),pid=child.pid,returncode=code)))
++ if code is None:raise RuntimeError('Preparation may still be live; no signal or retry authorized by this observation')
+  if code:raise SystemExit(code)
++ if 'initial_child_publication_error' in record:raise RuntimeError('Preparation completed but initial child record publication failed; inspect retained evidence')
+  for name,h in SOURCES.items():assert sha(HERE/name)==h,name
+  assert not (ROOT/'.work/hir-options-hash-driver-01').exists()
+ if __name__=='__main__':main()

@@ -184,12 +184,8 @@ in sorted order. Full projection, manifest, identity, blob and accounting checks
 remain unchanged. The 25 existing binding tests are unchanged, with three new
 controls for appended-plan order, arbitrary unique order and duplicate refusal.
 All 66 combined controls passed once and independent audit `7d17277c` passed.
-Their closed evidence is retained in
+Their closed evidence is being retained for publication as
 `results/hir-options-hash-prerequisite-controls-05`.
-
-The second read-only discovery passed the historical-order check, then stopped
-at the unchanged aggregate proof-capacity limit. Its plan, freeze and provider
-catalogs remain preserved; no launch packet or hash workload was produced.
 
 The controller, fresh-catalog preparer and independent verifier have source
 review. Native reconciliation is qualified by its separate read-only receipt.

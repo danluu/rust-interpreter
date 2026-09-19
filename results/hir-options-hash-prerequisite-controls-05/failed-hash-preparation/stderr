@@ -1,0 +1,21 @@
+Traceback (most recent call last):
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage/prepare.py", line 365, in <module>
+    if __name__ == '__main__': main()
+                               ~~~~^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage/prepare.py", line 301, in main
+    plan['snapshot_reuse'] = modules['snapshot_bindings'].catalog(
+                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        stage.snapshot_predecessors(audits), plan['evidence_roots'], stage.SNAPSHOT_LIMITS,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        read_json=read, file_record=snapshot_file,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        directory_record=lambda path: stage.snapshot_directory(path, snapshots))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage/snapshot_bindings.py", line 176, in catalog
+    require(type(names) is list and names == sorted(set(names)) and set(names) <= set(freeze['files'])
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            and str(source/'inputs.json') not in names, 'complete original logical selection required')
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage/snapshot_bindings.py", line 23, in require
+    raise ValueError(message)
+ValueError: complete original logical selection required

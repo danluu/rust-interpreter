@@ -1,0 +1,85 @@
+--- before/snapshot_bindings.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage/snapshot_bindings.py
+@@ -173,9 +173,12 @@
+                 and manifest['full_logical_readback'] is True and manifest['full_gzip_eof'] is True,
+                 'completed original v1 snapshot projection/manifest required')
+         names = freeze['snapshot_inputs']
+-        require(type(names) is list and names == sorted(set(names)) and set(names) <= set(freeze['files'])
++        require(type(names) is list and all(type(name) is str for name in names)
++                and len(names) == len(set(names)) and set(names) <= set(freeze['files'])
+                 and str(source/'inputs.json') not in names, 'complete original logical selection required')
+-        original_files = {name:dict(path=name, **freeze['files'][name]) for name in names}
++        # Historical writers append plan.json after sorting their selection,
++        # then sort during record reconstruction. Preserve that exact set.
++        original_files = {name:dict(path=name, **freeze['files'][name]) for name in sorted(names)}
+         original_files[str(source/'inputs.json')] = input_file
+         require(projection['files'] == dict(sorted(original_files.items())), 'original logical input set was changed')
+         blobs = projection['blobs']; wanted = {}
+--- before/test_snapshot_bindings.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage/test_snapshot_bindings.py
+@@ -12,7 +12,7 @@
+ 
+ 
+ class Fixture:
+-    def __init__(self, mutations=None):
++    def __init__(self, mutations=None, selection_order=None):
+         self.json = {}; self.files = {}; self.directories = {}; self.predecessors = []; self.inputs = []
+         self.inode = 10; self.mutations = mutations or {}
+         helper = self.put(Path('/qualified/v1/proof_snapshots.py'), b'original helper')
+@@ -29,8 +29,14 @@
+             freeze = dict(files={row['path']:{key:row[key] for key in ['identity','sha256','size']}
+                                   for row in ordinary+[helper,old_plan_row,original_parser]},
+                           plan_sha256=old_plan_row['sha256'], snapshot_inputs=sorted(row['path'] for row in ordinary))
++            if selection_order is not None:
++                selected = freeze['snapshot_inputs']+[str(source/'plan.json')]
++                freeze['snapshot_inputs'] = selection_order(role, source, selected)
+             input_row = self.put_json(source/'inputs.json', freeze)
+-            originals = dict(sorted((row['path'],row) for row in ordinary+[input_row]))
++            originals = {name:dict(path=name, **freeze['files'][name])
++                         for name in sorted(freeze['snapshot_inputs'])}
++            originals[input_row['path']] = input_row
++            originals = dict(sorted(originals.items()))
+             blobs = {}
+             for row in originals.values():
+                 key = row['sha256']; compressed = b'synthetic blob descriptor '+key.encode()
+@@ -129,6 +135,40 @@
+ 
+ 
+ class AssociationControls(unittest.TestCase):
++    def test_historical_sorted_prefix_then_appended_plan_keeps_complete_catalog(self):
++        def plan_last(role, source, names):
++            plan = str(source/'plan.json')
++            return sorted(name for name in names if name != plan)+[plan]
++        f=Fixture(selection_order=plan_last); catalog=f.catalog()
++        self.assertEqual(len(catalog['records']),8)
++        for predecessor in f.predecessors:
++            source=Path(predecessor['source']); freeze=f.json[str(source/'inputs.json')]
++            names=freeze['snapshot_inputs']; self.assertEqual(names[-1],str(source/'plan.json'))
++            self.assertEqual(names[:-1],sorted(names[:-1])); self.assertNotEqual(names,sorted(names))
++            projection=f.json[str(source/'snapshot-plan.json')]['projection']
++            self.assertEqual(set(projection['files']),set(names)|{str(source/'inputs.json')})
++
++    def test_arbitrary_unique_historical_order_reconstructs_same_complete_catalog(self):
++        def reorder(role, source, names):
++            ordered=sorted(names)
++            return [ordered[-1],ordered[0],*ordered[1:-1]]
++        f=Fixture(selection_order=reorder); catalog=f.catalog()
++        self.assertEqual(len(catalog['records']),8)
++        for predecessor in f.predecessors:
++            source=Path(predecessor['source']); names=f.json[str(source/'inputs.json')]['snapshot_inputs']
++            self.assertNotEqual(names,sorted(names)); self.assertNotEqual(names[-1],str(source/'plan.json'))
++            projection=f.json[str(source/'snapshot-plan.json')]['projection']
++            self.assertEqual(set(projection['files']),set(names)|{str(source/'inputs.json')})
++            self.assertEqual(projection['logical_bytes'],sum(row['size'] for row in projection['files'].values()))
++
++    def test_duplicated_historical_selection_still_rejects_for_each_owner(self):
++        for changed_role in ['beta','native']:
++            with self.subTest(role=changed_role):
++                def duplicate(role, source, names):
++                    return names+[names[0]] if role==changed_role else names
++                f=Fixture(selection_order=duplicate)
++                with self.assertRaisesRegex(ValueError,'complete original logical selection'):f.catalog()
++
+     def test_complete_catalog_keeps_both_predecessors_and_all_blobs(self):
+         f=Fixture();catalog=f.catalog()
+         self.assertEqual([p['role'] for p in catalog['predecessors']],['beta','native'])

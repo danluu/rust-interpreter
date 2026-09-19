@@ -487,10 +487,9 @@ def verify_snapshot_catalog(freeze,plan,limits):
             and snapshot['limits']==projection['limits']==limits and manifest['projection_sha256']==hashlib.sha256(encoded(projection)).hexdigest()
             and manifest['full_gzip_eof'] is True and manifest['full_logical_readback'] is True,'original v1 snapshot projection')
         names=original['snapshot_inputs']
-        require(type(names) is list and all(type(name) is str for name in names)
-            and len(names)==len(set(names)) and set(names)<=set(original['files']) and str(source/'inputs.json') not in names,
+        require(names==sorted(set(names)) and set(names)<=set(original['files']) and str(source/'inputs.json') not in names,
             'original complete logical selection')
-        files={name:dict(path=name,**original['files'][name]) for name in sorted(names)}
+        files={name:dict(path=name,**original['files'][name]) for name in names}
         files[str(source/'inputs.json')]=dict(path=str(source/'inputs.json'),**freeze['files'][str(source/'inputs.json')])
         require(projection['files']==files and len(files)<=limits['maximum_files'],'unchanged original logical input mappings')
         sizes={}

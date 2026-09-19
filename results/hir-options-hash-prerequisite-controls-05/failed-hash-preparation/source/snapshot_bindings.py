@@ -173,12 +173,9 @@ def catalog(predecessors, accounted_roots, limits, *, read_json, file_record, di
                 and manifest['full_logical_readback'] is True and manifest['full_gzip_eof'] is True,
                 'completed original v1 snapshot projection/manifest required')
         names = freeze['snapshot_inputs']
-        require(type(names) is list and all(type(name) is str for name in names)
-                and len(names) == len(set(names)) and set(names) <= set(freeze['files'])
+        require(type(names) is list and names == sorted(set(names)) and set(names) <= set(freeze['files'])
                 and str(source/'inputs.json') not in names, 'complete original logical selection required')
-        # Historical writers append plan.json after sorting their selection,
-        # then sort during record reconstruction. Preserve that exact set.
-        original_files = {name:dict(path=name, **freeze['files'][name]) for name in sorted(names)}
+        original_files = {name:dict(path=name, **freeze['files'][name]) for name in names}
         original_files[str(source/'inputs.json')] = input_file
         require(projection['files'] == dict(sorted(original_files.items())), 'original logical input set was changed')
         blobs = projection['blobs']; wanted = {}

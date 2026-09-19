@@ -16,7 +16,7 @@ import time
 import stage
 
 HERE = Path(__file__).resolve().parent
-CATALOGS = HERE/'catalogs-02'
+CATALOGS = HERE/'catalogs'
 COMPILER_SOURCE = stage.X/'experiments/hir-options-hash/compiler-build-continuation-03'
 COMPILER_WORK = stage.X/'.work/hir-options-hash-compiler-build-continuation-03'
 MAX_FILES = 180000
