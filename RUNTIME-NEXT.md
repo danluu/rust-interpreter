@@ -1,6 +1,11 @@
 # Next runtime work
 
-Current branch experiment/parameterized-literals-20260919. Explicit selected large
+Current branch experiment/shared-literal-keys-20260919. Newprototype prepared,
+not tested: immutable perrequest Function digest cache shared via OnceLock across
+workers,4MiB/65536functionbound+uncachedfallback,newliteral-v2domain;currentcallee/
+context inputs still perowner, fullnormalizedpreimagecharged against4MiB.
+Five newtests;focused39/profile+31featureoff ready. See shared-literal-keys/PLAN.
+Parent parameterized-literals candidate remains experimental and primary05failed. Explicit selected large
 literals are opaque to folding/range/call-slot analyses; checked native relocation
 sites and a separate emission manifest carry their current values. Preserve small
 constant folding, fused fills, instruction width, all other inputs and callee proofs.
@@ -49,7 +54,7 @@ Free~25GiB variable. SuggestionsSHA4d74b3dc... unchanged/re-read September19.
 Do notrepeat completedcache retirement: primary01/02,03+strict01/02/03,
 primary04+strict, recenttoken02, frecustom01. Preserve all proofs/binaries/sources
 and sharedbuildtarget. Closed fullparser01 caches may be audited if needed.
-Mainf0444533 pushed full literal qualification/parser/phase/install/cleanup proofs,
+Main60832978 pushed literal primary05 failure and remaining cost evidence,
 preserving peerb2a700ee. Branchruntime remains experimental.
 Closed fullparser01 cleanup77176041 complete44387 CLOSED53355/53358:16734files,
 3,112,062,449logicalbytes;11667protectedhashesunchanged. Six exactownednamespaces,

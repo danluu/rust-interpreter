@@ -302,6 +302,7 @@ fn readiness(bytes:usize,verify:bool,startup:Cpu)->Result<Value,String> {
         "buffered_template_keys":cfg!(feature="jit-buffered-template-keys"),
         "template_miss_observer":cfg!(feature="jit-template-miss-observer"),
         "parameterized_literals":cfg!(feature="jit-parameterized-literals"),
+        "shared_literal_keys":cfg!(feature="jit-shared-literal-keys"),
         "cpu_at_entry":startup,"cpu_at_ready":cpu()?}))
 }
 fn serve_stdio(bytes:usize,verify:bool)->Result<(),String> {

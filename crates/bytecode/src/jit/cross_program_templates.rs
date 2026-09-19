@@ -8,6 +8,10 @@ const MAX_KEY_BYTES:usize=4*1024*1024;
 const MAX_CALL_SITES:usize=16_384;
 const MAX_RETAINED:usize=64*1024*1024;
 
+#[cfg(feature = "jit-shared-literal-keys")]
+#[path="shared_literal_keys.rs"]
+pub(crate) mod shared_keys;
+
 #[cfg(test)]
 #[path="cross_program_template_replay.rs"]
 mod replay;
@@ -34,12 +38,14 @@ fn immediate(kind:Kind,value:u64)->Vec<u32> {
     },value);a.words
 }
 
-struct Checked<'p>(&'p Program);
+struct Checked<'p>(&'p Program,
+    #[cfg(feature = "jit-shared-literal-keys")] Option<&'p crate::ValidatedProgram>);
 impl<'p> Checked<'p> {
     #[cfg(test)]
     fn new(p:&'p Program)->Option<Self> {
         if p.version & crate::PARTIAL_VALIDATION!=0 {return None;}
-        crate::validate(p).ok()?;Some(Self(p))
+        crate::validate(p).ok()?;Some(Self(p,
+            #[cfg(feature = "jit-shared-literal-keys")] None))
     }
 }
 struct BoundedHash {
@@ -153,11 +159,27 @@ fn identity_mode(checked:&Checked<'_>,jit:&Jit<'_>,id:usize,emitter:&[u8;32],lim
     let mut sink=BoundedHash::new(limit);
     #[cfg(not(feature = "jit-parameterized-literals"))]
     bincode::serialize_into(&mut sink,&("cross-program-staging-model-v3",rebind,emitter,context,id,f,calls)).ok()?;
-    #[cfg(feature = "jit-parameterized-literals")]
+    #[cfg(all(feature = "jit-parameterized-literals",not(feature = "jit-shared-literal-keys")))]
     {
         let literals=parameterized_literals::selected(f);
         let input=parameterized_literals::FunctionInput::new(f,&literals);
         bincode::serialize_into(&mut sink,&("cross-program-staging-literals-v1",rebind,emitter,context,id,&literals,input,calls)).ok()?;
+    }
+    #[cfg(feature = "jit-shared-literal-keys")]
+    {
+        let body=if let Some(program)=checked.1 {
+            // The cache belongs to this exact immutable validated owner. Never
+            // accept a cache supplied separately from its Program.
+            if !std::ptr::eq(program.program(),checked.0) {return None;}
+            match program.template_keys() {
+                Some(keys)=>keys.get(id,f)?,
+                None=>shared_keys::body(f)?,
+            }
+        } else {shared_keys::body(f)?};
+        bincode::serialize_into(&mut sink,&("cross-program-staging-literals-v2",rebind,emitter,context,id,body,calls)).ok()?;
+        // A short digest must not admit an oversized logical key. Charge both
+        // its full normalized preimage and all current owner/callee inputs.
+        if sink.bytes.checked_add(body.bytes)?>limit {return None;}
     }
     sink.finish()
 }
@@ -212,11 +234,13 @@ impl TemplateHistory {
     pub(crate) fn context<'p>(&self,program:&'p Program)->Result<std::rc::Rc<Context<'p>>,String> {
         if program.version & crate::PARTIAL_VALIDATION!=0 {return Err("template history requires fully checked bytecode".into());}
         crate::validate(program)?;
-        Ok(std::rc::Rc::new(Context{checked:Checked(program),history:self.history.clone(),
+        Ok(std::rc::Rc::new(Context{checked:Checked(program,
+            #[cfg(feature = "jit-shared-literal-keys")] None),history:self.history.clone(),
             counts:Default::default(),verify_hits:self.verify_hits}))
     }
     pub(crate) fn context_validated<'p>(&self,program:&'p crate::ValidatedProgram)->std::rc::Rc<Context<'p>> {
-        std::rc::Rc::new(Context{checked:Checked(program.program()),history:self.history.clone(),
+        std::rc::Rc::new(Context{checked:Checked(program.program(),
+            #[cfg(feature = "jit-shared-literal-keys")] Some(program)),history:self.history.clone(),
             counts:Default::default(),verify_hits:self.verify_hits})
     }
 }
@@ -576,6 +600,78 @@ fn fixture()->Program {
             Op::Store{address:1,src:0,size:8},Op::Assert{value:0,expected:true,message:"current program assertion".into()},
             Op::Call{function:1,args:vec![],destination:1},Op::Load{dst:2,address:1,size:8},Op::Return]),
             f("leaf",vec![Op::Imm{dst:0,value:7},Op::Return])]}
+}
+#[test]
+#[cfg(feature = "jit-shared-literal-keys")]
+fn shared_literal_keys_compute_once_across_workers_and_match_uncached() {
+    let mut p=fixture();p.functions[0].code[0]=Op::Imm{dst:0,value:0x123456};
+    let p=crate::ValidatedProgram::new(p).unwrap();let barrier=std::sync::Barrier::new(2);
+    let keys=std::thread::scope(|scope| {
+        let worker=|| {
+            let j=owner(p.program());let fresh=Checked::new(p.program()).unwrap();
+            let shared=Checked(p.program(),Some(&p));barrier.wait();
+            let result=identity_mode(&shared,&j,0,&EMITTER,MAX_KEY_BYTES,true).unwrap();
+            assert_eq!(Some(result),identity_mode(&fresh,&j,0,&EMITTER,MAX_KEY_BYTES,true));
+            for _ in 0..10 {assert_eq!(Some(result),identity_mode(&shared,&j,0,&EMITTER,MAX_KEY_BYTES,true));}
+            result
+        };
+        let a=scope.spawn(worker);let b=scope.spawn(worker);(a.join().unwrap(),b.join().unwrap())
+    });
+    assert_eq!(keys.0,keys.1);assert_eq!(p.template_keys().unwrap().computations(),1);
+}
+#[test]
+#[cfg(feature = "jit-shared-literal-keys")]
+fn shared_literal_keys_retain_logical_preimage_limits() {
+    let p=crate::ValidatedProgram::new(fixture()).unwrap();let j=owner(p.program());
+    let shared=Checked(p.program(),Some(&p));let fresh=Checked::new(p.program()).unwrap();
+    let body=shared_keys::body(&p.program().functions[0]).unwrap();
+    let key=identity_mode(&shared,&j,0,&EMITTER,MAX_KEY_BYTES,true).unwrap();
+    let (mut low,mut high)=(0,MAX_KEY_BYTES);
+    while high-low>1 {
+        let mid=low+(high-low)/2;
+        if identity_mode(&shared,&j,0,&EMITTER,mid,true).is_some() {high=mid;} else {low=mid;}
+    }
+    assert!(high>body.bytes);
+    for limit in [0,1,body.bytes,low,high,MAX_KEY_BYTES,MAX_KEY_BYTES+1] {
+        let cached=identity_mode(&shared,&j,0,&EMITTER,limit,true);
+        assert_eq!(cached,identity_mode(&fresh,&j,0,&EMITTER,limit,true));
+        assert_eq!(cached,((high..=MAX_KEY_BYTES).contains(&limit)).then_some(key));
+    }
+    assert_eq!(p.template_keys().unwrap().computations(),1);
+}
+#[test]
+#[cfg(feature = "jit-shared-literal-keys")]
+fn shared_literal_keys_reject_mixed_program_ownership() {
+    let a=crate::ValidatedProgram::new(fixture()).unwrap();
+    let mut p=fixture();p.functions[0].code[0]=Op::Imm{dst:0,value:3};
+    let b=crate::ValidatedProgram::new(p).unwrap();let j=owner(b.program());
+    assert!(identity_mode(&Checked(b.program(),Some(&a)),&j,0,&EMITTER,MAX_KEY_BYTES,true).is_none());
+    assert!(identity_mode(&Checked(a.program(),Some(&a)),&j,0,&EMITTER,MAX_KEY_BYTES,true).is_none());
+}
+#[test]
+#[cfg(feature = "jit-shared-literal-keys")]
+fn shared_literal_keys_never_cache_current_callee_or_owner_context() {
+    let p=fixture();let mut q=p.clone();q.functions[1].frame_size=32;
+    let a=crate::ValidatedProgram::new(p).unwrap();let b=crate::ValidatedProgram::new(q).unwrap();
+    let ja=owner(a.program());let jb=owner(b.program());
+    let ca=Checked(a.program(),Some(&a));let cb=Checked(b.program(),Some(&b));
+    let ka=identity_mode(&ca,&ja,0,&EMITTER,MAX_KEY_BYTES,true).unwrap();
+    let kb=identity_mode(&cb,&jb,0,&EMITTER,MAX_KEY_BYTES,true).unwrap();assert_ne!(ka,kb);
+    assert_eq!(shared_keys::body(&a.program().functions[0]),shared_keys::body(&b.program().functions[0]));
+    let other=Jit::new_resumable(a.program(),false,MAX_CODE_BYTES,false).unwrap();
+    assert_ne!(Some(ka),identity_mode(&ca,&other,0,&EMITTER,MAX_KEY_BYTES,true));
+    assert_eq!(a.template_keys().unwrap().computations(),1);assert_eq!(b.template_keys().unwrap().computations(),1);
+}
+#[test]
+#[cfg(feature = "jit-shared-literal-keys")]
+fn shared_literal_keys_bound_storage_and_cache_oversize_declines() {
+    assert!(shared_keys::FunctionKeys::new(usize::MAX).is_none());
+    assert!(shared_keys::FunctionKeys::new(65_537).is_none());
+    assert!(shared_keys::FunctionKeys::new(65_536).is_some());
+    let keys=shared_keys::FunctionKeys::new(1).unwrap();let mut f=fixture().functions.remove(0);
+    f.name="x".repeat(MAX_KEY_BYTES);
+    assert!(keys.get(0,&f).is_none());assert!(keys.get(0,&f).is_none());assert_eq!(keys.computations(),1);
+    assert!(keys.get(1,&f).is_none());
 }
 fn owner(p:&Program)->Jit<'_> {Checked::new(p).unwrap();Jit::new_resumable(p,false,MAX_CODE_BYTES,true).unwrap()}
 fn stage<'p>(j:&Jit<'p>,id:usize)->CompiledFunction<'p> {j.emit_function(&j.program.functions[id],MAX_CODE_BYTES/4).unwrap().unwrap()}

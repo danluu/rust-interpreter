@@ -5,7 +5,11 @@ use crate::{Execution, ExecutionMetadata, Limits, Program, jit};
 /// No mutable access or unchecked constructor is exposed. Each worker still
 /// performs current runtime admission and creates its own native/guest state.
 #[cfg(feature = "jit-template-session")]
-pub struct ValidatedProgram(Program);
+pub struct ValidatedProgram {
+    program: Program,
+    #[cfg(feature = "jit-shared-literal-keys")]
+    template_keys: std::sync::OnceLock<Option<jit::cross_program_templates::shared_keys::FunctionKeys>>,
+}
 #[cfg(feature = "jit-template-session")]
 impl ValidatedProgram {
     pub fn new(program: Program) -> Result<Self, String> {
@@ -13,10 +17,19 @@ impl ValidatedProgram {
             return Err("session inputs require fully checked bytecode".into());
         }
         crate::validate(&program)?;
-        Ok(Self(program))
+        Ok(Self { program,
+            #[cfg(feature = "jit-shared-literal-keys")]
+            template_keys: std::sync::OnceLock::new(),
+        })
     }
 
-    pub fn program(&self) -> &Program { &self.0 }
+    pub fn program(&self) -> &Program { &self.program }
+
+    #[cfg(feature = "jit-shared-literal-keys")]
+    pub(crate) fn template_keys(&self) -> Option<&jit::cross_program_templates::shared_keys::FunctionKeys> {
+        self.template_keys.get_or_init(||
+            jit::cross_program_templates::shared_keys::FunctionKeys::new(self.program.functions.len())).as_ref()
+    }
 }
 
 /// A validated immutable program and its lazily compiled custom JIT code.
