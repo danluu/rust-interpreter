@@ -152,3 +152,11 @@ failed40-commandtokenprimaries only; historicaltrackedsourceverifiedbyrecorded
 Gitbinding, retainedactualfilesstillhashchecked. Fifteenownedcaches, nostrictcache,
 sharedtarget,peerworkordeletingproof. Sourcefreeze cleanupscriptthroughclosure.
 Currentfree~17GiB; fullprimary24GiB floorunchanged. Nextclosecleanup thenrun03.
+
+Cleanup02 source0f5bafca CLOSED31213/31219:9,441 nonexecutables removed,
+5,736,620,818 logicalbytes,4,462 protected hashes unchanged. Freeafter~21.6GiB.
+No repeat cleanup. Qualification03 sourcee17e60fb ACTIVE63940/controller63944;
+reuses Python442+22skip, running debug/release652+16ignored anddefault VM.
+Freeze candidate/crates/scripts/tests/size-tier experiment folder throughclosure.
+Next actual savedparser verify-hit replay and installation, then primary03 only
+after24GiB admission. Goalpaused; no peer process/worktree control.
