@@ -457,3 +457,16 @@ candidate2ce1d2e2, cancelunstartednativeguardsbefore27controls. No retiming/adop
 Free21.40GiB belowsharedbuildfloor23.93; analysisallowed12GiB. No activeownedcommands.
 Nextreviewsavedcosts/priorfailuresfordistinctmechanism; nofurtherbudgetvariant
 justifiedbythisresult. SourcefeaturedefaultoffandinstalledadoptedVMunchanged.
+
+Mainc32abc18 publishesclosedfailedreservationprimary/protocol preservingpeer
+456a668a. Newbranch experiment/frame-slot-initialization-20260919 atb661aad3
+restores entirebytecodecrate tofca687eb (failedreservationcode staysinpriorbranch).
+Registered/executed closed-branch-reservation-cache-retirement-01 sourceb661aad3
+supervisor54246/controller54249 finished0, independentclose50ba66 exit0;3191files
+removed,2780protectedunchanged,1.59GiBfreevolume recovered. Neverreplay. Free22.95GiB
+below~23.90GiBsharedbuildfloor. No activeownedcommands. Unbuiltnewtypeddiagnostic
+frame-initialization-slots authored:64exact8byteLocal/Constant memorycells, overlap/
+unknownwriteskill,128bytecopyfactcap,CFGintersections;18authoredunruncontrols incl
+6400oldmaskoracle+19584newconcretebyteoracle. No production/runtimechanges. Next
+reviewprototype, registerbuild/closure andcoveragecontrollers, safediskadmission
+beforeanybuild. Priorconstantsproof remainsunchanged andcompiledasreference.
