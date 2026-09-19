@@ -1,0 +1,158 @@
+--- frozen strict03/run.py
++++ continuation01/run.py
+@@ -6,6 +6,7 @@
+ from pathlib import Path
+ import re
+ import sys
++import retained
+ 
+ HERE = Path(__file__).resolve().parent
+ sys.path.insert(0, str(HERE.parent))
+@@ -19,8 +20,10 @@
+ from workflow_measurements import source_states
+ from workflow_io import SourceEdit
+ 
+-NAME = 'ruff-runtime-strict-03'
+-POLICY = 'runtime-ruff-strict-history-v1'
++NAME = 'ruff-runtime-strict-continuation-01'
++PRIOR_WORK = OWNER / '.work/ruff-runtime-strict-03'
++CACHE_NAME = 'ruff-runtime-strict-03'
++POLICY = 'runtime-ruff-strict-continued-history-v1'
+ WORK = OWNER / '.work' / NAME
+ SOURCE = R_OWNER / '.work/sources/ruff'
+ RUNTIME_KEY = 'eca3d1317ba4c852d64de435aa0f0e5d87ae63bd4eb96cfafacc7b0a85841d03'
+@@ -52,8 +55,8 @@
+         '--jobs', '2', '--test-body', '--engine', 'jit',
+         '--runtime-compiler-key', RUNTIME_KEY, '--tool-key', TOOL_KEY,
+         '--std-mir', '--std-mir-policy', 'source-paths-v2-shared', '--std-mir-key', STD_KEY,
+-        '--toolchain-lookup', 'cached', '--workspace-cache-root', str(WORK / 'cache' / spec['mode']),
+-        '--cache-namespace', NAME + ':' + spec['mode'],
++        '--toolchain-lookup', 'cached', '--workspace-cache-root', str(PRIOR_WORK / 'cache' / spec['mode']),
++        '--cache-namespace', CACHE_NAME + ':' + spec['mode'],
+         '--compiler-argv-record-dir', str(WORK / 'compiler-argv' / spec['label']),
+         '--function-cache', 'off', '--borrowck-cache', 'off',
+         '--inline-leaves', '--jit-resumable-calls', '--jit-persistent-registers',
+@@ -64,8 +67,42 @@
+ 
+ 
+ class Admission(RuntimeAdmission):
++    def guard_sources(self):
++        super().guard_sources()
++        expected = getattr(self, 'expected_source_sha256', self.plan['editable_source']['original_sha256'])
++        source = Path(self.plan['editable_source']['path'])
++        require(source.resolve(strict=True) == source and source.stat().st_nlink == 1
++                and file_digest(source) == expected, 'intentional source state differs')
++
++    def prior_guard(self, *, full=False, cache=False):
++        floor = lambda: self.owned.disk(OWNER, 9)
++        proof = self.plan['prior_evidence_inventory']
++        require(file_digest(Path(proof['path'])) == proof['sha256'], 'prior evidence inventory changed')
++        retained.verify(PRIOR_WORK, read(proof['path']), skip=('cache',), full=full, floor=floor)
++        if cache:
++            proof = self.plan['prior_cache_inventory']
++            require(file_digest(Path(proof['path'])) == proof['sha256'], 'prior cache inventory changed')
++            retained.verify(PRIOR_WORK / 'cache', read(proof['path']), full=True, floor=floor)
++
++    def budget(self):
++        free = self.owned.disk(OWNER, 9)
++        allocated = 0
++        members = 0
++        for root in [PRIOR_WORK, WORK]:
++            for directory, dirs, files in os.walk(root, followlinks=False):
++                for name in [*dirs, *files]:
++                    members += 1
++                    require(members <= 200000, 'continued history allocation inventory exceeds bound')
++                    if members % 256 == 0:
++                        self.owned.disk(OWNER, 9)
++                    allocated += (Path(directory) / name).lstat().st_blocks * 512
++        require(allocated <= self.plan['allocated_byte_limit'], 'combined strict history exceeds allocation bound')
++        return dict(free_bytes=free, allocated_bytes=allocated, roots=[str(PRIOR_WORK), str(WORK)])
++
+     def guard(self):
+         super().guard()
++        if hasattr(self, 'owned'):
++            self.prior_guard()
+         require(not any(name in self.environment for name in FORBIDDEN), 'diagnostic policy in launch environment')
+         for name, proof in self.plan['providers'].items():
+             require(provider(name) == proof, 'native/SDK provider changed: ' + name)
+@@ -148,7 +185,7 @@
+             require(row['returncode'] == 0 and row['stdout'].strip() == '0', 'strict test batch failed')
+         workspace, artifact = Path(launch['workspace_path']), Path(launch['artifact_path'])
+         require(workspace.resolve(strict=True) == workspace
+-                and workspace.is_relative_to(WORK / 'cache' / spec['mode'])
++                and workspace.is_relative_to(PRIOR_WORK / 'cache' / spec['mode'])
+                 and artifact.resolve(strict=True) == artifact and artifact.is_relative_to(workspace / 'target')
+                 and file_digest(artifact) == launch['artifact_sha256'], 'artifact escaped its cache or changed')
+         calls = Path(str(artifact) + '.calls.json')
+@@ -198,11 +235,13 @@
+     inventory = read(a.plan['source_inventory']['path'])
+     require(file_digest(Path(a.plan['source_inventory']['path'])) == a.plan['source_inventory']['sha256'],
+             'source inventory changed')
+-    original = source.read_bytes()
++    original = Path(a.plan['editable_source']['original_snapshot']['path']).read_bytes()
+     require(hashlib.sha256(original).hexdigest() == inventory[case['file']]['sha256'], 'original source differs')
+     states, schedule = history(original)
+     require(schedule == a.plan['history'], 'strict history differs')
+     result = dict(status='running', records=[], strict_compatibility=False, performance_qualified=False,
++                  saved_children=2, actual_continuation_children=0, complete_commands=2,
++                  prior_failed_terminal=a.plan['prior_failed_terminal'],
+                   diagnostic_timing_only=True, unchanged_six_test_bodies=True)
+     def save():
+         a.owned.write(WORK / 'result.json', result)
+@@ -211,13 +250,20 @@
+     try:
+         with a.admitted():
+             source_check()
+-            for directory in ['tmp', 'cache', 'cache/baseline', 'cache/candidate', 'compiler-argv']:
++            a.prior_guard(full=True, cache=True)
++            from saved_history import verify
++            saved = verify(a)
++            result['records'] = saved
++            for directory in ['tmp', 'compiler-argv']:
+                 (WORK / directory).mkdir()
+             save()
+-            previous = {}
++            previous = {row['mode']: row['source_sha256'] for row in saved}
+             try:
+                 with SourceEdit(source, original) as editor:
+                     for state in states:
++                        if state['state'] == 0:
++                            continue
++                        a.expected_source_sha256 = hashlib.sha256(state['source']).hexdigest()
+                         if editor.current != state['source']:
+                             editor.replace(state['source'])
+                         for spec in [item for item in schedule if item['state'] == state['state']]:
+@@ -229,10 +275,15 @@
+                                            expected=1 if spec['state'] == -1 else 0)
+                             proof = a.validate(row, spec)
+                             require(editor.matches(state['source']), 'source changed during strict application launch')
+-                            result['records'].append(dict(spec, receipt=row['receipt'], proof=proof))
++                            result['records'].append(dict(spec, receipt=row['receipt'], proof=proof,
++                                evidence_owner=str(WORK), source_before_sha256=spec['source_sha256'],
++                                source_after_sha256=file_digest(source)))
++                            result['actual_continuation_children'] += 1
++                            result['complete_commands'] += 1
+                             previous[spec['mode']] = spec['source_sha256']
+                             save()
+             finally:
++                a.expected_source_sha256 = a.plan['editable_source']['original_sha256']
+                 result['source_restoration'] = source_check()
+                 save()
+             prior = read(a.plan['prior_records']['path'])
+@@ -253,8 +304,15 @@
+                     equal=row['proof']['bytecode']['sha256'] == matches[0]['artifacts'][0]['sha256'],
+                     scope='Descriptive only: strict export intentionally removes two compatibility policies.'))
+             result.update(status='passed', strict_compatibility=True, trap_unsupported_calls=False,
+-                run_try_callbacks=False, commands=16, cross_mode_bytecode_equal=True,
++                run_try_callbacks=False, commands=14, cross_mode_bytecode_equal=True,
+                 scope='One strict JIT batch history in each HIR mode; unchanged six-test batch rejects the wrong edit. No per-negative-test or latency-distribution claim.')
++            require(result['actual_continuation_children'] == 14 and result['complete_commands'] == 16,
++                    'continued history does not contain exactly saved2 plus new14 calls')
++            a.prior_guard(full=True)
++            result['final_cache_inventory'] = dict(path=str(WORK / 'final-cache-inventory.json'))
++            a.owned.write(WORK / 'final-cache-inventory.json', retained.tree(PRIOR_WORK / 'cache',
++                floor=lambda: a.owned.disk(OWNER, 9)))
++            result['final_cache_inventory']['sha256'] = file_digest(WORK / 'final-cache-inventory.json')
+             save()
+             a.finish(result)
+     except BaseException as error:

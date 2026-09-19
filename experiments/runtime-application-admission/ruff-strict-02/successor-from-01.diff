@@ -1,0 +1,115 @@
+--- ruff-strict-01/run.py
++++ ruff-strict-02/run.py
+@@ -19,7 +19,7 @@
+ from workflow_measurements import source_states
+ from workflow_io import SourceEdit
+ 
+-NAME = 'ruff-runtime-strict-01'
++NAME = 'ruff-runtime-strict-02'
+ POLICY = 'runtime-ruff-strict-history-v1'
+ WORK = OWNER / '.work' / NAME
+ SOURCE = R_OWNER / '.work/sources/ruff'
+--- ruff-strict-01/prepare.py
++++ ruff-strict-02/prepare.py
+@@ -34,6 +34,21 @@
+ def main():
+     a.require(Path.cwd() == a.OWNER and sys.dont_write_bytecode and not sys.flags.optimize,
+               'fixed owner/unoptimized Python -B required')
++    invalid = HERE.parent/'ruff-strict-01/plan'
++    a.require(sha(invalid/'launch.json') == 'c4d846b594f14b3640f6c857fc2ade2b29d2b9aa40f525a50f1f71241ebff2bd'
++              and sha(invalid/'inputs.json') == '2ca7ca3692e205fea434147925f0778fa9b13aff2e76a1aa8dd9b8b2e754bb78'
++              and sha(invalid/'plan.json') == '833948ebb5a6ad6d10ef855f7f5776e9f1dc3b201faf421d55c8f69dbfa177eb',
++              'original unrun strict proposal changed')
++    invalid_plan = a.read(invalid/'plan.json')
++    for name, expected in a.read(invalid/'inputs.json')['files'].items():
++        a.require(Path(name).resolve(strict=True) == Path(name) and sha(name) == expected,
++                  'old strict input changed; no automatic readmission: '+name)
++    before, after = invalid_plan['platform'], list(os.uname())
++    a.require(before[0] == after[0] and before[2:] == after[2:] and before[1] != after[1],
++              'this successor admits only the observed nodename transition')
++    a.require(not (a.OWNER/'.work/ruff-runtime-strict-01').exists()
++              and not (a.OWNER/'.work/experiments/ruff-runtime-strict-supervisor-01').exists(),
++              'old proposal unexpectedly executed')
+     old_plan = HERE.parent / 'ruff-diagnostic-01/plan.json'
+     old_freeze = HERE.parent / 'ruff-diagnostic-01/inputs.json'
+     old = a.read(old_plan)
+@@ -89,9 +104,11 @@
+     a.require(all(row['sha256'] == old['providers'][name]['sha256'] for name, row in providers.items()),
+               'provider bytes differ from qualified diagnostic')
+     executors = {name: a.provider(name) for name in old['executors']}
++    a.require(providers == invalid_plan['providers'] and executors == invalid_plan['executor_routes'],
++              'strict provider identity/route changed beyond nodename')
+     python = Path('/opt/homebrew/bin/python3')
+     producer_files = [*sorted((a.R_OWNER / 'scripts').glob('*.py')),
+-        HERE / 'run.py', HERE / 'prepare.py', HERE / 'README.md',
++        HERE / 'run.py', HERE / 'prepare.py', HERE / 'README.md', HERE / 'successor-from-01.diff',
+         HERE.parent / 'runtime_admission_v2.py', HERE.parent / 'run_ruff_diagnostic.py',
+         HERE.parent / 'ruff-profile-02/profile_helpers.py',
+         a.OWNER / 'experiments/stable-cgu/owned_stage.py', a.OWNER / 'scripts/supervise_experiment.py']
+@@ -105,6 +122,9 @@
+         prior_records=reference(prior_records), historical_plan=reference(old_plan),
+         python=str(python), launch_environment=environment, child_environment=environment,
+         platform=list(os.uname()), executor_routes=executors, providers=providers,
++        superseded_unrun=dict(launch=reference(invalid/'launch.json'), freeze=reference(invalid/'inputs.json'),
++            plan=reference(invalid/'plan.json'), former_platform=before, current_platform=after,
++            only_platform_delta='nodename', former_status='unrun-invalid-current-platform'),
+         provider_directories=old['provider_directories'], configuration=configuration,
+         producer_sources={str(path): sha(path) for path in producer_files},
+         canonical_lock=old['canonical_lock'], wait_seconds=600, history=schedule, commands=commands,
+@@ -124,7 +144,9 @@
+     destination.mkdir()
+     write(destination / 'plan.json', plan)
+     files = set(map(Path, a.read(old_freeze)['files'])) | set(producer_files)
+-    files.update([destination / 'plan.json', old_plan, old_freeze, prior_receipt, prior_records])
++    files.update([destination / 'plan.json', old_plan, old_freeze, prior_receipt, prior_records,
++                  invalid/'plan.json', invalid/'inputs.json', invalid/'launch.json'])
++    files.update(map(Path, a.read(invalid/'inputs.json')['files']))
+     files.update(Path(name) for name, row in configuration.items() if row['exists'])
+     a.require(all(path.resolve(strict=True) == path and path.is_file()
+                   and path.stat().st_size <= 32 * 2**20 for path in files), 'ordinary bounded frozen files required')
+@@ -147,15 +169,24 @@
+     os.environ.update(environment)
+     try:
+         probe.guard()
++        probe.full_artifacts()
++        source_proof = a.source_inventory(a.SOURCE, inventory,
++            lambda: a.require(__import__('shutil').disk_usage(a.OWNER).free >= 9*2**30, 'readmission free-space floor'))
++        a.require(plan['history'] == invalid_plan['history'] and plan['commands'] == [
++            {**row, 'command': [arg.replace('ruff-runtime-strict-01', 'ruff-runtime-strict-02') for arg in row['command']]}
++            for row in invalid_plan['commands']], 'strict command/history delta exceeds owned names')
+     finally:
+         os.environ.clear()
+         os.environ.update(saved)
+     write(destination / 'metadata-preflight.json', dict(status='passed', started_at=started, finished_at=time.time(),
+-        pid=os.getpid(), source_freeze_sha256=sha(probe.freeze_path), workload_children=0, work_directory_created=False))
++        pid=os.getpid(), source_freeze_sha256=sha(probe.freeze_path), workload_children=0, work_directory_created=False,
++        source_inventory=source_proof, full_runtime_and_std_rehashed=True, full_ready_tools_rehashed=True,
++        prior_frozen_inputs_unchanged=True, exact_provider_stamps_unchanged=True,
++        platform_transition=plan['superseded_unrun'], free_bytes_after=__import__('shutil').disk_usage(a.OWNER).free))
+     launch = dict(owner=str(a.OWNER), cwd=str(a.OWNER), environment=environment,
+         helper=reference(HERE / 'run.py'), plan=reference(probe.plan_path), source_freeze=reference(probe.freeze_path),
+         command=[str(python), '-B', str(a.OWNER / 'scripts/supervise_experiment.py'), '--run-id',
+-                 'ruff-runtime-strict-supervisor-01', '--', str(python), '-B', str(HERE / 'run.py'),
++                 'ruff-runtime-strict-supervisor-02', '--', str(python), '-B', str(HERE / 'run.py'),
+                  '--plan', str(probe.plan_path), '--freeze', str(probe.freeze_path),
+                  '--freeze-sha256', sha(probe.freeze_path)],
+         canonical_lock=plan['canonical_lock'], wait_seconds=600, bounds=plan['bounds'], expected_children=16,
+--- ruff-strict-01/README.md
++++ ruff-strict-02/README.md
+@@ -1,3 +1,10 @@
++This is a separate, unrun successor to the preserved strict01 proposal.
++The only platform admission change is the complete current uname nodename;
++Darwin kernel/release/machine must remain identical. Preparation rejects any
++change in an old frozen input or provider stamp/route. It repeats full installed
++runtime/shared-std/tool byte checks and complete Ruff source membership before
++freezing this proposal. Strict01 is not rewritten or relabeled.
++
+ # Strict Ruff compatibility proposal
+ 
+ Prepared only. No compiler, application or benchmark execution is authorized by this packet itself.
+@@ -8,4 +15,4 @@
+ 
+ Successful states run all six tests as the original batch. Each wrong-edit batch must fail at a guest assertion; this preserves the original negative contract and does not claim six individually rejected tests. Aggregate Cargo stderr can replay dependency HIR diagnostics, so this history does not attribute its event totals to the newly compiled selected crate or report a global coverage denominator. Wrapper argv records do not establish every nested process ancestry.
+ 
+-The shared runtime/std/tools and restored pinned Ruff source are fully checked before and after under the canonical 600-second lock. Source restoration occurs on failure. New caches, temporary files, raw outputs and retained evidence stay under `.work/ruff-runtime-strict-01`, capped at 6 GiB allocated with 16 GiB admission, 9 GiB active stop and 8 GiB running floor. Actual admission must be coordinated with the independent compiler build's 24 GiB entry requirement; no cache cleanup is implied. Selected native tool/LLVM/objcopy and SDK provider routes/bytes are retained from the qualified diagnostic, with current stamps; this does not claim a complete SDK header inventory. All failures are retained without an automatic retry.
++The shared runtime/std/tools and restored pinned Ruff source are fully checked before and after under the canonical 600-second lock. Source restoration occurs on failure. New caches, temporary files, raw outputs and retained evidence stay under `.work/ruff-runtime-strict-02`, capped at 6 GiB allocated with 16 GiB admission, 9 GiB active stop and 8 GiB running floor. Actual admission must be coordinated with the independent compiler build's 24 GiB entry requirement; no cache cleanup is implied. Selected native tool/LLVM/objcopy and SDK provider routes/bytes are retained from the qualified diagnostic, with current stamps; this does not claim a complete SDK header inventory. All failures are retained without an automatic retry.
