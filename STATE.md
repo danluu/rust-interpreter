@@ -1,3 +1,17 @@
+LATEST: bounded-scalar-padding ES8screen02 CLOSED completed40+2strict,
+source1ce77e85 supervisor2083/controller2138; independentclose98209passed.
+GateFAIL/unmeasurable: medianpairedwall1.061625159,AAmax.374148503;CPU1.032446461,
+AA.248793706. PARKcandidate d4aba7b8; no unchangedretry/heldouts. Allcorrectness,
+source restoration/artifact equality valid. DescriptivestageauditspikesinCargo
+ANDguest, doesnotidentifycause; don'tclaim6%regression asestablished. Assessment
+inresults/...screen-es8-02. Nextcommit/pushclosedresult; publish explicit screen/
+resume folders +protocol/empty01/complete02results +focusedreview to main.
+ThennewbranchrestoreEXACT4cratefilesfrom52d13ae7 (scalar_calls,tests,resumable,
+code_spans/protocol_census). Defaultdf4006unchanged. Nextordinarypaddingcoverage
+notes .work/bounded-padding-followup-notes.md, no newscope/candidate yet. Free~16.5
+GiB; boundedruntime targetcap3GiBfloor14, protectedtargetneverclean. GoalPAUSED.
+Mainlast80fabb50verified; preservepeeronpublication. Nootherprocesscontrols.
+
 LATEST: bounded-padding ES8screen01 terminalFAILED at45s LOCKADMISSION,
 sourceaed376cb supervisor90631/controller90674. records/strict/space allEMPTY,
 nochildreceipt/sourceedit/build/guest; NOTaperformanceverdict. Itsclose attempt
