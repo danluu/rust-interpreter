@@ -1,0 +1,41 @@
+{
+  "active_outputs_read": false,
+  "checks": [
+    "Actual pinned launch/input/plan metadata command matches the full independently read packet.",
+    "Explicit child environment equals prepared launch_environment; no outer canonical lock.",
+    "Existing unchanged supervisor is invoked directly with --supervise and normally waited.",
+    "Supervisor OS result and its recorded controller returncode are both required.",
+    "Actual supervisor plan/log SHA, PID and parent association checked.",
+    "No target import or workload by reviewer."
+  ],
+  "command": [
+    "/opt/homebrew/bin/python3",
+    "-B",
+    "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-01/execute.py",
+    "metadata",
+    "--launch-sha256",
+    "a95687682739bd3b04cd62af2953f061622c96f90ac54d70e0e0edb0ea0c0071"
+  ],
+  "cwd": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918",
+  "execution_by_reviewer": false,
+  "failure_bookkeeping_note": {
+    "parent_response": "Root acknowledged; current source remains held while metadata is live. Root tool normalwait is independent closure evidence, and a later successor can add persistence before build.",
+    "recommendation": "After actual metadata closes, preserve current bytes and add one persistence write before reading terminal, retaining any failed terminal/raw; no active source edits.",
+    "source_behavior": "After wait returns, parent computes finished/returncode/supervisor_may_be_live=false/raw fields but does not persist them until outer status.json has been read. A missing/malformed terminal can leave an earlier starting record.",
+    "success_invocation_blocker": false
+  },
+  "metadata_actual_success_claim": false,
+  "observed_at": 1789835037.255184,
+  "packet_readback": {
+    "path": "/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/runtime-exporter07-preparation-independent-readback-01.json",
+    "sha256": "cba90be460266d43e02107edf8842c71dc1a58efb9cac984f4d7ba5529747913"
+  },
+  "source": {
+    "bytes": 4982,
+    "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-01/execute.py",
+    "sha256": "dcdde7d3254dfa57a1c35ed6f870742a0ab036453a53d4f6f0000800f0208d77"
+  },
+  "source_modified": false,
+  "status": "metadata-invocation-source-clear-with-failure-bookkeeping-note",
+  "target_imports": false
+}

@@ -1,0 +1,21 @@
+# Exporter after qualified installation07
+
+These sources prepare an independent copy of the retained 238-file exporter checkpoint and ordinary Cargo metadata for the qualified runtime07. Nothing in this namespace has been imported or executed during source preparation. The copied source prefix, packet, metadata work and build target are future outputs.
+
+The selected executable compiler is the original D2 stage0 compiler, the compilation metadata sysroot is the qualified B3 private335 composition, and the native runtime role is installed runtime `f031d981666f450f760ccf303dccba986053ec6b9a143a60f3d26680f9ac7c70`. Source selection uses the retained census and snapshots, including all 238 files (2,150,761 bytes) from checkpoint `185efda9403389fcb408100e5765306179be2cbe`; it does not substitute the current exporter checkout.
+
+`prepare.py` authenticates the actual successful installation audit and its closed execution, then authenticates all ten selected Python sources before local imports. Under the ordinary canonical lock (600-second bounded wait), it checks the exact148 D2 file membership, all335 B3 files, the installed runtime and registry source members, and the full49,647-entry SDK inventory. It materializes the source with independent ordinary copies and produces the roles/plan/inputs/launch packet. It performs no compiler or subprocess calls. Entry/stop/floor values are 16/9/8 GiB. The materializer stops on any failure; partial evidence is retained and not retried implicitly.
+
+`metadata.py` uses the ordinary recorded-command helper, the same canonical owner, full input guards, and explicit signal refusal. It records both native-architecture loader views, actual D2/runtime version and sysroot observations, unchanged SDK queries, Cargo identity, and the full locked/offline Cargo metadata graph. The 30 package identities, features, edges, targets, four workspace members and four defaults must match the retained ordinary graph after the explicit source-root remapping. `CARGO_TARGET_DIR` applies only to the metadata command and names its owned `cargo-target` scratch; the returned target path must match. This is Cargo's documented artifact-directory selection: https://doc.rust-lang.org/cargo/reference/environment-variables.html . The 238-file source remains exact and the separate future build target remains absent.
+
+The packet records the unchanged ordinary release/locked/offline/jobs2 build command for both exporter tools, with `RUST_INTERP_COMPILER_ROLES` and unit-separated encoded rustflags. Future build TMPDIR is in the distinct build work directory. O owns the separately authenticated build controller and its manifest; it is excluded from the ten-file metadata manifest. The inherited Stage API supports that controller without exposing a build mode from the metadata CLI.
+
+Reviewed preparation command, cwd `/Users/danluu/dev/rust-interp-runtime-exporter-20260918`:
+
+```sh
+/opt/homebrew/bin/python3 -B /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-01/prepare.py --sources-sha256 944a06741d51536a2b33d2312794dcd517e21f5ed290fca0b0136eb7392fad4d --runtime-audit-sha256 878a1f363e6ca5e3acdcb16645c79d8412a260e8721a9fe75eacd7823a481728 --runtime-audit-execution-sha256 1f4d4a70657aa071fb85540f97b8ecbfeed3dcde85e340360b5065e7a3ed7d43
+```
+
+After successful preparation and independent packet readback, the exact metadata command/environment/cwd are taken from packet-01/launch.json; its actual input digest does not yet exist. Neither preparation nor metadata implies build, frontend, publication or application qualification. Full18 frontend cases/nine diagnostic pairs, source restoration/test discovery/RBC parity and the corrected lossless telemetry checks remain required before an ordinary tool publication. The existing VM can be adopted through its exact retained proof; it is not rebuilt here. No std, compiler or application build is claimed by metadata.
+
+`*.before-final-routing` and corresponding diffs retain the final narrow source revisions; metadata's separately preserved build-split predecessor records O's extraction. Old metadata/build/frontend controllers and providers are unchanged.

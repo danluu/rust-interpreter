@@ -1,0 +1,202 @@
+{
+  "canonical_lock_owner": "metadata.Stage / Build only; outer supervisor and parent hold no canonical lock",
+  "closure_checks": [
+    "Parent actually waits direct supervisor PID and records OS return code.",
+    "Require exact outer status finished and returncode0; supervisor OS exit0 alone does not imply controller success.",
+    "Require status.owner/cwd/command, status.plan_sha256 and command.log SHA equal exact prepared plan/retained raw.",
+    "Require status.supervisor_pid == waited direct PID; controller receipt pid == status.child_pid and controller parent_pid == direct PID.",
+    "Require successful phase receipt, exact input/source/plan pins, actual result reference, and complete child recipes/raw/normal closure.",
+    "Check parent spawn <= outer start <= controller start/admission <= child closures <= controller finish <= outer finish <= parent wait return.",
+    "Retain failed terminal/raw verbatim; supervisor failed or absent terminal may leave live work and forbids inferred closure or automatic retry."
+  ],
+  "compiler_or_build_execution": false,
+  "future_pins": {
+    "inputs_sha256": null,
+    "metadata_receipt_sha256": null
+  },
+  "no_new_framework": true,
+  "observed_at": 1789834834.361429,
+  "process_controls": false,
+  "proposals": {
+    "build": {
+      "Popen": "stdin=DEVNULL, stdout/stderr in fresh parent evidence, start_new_session=True; retain actual pid and normally wait",
+      "command": [
+        "/opt/homebrew/bin/python3",
+        "-B",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/scripts/supervise_experiment.py",
+        "--supervise",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/experiments/hir-options-hash-exporter-build-supervisor-01/plan.json"
+      ],
+      "cwd": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918",
+      "environment": "exact actual prepared plan.launch_environment; pass with Popen(env=...), no inherited additions",
+      "outer": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/experiments/hir-options-hash-exporter-build-supervisor-01",
+      "outer_files": [
+        "plan.json",
+        "status.json",
+        "command.log"
+      ],
+      "supervisor_log": "No detached wrapper is used; its supervisor.log is absent. Parent retains direct stdout/stderr separately.",
+      "supervisor_plan": {
+        "command": [
+          "/opt/homebrew/bin/python3",
+          "-B",
+          "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-01/build.py",
+          "--inputs-sha256",
+          {
+            "actual_required": "completed preparation packet inputs.sha256"
+          },
+          "--sources-sha256",
+          "944a06741d51536a2b33d2312794dcd517e21f5ed290fca0b0136eb7392fad4d",
+          "--build-sources-sha256",
+          "1a4cb6224560e4f8f3476b0506683160811ec0132a67dd24e6a6973ee3d1e85a",
+          "--metadata-receipt-sha256",
+          {
+            "actual_required": "closed successful metadata receipt.sha256"
+          }
+        ],
+        "owner": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918",
+        "supervisor_sha256": "019608c2d37fcecb55ed436fafe3753498bfe11e1a1805a46ae49a59c7d6a1b2"
+      }
+    },
+    "metadata": {
+      "Popen": "stdin=DEVNULL, stdout/stderr in fresh parent evidence, start_new_session=True; retain actual pid and normally wait",
+      "command": [
+        "/opt/homebrew/bin/python3",
+        "-B",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/scripts/supervise_experiment.py",
+        "--supervise",
+        "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/experiments/hir-options-hash-exporter-metadata-supervisor-01/plan.json"
+      ],
+      "cwd": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918",
+      "environment": "exact actual prepared plan.launch_environment; pass with Popen(env=...), no inherited additions",
+      "outer": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/experiments/hir-options-hash-exporter-metadata-supervisor-01",
+      "outer_files": [
+        "plan.json",
+        "status.json",
+        "command.log"
+      ],
+      "supervisor_log": "No detached wrapper is used; its supervisor.log is absent. Parent retains direct stdout/stderr separately.",
+      "supervisor_plan": {
+        "command": [
+          "/opt/homebrew/bin/python3",
+          "-B",
+          "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-01/metadata.py",
+          "--inputs-sha256",
+          {
+            "actual_required": "completed preparation packet inputs.sha256"
+          },
+          "--sources-sha256",
+          "944a06741d51536a2b33d2312794dcd517e21f5ed290fca0b0136eb7392fad4d"
+        ],
+        "owner": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918",
+        "supervisor_sha256": "019608c2d37fcecb55ed436fafe3753498bfe11e1a1805a46ae49a59c7d6a1b2"
+      }
+    }
+  },
+  "provider_reads": false,
+  "resource_semantics": {
+    "CPU_monitor": "Post-child user/system resource usage, not a CPU limit.",
+    "Cargo_jobs": 2,
+    "aggregate_disk_reservation": null,
+    "canonical_wait_seconds": 600,
+    "child_preflight_gib": 9,
+    "entry_gib": 16,
+    "finite_direct_build_recipe": 7,
+    "memory_bound": null,
+    "on_low_disk": "Existing helper attempts its owned stop path, but phase audit hook refuses os.kill/os.killpg; finally waits the exact child. This is sampling/fail-and-drain, not guaranteed cancellation or an atomic 8GiB reserve.",
+    "ordinary_finite_execution_claim": "Fixed commands, exact source/provider guards, jobs2 and normal recorded termination if children return; no guaranteed elapsed-time bound.",
+    "owned_child_poll_seconds": 5,
+    "running_floor_gib": 8,
+    "wall_bound": null
+  },
+  "source_only": true,
+  "sources": [
+    {
+      "bytes": 3907,
+      "identity": [
+        16777229,
+        1053448684,
+        33152,
+        3907,
+        1789767406945867084,
+        1789767406945867084,
+        1
+      ],
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/scripts/supervise_experiment.py",
+      "sha256": "019608c2d37fcecb55ed436fafe3753498bfe11e1a1805a46ae49a59c7d6a1b2"
+    },
+    {
+      "bytes": 9457,
+      "identity": [
+        16777229,
+        1053199517,
+        33152,
+        9457,
+        1789765134000687182,
+        1789765134000687182,
+        1
+      ],
+      "path": "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/experiments/stable-cgu/owned_stage.py",
+      "sha256": "7021a15d3b806ab908f03276051d9d9ca9c9e208bbf8933a60229c9fb35bb68e"
+    },
+    {
+      "bytes": 11254,
+      "identity": [
+        16777229,
+        1057266411,
+        33152,
+        11254,
+        1789834585129714907,
+        1789834585129714907,
+        1
+      ],
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-01/metadata.py",
+      "sha256": "57ddb96621c27c691f2b49af7bb9a0c244353d0d7b43b0b2ee4c43d58b6d7a2b"
+    },
+    {
+      "bytes": 19770,
+      "identity": [
+        16777229,
+        1057267377,
+        33152,
+        19770,
+        1789834597552704350,
+        1789834597552704350,
+        1
+      ],
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-01/build.py",
+      "sha256": "44d5fe64bca6832f9ef13dae0b1cecd7c4f0cad0fe26548e632e1dd345fe512b"
+    },
+    {
+      "bytes": 1852,
+      "identity": [
+        16777229,
+        1057267758,
+        33152,
+        1852,
+        1789834599452112468,
+        1789834599452112468,
+        1
+      ],
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-01/sources.json",
+      "sha256": "944a06741d51536a2b33d2312794dcd517e21f5ed290fca0b0136eb7392fad4d"
+    },
+    {
+      "bytes": 2875,
+      "identity": [
+        16777229,
+        1057267956,
+        33152,
+        2875,
+        1789834645132989550,
+        1789834645132989550,
+        1
+      ],
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-exporter-after-installation07-01/build-sources.json",
+      "sha256": "1a4cb6224560e4f8f3476b0506683160811ec0132a67dd24e6a6973ee3d1e85a"
+    }
+  ],
+  "status": "source-only-direct-supervisor-recommendation",
+  "target_imports": false,
+  "unchanged_ordinary_helpers": true
+}

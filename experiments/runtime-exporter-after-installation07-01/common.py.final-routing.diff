@@ -1,0 +1,26 @@
+--- common.py.before-final-routing
++++ common.py
+@@ -352,6 +352,13 @@
+         require(features[package['id']] == old_features[previous['id']], 'dependency features changed')
+         wanted = previous['manifest_path'] if package['source'] else str(source/Path(previous['manifest_path']).relative_to(X))
+         require(package['manifest_path'] == wanted, 'dependency manifest root differs')
++        targets=[]
++        for target in previous['targets']:
++            target=dict(target)
++            if package['source'] is None:
++                target['src_path']=str(source/Path(target['src_path']).relative_to(X))
++            targets.append(target)
++        require(package['targets']==targets, 'ordinary Cargo target declarations differ')
+     require(set(features) == {p['id'] for p in packages}, 'dependency graph node membership differs')
+     # Re-map IDs through semantic package identities, then compare every edge.
+     def graph(data):
+@@ -359,4 +366,9 @@
+         return {ids[n['id']]: sorted((d['name'],ids[d['pkg']],json.dumps(d['dep_kinds'],sort_keys=True))
+                 for d in n['deps']) for n in data['resolve']['nodes']}
+     require(graph(metadata) == graph(original), 'ordinary dependency edges/target kinds differ')
++    def members(data, key):
++        ids={p['id']:(p['name'],p['version'],p['source']) for p in data['packages']}
++        return [ids[n] for n in data[key]]
++    for key in ('workspace_members','workspace_default_members'):
++        require(members(metadata,key)==members(original,key),'ordinary workspace membership differs')
+     return dict(packages=packages, resolve=metadata['resolve'])

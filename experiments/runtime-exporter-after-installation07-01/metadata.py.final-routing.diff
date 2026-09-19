@@ -1,0 +1,32 @@
+--- metadata.py.before-final-routing
++++ metadata.py
+@@ -1,5 +1,5 @@
+ #!/usr/bin/env python3
+-"""Run one reviewed metadata or ordinary two-tool Cargo build stage.
++"""Run one reviewed ordinary Cargo metadata stage.
+ 
+ No std/compiler rebuild, guest execution, tool publication or application proof
+ is implied. Build is separately invoked only after closed metadata readback.
+@@ -154,7 +154,10 @@
+             'Cargo identity differs beyond selected OS line')
+         metadata=observed['cargo-metadata'];c.require(not metadata['stderr'],'Cargo metadata stderr')
+         expected=self.plan['historical_cargo_metadata']; original=c.read(expected['path'],expected['sha256'])
+-        dependencies=c.dependency_contract(json.loads(metadata['stdout']),original,c.PREFIX)
++        actual=json.loads(metadata['stdout'])
++        c.require(actual['target_directory']==self.plan['metadata_target']==str(c.WORK/'cargo-target'),
++                  'ordinary Cargo metadata scratch route differs')
++        dependencies=c.dependency_contract(actual,original,c.PREFIX)
+         c.write(self.work/'cargo-metadata.json',metadata['stdout'])
+         serial_cache=[dict(path=p,flag=flag,receipt=v['path'],stdout_sha256=v['receipt']['stdout_sha256'])
+                       for (p,flag),v in sorted(self.cache.items())]
+@@ -179,9 +182,8 @@
+ 
+ def main():
+     parser=argparse.ArgumentParser(__doc__)
+-    parser.add_argument('--phase',choices=('metadata','build'),default='metadata')
++    parser.add_argument('--phase',choices=('metadata',),default='metadata')
+     parser.add_argument('--inputs-sha256',required=True);parser.add_argument('--sources-sha256',required=True)
+-    parser.add_argument('--metadata-receipt-sha256')
+     args=parser.parse_args();c,sources=bootstrap(args.sources_sha256)
+     c.require(Path.cwd()==c.X and sys.dont_write_bytecode and not sys.flags.optimize,'fixed exporter Python -B/cwd required')
+     mods=c.modules(sources)

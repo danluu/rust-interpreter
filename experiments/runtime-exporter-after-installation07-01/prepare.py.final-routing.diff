@@ -1,0 +1,34 @@
+--- prepare.py.before-final-routing
++++ prepare.py
+@@ -108,6 +108,9 @@
+     build_environment = environment | dict(RUSTC=str(c.D2/'bin/rustc'),RUSTDOC=str(c.D2/'bin/rustdoc'),
+         RUSTC_BOOTSTRAP='1',RUST_INTERP_COMPILER_ROLES=str(c.PACKET/'compiler-roles.json'),
+         CARGO_ENCODED_RUSTFLAGS='\x1f'.join(flags))
++    metadata_environment = build_environment | {'CARGO_TARGET_DIR': str(c.WORK/'cargo-target')}
++    future_build_environment = build_environment | {
++        'TMPDIR': str(c.X/'.work/hir-options-hash-exporter-build-01/tmp')+'/'}
+     cargo = old['support_executables']['cargo']
+     metadata = [cargo,'metadata','--locked','--offline','--format-version=1','--manifest-path',str(c.PREFIX/'Cargo.toml')]
+     build = [cargo,'build','--release','--locked','--offline','--jobs','2','-vv',
+@@ -155,17 +158,18 @@
+         add(name+'-version',[executable,'-vV'],environment|{'DYLD_PRINT_LIBRARIES':'1'})
+         add(name+'-sysroot',[executable,'--print','sysroot'])
+     add('cargo-version',[cargo,'-Vv'])
+-    add('cargo-metadata',metadata,build_environment,c.PREFIX)
++    add('cargo-metadata',metadata,metadata_environment,c.PREFIX)
+     for i, argv in enumerate(sdk_queries): add('sdk-after-'+str(i),argv,stdout=sdk_stdout[tuple(argv)])
+     plan = dict(schema_version=1,status='prepared-unexecuted',owner=str(c.X),source_root=str(c.PREFIX),
+         source_checkpoint=c.CHECKPOINT,runtime_key=c.KEY,runtime_owner=str(c.R),binding=binding,
+         runtime_qualification=proof,files=files,memberships=memberships,configuration=config,
+         routes=old['routes'],platform=mods.loaders.platform_identity(),launch_environment=environment,
+-        build_environment=build_environment,children=children,loader_binaries=binaries,
++        build_environment=build_environment,metadata_target=str(c.WORK/'cargo-target'),
++        children=children,loader_binaries=binaries,
+         historical_cargo_metadata=dict(path=str(historical_metadata),sha256=files[str(historical_metadata)]['sha256']),
+         registry_packages=old['registry_packages'],historical_cargo_version=old['historical_cargo_version'],
+         source_materialization=source,source_snapshot_census=dict(path=str(c.CENSUS),sha256=c.PINS[str(c.CENSUS)]),
+-        future_build=dict(command=build,cwd=str(c.PREFIX),environment=build_environment,
++        future_build=dict(command=build,cwd=str(c.PREFIX),environment=future_build_environment,
+                           exporter_builds=1,compiler_builds=0,VM_builds=0),
+         adopted_VM=vm,
+         future_frontend=dict(recipe='exact18-current-runtime',diagnostic_pairs=9,
