@@ -1,18 +1,18 @@
 # Next runtime work
 
-Measure the qualified size-tier candidate on the unchanged40-command parser primary.
-It keeps resumable functions above65,536operations interpreted before expensive JIT
-preparation, while reached smaller callees compile independently. Actual parser
-observation showed repeated failed emission of a140,615-op function at the remaining
-arena budget. The threshold is a development heuristic that can regress compilable
-large functions; it needs all project guards after a primary pass.
+Finish qualification of the experimental template-cache correctness fix, then
+replay the saved actual parser suites with every cache hit independently verified.
+A callee body edit can change its initial register-zeroing requirement; the old
+caller-template key omitted that derived emission input. Two closed controls
+reproduce identical old keys for different native caller code and an actual cached
+execution failure where fresh JIT/interpreter pass. The correction binds the exact
+current boolean and advances the internal key domain tov3. The adopted runtime
+has no cross-program history and is unaffected.
 
-Debug/release652tests/profile passed;16saved actual parser suites matched1,824
-original invocations and17,150independently verified template hits. Current request
-validation, fresh guest state, strict type/borrow checking and lifecycle accounting
-remain. The compiler/exporter/wrapper are identical to the adopted baseline.
-
-The two previous template-session primaries failed wall gates. Do not rerun those
-unchanged candidates or treat diagnostic intervals as savings. Keep24GiB initial
-admission and the original A/A and CPU gates. No adoption before complete comparison.
-Compiler/Cargo/application admission belongs to other sessions. Saved goal paused.
+After the fix passes, resume the planned diagnostic input/constructor phase replay
+using corrected binaries. Diagnose the roughly40ms/request outside the worker
+interval before choosing another optimization. The size-tier primary completed
+all40commands but is unmeasurable under its original8% variance rule: candidate
+wall0.921620 plus A/A0.088141 exceeds1. No unchanged retry, larger comparison or
+adoption. Keep all results and original gates. Compiler/Cargo/application admission
+belongs to other sessions. Saved goal remains paused; no subagents or peer control.

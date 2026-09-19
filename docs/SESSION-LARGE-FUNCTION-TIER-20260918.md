@@ -70,3 +70,8 @@ infer absence of eviction from that median. These intervals do not alter the gat
 Next add diagnostic-only input and constructor phases to separate reading/hashing,
 decoding, catalog validation, structural validation and worker metadata before
 choosing a new runtime change. Keep the performance binaries and earlier results.
+
+A later correctness audit found a missing callee register-initialization dependency
+in the experimental template key. The recorded suites passed, but those inputs did
+not exercise the new reproducer. Further reuse work is suspended until correction
+qualification completes. [Reproducer and correction](TEMPLATE-CALLEE-INITIALIZATION-20260918.md).
