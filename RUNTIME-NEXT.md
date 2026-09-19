@@ -1,168 +1,21 @@
-# Next work
+# Next runtime work
 
-The scratch-value/scalar-call composition is adopted with exact measured tool
-`df4006e0` / VM `6ac4dd9e`. All 726 project-history commands, five performance
-guards and both 88-command full-parser guards pass. Token improves 6.30% wall
-and 6.51% CPU but remains 1.571× ordinary native. Folded improves 3.11% wall;
-pgrust, rg-aot and Nushell differences are within variation. The full parser
-still loses to native. [Integration and limits](results/scratch-scalar-main-qualification-01/assessment.md).
+See STATE.md for exact process identities, evidence and resource constraints.
+The duration-order/template-history composition passed both parser gates but failed
+its held-out fre token guard. All176 changed-source commands and strict controls
+were correct. Median wall improvement2.94% is below the5.57% project A/A allowance;
+no runtime adoption, later project guards or unchanged timing retry.
 
-Broad demand-region candidate e5ddb4243a90 / VM b1fd894de0fe is parked. Its full
-40-command token primary preserves all twelve tests and exact checked artifacts,
-but wall ratio 0.994056 does not clear A/A 0.045334 (margin 1.039390); CPU ratio
-is 0.989312. Larger comparison/held-out commands remain unstarted. Smaller code
-and exact profiles did not establish a development-loop speedup.
+Next attribute remaining fre execution using the already-qualified diagnostic
+binary and retained real-edit artifacts. The saved75-report analysis shows
+1.503s build,2.439s execution and2.367s in the longest test, which already starts
+first.193ms summed compilation and1938 median cache hits are diagnostic clues,
+not independent CPU costs or projected savings. The first diagnostic attempt hit
+a Python filename collision during receipt validation after one successful suite. Its prefix is closed;
+replay.py attempt02 starts a new session, including the initial suite needed to
+seed process-local duration hints. This is diagnostic recovery, not a timing retry.
 
-The candidate passes 637 workspace controls/profile, 408 Python tests (22 skips),
-122 strict/cache outcomes and three original profiles with exact logical counts,
-guest peak memory and entropy. Production retained liveness is complete; earlier
-three-pair-only storage estimates are superseded. Corrected captured plan payload
-is 11.82/14.80 MB for token block/exhaustive and 2.15 MB for folded.
-
-The current full-parser diagnostic is closed: three fresh-owner profiles preserve
-exact original counts, memory and entropy. Demand moves 96.12% of `reduce_cold`
-work into native regions and reduces total interpreted work by 79.13%. The arena
-is only 48 bytes below its unchanged 16 MiB limit; compact surrounding functions
-matter. This establishes coverage, not latency improvement.
-[Parser coverage](results/demand-large-function-profile-01/assessment.md).
-
-Conditional candidate 4cdd305b692c / VM 54fb895b2c77 now implements the generic
-program-size policy: enable demand only if any function exceeds the existing
-65,536-PC CFG-analysis bound. Other programs retain eager preparation and the
-VM loop uses the effective owner mode. Full validation and fixed prepared-owner
-options remain mandatory. Both 640-test workspace profiles, 409 Python tests
-(22 skips), exact eager captures and 122 strict/cache commands pass. Three
-small-program profiles retain exact eager counts/code sizes; three current-parser
-profiles reproduce the demand coverage benefit with exact counts/memory/entropy.
-The first build's diagnostic assertion failure and the second build's disk stop
-are preserved; the third binds/reuses the exact passed debug command.
-[Build](results/conditional-demand-build-03/assessment.md),
-[strict/cache](results/conditional-demand-qualification-01/assessment.md),
-[eager profiles](results/conditional-demand-profile-01/assessment.md),
-[parser profiles](results/conditional-demand-parser-profile-01/assessment.md).
-
-Next: admit the preregistered 40-command full-parser primary after safe closed-cache
-retirement. Nineteen protocol controls pass. It keeps all 114 tests, five genuine
-edits, wrong/restored states and five arms (adopted, duplicate, candidate, native,
-fixed historical parser anchor). Only a primary pass permits larger histories and
-regression guards. The old broad token campaign remains parked.
-[Protocol](results/conditional-demand-parser-protocol-01/assessment.md).
-The closed failed screen's compiler intermediates are retired (3,147 files,
-1.91 GB logical; all 2,531 protected hashes unchanged). Raw evidence, artifacts,
-executables and the shared build target are preserved.
-[Primary result](results/demand-region-screen-token-01/assessment.md),
-[build gap](results/demand-region-build-01/assessment.md),
-[corrected build](results/demand-region-build-02/assessment.md),
-[complete storage](results/demand-analysis-storage-04/assessment.md),
-[original profiles](results/demand-region-profile-01/assessment.md).
-Runtime work stays on `experiment/demand-region-emission-20260914`; main retains
-adopted df4006e0 / VM 6ac4dd9e. The saved goal remains paused; manual work continues.
-[Region coverage](results/demand-region-census-01/assessment.md),
-[cached staging](results/demand-region-cached-01/assessment.md),
-[compact liveness](results/demand-compact-liveness-01/assessment.md),
-[storage comparison](results/demand-analysis-storage-02/assessment.md),
-[bounded ownership](results/demand-retained-plans-01/assessment.md),
-[code publication](results/demand-code-publication-02/assessment.md),
-[pending links](results/demand-pending-links-01/assessment.md),
-[stable tables](results/demand-resume-tables-01/assessment.md),
-[live controls](results/demand-live-controls-01/assessment.md),
-[demand diagnostics](results/demand-region-diagnostics-01/assessment.md).
-
-1. The two adopted-VM captures are closed: all 1,561 / 1,231 generated self
-   samples map to exact same-process schema-2 emission. Memory partitioning
-   reconstructs every ordinary function and scalar body; payload loads account
-   for 247 / 124 samples. These diagnostic windows establish no latency gain.
-   [Samples](results/scratch-scalar-runtime-sampling-01/assessment.md),
-   [memory parts](results/scratch-scalar-memory-parts-01/assessment.md).
-2. The source/narrow-Copy observer passes 22 controls and exact reconstruction,
-   but covers only 22 / 1 actual load samples. It stays parked. The scalar-aware
-   protocol observer now reconstructs all 409 / 440 Call/Return samples exactly;
-   ordinary frame clearing accounts for 89 / 62. The virtual-zero census admits
-   15 more leaves but covers no current transition samples; eight controls and
-   192 synthetic reference comparisons pass. Park that policy. The typed current-call join attributes 84 block transition samples to
-   targets first rejected for unknown reads. The diagnostic
-   read-only scalar graph passes 48 controls and admits 395 plans, covering
-   42 transition / 53 body block samples and none in exhaustive. The native prototype passes 359 bytecode tests/profile after an uncovered
-   heap-free ABI issue was corrected. Actual emission admits 392 functions and
-   preserves all 71 existing scalar bodies byte-for-byte, covering 94 block
-   samples. Immutable candidate cb47107b9d64 now passes 622 workspace tests/profile,
-   407 Python tests (22 skips), 121 strict/cache commands and three original
-   profiles against three exactly bound adopted controls. Token block scalar
-   Calls rise by 7.73 million with exact logical counts, memory and entropy.
-   Its complete primary fails (wall 0.999836, CPU 0.999544, wall A/A 0.019585).
-   Park this revision and cancel larger comparisons. Its exact 199-body census
-   finds duplicate reads concentrated in one callee. A subsequent structural
-   census favors external-write leaves (153 block samples) over nested Calls
-   (59), wider results (11) and cycles (5). The bounded private-store model
-   passes 369 bytecode tests/profile and retains 138 block samples in 168 plans.
-   Exact memory snapshots cover success, failure, branches and non-idempotent
-   replay. The native backend retains 165 plans and all 138 samples, preserving
-   71 adopted scalar bodies. Candidate 494c9f013bb5 passes 641 workspace tests
-   per profile, 407 Python tests (22 skips), 121 strict/cache commands and three
-   original profiles with exact counts/memory/entropy. Block scalar Calls rise
-   from 11.23 to 27.65 million. Its 40-command primary fails: wall 1.000153,
-   CPU 0.976356, wall A/A 0.068269. Park this revision and cancel larger histories.
-   The exact 245-body store-cost census finds 32.94 million repeated containing
-   write checks and fully overwritten publications on successful block paths.
-   A separate store-log simplification passes 381 bytecode tests/profile (17
-   ignored), including intervening aliases and later faults. Its immutable
-   tool 5b86b3ab passes 644 workspace tests/profile, 407 Python tests (22 skips),
-   121 strict/cache commands and three original profiles. The complete
-   40-command primary fails (wall 0.976436, CPU 0.996167, wall A/A 0.046293).
-   Park 5b86b3ab and cancel larger histories. The closed 245-body
-   census finds too little benefit from a larger local register pool. Its
-   corrected live-only partition identifies many one-byte memory phis, including
-   eight consecutive bytes of one value in the hot copy-precondition function.
-   The contiguous byte-phi prototype now passes 348 bytecode tests/profile
-   (11 ignored), starting from adopted runtime source. It preserves predecessor
-   slices, original PCs and limits. Immutable 7d80e36f passes 611 workspace
-   tests/profile, 407 Python tests (22 skips), 121 strict/cache commands and three
-   original profiles. Scalar-call counts match adopted main; block/exhaustive
-   code each shrink by 424 bytes. Its 40-command primary fails: wall 1.010857,
-   CPU 0.996384, wall A/A 0.049637. Park 7d80e36f and cancel larger histories.
-   Shift to a typed coverage census for scalar value optimization within
-   ordinary native regions, distinct from the previous cache/fact variations. The invalid
-   census02 partition and its corrected dead-use control are retained.
-   Main retains df4006e0; no gain is established.
-   Retain earlier negative initialization/tree and wider-memory results.
-   [Scratch coverage](results/scratch-source-census-01/assessment.md),
-   [current protocol costs](results/scalar-protocol-census-03/assessment.md),
-   [virtual-zero result](results/scalar-virtual-zero-census-01/assessment.md),
-   [current callee costs](results/current-call-shapes-01/assessment.md),
-   [read-only model](results/scalar-readonly-census-01/assessment.md),
-   [native controls](results/scalar-readonly-native-controls-02/assessment.md),
-   [native census](results/scalar-readonly-native-census-01/assessment.md),
-   [build](results/scalar-readonly-native-build-01/assessment.md),
-   [strict qualification](results/scalar-readonly-native-qualification-01/ASSESSMENT.md),
-   [original profiles](results/scalar-readonly-native-profile-01/ASSESSMENT.md),
-   [failed primary](results/scalar-readonly-native-screen-token-01/ASSESSMENT.md),
-   [body census](results/scalar-readonly-shapes-01/assessment.md),
-   [structural bounds](results/scalar-next-boundaries-02/assessment.md),
-   [private-store model plan](benchmarks/experiments/scalar-transaction-model/PLAN.md),
-   [model qualification](results/scalar-transaction-model-03/assessment.md),
-   [native controls](results/scalar-transaction-native-controls-03/assessment.md),
-   [native census](results/scalar-transaction-native-census-01/assessment.md),
-   [immutable build](results/scalar-transaction-native-build-01/assessment.md),
-   [strict checks](results/scalar-transaction-native-qualification-01/ASSESSMENT.md),
-   [original profiles](results/scalar-transaction-native-profile-01/ASSESSMENT.md),
-   [failed store primary](results/scalar-transaction-native-screen-token-01/ASSESSMENT.md),
-   [store costs](results/scalar-transaction-costs-01/assessment.md),
-   [store-log controls](results/scalar-store-log-controls-02/assessment.md),
-   [store-log primary](results/scalar-store-log-screen-token-01/ASSESSMENT.md).
-3. Use the existing primary-first changed-source screen and all predeclared
-   correctness/adoption guards. Preserve failures and noisy outcomes; do not
-   retime unchanged parked candidates or reinterpret old gates. Reuse existing
-   passing evidence only with complete relevant source/binary identity.
-4. Keep compiler/Cargo/host-debuginfo/parser-exporter work in the other session's
-   ownership. No duplicate budget-per-region implementation: ordinary native
-   regions already precharge their static count. Do not infer safe native rlib
-   reuse from metadata equality alone. Larger parser arenas remain parked.
-5. Keep conservative resource admission. Recently retired caches stay retired;
-   retained source/artifact snapshots, installed tools, shared ROOT build target
-   and peer/private work are protected. Future cache estimation can use actual
-   per-arm peaks in a new protocol, without weakening an existing reservation.
-
-Runtime options remain explicit, guest fallback stays custom, and the saved
-goal remains paused. Manual work continues. The September 13 12:45 suggestions
-are unchanged and their [review](docs/SUGGESTIONS-REVIEW-20260913-1245.md) still
-applies. [Prior next-work history and parked candidates](docs/history/RUNTIME-NEXT-20260914-before-scratch-scalar-integration.md).
+Keep strict checking and the custom guest backend. No subagents or goal tools.
+Two workers, shared lock, dynamic disk checks, no shared-target/peer cleanup.
+Publish qualified evidence regularly while leaving adopted main runtime intact.
+The older candidate chronology is archived in docs/history and RUNTIME-HISTORY.md.
