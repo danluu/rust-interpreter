@@ -60,6 +60,18 @@ and [protocol](../results/emitter-register-workspace-parser-protocol-01/summary.
 The [prospective protocol](../benchmarks/experiments/emitter-register-workspace-screen/PLAN.md)
 reserved24GiB initially and checked an8GiB floor before every child command.
 
-Next audit the15 already-recorded valid edited custom receipts for constructor
-and compilation intervals. No new guest runs are needed. The descriptive stage
-audit cannot change the failed gate or establish recoverable command savings.
+The closed saved-receipt audit passes10controls and covers all15 valid edited
+custom receipts without new guest or build commands. Median summed compiler
+intervals are215.7ms adopted,217.6ms duplicate and198.0ms candidate; largest-worker
+intervals are126.2/127.9/114.0ms. Constructor sums are45.3/48.1/49.7ms. Worker
+assignment differs, intervals overlap and separate medians are not additive.
+These observations do not change the failed gate or establish recoverable
+command savings. [Saved audit](../results/emitter-register-workspace-costs-01/summary.json).
+
+Next investigate the prerequisites for reusing ordinary generated code between
+fully checked source edits. Start with saved artifact structure and emission
+dependencies, not a new timing campaign. Same-process shared templates already
+failed; cross-invocation reuse needs separate proofs for function/callee layout,
+options, assertion identities, scalar admission and address relocation, with
+bounded storage and normal publication/budget checks. No reuse is implemented
+or enabled by this investigation.

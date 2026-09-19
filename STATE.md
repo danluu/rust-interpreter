@@ -147,5 +147,11 @@ matching artifact/catalog identities and source restoration. CLOSED33627/33631:
 5,311frozeninputs112evidence. Wallratio1.058595656+A/A0.060960002 gives1.119555658;
 CPUratio1.046235056+A/A0.054013185 gives1.100248241. Both gates fail; verdictfailed.
 Candidate/nativewall1.352372254. PARK candidate78176777, cancel larger histories,
-no unchanged retry or adoption. Next inspect15saved edited preparation receipts.
-Saved pause/ownership boundaries hold.
+no unchanged retry or adoption. Saved15-receipt audit at2d5eda2d passed10controls
+under49936/49939, CLOSED55688/55692. Compile sums215.7/217.6/198.0ms and largest
+worker126.2/127.9/114.0ms (adopted/duplicate/candidate); constructor45.3/48.1/49.7ms.
+These overlapping elapsed intervals do not establish command savings.
+Next investigate cross-invocation ordinary-code reuse prerequisites using saved
+strictly checked edited artifacts and complete emitter dependencies. No runtime
+cache or timing campaign enabled. Preserve this parked branch before restoring
+adopted Rust for any new prototype. Saved pause/ownership boundaries hold.
