@@ -7,7 +7,7 @@ import focus as closure_support
 ROOT=closure_support.ROOT
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='session-duration-order-focused-01'
+RUN='session-duration-order-focused-02'
 def read(p):return json.loads(p.read_text())
 def main():
     with (ROOT/'.work/benchmark.lock').open('a') as lock:

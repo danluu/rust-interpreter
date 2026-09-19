@@ -371,15 +371,15 @@ mod tests {
     #[test]
     #[cfg(all(feature="jit-session-duration-order",target_arch="aarch64",target_os="macos"))]
     fn duration_order_preserves_fresh_guests_current_budgets_and_original_indices() {
-        use rust_interp_bytecode::{Function,Op,Slot,VERSION};
+        use rust_interp_bytecode::{Function,Op,Slot,VERSION,HEAP_POINTER_TAG};
         let program=|| {
-            let code=vec![Op::Imm{dst:0,value:8},Op::Load{dst:1,address:0,size:1},
+            let code=vec![Op::Imm{dst:0,value:(HEAP_POINTER_TAG+16) as u128},Op::Load{dst:1,address:0,size:1},
                 Op::Assert{value:1,expected:false,message:"every test needs fresh data".into()},
                 Op::Imm{dst:1,value:1},Op::Store{address:0,src:1,size:1},Op::Return];
             let functions=(0..4).map(|i|Function{name:format!("entry{i}"),frame_size:8,frame_align:8,
                 registers:2,args:vec![],result:Slot{offset:0,size:0},code:code.clone()}).collect();
             ValidatedProgram::new(Program{version:VERSION,target:"aarch64-apple-darwin".into(),entry:0,
-                functions,data:vec![0;16],statics:vec![],thread_locals:vec![]}).unwrap()
+                functions,data:vec![0;16],statics:vec![0;32],thread_locals:vec![]}).unwrap()
         };
         let entries=(0..4).map(|i|(format!("entry{i}"),i)).collect::<Vec<_>>();
         let hints=(0..2).map(|worker|json!({"worker":worker,"status":"completed","poisoned":false,
@@ -399,7 +399,7 @@ mod tests {
                 for test in tests {
                     let index=test["index"].as_u64().unwrap() as usize;assert!(index<previous);previous=index;
                     assert_eq!(test["name"],entries[index].0);
-                    assert_eq!(test["status"],if instructions==1 {"failed"} else {"passed"});
+                    assert_eq!(test["status"],if instructions==1 {"failed"} else {"passed"},"{test}");
                     if instructions==1 {assert!(test["error"].as_str().unwrap().contains("instruction limit"));}
                     indices.push(index);
                 }

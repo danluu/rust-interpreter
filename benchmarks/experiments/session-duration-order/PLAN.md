@@ -30,3 +30,9 @@ Sharedlock45s,two workers,same target neverclean. Admissionmax(14GiB,
 8GiB+2*allocatedtarget),8GiB childfloor. Explicitduration_order readyflag; literal-v1,
 sharedkeysOFF,bufferingOFF,strict Rust checking unchanged. No adoption before new
 changed-source primary06 and laterguards. Primary05cleanup prepared butnotrun.
+
+Focused01 preserved:9passed/1failed. The new freshness fixture attempted to
+write immutable Program.data. Correct the fixture to the existing writable
+HEAP_POINTER_TAG+16 static region with32staticbytes. Scheduler code unchanged;
+include actual outcome in future failure messages. Focused02 repeats necessary
+controls against the corrected mutable-static fixture, not a performance retry.
