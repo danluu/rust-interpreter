@@ -37,6 +37,24 @@ byte-identical adopted exporter/wrapper. Candidate tool
 66f56fdaa94e8ac7220acd6806da9c99dbc8e45cd67a52e381a39afc41390b46
 uses the corrected cache key and qualified release binaries, observer disabled.
 [Composition](../results/session-artifact-digest-install-01/summary.json).
-The new changed-source primary remains pending disk admission. The8.6ms prior catalog phase is a
+The new changed-source primaryf50d99f8 completed47517/47520 and closed2787/2793.
+All40commands preserve114original outcomes, exact paired artifacts, source restoration
+and current limits; both strict controls reject before session sequence1 advances.
+
+| Edited-command metric | Candidate / adopted | A/A envelope | Ratio + envelope |
+| --- | ---: | ---: | ---: |
+| Wall | 0.959340 | 0.040075 | 0.999415 |
+| CPU | 0.933851 | 0.013129 | 0.946980 |
+
+It passes the original gates, narrowly on wall time. Candidate/native wall is1.321684
+and CPU1.248364: this workload is still slower than native Rust. Candidate/session-off
+wall is0.994204, CPU0.990586; do not attribute the entire baseline gain to template
+history or to digest reuse alone. All server kernel/startup/tail CPU and setup/teardown
+wall are included. No regression limit or noise threshold changed.
+[Primary](../results/cross-program-template-parser-screen-incremental-04/summary.json).
+
+Next qualify the110-command full three-cycle parser guard and then run it with
+these same binaries,15edited pairs and unchanged acceptance gates. Later project
+guards remain required. The screen does not establish general runtime adoption. The8.6ms prior catalog phase is a
 motivation, not a claimed command speedup. No experimental runtime is adopted;
 the earlier unmeasurable and failed comparisons remain unchanged.
