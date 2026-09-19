@@ -208,3 +208,7 @@ CLOSED25261. All42bindingsverified,bothfullresultsrecomputed. Directcyclicsample
 reportedseparately. No performanceinference. docs/ADOPTED-HOT-LOOPS-20260919.md.
 Next measure bounded local-memory equality for redundant copies in ordinary
 regions, including call-containing functions; no typed/runtimeproof claimedyet.
+
+Registered local-copy-equality-01:14controls, exactclosedloop PC assignment,
+region-local diagnosticbyteidentitymodel. No guest/build/nativeclaim. Freeze
+controllerthroughclosure; same12GiB/8GiB admission. Rootf2f45927pushed.

@@ -30,3 +30,6 @@ failed attempt independently closed14287. v2 adds exact unit-variant control.
 
 Next: bounded local-memory copy-equality scope from existing closed samples.
 Loops direct503/1933 and304/1429; callfreeonly35/120. No runtimepassyet.
+
+Run local-copy-equality-01 controller analyze.py, then --close aftersuccess.
+14controls; no compiler/guest. Freeze sources; preserveanyfailure.
