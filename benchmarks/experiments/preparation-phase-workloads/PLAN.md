@@ -24,3 +24,13 @@ decline identity. Rank costs to select the next independently tested candidate.
 Root lock45seconds;12GiB initial and8GiB each child/closure. Freeze exact runtime,
 controller, artifact/catalog, reference report and closed native outcome records.
 Close the complete terminal and evidence before any correction or later analysis.
+
+Refined observation uses qualified f82aaa50 after nine controls per profile,
+a release observer build and no-feature lib/VM check. It adds seven nested
+ordinary-emission phases. Eight validator controls precede original pgrust114
+and fre12 suites. These two diagnostic executions answer the new phase question;
+the prior three captures remain unchanged. Reuse the six CLI controls after
+checking byte-identical main, suite and PreparedJit source against observation01;
+do not rerun unchanged CLI or wrong-source work. Ordinary residual includes
+unattributed setup/destruction and observer accounting; do not label it allocator
+cost without further evidence. Initial12GiB and child/closure8GiB floors remain.
