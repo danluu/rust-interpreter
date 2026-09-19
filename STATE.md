@@ -279,3 +279,10 @@ Full Python checks include mocked ordering/selection plus receipt tamper control
 ordinary feature-disabled VM build planned. Retained client01 Rust/binaries are
 unchanged and will compose with exact adopted exporter/wrapper under new toolkey.
 Controller benchmarks/experiments/cross-program-template-session/launcher.py.
+
+Launcher01 source45f3a09d ran16292/16295 and stopped after Python failure;
+CLOSED17057/17061. All seven new session/launcher/receipt controls passed.
+463discovered:439passed,22skipped,1failure/1error. Two older archive-dependent
+HIR tests use a missing retired peer worktree archive path. Local exact archives
+exist; investigating portable fixture binding without changing peer runtime/code.
+DefaultVM build and tool installation did not run. Preserve Python captures.
