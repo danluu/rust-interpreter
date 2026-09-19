@@ -1,29 +1,28 @@
-# Continue adopted process hardware diagnosis
+# Continue ordinary native dead-temporary scope
 
-Manual indefinite task; goal PAUSED. No subagents, peer process control, AWS,
-browser, or shared-target cleanup. Root experiment/adopted-hardware-costs-20260919.
-Runtime crates exactly adopted fca687eb; installed default df4006 unchanged.
+Manual indefinite task; goal PAUSED; no subagents/peercontrol/AWS/browser.
+Root experiment/ordinary-dead-scratch-20260919. Runtime crates EXACT fca687eb;
+default df4006 unchanged. Maincd4b2ab6 published closed current counters,
+preservingpeer9ee4b793. All12 originalassertions+3APIcontrols passed, independent
+closures done. Current JIT/nativeinstructions3.5647block/5.2494exhaustive;
+cycles2.3664/3.6374. Wholeprocess includes startup/JIT, ordinaryentropy; NOT
+an editedcommand/performanceadoption result. Old7.13 ratio was older49746a22.
 
-Allocator-exit-scope01 CLOSED: 885372/1572514/74906 allocator operations but
-only 2/1933 and 0/1429 current generated samples adjoining them. Heap host
-cost would remain. Native allocator bridge DEFERRED. Main1853b8ec pushed,
-preserving peer b361d178. Heap table candidate PARKED on927ea3d8; 40-command
-wall gate failed (.98124 + .05199 AA = 1.03323); no retry or further guards.
+Next supervise ordinary-dead-scratch-01:
+/opt/homebrew/bin/python3 benchmarks/experiments/ordinary-dead-scratch/run.py
+then independent samecommand --close. No Rustbuild/guest/timing. Reuse exact
+closed scalar-word-census03 decoder, nine oldcontrols +seven newboundarycontrols
+(including1000 independent definition-graph oraclecases). Scan current saved
+ordinary spans only; allspanends live, unknown/controlbarriers, all directbranch
+targets cuts, allmemory/SP effects retained. Scalarbodies excluded. Countstatic
+deadwords and join all1933/1429 current selfsamples; preserve ambiguousPCs.
+Freeze controllers/inputs throughterminal+independentrecomputation.
 
-New benchmarks/experiments/adopted-process-counters/{PLAN.md,run.py}:
-first supervise adopted-process-counter-controls-01 with run.py controls,
-then independent run.py controls --close. Three bounded controls requalify
-preserved C launcher's source/build identity, spin counts, and child exit7.
-After CLOSED success supervise adopted-process-counters-01 with run.py measure,
-then independent run.py measure --close. Twelve original fre assertion launches:
-3 alternating native/JIT pairs each block/exhaustive; same restored source from
-closed heap primary rows38/39. Current VM, ordinary entropy, no profiling,
-no source edit or rebuild. Whole-process hardware counters NOT pure guest or
-Cargo/edit-loop timings, NOT an adoption gate. Historical7.13x used old49746a22.
-Freeze controller and inputs until each terminal and independent closure.
-
-Sharedlock45s; initial12GiB, perchild/closure8GiB; currentfree19.4GiB. Compiler
-floor26629357568bytes; no compiler admission. Shared fixed-frame-clear-combined
-build target NEVER CLEAN. Cleaner independent running; read-only status only.
-Suggestions unchanged4d74b3dc8b79...c2f. No other owned jobs at checkpoint.
-See STATE.md/history for failed mechanisms before proposing another.
+Sharedlock45s;12GiBinitial,8GiBchildren/cases/closure. Currentfree19GiB, compiler
+floor26629357568bytes => no sharedtargetbuildadmission. SharedtargetNEVERCLEAN.
+Cleaner independentlyrunning, readonlystatusonly. Noactiveownedcommands now.
+HeapHashMapcandidate927ea3d8PARKED failed40editedwallgate; no repeats/guards.
+AllocatorbridgeDEFERRED only2/1933and0/1429adjacentnative samples; published.
+Directoperand fullhistory154commands FAILED despiteearlierpositivescreen;
+scalarcalleeDCE FAILED originalAA gate. Thisordinary scope distinct, no retiming.
+Suggestions unchanged4d74b3dc8b79...c2f. CheckSTATE/historybeforeanynewmechanism.

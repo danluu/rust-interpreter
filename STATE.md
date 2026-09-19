@@ -133,3 +133,9 @@ and0/1429 nativeallocationadjacentsamples; deferbridge. Rootadoptedhardwarebranc
 registers fresh3Ccountercontrols then12originalguestcounts with currentdf4006,
 matched restoredprimaryrows38/39. No compiler/sourceedit/performanceadoption.
 SeeRUNTIME-NEXT for commands/admission; old7.13xcounterratio is old49746a22.
+
+COUNTERS CLOSED/PUBLISHED maincd4b2ab6 preservingpeer9ee4b793. All12guests,
+3controls; JIT/nativeinstructions3.5647block/5.2494exhaustive, cycles2.3664/3.6374.
+Processaggregateonly notspeedup. Newordinary-dead-scratch01 registerssavedcode
+withinspan pureoverwrittentemporary census usingexactclosedscalarworddecoder;
+no build/guest/optimization. Nineold+sevennewcontrols beforeanalysis, thenclose.
