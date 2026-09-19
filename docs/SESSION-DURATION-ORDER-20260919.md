@@ -89,7 +89,30 @@ within the server request is 29.520 ms. Compilation-duration sums can overlap, a
 medians are not additive. The remaining gap is largely before execution, while the
 long test still dominates the guest interval.
 
-Default behavior remains unchanged. Before adoption, validate the same binaries
-on fre token/folded, pgrust's smaller control, private rg-aot, and Nushell with their
-original assertions and complete changed-source/session accounting. The next step
-is a verified fre token replay from closed real-edit artifacts.
+The held-out [fre token guard](../results/session-project-edit-token-01/summary.json)
+completed 176 changed-source commands and two strict type/borrow rejection controls.
+All 12 original test outcomes, intentional failures, artifact identities, source
+restoration and session lifecycle accounting passed independent closure. A prior
+verified replay passed 192 invocations and regenerated all 14,892 template hits.
+
+Fre failed the predeclared wall gate. Median candidate/adopted wall ratio was
+0.97056, with a 0.05575 A/A allowance: their sum, 1.02631, exceeds 1.0. CPU ratio
+was 0.97782 and its corresponding sum was 1.02629, passing the CPU guard. The
+candidate/native wall ratio was 1.66098. The historical anchor improved substantially
+(wall ratio 0.71807), but that does not establish a gain over the adopted runtime.
+The project protocol uses the largest deviation among five edit-position medians
+across three cycles; the worst individual wall A/A deviation was 13.23%. This
+differs from the parser protocol's maximum individual-pair allowance. Neither rule
+changed after collection.
+
+[Saved fre costs](../results/session-project-token-costs-01/summary.json) put median
+build-to-ready at 1,503.463 ms and execution at 2,439.142 ms, versus 1,500.355 ms
+and 2,526.987 ms for the adopted baseline. The longest test already starts first
+and occupies 2,367.489 ms. History records a median 1,938 hits, but compilation
+intervals still sum to 193.436 ms. These overlapping intervals and nonadditive
+medians are diagnostic evidence, not an additional speedup measurement.
+
+This composition is not adopted. Later folded, pgrust, private and Nushell guards
+are stopped; the prepared folded replay remains unstarted. The failed timing run
+will not be repeated unchanged. Next, the qualified diagnostic binary attributes
+the remaining fre execution and preparation costs using retained real artifacts.

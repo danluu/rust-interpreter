@@ -18,3 +18,9 @@ Use two workers, the shared lock with a 45-second admission timeout, 12 GiB free
 before start and 8 GiB before each child. Only owned sessions receive owner EOF;
 reap them normally and retain all completed prefixes and terminal evidence.
 No new builds, source edits, guest backend changes or default adoption.
+
+Attempt01 completed its first guest suite, then Python's dataclass receipt reader
+imported this controller as stdlib inspect because it was named inspect.py. Its
+successful prefix, normal owner-EOF session exit and failed controller are closed.
+Rename replay.py for attempt02. The initial diagnostic state runs again solely to
+seed the new session's process-local duration hints; no acceptance sample repeats.

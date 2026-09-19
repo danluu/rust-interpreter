@@ -11,7 +11,7 @@ from template_session_receipt import read_receipt
 from interpreter import installed_tools
 sys.path.insert(0,str(ROOT/'benchmarks/experiments/cross-program-template-session'))
 from parser import receive
-RUN='session-duration-order-phases-token-01'
+RUN='session-duration-order-phases-token-02'
 def read(p):return json.loads(p.read_text())
 
 def main():
@@ -67,7 +67,7 @@ def main():
             verify_every_hit=False,diagnostic_elapsed_intervals=True,performance_measurement=False,default_runtime_adoption=False))
         records=[];comparisons=[];outputs={};reference={};hits=0;write(raw/'records.json',records)
         for mode,capacity in [('fresh',0),('cached',64*1024**2)]:
-            require_space(ROOT,8);folder=raw/mode;folder.mkdir();endpoint=ROOT/'.work/ts'/('fre-duration-phases-01-'+mode)
+            require_space(ROOT,8);folder=raw/mode;folder.mkdir();endpoint=ROOT/'.work/ts'/('fre-duration-phases-02-'+mode)
             command=[str(server),'--serve-socket',str(endpoint),'--history-bytes',str(capacity)]
             child=None;error=None;ready=None;closed_response=None;started=time.time();record_outputs={};clients=[]
             def retain(p):record_outputs[str(p.relative_to(ROOT))]=sha(p)
