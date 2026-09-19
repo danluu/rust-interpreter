@@ -1,0 +1,47 @@
+{
+  "toolchain": "nightly-2026-09-08",
+  "projects": {
+    "rg-aot": {
+      "revision": "474782386e976f80f7bcbc2643eaaeac1d787ad3",
+      "private": true,
+      "cargo_args": ["--bin", "rg-aot"],
+      "edit_file": "src/main.rs",
+      "anchor": "fn main() {",
+      "probe_kind": "main",
+      "runtime": "rg-aot"
+    },
+    "fre": {
+      "revision": "e0df0b010b156b030a02f073588d28703f4267f3",
+      "cargo_args": ["--bin", "rust-interp-fre-driver"],
+      "driver": "drivers/fre",
+      "edit_file": "crates/fre/src/lib.rs",
+      "anchor": "pub fn escape(pattern: &str) -> String {",
+      "probe_kind": "library",
+      "runtime": "fre"
+    },
+    "pgrust": {
+      "revision": "38d2517d3e09168a8fe222837730d435238ff358",
+      "cargo_args": ["-p", "main_main", "--bin", "postgres"],
+      "edit_file": "crates/backend/main/main_main/src/bin/postgres.rs",
+      "anchor": "fn main() {",
+      "probe_kind": "main",
+      "runtime": "pgrust"
+    },
+    "ruff": {
+      "revision": "d136bd8d002a648de5f344df602e492658306f1e",
+      "cargo_args": ["-p", "ruff", "--bin", "ruff"],
+      "edit_file": "crates/ruff/src/main.rs",
+      "anchor": "fn main() -> ExitCode {",
+      "probe_kind": "main",
+      "runtime": "ruff"
+    },
+    "nushell": {
+      "revision": "9d3157963241cf89447119d34d6e887859f5e7e8",
+      "cargo_args": ["--bin", "nu"],
+      "edit_file": "src/main.rs",
+      "anchor": "fn main() -> Result<()> {",
+      "probe_kind": "main",
+      "runtime": "nushell"
+    }
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "base_commit": "050a7d2a1e9677bc467a49fdba7a2ab485566e97",
+  "baseline_root": "/Users/danluu/dev/rust-interp-std-readmission-publication-20260918",
+  "existing_test_suites": {
+    "tests/test_custom_cargo.py": 7,
+    "tests/test_custom_compiler_launcher.py": 6
+  },
+  "files": {
+    "scripts/std_mir.py": {
+      "baseline": {
+        "bytes": 10664,
+        "sha256": "88ba5afe07c1d5bdce65368162c9954ac6c17683aa7cffb78657370fa821e49c"
+      },
+      "candidate": {
+        "bytes": 10745,
+        "sha256": "b1e1009f8e6ac04a4270137d964cd0784043b738c16c81980e1ce04364080a72"
+      }
+    },
+    "tests/test_std_mir_selection.py": {
+      "baseline_absent": true,
+      "candidate": {
+        "bytes": 8741,
+        "sha256": "591433870949299d83dcdca4de99401d987935308be028db6f5f1a2a93fbb661"
+      }
+    }
+  },
+  "new_test_count": 8,
+  "new_test_methods": [
+    "StdMirSelectionTests.test_stock_cli_skips_unselected_installers_and_preserves_setup_and_report",
+    "StdMirSelectionTests.test_compiler_only_preserves_namespace_and_does_not_import_cargo_installer",
+    "StdMirSelectionTests.test_cargo_only_preserves_selection_without_calling_compiler_loader",
+    "StdMirSelectionTests.test_both_selected_preserve_import_load_order_and_selected_tools",
+    "StdMirSelectionTests.test_invalid_partition_selection_fails_before_import_loading_or_setup",
+    "StdMirSelectionTests.test_selected_compiler_failure_preserves_both_imports_and_stops_before_cargo_load",
+    "StdMirSelectionTests.test_selected_cargo_failure_does_not_fall_back_or_start_setup",
+    "StdMirSelectionTests.test_setup_rejection_of_unselected_source_path_policy_propagates_without_fallback"
+  ],
+  "patch_sha256": "e5df711ee51cc0e53d255af38d19d2a88e5b6112727ecd2fe702dc3f083dbb23",
+  "schema_version": 1,
+  "source_derivation": {
+    "all_other_function_asts_equal": true,
+    "conditions": [
+      "args.compiler_key is not None",
+      "args.cargo_key is not None"
+    ],
+    "downstream_main_source_unchanged": true,
+    "unwrap_only_two_import_guards_restores_entire_baseline_ast": true
+  },
+  "source_write_free_bytes": 22543675392,
+  "state": "source-only unexecuted proposal",
+  "workloads_run": 0
+}

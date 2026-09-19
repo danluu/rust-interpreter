@@ -1,0 +1,558 @@
+--- reviewed-C9/run-screen.py
++++ draft-C13/run-screen.py
+@@ -1,5 +1,5 @@
+ #!/usr/bin/env python3
+-"""Fixed paired actual std-MIR readmission validation screen; no compiler builds."""
++"""Unbound fixed stock std CLI prepared-reuse screen; only discovery is stubbed."""
+ import fcntl
+ import hashlib
+ import importlib.util
+@@ -14,26 +14,26 @@
+ import sys
+ import threading
+ import time
+-PACKET=Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-readmission-stat-probe')
++PACKET=Path('/Users/danluu/dev/rust-interp-buildtime-20260918/.work/optimization-20260918/std-mir-lazy-selection-probe')
+ OUT=PACKET/'screen-01'
+ LOCK=Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+ BINDINGS=PACKET/'screen-bindings.json'
+-BINDINGS_SHA='1e93493bc152886005cd077545d663cca2450c959f0b2262c1f4d9007945525f'
++BINDINGS_SHA='UNBOUND'
+ PLAN=PACKET/'decision-plan.json'
+-PLAN_SHA='a10f461883b1b3d68416b23c863d304a3c7f3b65edba2fc35fe8f5beb630c76b'
++PLAN_SHA='c432cb2dc3cb182e038a936c898e7d6a76c1270d6425629a4239ef1136838826'
+ UNIT=PACKET/'unit-screen-01/result.json'
+-UNIT_SHA='26d9bb17cd6abf6839c22a7e795af39c868e0c8657ae032b98f0c3206dc29a9a'
+-COMPAT=PACKET/'compatibility-screen-01/result.json'
+-COMPAT_SHA='3157f8de282d7af4d43cc218557341273d9a331b7a007158fef341628923a843'
+-QUALIFICATION=PACKET/'fixture-qualification-01/result.json'
+-QUALIFICATION_SHA='759b5a85fa7e40e5a8e126dc87c070e93a52ce4e68ccff9b4d8ec0498321ab0a'
+-FIXTURE_DESCRIPTOR=PACKET/'fixture-qualification-01/fixtures.json'
+-FIXTURE_DESCRIPTOR_SHA='05e1b708626d285a1186730d3813ac5273c3cbbc89ba1992d07e48c288fcd656'
++UNIT_SHA='UNBOUND'
++QUALIFICATION=PACKET/'fixture-preparation-01/result.json'
++QUALIFICATION_SHA='UNBOUND'
++FIXTURE_DESCRIPTOR=PACKET/'fixture-preparation-01/fixture-descriptor.json'
++FIXTURE_DESCRIPTOR_SHA='UNBOUND'
+ PYTHON=Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14')
+ CACHE=OUT/'pycache'
+ GIB,MIB,FLOOR=1024**3,1024**2,16*1024**3
+-CASES=('matching_saved_stamps','matching_device_readmission_receipt')
++CASES=('stock_standalone_ready_reuse',)
+ ROWS,CHILDREN=[],[]
++MAX_ENTRIES, MAX_TOTAL, MAX_FILE = 256, MIB, 64*1024
++
+ 
+ def require(ok, message):
+     if not ok:
+@@ -216,7 +216,6 @@
+         result[str(path)] = item
+     return result
+ 
+-MAX_ENTRIES, MAX_TOTAL, MAX_FILE = 256, MIB, 64*1024
+ 
+ def file_proof(path, cap=MAX_FILE):
+     before = path.lstat()
+@@ -237,6 +236,7 @@
+     finally:
+         os.close(fd)
+     return dict(bytes=len(data),sha256=hashlib.sha256(data).hexdigest(),stamp=stamp(before)), data
++
+ 
+ def inventory(root):
+     require(root.resolve(strict=True) == root and stat.S_ISDIR(root.lstat().st_mode),
+@@ -266,18 +266,28 @@
+         require(len(rows) <= MAX_ENTRIES, 'fixture entries exceed bound')
+     return dict(entries=rows,total_file_bytes=total,entry_count=len(rows))
+ 
++
+ def verify_inputs(descriptor):
++    require(descriptor['state']=='frozen', 'timing input descriptor remains a draft')
+     records={name:verify_expected(Path(name),expected) for name,expected in descriptor['fixed_files'].items()}
+     for arm,rootname in descriptor['roots'].items():
+         root=Path(rootname)
+         require(root.resolve()==root,'noncanonical source root')
+         expected=descriptor['sources'][arm]
+         actual={str(path.relative_to(root)) for folder in ('scripts','tests') for path in (root/folder).glob('*.py')}
+-        require(len(actual)==189 and actual==set(expected),'source inventory changed')
++        require(len(actual)=={'baseline':189,'candidate':190}[arm] and actual==set(expected),'source inventory changed')
+         for relative,expected_proof in expected.items():
+             require(not Path(relative).is_absolute() and '..' not in Path(relative).parts,'source path escaped')
+             records[str(root/relative)]=verify_expected(root/relative,expected_proof)
+-    for path,digest in ((BINDINGS,BINDINGS_SHA),(PLAN,PLAN_SHA),(UNIT,UNIT_SHA),(COMPAT,COMPAT_SHA),
++    require(len(descriptor['runtime_links'])==8,'runtime link closure differs')
++    for row in descriptor['runtime_links']:
++        path=Path(row['path'])
++        info=path.lstat()
++        observed=dict(path=str(path),identity=[info.st_dev,info.st_ino,info.st_mode,info.st_size,info.st_mtime_ns,info.st_ctime_ns],
++                      text=os.readlink(path),resolved=str(path.resolve()))
++        require(stat.S_ISLNK(info.st_mode) and observed==row,'runtime link changed')
++        records[str(path)]=observed
++    for path,digest in ((BINDINGS,BINDINGS_SHA),(PLAN,PLAN_SHA),(UNIT,UNIT_SHA),
+                         (QUALIFICATION,QUALIFICATION_SHA),(FIXTURE_DESCRIPTOR,FIXTURE_DESCRIPTOR_SHA)):
+         require(proof(path)['sha256']==digest,'stage binding changed: '+str(path))
+     return records
+@@ -285,58 +295,174 @@
+ 
+ def verify_units(descriptor):
+     manifest=json.loads((PACKET/'unit-source-manifest.json').read_bytes())
+-    results={}
+-    for name,path,version,guard in (('primary',UNIT,[3,14],True),('compatibility',COMPAT,[3,9,6],False)):
+-        result=json.loads(path.read_bytes())
+-        require(result['status']=='passed' and result['error'] is None and result['post_binding_error'] is None
+-                and result['expected_tests']==result['passed_tests']==24 and len(result['children'])==4
+-                and len(result['tests'])==2 and result['bindings']==result['bindings_after']
+-                and all(c['returncode']==0 and c['error'] is None for c in result['children']),
+-                'complete successful unit qualification required: '+name)
+-        for row in result['tests']:
+-            expected=next(r for r in manifest['tests'] if r['arm']==row['arm'])
+-            report=row['report']
+-            require(row['passed']==12 and row['failures']==row['ignored']==0 and report['status']=='passed'
+-                    and report['discovered_ids']==report['successful_ids']==expected['expected_ids']
+-                    and not any(report[k] for k in ('failures','errors','skipped','expected_failures','unexpected_successes'))
+-                    and report['python']['version_info'][:len(version)]==version
+-                    and report['python']['implementation']=='cpython'
+-                    and report['single_stat_guard'] is (guard if row['arm']=='candidate' else None),
+-                    'unit names/runtime/guard differ: '+name)
+-        for arm,root in descriptor['roots'].items():
+-            require(manifest['arms'][arm]['root']==root and manifest['arms'][arm]['sources']==descriptor['sources'][arm],
+-                    'unit source inventory differs')
+-            for relative,expected in descriptor['sources'][arm].items():
+-                actual=result['bindings'][str(Path(root)/relative)]
+-                require({k:actual[k] for k in ('bytes','sha256')}==expected,'unit source binding differs')
+-        results[name]=result
+-    return results
++    result=json.loads(UNIT.read_bytes())
++    require(result['status']=='passed' and result['error'] is None and result['post_binding_error'] is None
++            and result['expected_tests']==result['passed_tests']==21 and len(result['children'])==2
++            and len(result['tests'])==1 and result['bindings']==result['bindings_after']
++            and [c['label'] for c in result['children']]==['candidate-selection-memory','candidate-selection']
++            and all(c['returncode']==0 and c['error'] is None for c in result['children']),
++            'complete successful candidate-only21 qualification required')
++    ids=sorted(i for row in manifest['tests'] for i in row['expected_ids'])
++    require(len(ids)==21 and [r['expected_tests'] for r in manifest['tests']]==[8,6,7]
++            and manifest['status']=='frozen' and manifest['decision_sha256']==PLAN_SHA,
++            'unit suite differs from fixed stage')
++    row=result['tests'][0]
++    report=row['report']
++    require(row['arm']=='candidate' and row['passed']==21 and row['failures']==row['ignored']==0
++            and report['status']=='passed' and report['tests_run']==21
++            and report['discovered_ids']==report['successful_ids']==ids
++            and not any(report[k] for k in ('failures','errors','skipped','expected_failures','unexpected_successes','actual_process_attempts'))
++            and report['canonical_module_object_preserved'] is True and report['cache_empty'] is True
++            and report['python']['version_info'][:3]==[3,14,7] and report['python']['implementation']=='cpython'
++            and Path(report['python']['executable']).resolve()==PYTHON,
++            'unit names/runtime/canonical-module outcomes differ')
++    require(report['manifest_sha256']==proof(PACKET/'unit-source-manifest.json')['sha256']
++            and manifest['arms']['candidate']['root']==descriptor['roots']['candidate']
++            and manifest['arms']['candidate']['sources']==descriptor['sources']['candidate']
++            and manifest['baseline_source_provenance']['sources']==descriptor['sources']['baseline'],
++            'unit actual source inventories differ')
++    for arm,root in descriptor['roots'].items():
++        for relative,expected in descriptor['sources'][arm].items():
++            actual=result['bindings'][str(Path(root)/relative)]
++            require({k:actual[k] for k in ('bytes','sha256')}==expected,'unit source binding differs')
++    runtime=manifest['runtime']
++    require(len(runtime['files'])==1955 and runtime['links']==descriptor['runtime_links'], 'unit runtime closure differs')
++    for path,expected in runtime['files'].items():
++        require(descriptor['fixed_files'][path]=={k:expected[k] for k in ('bytes','sha256')}
++                and {k:result['bindings'][path][k] for k in ('bytes','sha256')}==descriptor['fixed_files'][path],
++                'timing runtime differs from qualified units')
++    for child_row in result['children']:
++        for entry in child_row['logs'].values():
++            actual=proof(Path(entry['path']))
++            require({k:actual[k] for k in ('bytes','sha256')}=={k:entry[k] for k in ('bytes','sha256')},'unit log changed')
++    require(not list((PACKET/'unit-screen-01/pycache').iterdir()), 'unit cache changed')
++    return result
+ 
+ 
+ def fixture_snapshot(fixtures):
+-    root=Path(fixtures['root'])
+-    require(root==PACKET/'fixture-qualification-01/fixtures','wrong owned fixture root')
++    root=Path(fixtures['fixture_output_root'])
++    owner=Path(fixtures['fixture_owner'])
++    compiler=Path(fixtures['compiler_sysroot'])
++    require(root==PACKET/'fixture-preparation-01/fixtures' and owner==root/'owner' and compiler==root/'compiler',
++            'wrong owned fixture roots')
+     got=inventory(root)
+-    require(got==fixtures['root_inventory'],'frozen fixture tree changed')
+-    require([row['name'] for row in fixtures['cases']]==list(CASES),'fixture cases differ')
+-    for row in fixtures['cases']:
+-        work,ready=Path(row['work']),Path(row['ready'])
+-        require(work==root/row['name'] and ready.is_relative_to(work)
+-                and row['artifact_count']==26 and len(row['result']['artifacts'])==26
+-                and row['synthetic_payload_bytes']==26*1024,'fixture structure differs')
+-        require(inventory(work)==row['inventory'],'case fixture changed')
+-        ready_proof,data=file_proof(ready)
+-        require(ready_proof==row['ready_proof'] and data.decode()==row['ready_text']
+-                and json.loads(data)==row['result'],'actual ready manifest differs')
+-        receipt=row['receipt']
+-        if row['name']=='matching_saved_stamps':
+-            require(receipt is None,'matching-stamp route unexpectedly has receipt')
++    require(got==fixtures['fixture_inventory'],'frozen fixture tree changed')
++    expected=fixtures['expected_report']
++    require(fixtures['schema_version']==1 and fixtures['toolchain']=='nightly-2026-09-08'
++            and fixtures['artifact_count']==26 and fixtures['project_imports_or_calls']==0
++            and expected['metadata_bytes']==26*1024 and expected['target']=='aarch64-apple-darwin',
++            'fixture route or shape differs')
++    key=expected['key']
++    require(re.fullmatch('[0-9a-f]{64}',key) is not None,'invalid fixture key')
++    work=owner/'.work/std-mir'/key
++    require(expected['sysroot']==str(work/'sysroot'),'fixture sysroot differs')
++    ready_proof,ready_raw=file_proof(work/'ready.json')
++    ready=json.loads(ready_raw)
++    require(ready['owner']==str(owner) and ready['identity']['compiler']==fixtures['compiler_text']
++            and len(ready['artifacts'])==26 and ready['metadata_bytes']==26*1024
++            and ready['setup_seconds']==expected['setup_seconds']==1.0
++            and ready['build_seconds']==expected['build_seconds']==0.5,'ready result differs')
++    artifact_bytes=0
++    for relative,expected_artifact in ready['artifacts'].items():
++        path=work/relative
++        require(not Path(relative).is_absolute() and '..' not in Path(relative).parts
++                and path.is_relative_to(work/'sysroot'),'artifact escaped owned work')
++        actual,_=file_proof(path)
++        info=path.lstat()
++        require(actual['bytes']==1024 and actual['sha256']==expected_artifact['sha256']
++                and [info.st_dev,info.st_ino,info.st_size,info.st_mtime_ns]==expected_artifact['stamp'],
++                'ready artifact differs')
++        artifact_bytes+=actual['bytes']
++    require(artifact_bytes==26*1024,'wrong synthetic artifact bytes')
++    std_lock=Path(fixtures['std_lock'])
++    require(std_lock==owner/'.work/std-mir.lock','unexpected std lock')
++    lock_proof,lock_raw=file_proof(std_lock)
++    require(not lock_raw and lock_proof['stamp'][2]&0o200,'std lock must be the precreated writable empty file')
++    require(all(not row['stamp'][2]&0o222 for name,row in got['entries'].items()
++                if row['kind']=='file' and root/name!=std_lock),'nonlock fixture file became writable')
++    return got
++
++
++def verify_qualification(descriptor, plan):
++    qualification=json.loads(QUALIFICATION.read_bytes())
++    fixtures=json.loads(FIXTURE_DESCRIPTOR.read_bytes())
++    require(qualification['status']=='passed' and qualification['error'] is None
++            and qualification['post_binding_error'] is None and qualification['bindings']==qualification['bindings_after']
++            and len(qualification['children'])==2 and qualification['project_api_calls']==0
++            and qualification['prerequisites']['passed_tests']==21,
++            'complete successful fixture preparation required')
++    require([r['label'] for r in qualification['children']]==['prepare-memory','prepare']
++            and all(r['returncode']==0 and r['error'] is None and not r['observer_errors']
++                    and isinstance(r['pid'],int) and r['cpu_seconds']>0 for r in qualification['children']),
++            'preparation children incompletely settled')
++    require(qualification['fixtures_path']==str(FIXTURE_DESCRIPTOR)
++            and qualification['fixtures_proof']==proof(FIXTURE_DESCRIPTOR)
++            and fixtures['plan']['sha256']==PLAN_SHA
++            and fixtures['bindings']['sha256']==proof(PACKET/'fixture-prep-bindings.json')['sha256'],
++            'fixture preparation bindings differ')
++    for arm,root in descriptor['roots'].items():
++        for relative,expected in descriptor['sources'][arm].items():
++            observed=qualification['bindings'][str(Path(root)/relative)]
++            require({k:observed[k] for k in ('bytes','sha256')}==expected,'fixture preparation source differs')
++    for path,expected in fixtures['source_proofs'].items():
++        require(file_proof(Path(path))[0]==expected,'preparation source proof changed')
++    require(fixtures['corpus_proof']==file_proof(Path(descriptor['roots']['baseline'])/'benchmarks/corpus.json')[0],
++            'fixture corpus source changed')
++    current=fixture_snapshot(fixtures)
++    inspected=qualification['fixture_inspection']
++    require(inspected['entry_count']==current['entry_count']
++            and inspected['total_file_bytes']==current['total_file_bytes']
++            and inspected['artifact_count']==26 and inspected['artifact_payload_bytes']==26*1024
++            and inspected['project_api_calls']==0 and inspected['expected_report']==fixtures['expected_report'],
++            'fixture preparation inspection differs')
++    for name in ('qualification-pycache','prep-tmp'):
++        path=PACKET/'fixture-preparation-01'/name
++        require(path.resolve()==path and path.is_dir() and not list(path.iterdir()), 'preparation private directory changed')
++    for row in qualification['children']:
++        for entry in row['logs'].values():
++            require(proof(Path(entry['path']))==entry,'fixture preparation log changed')
++    return qualification, fixtures
++
++
++def verify_report(report, entry, config, descriptor, fixtures, config_path):
++    require(report['schema_version']==1 and report['status']=='PASS'
++            and report['arm']==entry['arm'] and report['warmup']==entry['warmup']
++            and report['main_returnvalue'] is None and not report['process_attempts'], 'actual stock main failed')
++    require(report['setup_calls']==[dict(toolchain=fixtures['toolchain'],fetch=False)]
++            and report['discovery_calls']==[dict(toolchain=fixtures['toolchain'],cache_directory=None,outcome='fresh')],
++            'setup/discovery boundary differs')
++    ordered={key:fixtures['expected_report'][key] for key in ('sysroot','target','key','setup_seconds','build_seconds','metadata_bytes')}
++    require(report['cli_stdout']==json.dumps(ordered,indent=2)+'\n'
++            and json.loads(report['cli_stdout'])==fixtures['expected_report'],'actual CLI stdout differs')
++    require(report['pycache_prefix']==str(CACHE) and report['dont_write_bytecode']==(not entry['warmup']),
++            'driver cache regime differs')
++    require(all(type(report[key]) is int and report[key]>0 for key in ('component_cpu_ns','component_wall_ns')),
++            'invalid component clocks')
++    require(json.loads(config_path.read_bytes())==config,'retained sample config changed')
++    for name in ('std_mir','std_mir_readmission','toolchain_lookup'):
++        expected=str(Path(descriptor['roots'][entry['arm']])/'scripts'/(name+'.py'))
++        require(report['modules'][name]['file']==expected,'wrong actual project module: '+name)
++    require('tempfile' in report['modules'] and 'unittest' not in report['modules'],'ordinary import boundary differs')
++    for name in ('custom_compiler','custom_cargo','custom_cargo_libraries','compiler_association'):
++        require((name in report['modules'])==(entry['arm']=='baseline'),'optional import selection differs')
++        if name in report['modules']:
++            require(report['modules'][name]['file']==str(Path(descriptor['roots'][entry['arm']])/'scripts'/(name+'.py')),
++                    'optional module came from wrong root')
++    forbidden=('std_mir','std_mir_readmission','toolchain_lookup','custom_compiler','custom_cargo',
++               'custom_cargo_libraries','compiler_association','tempfile','dataclasses','unittest')
++    require(not any(name==blocked or name.startswith(blocked+'.') for name in report['preloaded'] for blocked in forbidden),
++            'timed implementation preloaded')
++    observed=dependency_proofs([report],descriptor)
++    for path,item in observed.items():
++        source_root=Path(descriptor['roots'][entry['arm']])
++        if Path(path).is_relative_to(source_root):
++            expected=descriptor['sources'][entry['arm']][str(Path(path).relative_to(source_root))]
+         else:
+-            require(receipt is not None and Path(receipt['path']).is_relative_to(work),'missing receipt')
+-            receipt_proof,data=file_proof(Path(receipt['path']))
+-            require(receipt_proof==receipt['proof'] and data.decode()==receipt['text']
+-                    and json.loads(data)==receipt['parsed'],'actual readmission receipt differs')
+-    return got
++            require(not any(Path(path).is_relative_to(Path(root)) for root in descriptor['roots'].values()),
++                    'driver imported the other arm')
++            expected=descriptor['fixed_files'][path]
++        require({k:item[k] for k in ('bytes','sha256')}==expected,'driver dependency binding differs')
++
+ 
+ 
+ def schedule():
+@@ -351,8 +477,8 @@
+         arms=('baseline','candidate') if pair%2==0 else ('candidate','baseline')
+         for case in cases:
+             rows.extend(dict(phase='measured',warmup=False,pair=pair,case=case,arm=arm) for arm in arms)
+-    require(len(rows)==92 and {phase:sum(r['phase']==phase for r in rows) for phase in ('parity','warmup','measured')}
+-            ==dict(parity=4,warmup=8,measured=80),'fixed schedule differs')
++    require(len(rows)==46 and {phase:sum(r['phase']==phase for r in rows) for phase in ('parity','warmup','measured')}
++            ==dict(parity=2,warmup=4,measured=40),'fixed schedule differs')
+     return rows
+ 
+ 
+@@ -383,117 +509,26 @@
+ 
+ 
+ def decision_checks(summary,plan):
+-    checks={}
+-    require(set(plan['adoption']['by_case'])==set(CASES),'gate cases differ')
+-    for case in CASES:
+-        data,limits=summary[case],plan['adoption']['by_case'][case]
+-        cpu=data['component_cpu_ns']
+-        checks[case+'.cpu']=cpu['geometric_mean_ratio']<=limits['component_cpu_geometric_ratio_max']
+-        checks[case+'.wins']=cpu['strict_wins']>=limits['component_cpu_strict_wins_min']
+-        for order in ('AB','BA'):
+-            checks[case+'.'+order]=cpu[order+'_geometric_mean_ratio']<limits[order.lower()+'_component_cpu_geometric_ratio_max_exclusive']
+-        checks[case+'.wall']=data['component_wall_ns']['geometric_mean_ratio']<=limits['component_wall_geometric_ratio_max']
+-        for field,key in (('cpu_seconds','cpu'),('wall_seconds','wall'),('peak_rss_bytes','wait4_peak_rss')):
+-            checks[case+'.process_'+key]=data[field]['geometric_mean_ratio']<=limits['process_'+key+'_geometric_ratio_max']
+-    require(len(checks)==plan['adoption']['numeric_gate_count']==16,'gate count differs')
++    require(set(summary)==set(CASES) and plan['case']==CASES[0], 'gate case differs')
++    data,limits=summary[CASES[0]],plan['adoption_gates']
++    cpu=data['component_cpu_ns']
++    checks={CASES[0]+'.cpu':cpu['geometric_mean_ratio']<=limits['component_cpu_geometric_mean_ratio_max'],
++            CASES[0]+'.wins':cpu['strict_wins']>=limits['component_cpu_strict_wins_min']}
++    for order in ('AB','BA'):
++        checks[CASES[0]+'.'+order]=cpu[order+'_geometric_mean_ratio']<limits['both_order_component_cpu_geometric_mean_ratio_max_exclusive']
++    checks[CASES[0]+'.wall']=data['component_wall_ns']['geometric_mean_ratio']<=limits['component_wall_geometric_mean_ratio_max']
++    for field,key in (('cpu_seconds','cpu'),('wall_seconds','wall'),('peak_rss_bytes','rss')):
++        checks[CASES[0]+'.process_'+key]=data[field]['geometric_mean_ratio']<=limits['process_'+key+'_geometric_mean_ratio_max']
++    require(len(checks)==8,'gate count differs')
+     return checks
+ 
+ 
+-def verify_qualification(descriptor, plan):
+-    qualification = json.loads(QUALIFICATION.read_bytes())
+-    fixtures = json.loads(FIXTURE_DESCRIPTOR.read_bytes())
+-    require(qualification['status'] == 'passed' and qualification['error'] is None
+-            and qualification['post_binding_error'] is None
+-            and qualification['bindings'] == qualification['bindings_after']
+-            and qualification['expected_children'] == len(qualification['children']) == 2
+-            and qualification['expected_baseline_calls'] == 3,
+-            'complete successful fixture qualification required')
+-    require([row['label'] for row in qualification['children']] == ['prepare-memory', 'prepare']
+-            and all(row['returncode'] == 0 and row['error'] is None
+-                    and not row['observer_errors'] and isinstance(row['pid'], int)
+-                    and row['cpu_seconds'] > 0 for row in qualification['children']),
+-            'fixture children incompletely settled')
+-    require(qualification['fixtures_path'] == str(FIXTURE_DESCRIPTOR)
+-            and qualification['fixtures_proof'] == proof(FIXTURE_DESCRIPTOR)
+-            and fixtures['schema_version'] == 1 and fixtures['status'] == 'passed'
+-            and fixtures['decision_sha256'] == PLAN_SHA
+-            and fixtures['fixture_shape_sha256'] == plan['fixture_shape_sha256']
+-            and fixtures['source_payloads_read_or_copied'] is False,
+-            'fixture source or scope differs')
+-    calls = fixtures['actual_baseline_calls']
+-    require(calls == qualification['actual_baseline_calls']
+-            and fixtures['expected_baseline_calls'] == len(calls) == 3
+-            and [(r['case'], r['phase']) for r in calls] == [
+-                (CASES[0], 'saved-stamps'), (CASES[1], 'create-receipt'), (CASES[1], 'reuse-receipt')]
+-            and all(r['outcome'] is None and r['error'] is None and not r['stdout'] and not r['stderr']
+-                    for r in calls), 'actual fixture validation outcomes differ')
+-    for name, digest in (('primary', UNIT_SHA), ('compatibility', COMPAT_SHA)):
+-        prerequisite = qualification['prerequisites'][name]
+-        require(prerequisite['sha256'] == digest and prerequisite['passed_tests'] == 24
+-                and prerequisite['children'] == 4, 'fixture unit prerequisite differs')
+-    baseline = Path(descriptor['roots']['baseline']) / 'scripts/std_mir_readmission.py'
+-    require(fixtures['baseline_source_path'] == str(baseline)
+-            and file_proof(baseline)[0] == fixtures['baseline_source'], 'fixture baseline changed')
+-    for arm, root in descriptor['roots'].items():
+-        for relative, expected in descriptor['sources'][arm].items():
+-            observed = qualification['bindings'][str(Path(root) / relative)]
+-            require({key: observed[key] for key in ('bytes', 'sha256')} == expected,
+-                    'fixture qualification source differs')
+-    cache = fixtures['qualification_cache']
+-    require(cache['empty'] is True and Path(cache['path']) == PACKET / 'fixture-qualification-01/qualification-pycache'
+-            and not list(Path(cache['path']).iterdir()), 'qualification cache changed')
+-    loaded = fixtures['loaded_inputs']
+-    require(len(loaded['files']) <= 384 and loaded['total_bytes'] <= 64 * MIB,
+-            'fixture dependency inventory bound')
+-    for name, expected in loaded['files'].items():
+-        observed = proof(Path(name))
+-        require({key: observed[key] for key in ('bytes', 'sha256', 'stamp')} == expected,
+-                'fixture dependency changed')
+-    current = fixture_snapshot(fixtures)
+-    require(all(not row['stamp'][2] & 0o222 for row in current['entries'].values()),
+-            'qualified fixture is writable')
+-    return qualification, fixtures
+-
+-
+-def verify_report(report, entry, config, descriptor, fixtures, config_path):
+-    require(report['schema_version'] == 1 and report['status'] == 'PASS' and report['stage'] == 'api'
+-            and report['api'] == 'validate' and report['api_calls'] == 1 and report['parity'] is True
+-            and report['fixture_parity'] is True and report['result'] is None
+-            and report['result_is_none'] is True and report['error'] is None
+-            and not report['api_stdout'] and not report['api_stderr'] and report['argument_unchanged'] is True,
+-            'actual public API parity failed')
+-    require(all(report[key] == entry[key] for key in ('arm', 'phase', 'warmup', 'case'))
+-            and report['pycache_prefix'] == str(CACHE) and report['dont_write_bytecode'] == (not entry['warmup'])
+-            and report['single_stat_guard'] is (True if entry['arm'] == 'candidate' else None),
+-            'actual API arm/cache/runtime route differs')
+-    for key in ('decision_sha256', 'runtime_manifest_sha256', 'unit_receipt_sha256',
+-                'compatibility_receipt_sha256', 'fixture_qualification_sha256', 'fixture_descriptor_sha256'):
+-        require(report[key] == config[key], 'driver stage binding differs: ' + key)
+-    require(report['config_proof'] == file_proof(config_path)[0], 'driver config differs')
+-    require(all(type(report[key]) is int and report[key] > 0
+-                for key in ('component_cpu_ns', 'component_wall_ns')), 'invalid component clock')
+-    fixture = next(row for row in fixtures['cases'] if row['name'] == entry['case'])
+-    expected_receipt = None if fixture['receipt'] is None else fixture['receipt']['proof']
+-    expected_hash = hashlib.sha256(json.dumps(fixtures['root_inventory'], sort_keys=True,
+-                                             separators=(',', ':')).encode()).hexdigest()
+-    require(report['fixture_root'] == fixtures['root'] and report['fixture_work'] == fixture['work']
+-            and report['ready_path'] == fixture['ready'] and report['ready_proof'] == fixture['ready_proof']
+-            and report['receipt_proof'] == expected_receipt and report['artifact_count'] == 26
+-            and report['fixture_entry_count'] == fixtures['root_inventory']['entry_count']
+-            and report['fixture_total_file_bytes'] == fixtures['root_inventory']['total_file_bytes']
+-            and all(report[key] == expected_hash for key in ('fixture_before_sha256', 'fixture_after_sha256',
+-                                                           'fixture_expected_sha256')),
+-            'driver fixture receipt differs')
+-    source = Path(descriptor['roots'][entry['arm']]) / 'scripts/std_mir_readmission.py'
+-    require(report['source_module'] == file_proof(source)[0]
+-            and report['modules']['std_mir_readmission']['file'] == str(source)
+-            and report['preclock_modules'] == report['modules'], 'actual imported source changed')
+-
+ 
+ def main():
+-    require(sys.argv[1:] == ["--execute-frozen-readmission-stat-screen"], "explicit execution flag required")
+-    require(all(v != "UNBOUND" for v in (BINDINGS_SHA, UNIT_SHA, COMPAT_SHA, QUALIFICATION_SHA, FIXTURE_DESCRIPTOR_SHA)), "completed stage hashes remain UNBOUND")
+-    require(sys.platform == "darwin" and sys.version_info[:2] == (3, 14)
++    require(sys.argv[1:] == ["--execute-frozen-std-cli-screen"], "explicit execution flag required")
++    require(all(v != "UNBOUND" for v in (BINDINGS_SHA, UNIT_SHA, QUALIFICATION_SHA, FIXTURE_DESCRIPTOR_SHA)), "completed stage hashes remain UNBOUND")
++    require(sys.platform == "darwin" and sys.implementation.name == "cpython" and sys.version_info[:3] == (3, 14, 7)
++            and sys.flags.isolated and sys.flags.no_site and sys.flags.no_user_site and sys.dont_write_bytecode
+             and Path(sys.executable).resolve() == PYTHON.resolve(), "pinned macOS Python required")
+     require(os.environ.get("HOME") == "/Users/danluu", "HOME must remain unchanged")
+     require(proof(BINDINGS)["sha256"] == BINDINGS_SHA and proof(PLAN)["sha256"] == PLAN_SHA,
+@@ -501,15 +536,19 @@
+     descriptor, plan = json.loads(BINDINGS.read_bytes()), json.loads(PLAN.read_bytes())
+     require(descriptor["base_commit"] == plan["base_commit"] and descriptor["roots"] ==
+             {"baseline": plan["baseline_root"], "candidate": plan["candidate_root"]}
+-            and list(CASES) == [r["name"] for r in plan["cases"]], "decision/root/case mismatch")
+-    require(descriptor["changed_files"] == ["scripts/std_mir_readmission.py", "tests/test_std_mir_readmission.py"],
++            and CASES == (plan["case"],), "decision/root/case mismatch")
++    require(descriptor["changed_files"] == ["scripts/std_mir.py", "tests/test_std_mir_selection.py"],
+             "unexpected candidate scope")
+     a, b = descriptor["sources"]["baseline"], descriptor["sources"]["candidate"]
+     require({name for name in set(a) | set(b) if a.get(name) != b.get(name)} == set(descriptor["changed_files"]),
+             "unexpected actual arm difference")
+-    require(descriptor["fixed_files"][str(PACKET.parent / "std-readmission-stat-proposal/v3/candidate.patch")]["sha256"]
+-            == plan["proposal_patch_sha256"] and plan["schedule"]["total_api_drivers"] == 92
+-            and plan["schedule"]["memory_admission_children"] == 92 and plan["schedule"]["measured_pairs_per_case"] == 20,
++    require(descriptor["fixed_files"][str(PACKET.parent / "std-mir-lazy-selection-proposal/candidate.patch")]["sha256"]
++            == plan["proposal_patch_sha256"] and plan["schedule"]["total_drivers"] == 46
++            and plan["schedule"]["memory_children"] == 46 and plan["schedule"]["measured_pairs"] == 20
++            and plan["schedule"]["parity_order"] == ["baseline", "candidate"]
++            and plan["schedule"]["warmup_order"] == ["baseline", "candidate", "candidate", "baseline"]
++            and plan["schedule"]["measured_drivers"] == 40
++            and plan["resource"]["free_gib_min"] == 16 and plan["resource"]["memory_free_percent_min"] == 30,
+             "frozen patch/schedule differs")
+     before = verify_inputs(descriptor)
+     units = verify_units(descriptor)
+@@ -552,16 +591,17 @@
+                 if phase == "parity":
+                     require(not list(CACHE.iterdir()), "parity cache must remain empty")
+                 if phase == "measured":
+-                    require(warmed is not None and len(warm_reports) == 8, "warm cache not frozen")
++                    require(warmed is not None and len(warm_reports) == 4, "warm cache not frozen")
+                     require(dependency_proofs(warm_reports, descriptor) == dependencies, "dependencies changed")
+                     require(cache_snapshot(descriptor, reports[0]["python"]["cache_tag"], reports[0]["python"]["magic"]) == warmed,
+                             "cache changed before sample")
+-                config = dict(schema_version=1, arm=arm, phase=phase, case=case,
++                config = dict(schema_version=1, arm=arm, phase=phase, case=case, label=label, warmup=warmup,
+                     source_root=descriptor["roots"][arm], output_root=str(OUT), pycache_prefix=str(CACHE),
+                     decision_sha256=PLAN_SHA, runtime_manifest_sha256=BINDINGS_SHA,
+-                    unit_receipt_sha256=UNIT_SHA, compatibility_receipt_sha256=COMPAT_SHA,
+-                    fixture_qualification_sha256=QUALIFICATION_SHA,
+-                    fixture_descriptor_sha256=FIXTURE_DESCRIPTOR_SHA)
++                    unit_receipt_sha256=UNIT_SHA, fixture_qualification_sha256=QUALIFICATION_SHA,
++                    fixture_descriptor_sha256=FIXTURE_DESCRIPTOR_SHA,
++                    **{key: fixtures[key] for key in ("fixture_owner", "compiler_sysroot", "fixture_output_root",
++                        "toolchain", "compiler_text", "artifact_count", "expected_report")})
+                 write(label + "-input.json", config)
+                 sample_inputs.append(proof(OUT / (label + "-input.json")))
+                 gate = admission(label, environment)
+@@ -599,17 +639,18 @@
+                               OUT / (label + "-input.json"))
+                 if reports:
+                     require(report["python"] == reports[0]["python"], "Python identity differs")
++                    require(report["cli_stdout"] == reports[0]["cli_stdout"], "CLI parity changed")
+                 require(Path(report["python"]["executable"]).resolve() == PYTHON.resolve(), "driver interpreter differs")
+                 previous_modules = module_sets.setdefault((arm, case), report["modules"])
+-                require(previous_modules == report["modules"], "per-API module inventory changed")
++                require(previous_modules == report["modules"], "per-arm CLI module inventory changed")
+                 reports.append(report)
+-                require(fixture_snapshot(fixtures) == frozen_fixtures, "API changed fixture")
++                require(fixture_snapshot(fixtures) == frozen_fixtures, "CLI changed fixture")
+                 if phase == "parity":
+                     require(not list(CACHE.iterdir()), "-B parity wrote bytecode")
+                 if warmup:
+                     warm_reports.append(report)
+-                if index == 11:
+-                    require(len(warm_reports) == 8, "warmup schedule incomplete")
++                if index == 5:
++                    require(len(warm_reports) == 4, "warmup schedule incomplete")
+                     dependencies = dependency_proofs(warm_reports, descriptor)
+                     warmed = cache_snapshot(descriptor, report["python"]["cache_tag"], report["python"]["magic"])
+                     for value in reports:
+@@ -620,7 +661,7 @@
+                     require_cached_sources(report, warmed)
+                     require(cache_snapshot(descriptor, report["python"]["cache_tag"], report["python"]["magic"]) == warmed,
+                             "measured child changed cache")
+-            require(len(ROWS) == 92 and len(CHILDREN) == 184 and len({r["label"] for r in CHILDREN}) == 184
++            require(len(ROWS) == 46 and len(CHILDREN) == 92 and len({r["label"] for r in CHILDREN}) == 92
+                     and all(r["returncode"] == 0 and r["error"] is None for r in CHILDREN), "incomplete child settlement")
+             summary = metrics()
+             checks = decision_checks(summary, plan)
+@@ -642,13 +683,13 @@
+                 write("inputs-after.json", after)
+             except BaseException as caught:
+                 post_error = repr(caught)
+-        status = "PASS" if error is None and post_error is None and len(ROWS) == 92 and len(CHILDREN) == 184 else "FAIL"
++        status = "PASS" if error is None and post_error is None and len(ROWS) == 46 and len(CHILDREN) == 92 else "FAIL"
+         result = dict(status=status, error=error, post_binding_error=post_error, rows=ROWS, children=CHILDREN,
+             preparation=[], summary=summary, gates=checks,
+-            fixed_decision_satisfied=status == "PASS" and checks is not None and len(checks) == 16 and all(checks.values()),
+-            scope=plan["adoption"]["decision_scope"], decision_sha256=PLAN_SHA, bindings_sha256=BINDINGS_SHA,
++            fixed_decision_satisfied=status == "PASS" and checks is not None and len(checks) == 8 and all(checks.values()),
++            scope=plan["scope"], decision_sha256=PLAN_SHA, bindings_sha256=BINDINGS_SHA,
+             qualification_sha256=QUALIFICATION_SHA, fixture_descriptor_sha256=FIXTURE_DESCRIPTOR_SHA,
+-            unit_qualification_sha256=UNIT_SHA, compatibility_qualification_sha256=COMPAT_SHA)
++            unit_qualification_sha256=UNIT_SHA)
+         write("result.json", result)
+         print(json.dumps({k: result[k] for k in ("status", "error", "post_binding_error", "summary", "gates", "fixed_decision_satisfied")}), flush=True)
+         return 0 if status == "PASS" else 1
