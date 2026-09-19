@@ -303,3 +303,11 @@ distinguishes nativecurrent-regionfaultprecharge fromsingle-stepsemanticbudget.
 Twelvecontrols plus currentexactnativewordpartition beforeanyproductionchange.
 Maincbeffb78 publishes closedbudgetcheck result/archivepreservingpeer598c4554.
 Archivedpatch whitespace is literalunifieddiff context; hash preserved.
+
+Linear-reservation01 supervisor17317/controller17320 alsohit45s occupied-lock
+admission, ZEROcontrols/cases/rawdir. Receipt-onlyclosure5sourcefiles. Registered
+readmission02 via linear-budget-reservation-readmission/launch.py, unchanged
+model459468b5. Read-only preliminary99uncompressedJSONfiles across21closed
+publicprofile runs total3.448GiB; safecompressionmayhelpfuturebuildreserve, but
+noinventory/metadataadmission/mutationperformed. Sharedtarget7.502GiB floor
+23.004GiB, currentfree~18.6GiBafterpeerbuildallocation. Private/peerdatauntouched.
