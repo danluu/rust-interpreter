@@ -23,6 +23,8 @@ mod continuation_census;
 mod upper_reads;
 #[cfg(test)]
 mod narrow_storage;
+#[cfg(test)]
+mod selective_repair;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]

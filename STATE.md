@@ -2,7 +2,7 @@
 
 Manual optimization continues indefinitely; the saved goal remains paused.
 Root owns `/Users/danluu/dev/rust-interp` on
-`experiment/narrow-register-storage-20260918`. No subagents or independent model calls.
+`experiment/selective-narrow-repair-20260918`. No subagents or independent model calls.
 Private repository: `danluu/rust-interpreter`. Push qualified work regularly;
 never merge an entire experimental branch over concurrent main changes.
 
@@ -90,6 +90,16 @@ from retained typed/current profiles, before any different runtime variant. Cont
 [Contract](docs/IMPLICIT-ZERO-REGISTER-DESIGN-20260918.md),
 [focused](results/implicit-zero-storage-focused-03/ASSESSMENT.md).
 
+New diagnostic: `benchmarks/experiments/selective-narrow-repair/run.py`.
+The root still contains parked3e53b127 production code; all new changes are
+test-only. Four role controls include96actual interpreter heap cases with
+poisoned high sizes, alignments and pointers, plus aliases, checked helpers and
+width bounds. With4width and3cost controls, expect11/profile and one typed
+observer (7commands). Bind candidate and adopted current profiles and verify
+identical interpreted-PC arrays before counting necessary full-width repairs.
+No original guest, native publication, new VM installation or production
+selective repair exists. Main ccb3b465 publishes only the closed primary outcome.
+
 [Build](results/shared-cold-tail-build-01/ASSESSMENT.md),
 [strict/cache](results/shared-cold-tail-qualification-01/ASSESSMENT.md),
 [profiles](results/shared-cold-tail-profile-01/ASSESSMENT.md),
@@ -139,7 +149,7 @@ is limited to correctness profiles; all end-to-end timings use normal entropy.
  admission and safe closed-cache retirement only after preceding guards pass.
 -Do not signal/control any peer/user-owned process, terminal, agent or worktree.
  Compiler/Cargo/parser-exporter and application-admission work belongs to peers.
- Root publication worktree `.work/publication-main` was clean at a77505f5; fetch
+ Root publication worktree `.work/publication-main` was clean at ccb3b465; fetch
  before publishing, preserve concurrent main commits and never force-push.
 -No new AWS service/model/subscription/purchase or billing fallback. No browser.
 -The saved goal remains paused. Continue manually without goal tools.

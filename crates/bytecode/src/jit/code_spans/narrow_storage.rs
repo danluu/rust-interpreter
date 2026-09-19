@@ -3,14 +3,14 @@ use super::*;
 use serde_json::{Value, json};
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
-struct Work {
+pub(super) struct Work {
     interpreted_instructions: u64,
     interpreted_instructions_with_narrow_reads: u64,
     narrow_read_operands: u64,
     unique_narrow_read_operands: u64,
 }
 
-fn work(f: &Function, profile: &Value, narrow: &[bool]) -> Result<Work, &'static str> {
+pub(super) fn work(f: &Function, profile: &Value, narrow: &[bool]) -> Result<Work, &'static str> {
     if narrow.len() != f.registers || profile["name"] != f.name
         || profile["frame_size"] != f.frame_size || profile["registers"] != f.registers {
         return Err("typed profile identity mismatch");
