@@ -34,3 +34,10 @@ qualification02 verifies unchanged Rust/Cargo source and all old logs/fixture ou
 reuses the five completed commands with32feature-off tests, and builds/copies only the
 diagnostic release binaries to establish a fresh explicit hash manifest. No test rerun
 or runtime change. Parser attribution requires closed qualification02.
+
+Recovery02 stops before creating its stage or building: its generic binding helper
+mistakenly decoded an intentionally invalid negative-test .json report while
+verifying its hash. Preserve the terminal, actual offending hash and absence of
+new workload. Recovery03 binds those opaque fixture bytes without parsing; only
+known metadata files are decoded. Same five successful tests, no runtime change.
+Parser attribution now requires closed qualification03.

@@ -6,7 +6,7 @@ import focus
 ROOT=focus.ROOT
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='session-template-phases-qualification-02'
+RUN='session-template-phases-qualification-03'
 def read(p):return json.loads(p.read_text())
 
 def main():
@@ -16,11 +16,11 @@ def main():
         allocated=int(subprocess.check_output(['du','-sk',str(target)],text=True).split()[0])*1024
         needed=max(14*1024**3,8*1024**3+2*allocated);assert shutil.disk_usage(ROOT).free>=needed
         frozen={}
-        def bind(p,expected=None):
+        def bind(p,expected=None,decode=True):
             h=sha(p)
             if expected is not None:assert h==expected,p
             frozen[str(p.relative_to(ROOT))]=h
-            return read(p) if p.suffix=='.json' else h
+            return read(p) if decode and p.suffix=='.json' else h
         prior=ROOT/'results/session-template-phases-qualification-01';c=bind(prior/'closure.json')
         assert c['status']=='closed' and c['all_hashes_verified']
         s=bind(prior/'summary.json',c['summary_sha256']);terminal=bind(prior/'terminal.json',c['terminal_sha256'])
@@ -40,7 +40,7 @@ def main():
             assert counts and all(int(f)==int(i)==0 for _,f,i in counts)
             count=sum(int(n) for n,_,_ in counts);assert count==expected[label];totals[label]=count
             names[label]={x.split(' ... ')[0] for x in out.splitlines() if x.startswith('test ') and x.endswith(' ... ok')}
-            for p,h in r['outputs'].items():bind(ROOT/p,h)
+            for p,h in r['outputs'].items():bind(ROOT/p,h,decode=False)
             if label.endswith('integration'):
                 folder=old/label;terminals=list(folder.glob('*/terminal.json'));assert len(terminals)==12
                 assert sorted(read(p)['returncode'] for p in terminals)==[0]*10+[1]*2

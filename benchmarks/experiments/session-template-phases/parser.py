@@ -26,7 +26,7 @@ def main():
             folder=ROOT/'results'/run;c=bind(folder/'closure.json');assert c['status']=='closed' and c['all_hashes_verified']
             bind(folder/'terminal.json',c['terminal_sha256']);return bind(folder/'summary.json',c['summary_sha256'])
         replay=closed('session-artifact-digest-parser-client-01');assert replay['verified_cache_hits']>0 and replay['test_invocations']==1824
-        qualification=closed('session-template-phases-qualification-02');assert qualification['status']=='passed'
+        qualification=closed('session-template-phases-qualification-03');assert qualification['status']=='passed'
         assert qualification['diagnostic_feature'] is True
         assert qualification['tests']=={'debug-model':22,'debug-integration':33,'release-model':22,
             'release-integration':33,'feature-off-integration':32}
