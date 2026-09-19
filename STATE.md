@@ -316,3 +316,16 @@ build1223.803ms/exec267.423ms/longest210.638ms/preceding0/serveroutside29.520ms.
 Overlapping durations/nonadditive medians. No globaladoption beforefre/folded/
 pgrustcontrol/private/Nushell guards. Next192invocation verifiedfre token replay
 from closedruntime-composition-edit-token-02 snapshots. No newsource timing yet.
+
+## 2026-09-19 fre held-out validation underway
+
+Verified fre token replay22ebd53b complete70196/70201 CLOSED10305:192invocations,
+14892independentlyverified templatehits, original12outcomes/failuretext/kernelCPU.
+Public project controller implemented with176commands, originalhistoricalanchor/
+native_lines/check plus same-runtimehistoryoff. Protocol01 c567045e12accounting
+controls closed68597; protocol02 741f698822totalcontrols (12reused+10new) complete
+36082 CLOSED44798. Changedsource token guard c3312ce6 ACTIVE47524/controller47574:
+admitted20.8GiB; strict type/borrowerrors before sessioncontact, originalhistory
+now running. Freeze all qualifiedprojectcontrollers/crates/scripts/tests through
+closure. Newadmission16GiBfre/12pgrust includes2GiBaddednamespaceallowance. Private
+andNushell adapters notyetimplemented. No defaultadoption/goals/peercontrol.

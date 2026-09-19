@@ -30,8 +30,9 @@ Fre token replay22ebd53b COMPLETE70196/70201 CLOSED10305:192invocations,
 14892independentlyverifiedhits. Public sourcecontroller now implemented in
 benchmarks/experiments/session-project-guards/{benchmark,commands,admission,close}.py.
 Protocol01 c567045e12accounting controls COMPLETE56848 CLOSED68597; protocol02
-741f6988 COMPLETE36082,6newcommand+4newcontrollercontrols,12retained=22;closure
-underway. Fulltoken176commands+2strict next, originalanchor/native_lines/check
+741f6988 COMPLETE36082 CLOSED44798,6newcommand+4newcontrollercontrols,12retained=22.
+Token guard c3312ce6 ACTIVE47524/controller47574, admitted20.8GiB; strictcontrols
+passed before anysessioncontact,176commands underway. Originalanchor/native_lines/check
 and currentruntimehistoryoff retained. TwoCargo/native/sessionworkers. Raised
 admission16GiBfre/12pgrust includes2GiBextra namespace allowance. Freeze qualified
 controllerfolder/crates/scripts/tests until runningguardclosure. Large/private
