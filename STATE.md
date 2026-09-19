@@ -77,3 +77,8 @@ whole-call inline, private/readonly scalar, cold fault tails, emitter workspace/
 templates and general addresses have extensive closed negative history. Search
 all historical PLANs/results before choosing another mechanism. Compiler/Cargo
 work belongs to peer session; preserve ownership. Full history in archived STATE.
+
+Profile01 sourced471f5ca supervisor94446 FAILED preflight, no raw or guest: copied
+import still pointed to branch-budget-native-observer. Independently closed.
+Profile02 fixes exactobserverpath, bindsfailure, allgatesunchanged. Install/screen
+require02. VM/sourcequalification unchanged. Main3bea799d confirmedpushed.

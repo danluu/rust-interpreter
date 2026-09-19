@@ -28,7 +28,7 @@ def load(case):
     assert composition['experimental_template_session'] is False and composition['diagnostic_feature'] is False
     assert composition['compiler_source_key']==BASELINE
     assert composition['cargo_features']==['rust-interp-bytecode/heap-layout-hash']
-    replay=closed('heap-layout-profile-01')
+    replay=closed('heap-layout-profile-02')
     assert replay['commands']==3 and replay['adopted_tool_key']==BASELINE
     for field in ['exact_per_pc_counts','exact_memory_and_entropy','exact_operation_maps','exact_native_code_and_maps']:assert replay[field] is True
     assert candidate['binaries']['rust-interp-vm']==replay['vm_sha256']

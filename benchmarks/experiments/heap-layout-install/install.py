@@ -23,7 +23,7 @@ def main():
             t=bind(result/'terminal.json',c['terminal_sha256']);assert t['status']=='finished' and t['returncode']==0 and t['owner']==str(ROOT)
             s=bind(result/'summary.json',c['summary_sha256']);assert s['status']=='passed';return s
         qualification=closed('heap-layout-workspace-02')
-        replay=closed('heap-layout-profile-01')
+        replay=closed('heap-layout-profile-02')
         focused=closed('heap-layout-table-focused-03')
         assert qualification['tests']['debug']==qualification['tests']['release']==dict(passed=618,ignored=13)
         assert qualification['tests']['python']==dict(discovered=468,passed=446,skipped=22)
@@ -93,7 +93,7 @@ def main():
             rust=qualification['tests']['release'],tests={'test-debug':618,'test-release':618},
             matched_control=dict(tool_key=BASELINE,binaries=base['binaries']),
             reused_frontend_qualification='scratch-memory-values-qualification-01',reused_frontend_commands=121,
-            semantic_qualification='heap-layout-profile-01',original_project_guest_commands=0,default_runtime_adoption=False,performance_measurement=False))
+            semantic_qualification='heap-layout-profile-02',original_project_guest_commands=0,default_runtime_adoption=False,performance_measurement=False))
         print('Installed experimental tool',key,flush=True)
 
 if __name__=='__main__':

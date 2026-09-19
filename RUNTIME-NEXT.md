@@ -21,3 +21,8 @@ Compilerfloor=max(14GiB,8GiB+2*allocatedsharedtarget) everychild, NEVER cleantar
 Latestfloor26629357568;free~26.7GB aftercompression/beforeVMretention. Main3bea799d
 pushed exact9publicJSONcompression (372MiB), allhashes/metadata preserved. Never
 replay oldretirements/compressions. No activeownedcommands afterVMclosure.
+
+Profile01 sourced471f5ca supervisor94446 FAILED preflight, no raw or guest: copied
+import still pointed to branch-budget-native-observer. Independently closed.
+Profile02 fixes exactobserverpath, bindsfailure, allgatesunchanged. Install/screen
+require02. VM/sourcequalification unchanged. Main3bea799d confirmedpushed.

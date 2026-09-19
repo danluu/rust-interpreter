@@ -3,12 +3,12 @@ import ctypes,hashlib,json,os,re,subprocess,sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
-sys.path.insert(0,str(ROOT/'benchmarks/experiments/branch-budget-native-observer'))
+sys.path.insert(0,str(ROOT/'benchmarks/experiments/scratch-memory-values'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
 from native_observation import validate,exact_logical_counts
 import native_observation
-RUN='heap-layout-profile-01'
+RUN='heap-layout-profile-02'
 BASELINE='df4006e03daad7dd008eab34c24a03390d892ec14e55154c43e2d5568c0bba62'
 def read(p):return json.loads(p.read_text())
 
@@ -59,6 +59,13 @@ def main():
             s=bind(out/'summary.json',c['summary_sha256']);t=bind(out/'terminal.json',c['terminal_sha256'])
             assert s['status']=='passed' and t['status']=='finished' and t['returncode']==0 and t['owner']==t['cwd']==str(ROOT)
             return s
+        failed=ROOT/'results/heap-layout-profile-01'
+        failure=bind(failed/'closure.json');attempt=bind(failed/'summary.json',failure['summary_sha256'])
+        terminal=bind(failed/'terminal.json',failure['terminal_sha256'])
+        assert failure['status']=='closed' and failure['all_hashes_verified'] and failure['no_guest_stage_reached']
+        assert attempt['status']=='preflight-failed' and attempt['commands']==0 and terminal['returncode']==1
+        assert not (ROOT/'.work/heap-layout-profile-01').exists()
+        for p,h in attempt['evidence'].items():bind(ROOT/p,h)
         build=closed('heap-layout-workspace-02')
         assert build['tests']['debug']==build['tests']['release']==dict(passed=618,ignored=13)
         assert build['tests']['python']==dict(discovered=468,passed=446,skipped=22)

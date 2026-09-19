@@ -19,3 +19,7 @@ hashes through independent terminal/log/map/profile revalidation. No timing or
 installation here. On failure preserve the exact prefix; no unchanged rerun.
 The full strict/cache frontend proof, explicit tool composition and original
 40changed-source primary/full held-outs still gate any runtime adoption.
+
+Attempt01 failed before raw/guest creation: copied sys.path selected the old
+branch-budget observer. Independently closed. Attempt02 fixes only that import
+and binds the failed receipt. Same exact comparisons and original inputs.
