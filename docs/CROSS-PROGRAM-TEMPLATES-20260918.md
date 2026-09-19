@@ -117,7 +117,7 @@ both profiles; the broader workspace passes628 tests/profile with15 ignored.
 The actual parser replay then executes114 test bodies over eight saved states,
 with reuse disabled and enabled:1,824 invocations. All expected outcomes match,
 including8 passes/106 failures for the deliberately wrong edit and114 passes for
-every other state. The16,301 restored blocks all match fresh code and metadata
+every other state. The16,301 restored function templates all match fresh code and metadata
 before publication. No matching template fails restoration.
 
 Actual scheduling matters: workers exchange the larger share of reached

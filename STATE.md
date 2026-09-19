@@ -7,9 +7,10 @@ Push qualified work regularly; do not stop at milestones.
 
 ## Current model
 
-Branch experiment/cross-program-template-model-20260918. Adopted Rust/Cargo
-restored exactly atcc4e767a. Current runtime changes are cfg(test) only: the
-template/relocation model and saved-artifact replay plus scalar-entry accessors.
+Branch experiment/cross-program-template-session-20260918 (from model602bbcb2). Adopted Rust/Cargo
+restored exactly atcc4e767a. The closed model branch used cfg(test) only. The new session branch exposes the
+same primitive behind explicit jit-template-session; ordinary builds have no
+history/relocation fields. Default preparation never attaches history.
 No production runtime option/store/persistence. Later explicit fixtures and saved
 suites publish/execute native code; earlier staging-only models do not.
 
@@ -106,7 +107,31 @@ source change, fresh Program validation/scalar proof/guest state and existing
 budgets. Include transport/startup/storage/remote CPU in command comparisons,
 plus session-without-history control. No production adoption until existing
 primary and guards pass. See docs/CROSS-PROGRAM-TEMPLATES-20260918.md.
-Saved goal stays paused. No active experiment after successful suite closure.
+Saved goal stays paused.
+
+API feature source4d6ffb93 adds TemplateHistory/TemplateStorage/TemplateStatistics,
+PreparedJit::with_template_history and diagnostic verification in non-test builds.
+Validation once before private constructor; no native arena/Program references in
+history; Rc confinement. Four integration controls plus one verifier corruption
+control are new. Native fields and input keys otherwise retain qualified design.
+API01 startup46850/46853 failed because controller generation failed; no controller,
+build/test/guest ran. Terminal-only audit preserve_startup.py closed it. API02 at
+d9cea370 ran51249/51252; default-debug629passed/16ignored, then harness incorrectly
+expected15ignored (saved-suite test is the extra one). CLOSED56860/56863 beforefix.
+
+ACTIVE: API03 source4e11cc65, supervisor62916. Controller
+benchmarks/experiments/cross-program-template-session/qualify.py. Verifies exact
+Rust/Cargo hashes and reuses API02's successful default-debug log. Runs ONLY the
+four unstarted commands: defaultrelease, featuredebug/release, featurereleaseVM.
+Expected629/633passes fordefault/feature,16ignored each. Inspect exactstatus/records
+before continuing. Freeze Rust/controllers/PLAN untilclosed viaqualify.py --close.
+No original projectguest command atthisstage. Never rerun prior successful checks
+because later bookkeeping/build fails. Plans innewexperimentfolder.
+
+Session design stillpending. Environment must be snapshotted perrequest without
+mutating process-global environment on worker threads. Bindcwd/options/artifact/
+catalog, freshgueststate, CPU/startupaccounting and requestreportreservation.
+Application/OS/FFI/compiler/Cargo expansion remainspeerowned; preserveboundaries.
 
 ## Completed cross-edit investigation
 
@@ -131,9 +156,10 @@ candidates associate with26.9–38.3ms original ordinary emission in worker0 and
 CPU, edited-run measurements or predicted savings, nor a populated-cache bound.
 [Assessment](docs/CROSS-EDIT-EMISSION-CENSUS-20260918.md).
 
-Main publication worktree .work/publication-main is clean atcd5ce92a, confirmed
-PUSHEDmain, preserving peercd19ee2e (and earlier296a927d/bd7e74a7). Published closed template/history/native-model throughModel07
-docs/results/plan only, no runtime candidate; earlier census also published.
+Main publication worktree .work/publication-main is clean at0668cd50, confirmed
+PUSHEDmain, preserving peerbb9ef449/cd19ee2e (and earlier296a927d/bd7e74a7). Published
+closed template/model/workspace/saved-suite docs/results/plan throughsuites01;
+no runtime candidate. Earlier census also published.
 Fetch before future publication and preserve peer commits; never force push.
 
 ## Adopted runtime and parked changes
