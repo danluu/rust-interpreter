@@ -88,11 +88,18 @@ CPU.9452257516+AA.0211662276=.9663919791;nativewall1.6439918812.
 History-enabled/fresh wall1.0030578433,CPU.9923463181; noseparatecacheclaim.
 Resultcommitted242ad5d3. Allsource/artifacts/wrongoutcomes/restorationpass.
 
-ACTIVE compact-native-switch-edit-folded-01,source242ad5d3,
-supervisor26570,started2026-09-19 05:48:40 local.176+2strict,18originaltests.
-Read terminal; keepallinputs frozenuntilclose.py RUN independentclosure.
-Onlyfoldedpass admits pgrust01. Portablecorestrictprobes/JSONcasecomparison
-alreadyfixed. Tokenmustnotrerun. Currentfreeabout17.7GiB,fre16GiBadmission.
+Fullfolded176+2strict PASSED/CLOSED41841,source242ad5d3,26570/26573;
+18tests,2068inputs642evidence. Wall/adopted.9835869291+AA.0431753430
+=1.0267622721; CPU.9725218880+AA.0161399801=.9886618682;
+nativewall.9735751956. Regressionguardpasses; wallgaininsidevariation.
+Result9874477b. Source/outcomes/artifactsexact; no repeats.
+
+ACTIVE compact-native-switch-edit-pgrust-01,source9874477b,
+supervisor52349,started2026-09-19 05:54:49 local.176commands+2strict,4tests.
+Read terminal then independentlyclose.py RUN; keepinputsfrozen. Onlypassing
+pgrust admits private rg. Largecontroller27-probebindingisprepared butNOTyet
+qualified; qualify.py then --close beforeprivatebenchmark. Currentfree14.8GiB,
+pgrustadmission12GiB. Main3cacb510 publishesclosedtoken,peer1617f9aepreserved.
 
 Main07fb646f publishes27-controlproof and preservespeerbf5bddad;
 fulltokenpublicationpending. Preparedlarge/parseradapters199894c0 nowbind

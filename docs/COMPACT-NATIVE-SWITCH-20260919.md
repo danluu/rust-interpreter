@@ -91,7 +91,14 @@ these close values do not establish a separate history-cache latency benefit.
 The primary and full-history results remain distinct measurements, with no
 isolated switch-versus-parent claim.
 
-Next complete176-command folded and pgrust histories in order, with history-off,
-native line-table and Cargo-check controls. Private rg, both parser guards and
+The full folded-literal guard (`compact-native-switch-edit-folded-01`,
+source`242ad5d3`, independent closure41841) passes176 commands and both strict
+controls, with all18 original tests preserved. The closure checks2,068 inputs
+and642 evidence files. Wall/adopted is0.983587 with A/A0.043175, giving margin
+1.026762 under the1.05 regression bound. CPU/adopted is0.972522 with A/A0.016140,
+margin0.988662. Native wall ratio is0.973575. This passes the regression guard;
+the wall difference is inside its measured variation and is not a clear gain.
+
+Next complete the176-command pgrust history. Private rg, both parser guards and
 Nushell remain required before current-main integration. The runtime is still
-experimental; no default change follows from the passing token guard alone.
+experimental; no default change follows from these two public guards alone.
