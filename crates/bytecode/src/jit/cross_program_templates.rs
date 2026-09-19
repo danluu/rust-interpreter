@@ -111,6 +111,37 @@ struct History {
     entries:BTreeMap<[u8;32],(Template,u64,usize)>,order:BTreeMap<u64,[u8;32]>,
     charge:usize,limit:usize,clock:u64,evictions:usize,
 }
+
+#[derive(Default,Serialize)]
+struct Counts {lookups:usize,hits:usize,key_declines:usize,restore_declines:usize,inserted:usize,capture_declines:usize}
+pub(super) struct Context<'p> {
+    checked:Checked<'p>,history:std::rc::Rc<std::cell::RefCell<History>>,counts:std::cell::RefCell<Counts>,
+}
+impl<'p> Context<'p> {
+    fn new(p:&'p Program,history:std::rc::Rc<std::cell::RefCell<History>>)->Option<std::rc::Rc<Self>> {
+        Some(std::rc::Rc::new(Self{checked:Checked::new(p)?,history,counts:Default::default()}))
+    }
+    pub(super) fn stage(&self,jit:&Jit<'p>,id:usize,word_budget:usize)->Result<Option<CompiledFunction<'p>>,EmitError> {
+        let mut counts=self.counts.borrow_mut();counts.lookups+=1;
+        let Some(request)=Request::new(&self.checked,jit,id,[41;32],true) else {
+            counts.key_declines+=1;return jit.emit_function(&jit.program.functions[id],word_budget);
+        };
+        {
+            let mut history=self.history.borrow_mut();
+            if let Some(template)=history.get(&request.key) {
+                if let Some(restored)=template.restore_request(&request,word_budget) {
+                    counts.hits+=1;return Ok(Some(restored));
+                }
+                counts.restore_declines+=1;
+            }
+        }
+        let Some(emission)=request.emit(word_budget)? else {return Ok(None);};
+        if Template::capture_emission(&emission,MAX_RETAINED).and_then(|t|self.history.borrow_mut().insert(t)).is_some() {
+            counts.inserted+=1;
+        } else {counts.capture_declines+=1;}
+        Ok(Some(emission.compiled))
+    }
+}
 impl History {
     fn new(limit:usize)->Option<Self> {
         (HISTORY_BASE..=MAX_RETAINED).contains(&limit).then(||Self{
@@ -607,5 +638,40 @@ fn cross_program_template_live_budget_frame_memory_and_assertion_outcomes_match_
         else {assert_eq!(result.unwrap().value,(13u128<<64)|value);}
     }
     assert!(hits>0 && successes>0 && failures>0);
+}
+
+#[test]
+#[cfg(all(target_arch="aarch64",target_os="macos"))]
+fn cross_program_template_lazy_context_reuses_real_preparation_across_checked_programs() {
+    let history=std::rc::Rc::new(std::cell::RefCell::new(History::new(MAX_RETAINED).unwrap()));
+    let mut hits=0;let mut inserted=0;
+    for (index,value) in [7,8,7,0,8].into_iter().enumerate() {
+        let mut p=live_program(value);p.data[8]=index as u8;
+        let context=Context::new(&p,history.clone()).unwrap();let mut j=owner(&p);j.enable_scalar_calls();
+        j.template_model_context=Some(context.clone());let mut jit=Some(j);
+        let expected=crate::execute_with_engine(&p,&[],live_limits(),crate::Engine::Jit);
+        let actual=live_execute(&p,&mut jit,live_limits());
+        match (expected,actual) {
+            (Ok(a),Ok(b))=>{assert_eq!((a.value,a.instructions),(b.value,b.instructions));assert!(b.jit_entries>0);},
+            (Err(a),Err(b))=>assert_eq!(a,b),_=>panic!("lazy cached/fresh outcome mismatch"),
+        }
+        let counts=context.counts.borrow();assert!(counts.lookups>0);hits+=counts.hits;inserted+=counts.inserted;
+        assert_eq!(counts.key_declines+counts.capture_declines,0);
+        assert!(history.borrow().charge<=MAX_RETAINED);
+    }
+    assert!(hits>0 && inserted>0);assert!(history.borrow().entries.len()>0);
+}
+
+#[test]
+#[cfg(all(target_arch="aarch64",target_os="macos"))]
+fn cross_program_template_lazy_context_declines_storage_without_changing_guest_execution() {
+    let history=std::rc::Rc::new(std::cell::RefCell::new(History::new(HISTORY_BASE).unwrap()));
+    let p=live_program(8);let context=Context::new(&p,history.clone()).unwrap();let mut j=owner(&p);j.enable_scalar_calls();
+    j.template_model_context=Some(context.clone());let mut jit=Some(j);
+    let expected=crate::execute_with_engine(&p,&[],live_limits(),crate::Engine::Jit).unwrap();
+    let actual=live_execute(&p,&mut jit,live_limits()).unwrap();
+    assert_eq!((actual.value,actual.instructions),(expected.value,expected.instructions));
+    let counts=context.counts.borrow();assert!(counts.lookups>0 && counts.capture_declines>0);
+    assert_eq!(counts.hits+counts.inserted,0);assert!(history.borrow().entries.is_empty());
 }
 }

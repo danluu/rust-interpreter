@@ -192,3 +192,22 @@ comparison in the first control. Preserve/close that actual run; release was
 not started. Model07 changes the fixture to read valid readonly address8 and
 updates the corresponding initializer, adding an interpreter value/instruction
 oracle. All18 controls, limits and resource gates are retained.
+
+## Model08: opt-in test context in normal lazy preparation
+
+Model07 is closed before this change. Add a cfg(test)-only Context to Jit, absent
+by default and absent from production builds. It validates and binds the exact
+immutable Program once and shares a bounded History through Rc/RefCell on the
+owning thread. Normal prepare_function still prepares current scalar callees
+first and computes the remaining native-code budget. The optional context then
+uses one bound Request for lookup/restore or fresh emission/capture. Existing
+finish_preparation publishes either result, including current assertions and
+resume tables. Key/storage/width/budget declines retain normal fresh emission.
+
+Two native controls bring focused qualification to20/profile: multiple distinct
+programs through normal lazy execution, including data/callee edits and assertion
+failure, and an empty-capacity history which must decline storage without changing
+guest results. Counters require actual hits/inserts where appropriate and none
+when storage is unavailable. No production flag, native file cache or IPC exists.
+After focused closure, broader workspace qualification and saved real-suite
+execution are required before extending this into a runtime candidate.

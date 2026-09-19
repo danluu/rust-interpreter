@@ -347,6 +347,8 @@ struct CompiledFunction<'a> {
 }
 
 pub(crate) struct Jit<'a> {
+    #[cfg(test)]
+    template_model_context: Option<std::rc::Rc<cross_program_templates::Context<'a>>>,
     // MAP_JIT write protection is per-thread. Make confinement intentional,
     // including on platforms whose placeholder Code type contains no pointer.
     _thread_bound: std::marker::PhantomData<std::rc::Rc<()>>,
@@ -409,6 +411,7 @@ impl<'a> Jit<'a> {
                 | Op::CurrentDirectory { .. })
         });
         Ok(Self { _thread_bound: std::marker::PhantomData, program, profiled, uses_heap, capacity, code: None,
+            #[cfg(test)] template_model_context: None,
             prepared: vec![false; program.functions.len()],
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
@@ -457,6 +460,11 @@ impl<'a> Jit<'a> {
         if self.native_call_stubs { self.prepare_region_calls(id)?; }
         if self.scalar.is_some() { self.prepare_scalar_callees(id)?; }
         let remaining = (self.capacity - self.bytes) / 4;
+        #[cfg(test)]
+        let staged = if let Some(context) = &self.template_model_context {
+            context.stage(self, id, remaining)
+        } else { self.emit_function(&self.program.functions[id], remaining) };
+        #[cfg(not(test))]
         let staged = self.emit_function(&self.program.functions[id], remaining);
         self.finish_preparation(id, staged)
     }
