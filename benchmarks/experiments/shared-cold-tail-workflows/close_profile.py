@@ -4,13 +4,13 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
-from workflow_io import write_json as write
+from workflow_io import require_space,write_json as write
 
 def read(p):return json.loads(p.read_text())
 def main():
     run=sys.argv[1];assert run.startswith('shared-cold-tail-profile-') and Path(run).name==run
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
-        acquire_lock(lock,45)
+        acquire_lock(lock,45);require_space(ROOT,8)
         result=ROOT/'results'/run;summary=read(result/'summary.json');assert summary['status']=='passed' and summary['commands']==3 and summary['reused_control_profiles']==3
         work=ROOT/summary['raw'];plan=read(work/'plan.json');assert plan['owner']==str(ROOT)
         assert sha(work/'plan.json')==summary['plan_sha256'] and sha(work/'records.json')==summary['records_sha256']
@@ -25,6 +25,15 @@ def main():
         records=read(work/'records.json');assert len(records)==3 and all(r['returncode']==0 for r in records)
         assert [(r['index'],r['mode']) for r in records]==[(i,'candidate') for i in range(3)]
         artifacts={}
+        controls=read(work/'controls.json')
+        assert sha(work/'controls.json')==summary['controls_sha256']
+        assert controls['returncode']==0 and summary['python_controls']==3
+        for stream in ['stdout','stderr']:
+            path=work/('controls.'+stream)
+            assert sha(path)==controls[stream+'_sha256']
+            artifacts[str(path.relative_to(ROOT))]=sha(path)
+        assert 'Ran 3 tests' in (work/'controls.stderr').read_text()
+        artifacts[str((work/'controls.json').relative_to(ROOT))]=sha(work/'controls.json')
         for row in summary['comparisons']:
             for key in ['profile','code','operations']:
                 path=row[key+'_path'];assert sha(ROOT/path)==row[key+'_sha256'];artifacts[path]=row[key+'_sha256']
@@ -32,6 +41,9 @@ def main():
         outer=ROOT/'.work/experiments'/run;terminal=read(outer/'status.json')
         assert terminal['status']=='finished' and terminal['returncode']==0 and terminal['owner']==str(ROOT)
         assert sha(outer/'command.log')==terminal['log_sha256']
+        assert terminal['plan_sha256']==sha(outer/'plan.json') and terminal['cwd']==str(ROOT)
+        assert terminal['command'][1:]==plan['controller_command'][1:]
+        assert Path(terminal['command'][0]).resolve()==Path(plan['controller_command'][0]).resolve()
         assert not (result/'closure.json').exists()
         (result/'terminal.json').write_bytes((outer/'status.json').read_bytes())
         write(work/'closure-bindings.json',dict(frozen_inputs=bindings,artifacts=artifacts))
