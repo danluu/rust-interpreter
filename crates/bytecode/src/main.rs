@@ -3,6 +3,8 @@ use rust_interp_bytecode::{Engine, Limits, Program, execute_profiled, execute_wi
 use std::io::Write;
 use sha2::{Digest, Sha256};
 mod suite;
+#[cfg(all(feature="jit-template-session",target_arch="aarch64",target_os="macos"))]
+mod session_client;
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args().skip(1);
@@ -15,11 +17,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut suite_report = None;
     let mut suite_catalog = None;
     let mut suite_workers = None;
+    let mut template_session = None;
     let mut path = args.next().ok_or(
-        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-scalar-calls] [--jit-code-dump NEW_DIRECTORY [--jit-operation-map]] [--guest-descriptor-io] [--guest-getcwd] [--instruction-limit N] [--allocation-limit N] [--select-test EXACT_NAME --suite-catalog CATALOG] [--profile NEW_JSON_PATH [--profile-test EXACT_NAME --suite-catalog CATALOG]] [--isolated-batch fresh|prepared --suite-report NEW_JSON_PATH [--suite-workers N]] PROGRAM [unsigned integer arguments ...]",
+        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-scalar-calls] [--jit-template-session READY_JSON] [--jit-code-dump NEW_DIRECTORY [--jit-operation-map]] [--guest-descriptor-io] [--guest-getcwd] [--instruction-limit N] [--allocation-limit N] [--select-test EXACT_NAME --suite-catalog CATALOG] [--profile NEW_JSON_PATH [--profile-test EXACT_NAME --suite-catalog CATALOG]] [--isolated-batch fresh|prepared --suite-report NEW_JSON_PATH [--suite-workers N]] PROGRAM [unsigned integer arguments ...]",
     )?;
     loop {
         match path.as_str() {
+            "--jit-template-session" => {
+                if template_session.is_some() {return Err("duplicate template session path".into());}
+                template_session=Some(args.next().ok_or("missing template session readiness path")?);
+            }
             "--isolated-batch" => {
                 if isolated_batch.is_some() { return Err("duplicate isolated batch mode".into()); }
                 isolated_batch = Some(match args.next().as_deref() {
@@ -92,6 +99,22 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             _ => break,
         }
         path = args.next().ok_or("missing program path")?;
+    }
+    if let Some(ready)=template_session {
+        if engine!=Engine::Jit || !matches!(isolated_batch,Some(suite::Mode::Prepared)) || suite_workers!=Some(2)
+            || suite_catalog.is_none() || suite_report.is_none() || !limits.jit_resumable_calls
+            || limits.jit_native_calls || limits.jit_native_call_stubs || limits.jit_code_dump.is_some()
+            || limits.jit_operation_map || limits.guest_descriptor_io || limits.guest_getcwd
+            || profile_path.is_some() || profile_test.is_some() || args.next().is_some() {
+            return Err("template sessions require a prepared two-worker resumable JIT suite with catalog/report and no additional execution options".into());
+        }
+        #[cfg(all(feature="jit-template-session",target_arch="aarch64",target_os="macos"))]
+        {
+            session_client::run(&ready,&path,suite_catalog.as_deref().unwrap(),suite_report.as_deref().unwrap(),&limits)?;
+            println!("0");return Ok(());
+        }
+        #[cfg(not(all(feature="jit-template-session",target_arch="aarch64",target_os="macos")))]
+        {let _=ready;return Err("template session client requires the explicit jit-template-session feature on AArch64 macOS".into());}
     }
     if std::fs::metadata(&path)?.len() > 64 * 1024 * 1024 {
         return Err("artifact exceeds 64 MiB".into());

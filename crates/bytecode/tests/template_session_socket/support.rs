@@ -134,3 +134,73 @@ fn socket_start_refuses_an_existing_endpoint_directory() {
     assert!(output.is_empty());assert_eq!(std::fs::read(path.join("marker")).unwrap(),b"preserved");assert!(!path.join("socket").exists());
     std::fs::write(session.folder.join("terminal.json"),serde_json::to_vec(&json!({"returncode":status.code(),"expected_existing_directory_rejection":true})).unwrap()).unwrap();
 }
+
+fn client(socket:&Socket,label:&str,body:&Value,env:&str,extra:&[&str])->std::process::Output {
+    let executable=env!("CARGO_BIN_EXE_rust-interp-vm");
+    let mut args=vec!["--jit-template-session",socket.private["ready_path"].as_str().unwrap(),"--engine","jit",
+        "--jit-resumable-calls","--jit-scalar-calls","--jit-persistent-registers","--isolated-batch","prepared",
+        "--suite-workers","2","--suite-catalog",body["catalog"]["path"].as_str().unwrap(),
+        "--suite-report",body["report"].as_str().unwrap(),"--instruction-limit","100000","--allocation-limit","1000"];
+    args.extend_from_slice(extra);args.push(body["artifact"]["path"].as_str().unwrap());
+    let child=Command::new(executable).args(&args).env("SESSION_VALUE",env).stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().unwrap();
+    let mut receipt=json!({"pid":child.id(),"parent_pid":std::process::id(),"executable":executable,
+        "executable_sha256":digest(&std::fs::read(executable).unwrap()),"args":args,"cwd":std::env::current_dir().unwrap(),
+        "started_epoch":std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs_f64()});
+    let prefix=socket.session.folder.join(format!("client-{label}"));
+    std::fs::write(prefix.with_extension("json"),serde_json::to_vec(&receipt).unwrap()).unwrap();
+    let output=child.wait_with_output().unwrap();receipt["returncode"]=output.status.code().into();
+    std::fs::write(prefix.with_extension("json"),serde_json::to_vec(&receipt).unwrap()).unwrap();
+    std::fs::write(prefix.with_extension("stdout"),&output.stdout).unwrap();std::fs::write(prefix.with_extension("stderr"),&output.stderr).unwrap();
+    output
+}
+
+#[test]
+fn vm_client_preserves_changed_inputs_and_actual_server_identity() {
+    let mut socket=Socket::start("vm-client-edits",64*1024*1024);let mut hits=0;
+    for (i,(value,data,env,passed)) in [(7,1,"yes",true),(8,1,"",false),(8,1,"yes",true),
+        (0,1,"yes",false),(7,0,"yes",false),(7,1,"yes",true)].into_iter().enumerate() {
+        let label=format!("edit{i}");let body=request(&socket.session,&label,value,data,b"unused");
+        let output=client(&socket,&label,&body,env,&[]);assert_eq!(output.status.success(),passed,"{}",String::from_utf8_lossy(&output.stderr));
+        let path=body["report"].as_str().unwrap();let bytes=std::fs::read(path).unwrap();
+        let report:Value=serde_json::from_slice(&bytes).unwrap();let receipt:Value=serde_json::from_slice(&std::fs::read(format!("{path}.session.json")).unwrap()).unwrap();
+        assert_eq!(receipt["status"],"completed");assert_eq!(receipt["server_pid"],socket.session.child.id());
+        assert_eq!(receipt["server_executable_sha256"],socket.private["executable_sha256"]);assert_eq!(receipt["report_sha256"],digest(&bytes));
+        assert_eq!(report["completed"],32);assert_eq!(report["passed"],if passed {32} else {0});
+        assert_eq!(report["request_id"],i+1);
+        for worker in report["worker_records"].as_array().unwrap() {
+            let n=worker["templates"]["hits"].as_u64().unwrap();assert_eq!(worker["templates"]["verified_hits"],n);hits+=n;
+        }
+        assert!(!serde_json::to_string(&receipt).unwrap().contains(socket.private["auth"].as_str().unwrap()));
+    }
+    assert!(hits>0);socket.close();
+}
+
+#[test]
+fn vm_client_rejects_options_stale_identity_and_reserved_outputs_without_fallback() {
+    let mut socket=Socket::start("vm-client-reject",0);
+    for (i,extra) in [vec!["--guest-getcwd"],vec!["--guest-descriptor-io"],vec!["--jit-native-calls"],vec!["--suite-workers","1"]].iter().enumerate() {
+        let label=format!("option{i}");let body=request(&socket.session,&label,7,1,b"unused");
+        assert!(!client(&socket,&label,&body,"yes",extra).status.success());assert!(!Path::new(body["report"].as_str().unwrap()).exists());
+    }
+    let ready_path=PathBuf::from(socket.private["ready_path"].as_str().unwrap());let original=std::fs::read(&ready_path).unwrap();
+    for case in 0..2 {
+        let label=format!("identity{case}");let body=request(&socket.session,&label,7,1,b"unused");
+        if case==0 {let mut changed=socket.private.clone();changed["executable_sha256"]="0".repeat(64).into();
+            std::fs::write(&ready_path,serde_json::to_vec(&changed).unwrap()).unwrap();}
+        else {std::fs::set_permissions(&ready_path,std::fs::Permissions::from_mode(0o644)).unwrap();}
+        let output=client(&socket,&label,&body,"yes",&[]);
+        std::fs::write(&ready_path,&original).unwrap();std::fs::set_permissions(&ready_path,std::fs::Permissions::from_mode(0o600)).unwrap();
+        assert!(!output.status.success());assert!(!Path::new(body["report"].as_str().unwrap()).exists());
+    }
+    for case in 0..2 {
+        let label=format!("reserved{case}");let body=request(&socket.session,&label,7,1,b"unused");let report=body["report"].as_str().unwrap();
+        let occupied=if case==0 {report.to_owned()} else {format!("{report}.session.json")};std::fs::write(&occupied,b"reserved").unwrap();
+        assert!(!client(&socket,&label,&body,"yes",&[]).status.success());assert_eq!(std::fs::read(occupied).unwrap(),b"reserved");
+    }
+    let (stream,greeting)=socket.connect();assert_eq!(greeting["next_id"],1);drop(stream);
+    let body=request(&socket.session,"malformed-artifact",7,1,b"unused");std::fs::write(body["artifact"]["path"].as_str().unwrap(),b"invalid").unwrap();
+    assert!(!client(&socket,"malformed-artifact",&body,"yes",&[]).status.success());assert!(!Path::new(body["report"].as_str().unwrap()).exists());
+    let body=request(&socket.session,"recovered",7,1,b"unused");assert!(client(&socket,"recovered",&body,"yes",&[]).status.success());
+    let report:Value=serde_json::from_slice(&std::fs::read(body["report"].as_str().unwrap()).unwrap()).unwrap();assert_eq!(report["request_id"],2);
+    socket.close();
+}

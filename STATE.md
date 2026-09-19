@@ -257,3 +257,10 @@ verified reuse match historyoff; rejected connections preserve request sequence;
 lost response leaves one reserved report; ownerEOF closes while accept is idle.
 Retainedrelease SHA c17f9eeb1b022f62ba5149cc425a2bbc9a67d0edca1f7e2bbc7aa8cfe6b8110b.
 No client route or end-to-end timing yet. No active experiment after closure.
+
+Client01 is prepared, unrun: explicit feature VM --jit-template-session READY_JSON
+route avoids localProgramdecode and requires prepared/resumable/two-worker catalog
+suite. Privateendpoint/identity, boundedrawenvironment and report/receiptreservation
+are checked; actualserverPID/SHA, CPU and hashes recorded in .session.json sidecar.
+Nineprocessfixturecontrols/profile expect22servers/32VMclients, includingwrong
+options/identity/modes/outputs and malformedartifact recovery. Controller client.py.

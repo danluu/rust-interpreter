@@ -1,5 +1,22 @@
 # Explicit session for cross-command template reuse
 
+Client01 adds --jit-template-session READY_JSON to the explicit feature VM. It
+requires a prepared two-worker resumable suite with a catalog/report, rejects
+unsupported execution options, and sends bounded artifact/catalog hashes plus
+the current raw environment. The server decodes/validates the current Program;
+the client does not decode it again. Private owner/modes, greeting and response
+identities must match. A create-new .session.json report sidecar records actual
+server identity, request/CPU/result hashes, without credentials or environment.
+An uncertain outcome never triggers a retry or another execution route.
+
+Run nine session controls/profile, including two new actual VM process controls:
+six edits with changed callee/data/environment and32 selected entries; unsupported
+options, wrong identity/private mode, report/receipt reservation, malformed artifact
+and healthy recovery. Expect22 owned server processes and32 VM clients across the
+two profiles. Keep both release/debug VM/server binaries. The unchanged library
+and wire controls remain backed by the closed endpoint/API results. No original
+project source-build or performance claim. Launcher integration follows this gate.
+
 Endpoint01 adds an explicit --serve-socket NEW_DIRECTORY adapter to the qualified
 request path. The new directory is0700, socket/readiness file0600; a random
 per-instance token and executable identity bind every connection. Public receipts
