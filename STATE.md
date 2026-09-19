@@ -10,7 +10,8 @@ Push qualified work regularly; do not stop at milestones.
 Branch experiment/cross-program-template-model-20260918. Adopted Rust/Cargo
 restored exactly atcc4e767a. Current runtime changes are cfg(test) only: the
 template/relocation model and saved-artifact replay plus scalar-entry accessors.
-No production runtime option/store/persistence/guest execution/native publication.
+No production runtime option/store/persistence. Later explicit fixtures and saved
+suites publish/execute native code; earlier staging-only models do not.
 
 Model01 atf624e5e7 passes8controls/profile under73219/73339, CLOSED87399/87403.
 Source/controllers frozen through completed closure. Controller:
@@ -81,24 +82,31 @@ shares a thread-local Rc/RefCell History. Two new controls exercise real lazy
 preparation across Programs and storage-decline fallback. Model08 passes20/profile
 under59303/59306, CLOSED66549/66552. Commit6aeaef0e adds workspace controller.
 
-ACTIVE at this state update: workspace01 source6aeaef0e, supervisor81196/child81199.
-Controller benchmarks/experiments/cross-program-template-model/workspace.py.
-Debug passed628tests/15ignored; release still running as last inspected. Inspect
-.work/experiments/cross-program-template-workspace-01/status.json and raw records
-before any continuation. Freeze Rust/controllers until completed and closed via
-workspace.py --close. Never repeat successful debug because later stages fail.
+Workspace01 source6aeaef0e completed under81196/81199:628tests/profile,15ignored;
+CLOSED98526/98529, committed3d15322b. Model09 source79a562e2 adds opt-in exact
+verification before publishing every hit;20controls/profile pass70826/70829,
+CLOSED94632/94643. Result/controller-metadata correction committed1dde87ef,pushed.
 
-NEXT after workspace closure: actual saved project suites using the lazy cache
-context across artifact edits, two owning worker threads with bounded per-thread
-histories and normal dynamic suite scheduling. Add opt-in diagnostic verification
-that emits fresh staging for each hit and compares exact code/metadata BEFORE
-publication, counting verified hits. This is correctness/actual-reachability
-qualification, not an end-to-end speedup (verification deliberately re-emits).
-Use exact per-state EntryCatalog/hash/outcome bindings from closed real edit
-histories, preserve wrong-result edit and restored-source state. No arbitrary
-old numeric function-set approximation. Qualify new diagnostic controls before
-original-project guest execution. No persistent native files/IPC/CLI/runtime
-adoption yet. Saved goal stays paused.
+Real suites01 source1dde87ef passes1065/1103,CLOSED5057/5061. Controller
+benchmarks/experiments/cross-program-template-model/suites.py. All16suites/1824
+actual parser test-body invocations across[0,-1,1,2,3,4,5,0] match savednative
+outcomes with reuse off/on. Every one of16301hits matches freshly emitted words/
+metadata before publication. Wrongedit8passes/106failures,others114passes.
+Worker scheduling exchanges large/small workloads onedits2/3; do not substitute
+fixednumeric-ID rates. Bothhistories stay<=64MiB; worker0 ends1948evictions,
+worker1 none. No restore/capture declines; eachvalidworker/state hasonekeydecline
+andoneordinarydecline, exactreason not established. No performanceclaim.
+
+NEXT: promote the qualified primitive behind an explicit experimental feature,
+expose bounded caller-owned in-memory history with fresh PreparedJit owners,
+and qualify normal/feature builds. Then implement an explicitly started local
+execution session for real changed-source commands. Keep native words trusted
+in memory, no serialized executable cache. Preserve strict frontend on every
+source change, fresh Program validation/scalar proof/guest state and existing
+budgets. Include transport/startup/storage/remote CPU in command comparisons,
+plus session-without-history control. No production adoption until existing
+primary and guards pass. See docs/CROSS-PROGRAM-TEMPLATES-20260918.md.
+Saved goal stays paused. No active experiment after successful suite closure.
 
 ## Completed cross-edit investigation
 
