@@ -322,7 +322,7 @@ impl<'a> Jit<'a> {
             } => {
                 let callee = &self.program.functions[*function];
                 if let Some(entry) = self.scalar_entry(*function) {
-                    a.scalar_call(pc, *function, callee, args, slots, *destination, entry, self.profiled)?;
+                    a.scalar_call(f, pc, *function, callee, args, slots, *destination, entry, self.profiled)?;
                 }
                 a.resumable_call(
                     f,

@@ -17,6 +17,130 @@ fn counts(profile:&ExecutionProfile)->Vec<Vec<u64>> {
 }
 #[derive(Default)]
 struct Statistics {commits:usize,declines:usize}
+
+#[test]
+fn bounded_padding_native_stores_preserve_exact_bytes_cursor_and_live_registers() {
+    let mut code = platform::Code::reserve(1024 * 1024).unwrap();
+    let live = [4u32, 5, 6, 7, 8, 16, 17, 19, 20, 22, 23, 24, 25, 26, 27, 28];
+    let mut executions = 0;
+    for caller_align in [1usize, 2, 4, 8, 16, 32, 64] {
+        for size in [0usize, 1, 2, 3, 4, 7, 8, 15, 16, 24, 31, 64, 120] {
+            let caller = function("caller", size, caller_align, vec![], Slot { offset: 0, size: 0 }, vec![Op::Return]);
+            // Division oracle, independent of the emitter's trailing-zero proof.
+            let divisor = (1..=caller_align).rev()
+                .find(|d| caller_align % d == 0 && size.max(1) % d == 0).unwrap();
+            for align in [1usize, 2, 4, 8, 16, 32, 64, 256, 4096] {
+                let mut callee = caller.clone();
+                callee.frame_align = align;
+                let mut a = Assembler::default();
+                a.resumable_save_host(false);
+                a.mov(21, 1); // the test's exact aligned callee base
+                for reg in live { a.imm(reg, 0x12340000 + reg as u64); }
+                a.imm(11, 0x77);
+                let begin = a.words.len();
+                a.clear_scalar_padding(&caller, &callee).unwrap();
+                let body = &a.words[begin..];
+                if divisor >= align {
+                    assert!(body.is_empty());
+                } else if align <= 16 && divisor == align / 2 {
+                    assert_eq!(body.len(), 4);
+                    assert_eq!(&body[..3], &[0x8b03004b, 0xcb0302a9, 0xb4000049]);
+                } else if align > 16 {
+                    assert_eq!(body.len(), 12);
+                }
+                for (i, reg) in live.into_iter().chain([1, 2, 3, 21, 11]).enumerate() {
+                    a.store64(reg, 0, i * 8);
+                }
+                a.mov(0, 31);
+                a.resumable_save_host(true);
+                a.emit(0xd65f03c0);
+                let entry = code.append(&a.words).unwrap();
+                let paddings: Vec<usize> = if divisor >= align { vec![0] }
+                    else if align <= 16 { (0..align).step_by(divisor).collect() }
+                    else { [0, divisor, 2 * divisor, align - divisor].into_iter().filter(|&p| p < align).collect() };
+                for padding in paddings {
+                    let base = 2 * align;
+                    let end = base - padding;
+                    for offset in 0..16 {
+                        let start = 32 + offset;
+                        let mut actual = vec![0xa5; start + base + 32];
+                        let mut expected = actual.clone();
+                        expected[start + end..start + base].fill(0);
+                        let host = unsafe { actual.as_mut_ptr().add(start) };
+                        let mut registers = [0u128; 11];
+                        // SAFETY: the entire prechecked range and both canaries
+                        // are backed by this stable initialized allocation.
+                        let result = unsafe { code.call(entry, registers.as_mut_ptr(), base,
+                            host, end, 0, std::ptr::null_mut(), 0, std::ptr::null_mut()) };
+                        let words: Vec<u64> = registers.into_iter()
+                            .flat_map(|r| [r as u64, (r >> 64) as u64]).collect();
+                        assert_eq!(result, 0);
+                        assert_eq!(actual, expected, "align={align} divisor={divisor} padding={padding}");
+                        for (i, reg) in live.into_iter().enumerate() {
+                            assert_eq!(words[i], 0x12340000 + reg as u64);
+                        }
+                        assert_eq!(&words[16..20], &[base as u64, host as u64, end as u64, base as u64]);
+                        assert_eq!(words[20], if divisor >= align { 0x77 } else { host as u64 + base as u64 });
+                        executions += 1;
+                    }
+                }
+            }
+        }
+    }
+    assert!(executions > 30_000);
+}
+
+#[test]
+fn bounded_padding_scalar_commits_clear_dirty_retained_histories_and_preserve_limits() {
+    for (size, caller_align, callee_align) in [(0usize,16usize,16usize), (1,1,16), (2,8,16),
+        (7,8,8), (8,16,16), (24,8,16), (120,16,16), (120,16,64)] {
+        for history_align in [1usize, 2, 8, 16, 64] {
+            let empty = Slot { offset: 0, size: 0 };
+            let mut parent = function("padding observer", size, caller_align, vec![], empty, vec![local(0,0)]);
+            let mut dirty = function("dirty ordinary backing", 512, 1, vec![], empty,
+                vec![Op::Imm { dst: 1, value: u128::MAX }]);
+            for offset in (0..512).step_by(16) {
+                dirty.code.extend([local(0,offset), Op::Store { address: 0, src: 1, size: 16 }]);
+            }
+            dirty.code.push(Op::Return);
+            let leaf = function("scalar padding commit", 0, callee_align, vec![], empty, vec![Op::Return]);
+            let history = function("alignment history", 0, history_align, vec![], empty, vec![Op::Return]);
+            let mut end = 16usize.div_ceil(caller_align) * caller_align + size.max(1);
+            for _ in 0..2 {
+                // Indirect calls force ordinary frame publication/return and
+                // interpreter-to-native reentry, including dirty backing.
+                for id in [3usize, 1] {
+                    parent.code.extend([Op::Imm { dst: 7, value: (crate::FUNCTION_POINTER_TAG | (id as u64 + 1)) as u128 },
+                        Op::CallIndirect { callee: 7, args: vec![], arg_sizes: vec![], result_size: 0, destination: 0 }]);
+                }
+                end = end.div_ceil(history_align) * history_align;
+                let next = end.div_ceil(callee_align) * callee_align;
+                parent.code.push(Op::Call { function: 2, args: vec![], destination: 0 });
+                for address in end..next {
+                    parent.code.extend([Op::Imm { dst: 1, value: address as u128 }, load(2,1,1),
+                        Op::Assert { value: 2, expected: false, message: "dirty retained scalar padding".into() }]);
+                }
+                end = next;
+            }
+            parent.code.push(Op::Return);
+            let p = program(vec![parent, dirty, leaf, history]);
+            let reference = crate::execute(&p, &[], Limits::default()).unwrap();
+            let stats = compare(&p, &[], reference.instructions + 100, 1 << 20, 8);
+            assert_eq!(stats.commits, 2);
+            assert_eq!(stats.declines, 0);
+            for budget in [0, 1, reference.instructions - 1, reference.instructions, reference.instructions + 1] {
+                compare(&p, &[], budget, 1 << 20, 8);
+            }
+            for memory in [reference.peak_memory - 1, reference.peak_memory, reference.peak_memory + 1] {
+                compare(&p, &[], reference.instructions + 100, memory, 8);
+            }
+            for frames in [1, 2, 3] {
+                compare(&p, &[], reference.instructions + 100, 1 << 20, frames);
+            }
+        }
+    }
+}
+
 fn compare(p:&Program,args:&[u128],budget:u64,memory:usize,frames:usize)->Statistics {
     let options=||Limits{instructions:budget,memory,frames,..Limits::default()};
     let reference=execute_profiled(p,args,options(),Engine::Interpreter);
