@@ -103,11 +103,31 @@ and is CLOSED by94278/94292 (225inputs,221sources,13evidence). All code remains
 cfg(test), with no guest execution, disk cache or production option so far.
 Next add explicit native fixture execution and compare restored templates with
 ordinary JIT errors, limits and fresh guest state; production wiring remains off.
-Stage3 controls are prepared:17total including four native fixture tests with
-real separate arenas, original faults/all instruction prefixes/memory/depth,
-fresh static/TLS state, full-store and zero-arena fallback. The fifth new control
-rejects partial-validation scope. Focused03 will publish/execute small fixtures
-through a test-only helper; no original workload, CLI or production cache yet.
+Stage3 is CLOSED:17controls/profile under59737/59786, source5b45cbba; closer
+83521/83526 verifies225inputs,221sources,13evidence. Four native fixtures use
+real separate simultaneously-live arenas and require actual cache hits. Original
+faults/all0..22instruction prefixes/five memory/four depth limits, fresh static/
+TLS after success/failure, full-store and zero-arena fallback pass. A fifth new
+control rejects partial-validation scope. No original workload or production
+cache/CLI option has run yet. Next add explicit opt-in suite integration, then
+qualify full workspace/strict behavior and original workload sharing coverage
+before selecting a real edited-source primary. Keep default behavior unchanged.
+
+Integration design under consideration: public opaque PreparedTemplates borrows
+the exact Program and owns Arc<Store>; PreparedJit::new_with_templates attaches
+its Arc after existing validation/metadata preparation. Each Jit owns counters
+for actual hits/misses/rebound bytes. prepare_function keeps scalar preparation
+first, then tries a restored staging object or ordinary emission; normal
+finish_preparation alone publishes. Store snapshots/cloning occur outside the
+mutex; one variant/ID, bounded64MiB, poison/full/mismatch miss. No shared arena
+or owner Jit crosses threads. New --jit-shared-templates should be explicit and
+limited to prepared suites; with one effective worker use documented no-sharing
+behavior. A separate CLI/suite parameter can avoid changing Limits/Execution.
+Record per-owner counters through PreparedJit getters and store totals in suite
+JSON; do not call code bytes or hits time saved. Include constructor/population/
+locking/copying in real command timing. Production metadata recording should be
+disabled when sharing is off (cfg(test) may always record for controls). Move
+test helpers behind a tests module when enabling the core template module.
 
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally
