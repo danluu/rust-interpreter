@@ -12,7 +12,7 @@ Branch experiment/session-runtime-composition-20260919; runtime b34b6f10,
 launcher test contract fix d293d909. Compose earlier2599a193 native indirect
 transitions, checked readonly scalar leaves and successor spilling with current
 parameterized-template history/duration scheduling. Compiler/exporter/wrapper
-remain adopted df4006e0 bytes. This is a NEW composition with no speed claim.
+remain adopted df4006e0 bytes. This is a NEW composition; its primary passed, and full guards are pending.
 
 Both parents remain failed: runtime composition passed726 project commands but
 parser CPU margin1.0502179853 exceeded1.05; duration/session composition passed
@@ -55,20 +55,25 @@ fault/replay and private memory; call/branch/resource controls retained.
   14548 independently regenerated hits, original errors/limits/CPU; CLOSED12775.
   Immutable install01 source28c4c6a2:19116 CLOSED25894. Tool key
   3ebea1cdc1a521169df8bba1ca139df97759aaf200798c2bcb91bef4cba3c5ad.
-- Primary session-runtime-composition-screen-token-01 source15261907 is ACTIVE:
-  supervisor29647/controller29683, launched03:25:20. Strict controls precede40
-  changed-source commands. Controller session-runtime-composition-screen/benchmark.py.
-  Keep every frozen runtime/script/controller and owned fre source untouched.
-  Wait for terminal and independent close.py before interpreting the result.
-  Any active run freezes its inputs until independent closure. Preserve prefixes.
+- Primary session-runtime-composition-screen-token-01 source15261907:29647/29683,
+  40 changed-source commands plus2 strict controls, independently CLOSED84442.
+  Wall/adopted.9537077504 + maxindividual A/A.0373937777 = .9911015281 PASS;
+  CPU/adopted.9303316367 + A/A.0284700056 = .9588016423 PASS.
+  Native wall1.5416394568, CPU1.9224508795. No adoption from this screen.
+- Full public protocol01 sourcef36e8c8d:5058/5061,10 fresh controls plus12
+  exact unchanged accounting controls, CLOSED42265:529 inputs/54 evidence.
+- Full fre token01 sourcef43a950e is ACTIVE:43562/43565, launched03:31:46.
+  176 changed-source commands across3cycles/8arms plus2 strict controls.
+  Controller session-runtime-composition-guards/benchmark.py; do not change its
+  frozen inputs or owned fre source through independent close.py.
 
 ## Next actions
 
-Finish the active40-command fre primary and independently close it. Strict
-checks, source restoration, original native outcomes and exact bound runtime
-options are required independently of the performance verdict. Primary protocol
-and both verified replays are already closed. No source/benchmark edits mid-run.
-A pass admits full project/parser guards; failure stops them, no unchanged retry.
+Finish and independently close the active full fre history. A pass admits folded
+then pgrust public guards. The private/Nushell adapters and both parser guards
+remain required before integration. A failure stops later guards, with no
+unchanged timing retry. Preserve every completed and partial attempt and strict
+checks, original assertions, source restoration and full server CPU accounting.
 No adoption before qualified current-main integration preserving peer changes.
 
 ## Resources and ownership
@@ -77,7 +82,7 @@ Shared .work/benchmark.lock,45s admission; two Cargo/test workers. Shared target
 .work/fixed-frame-clear-combined-build-01/target MUST NEVER be cleaned. Builds
 require max(14GiB,8GiB+2*current allocated target), re-evaluated before each child.
 Replay/analysis12GiB, closure/children8GiB; fre16GiB, parser24GiB plus namespace
-allowance, pgrust12GiB, Nushell>=47GiB. Last free~24.7GiB; recheck continuously.
+allowance, pgrust12GiB, Nushell>=47GiB. Last free~22.2GiB; recheck continuously.
 Cleaner read-only: /usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status.
 Never compete with it, repair it, signal peers or use broad cleanup.
 
@@ -93,7 +98,8 @@ suggestions.txt remains user-owned/untracked, SHA256
 reread this turn. Detailed dispositions docs/SUGGESTIONS-REVIEW-20260913-1245.md.
 
 Main publication1ba3d6da pushed closed qualification/parser/protocol and cache
-retirement evidence, preserving peerc8ebf5aa. Experimental branch pushed through
-b318df6d; newer fre/install proofs are committed through15261907. Publish regularly. Publish exact proof/docs paths on main, fetch/ff first; do not copy
-experimental runtime or overwrite compiler work. Prior detail archived at
+retirement evidence, preserving peerc8ebf5aa. Experimental branch committed
+throughf43a950e; publish newer fre/install/primary/full-protocol proofs regularly.
+Publish exact proof/docs paths on main, fetch/ff first; do not copy experimental
+runtime or overwrite compiler work. Prior detail archived at
  docs/history/STATE-20260919-before-session-runtime-composition.md.
