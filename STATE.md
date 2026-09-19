@@ -99,3 +99,9 @@ All3originalguests qualified:427/532/21scalarrelocations exact, allothernativebi
 identical. Two newguests+retainedblock, no rerun. Next heap-layout-install01
 install.py (explicittoolonly), --close; then heap-layout-screen-protocol01 and
 --close; original40source-editprimary. All registered, no timing yet.
+
+Install01 source830e1507 supervisor43214/controller43219 finished0; close58897
+passed. Explicitcandidate da1779094da6a44c2ff63cae3767e18407050a63f54380465a9fb7fb51d70db1,
+VM8705a17e plusbyteidenticaladoptedexporter/wrapper. Revalidated121frontendcontrols.
+Defaultunchanged. Fullheap-layout-guards registeredconditionalONLYonclosedprimary
+pass, candidatekeypinned. Nextprotocol17controls beforeoriginal40editedcommands.
