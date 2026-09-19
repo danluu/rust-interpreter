@@ -108,7 +108,7 @@ impl Assembler<'_> {
         self.add_imm(31,31,stack);
     }
     #[allow(clippy::too_many_arguments)]
-    pub(super) fn scalar_call(&mut self,caller:&Function,pc:usize,id:usize,f:&Function,args:&[Reg],slots:Option<&[Option<usize>]>,destination:Reg,
+    pub(super) fn scalar_call(&mut self,pc:usize,id:usize,f:&Function,args:&[Reg],slots:Option<&[Option<usize>]>,destination:Reg,
         entry:Entry,profiled:bool)->Result<(),EmitError> {
         let mut before=vec![];let mut private=vec![];
         self.imm(9,entry.maximum_steps as u64+1);
@@ -171,7 +171,8 @@ impl Assembler<'_> {
         if let Some(steps)=entry.success_steps {self.sub_imm(BUDGET_REGISTER,BUDGET_REGISTER,steps);}
         else {self.load64(9,31,OUTPUT+16);self.three(0xcb000000,BUDGET_REGISTER,BUDGET_REGISTER,9);}
         scalar_protocol_mark!(self,"scalar_charge_steps",None);
-        self.clear_scalar_padding(caller, f)?;
+        self.three(0x8b000000,11,2,3);self.three(0x8b000000,12,2,21);
+        self.zero_range()?; // retain exactly the ordinary Call's zeroed padding
         scalar_protocol_mark!(self,"scalar_padding_clear",None);
         if f.result.size!=0 {
             self.load64(9,31,OUTPUT);self.load64(10,31,OUTPUT+8);self.load64(12,31,40);
@@ -197,44 +198,6 @@ impl Assembler<'_> {
         scalar_protocol_mark!(self,"scalar_private_fallback",None);
         let fallback=self.words.len();
         for at in before {self.patch_conditional(at,fallback)?;}
-        Ok(())
-    }
-
-    /// Clear exactly the committed padding [x3,x21), after the unchanged
-    /// alignment/overflow/capacity checks. x2 is the stable host memory base.
-    /// The caller starts with an end aligned to gcd(frame_align,max(size,1)).
-    /// Returning direct/indirect calls and TLS callbacks round this end to a
-    /// validated power-of-two alignment, preserving that divisor. Thus padding
-    /// is a multiple of it and strictly smaller than the callee alignment.
-    /// For alignments <=16, only the possible8/4/2/1 widths need stores.
-    /// No byte beyond the original clear is written; arbitrary histories and
-    /// native reentries need no value hints or additional runtime assumptions.
-    fn clear_scalar_padding(&mut self, caller: &Function, callee: &Function) -> Result<(), EmitError> {
-        let end_alignment = 1usize << caller.frame_align.trailing_zeros()
-            .min(caller.frame_size.max(1).trailing_zeros());
-        let alignment = callee.frame_align;
-        if end_alignment >= alignment {
-            return Ok(());
-        }
-        self.three(0x8b000000, 11, 2, 3);
-        if alignment > 16 {
-            self.three(0x8b000000, 12, 2, 21);
-            return self.zero_range();
-        }
-        self.three(0xcb000000, 9, 21, 3);
-        let empty = self.words.len();
-        self.emit(0xb4000009); // cbz x9,done; local target patched below
-        for (width, store) in [(8usize, 0xf800857f), (4, 0xb800457f), (2, 0x7800257f), (1, 0x3800157f)] {
-            if width < end_alignment || width >= alignment {
-                continue;
-            }
-            if end_alignment != alignment / 2 {
-                // tbz w9,#log2(width),+8: skip this exact post-index store.
-                self.emit(0x36000000 | (width.trailing_zeros() << 19) | (2 << 5) | 9);
-            }
-            self.emit(store); // str[b/h] zero,[x11],#width
-        }
-        self.words[empty] |= branch_displacement(empty, self.words.len(), 19, CodegenLimit::ConditionalBranch)? << 5;
         Ok(())
     }
     fn scalar_profile(&mut self,id:usize,code_len:usize)->Result<(),EmitError> {

@@ -110,13 +110,13 @@ fn link_transition(a: &mut Assembler<'_>, staged: &CompiledFunction<'_>, base: u
 #[test]
 fn scalar_protocol_partitions_preserve_complete_native_and_fallback_links() {
     for size in [1,8,16] { for profiled in [false,true] { for persistent in [false,true] {
-        for native_successor in [false,true] { for frame_size in [64,56,57] {
+        for native_successor in [false,true] {
             let slot = |offset| crate::Slot { offset, size };
             let callee = Function { name:"scalar protocol callee".into(),frame_size:48,frame_align:16,
                 registers:2,args:vec![slot(16)],result:slot(0),code:vec![
                     Op::Local {dst:0,offset:16},Op::Load {dst:1,address:0,size:size as u8},
                     Op::Local {dst:0,offset:0},Op::Store {address:0,src:1,size:size as u8},Op::Return] };
-            let mut caller = Function { name:"scalar protocol caller".into(),frame_size,frame_align:16,
+            let mut caller = Function { name:"scalar protocol caller".into(),frame_size:64,frame_align:16,
                 registers:4,args:vec![],result:crate::Slot{offset:0,size:0},code:vec![
                     Op::Local {dst:0,offset:16},Op::Local {dst:1,offset:32},
                     Op::Call {function:1,args:vec![0],destination:1}] };
@@ -142,12 +142,11 @@ fn scalar_protocol_partitions_preserve_complete_native_and_fallback_links() {
             for kind in ["scalar_entry_budget","scalar_frame_capacity","scalar_memory_capacity",
                 "scalar_register_capacity","scalar_working_budget","scalar_save_host","scalar_result_guard",
                 "argument_scalar_source","argument_scalar_capture","scalar_dispatch","scalar_restore_host",
-                "scalar_result_copy","scalar_peak_memory","scalar_commit_counters",
+                "scalar_padding_clear","scalar_result_copy","scalar_peak_memory","scalar_commit_counters",
                 "scalar_successor","scalar_private_fallback","call_publish_frame"] {
                 assert!(kinds.contains(kind),"{kind}");
             }
             assert_eq!(kinds.contains("scalar_commit_profile"),profiled);
-            assert_eq!(kinds.contains("scalar_padding_clear"),frame_size % 16 != 0);
             assert_eq!(a.links.len(),1);
             assert_eq!(staged.internal_entries[3].is_some(),native_successor);
             let base = staged.entries[2].unwrap().offset/4;
@@ -157,7 +156,7 @@ fn scalar_protocol_partitions_preserve_complete_native_and_fallback_links() {
             let at = a.links[0].0;a.words[at]^=1;
             assert_ne!(a.words,staged.words[base..base+a.words.len()]);
             assert!(jit.code.is_none());assert_eq!(jit.bytes,0);
-        }}
+        }
     }}}
 }
 
