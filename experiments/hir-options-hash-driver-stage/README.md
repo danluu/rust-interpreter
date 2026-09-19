@@ -65,11 +65,23 @@ controller's guards and prerequisite readers before publishing a launch proposal
 Only the bounded admission controls described below have exercised this draft;
 concrete discovery and workload execution remain unrun.
 
-The controller retains selected source/proof bytes before any workload command,
-with 64 MiB per-file and 128 MiB total logical limits under the existing aggregate
-evidence cap. The selection includes imported local modules, driver/fixture,
+The controller retains complete selected source/proof bytes before any workload
+command. The selection includes imported local modules, driver/fixture,
 plans/freezes, audits, terminal receipts and provider catalogs. Complete provider
 payloads remain hashed and inventoried rather than duplicated into snapshots.
+The original unrun plain-copy draft would exceed its 128 MiB logical limit on
+the actual prerequisite plans/freezes alone. The revised draft uses the bounded
+lossless gzip helper that passed seven fixture controls and independent audit.
+It admits at most 1024 logical files, 64 MiB per file, 512 MiB total logical
+bytes and 128 MiB compressed payloads. The aggregate physical evidence limit
+stays 256 MiB. A separately launch-bound projection includes the finalized
+freeze and reserves block rounding, two 4 MiB documents and 32 MiB for remaining
+stage evidence. Admission remeasures exact selected bytes before writing;
+every retained payload receives complete decompression/hash/trailer readback.
+Free space is checked on every chunk and aggregate allocation at the shared
+monitor's five-second cadence. These integration changes have received
+independent source review and AST parsing only; the seven controls qualify the
+helper, not this enclosing stage.
 
 The direct-rustc environment is derived from the qualified native predecessor.
 Exactly the reviewed Cargo/Git/bootstrap-only keys are omitted; their values
@@ -88,9 +100,10 @@ The later result-policy/source/retention checks received source review and AST
 parsing only. There is still no concrete runnable admission packet, and final
 B3/native/run-make schemas must pass discovery against their actual results.
 
-The B3 source and work references select composition07, the planned successor
-to composition06. Composition06's 97 controls passed, including the complete saved
-compiler-producer history. Read-only discovery then rejected a normal bootstrap
-source symlink before any composition or launch packet existed. The successor
-must qualify its narrow source-link inventory handling separately; updating
-these references does not qualify that future stage.
+The B3 source and work references select composition08. Composition06's 97
+controls and composition07's six source-link inventory controls passed and were
+independently audited. Composition07 discovery then exposed the plain proof
+copy limit before a workload started. Composition08 uses the same qualified
+lossless retention helper with all selected proof bytes preserved. Its actual
+passed terminal, complete 19-command history and independent audit remain
+mandatory; updating these references does not qualify that stage.

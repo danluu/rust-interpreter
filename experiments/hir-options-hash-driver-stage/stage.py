@@ -24,12 +24,18 @@ WORK = ROOT/'.work/hir-options-hash-driver-01'
 REVISION = '4de35bdacef0e3cd18a66bc30b5459c19e09b118'
 NATIVE_SOURCE = A/'experiments/hir-options-hash-native-controls-01'
 NATIVE_WORK = A/'.work/hir-options-hash-native-controls-01'
-BETA_SOURCE = A/'experiments/hir-options-hash-beta-composition-07'
-BETA_WORK = A/'.work/hir-options-hash-beta-composition-07'
+BETA_SOURCE = A/'experiments/hir-options-hash-beta-composition-08'
+BETA_WORK = A/'.work/hir-options-hash-beta-composition-08'
 RECIPE_SOURCE = O/'experiments/hir-options-hash-run-make-stage-02'
 RECIPE_WORK = O/'.work/hir-options-hash-run-make-01'
-SNAPSHOT_FILE_LIMIT = 64*2**20
-SNAPSHOT_TOTAL_LIMIT = 128*2**20
+SNAPSHOT_SOURCE = ROOT/'experiments/bounded-proof-snapshots/proof_snapshots.py'
+SNAPSHOT_CONTROLS = ROOT/'experiments/bounded-proof-snapshot-controls-01'
+SNAPSHOT_CONTROL_WORK = ROOT/'.work/bounded-proof-snapshot-controls-01'
+SNAPSHOT_AUDIT = A/'.work/proof-snapshot-controls-independent-verification-01.json'
+SNAPSHOT_LIMITS = dict(maximum_files=1024, maximum_file_bytes=64*2**20,
+    maximum_logical_bytes=512*2**20, maximum_compressed_bytes=128*2**20,
+    maximum_manifest_bytes=4*2**20)
+REMAINING_EVIDENCE_RESERVATION = 32*2**20
 DRIVER_ENVIRONMENT_KEYS = frozenset({
     'PATH', 'HOME', 'USER', 'LOGNAME', 'LANG', 'LC_ALL', 'TZ', 'TMPDIR',
     'SDKROOT', 'PYTHONDONTWRITEBYTECODE', 'PYTHONNOUSERSITE', '__CF_USER_TEXT_ENCODING',
@@ -106,8 +112,29 @@ def dependencies():
                 metadata=metadata, comp=comp)
 
 
+def snapshot_records(freeze, inputs_sha256, comp):
+    names = freeze['snapshot_inputs']
+    comp.require(type(names) is list and names == sorted(set(names))
+                 and set(names) <= set(freeze['files'])
+                 and str(HERE/'inputs.json') not in names, 'exact snapshot selection required')
+    return [dict(path=name, **freeze['files'][name]) for name in names] + [
+        comp.check_file(dict(path=str(HERE/'inputs.json'), sha256=inputs_sha256))]
+
+
+def snapshot_reservation(projection, records):
+    return (projection['compressed_bytes'] + 4096*len(records)
+            + 2*SNAPSHOT_LIMITS['maximum_manifest_bytes'] + REMAINING_EVIDENCE_RESERVATION)
+
+
+def load_snapshots(freeze, comp):
+    comp.require(str(SNAPSHOT_SOURCE) in freeze['files'], 'snapshot helper missing from freeze')
+    row = dict(path=str(SNAPSHOT_SOURCE), **freeze['files'][str(SNAPSHOT_SOURCE)])
+    comp.require(comp.check_file(row) == row, 'snapshot helper changed before import')
+    return module('verified_snapshots', SNAPSHOT_SOURCE)
+
+
 class Stage:
-    def __init__(self, inputs_sha256):
+    def __init__(self, inputs_sha256, snapshot_plan_sha256):
         self.modules = dependencies()
         self.core = self.modules['core']
         self.monitor = self.modules['monitor']
@@ -119,6 +146,8 @@ class Stage:
         self.require(self.owned.sha(HERE/'inputs.json') == inputs_sha256, 'reviewed hash freeze required')
         self.inputs_sha256 = inputs_sha256
         self.freeze = self.read_json(HERE/'inputs.json', frozen=False)
+        self.bind_snapshot_plan(snapshot_plan_sha256)
+        self.snapshots = load_snapshots(self.freeze, self.comp)
         self.plan = self.read_json(HERE/'plan.json')
         self.require(self.owned.sha(HERE/'plan.json') == self.freeze['plan_sha256'], 'hash plan differs')
         self.require(str(Path(sys.executable).resolve(strict=True)) == self.freeze['python'], 'Python route differs')
@@ -138,7 +167,8 @@ class Stage:
                      'fresh hash evidence required')
         WORK.mkdir()
         self.record = dict(status='waiting', pid=os.getpid(), parent_pid=os.getppid(), started_at=time.time(),
-            candidate_revision=REVISION, inputs_sha256=inputs_sha256, application_qualified=False,
+            candidate_revision=REVISION, inputs_sha256=inputs_sha256,
+            snapshot_plan_sha256=snapshot_plan_sha256, application_qualified=False,
             performance_measurement=False, runtime_installation=False, hash_driver_qualified=False)
         self.save()
 
@@ -165,6 +195,8 @@ class Stage:
     def guard(self, full=False):
         self.require(dict(os.environ) == self.environment and self.owned.sha(HERE/'inputs.json') == self.inputs_sha256,
                      'hash environment/freeze changed')
+        self.require(self.comp.check_file(self.snapshot_plan_file) == self.snapshot_plan_file,
+                     'hash snapshot projection changed')
         for name, row in self.freeze['files'].items():
             self.require(self.comp.ordinary(name) == row['identity'], 'hash input stamp changed')
             if full:
@@ -220,6 +252,16 @@ class Stage:
                      and proof['status'] == 'verified' and proof['receipt_sha256'] == self.owned.sha(receipt),
                      'actual independent predecessor audit required')
 
+    def retained_snapshot_proof(self, source, evidence, terminal):
+        projection = self.read_json(source/'snapshot-plan.json')
+        manifest = self.read_json(evidence/'source-snapshots.json')
+        self.require(self.owned.sha(source/'snapshot-plan.json')
+                     == self.owned.sha(evidence/'snapshot-plan.json') == terminal['snapshot_plan_sha256']
+                     and projection['inputs_sha256'] == self.owned.sha(source/'inputs.json')
+                     and self.owned.sha(evidence/'source-snapshots.json') == terminal['source_snapshots_sha256']
+                     and manifest['full_logical_readback'] is True and manifest['full_gzip_eof'] is True,
+                     'completed compressed predecessor snapshot proof differs')
+
     def prerequisites(self):
         """All operations are frozen file reads and pure parsing."""
         bundle = self.modules['bundle']
@@ -245,6 +287,7 @@ class Stage:
                      and self.owned.sha(self.frozen(BETA_WORK/'strip-proof.json')) == beta['strip_proof_sha256'],
                      'B3 producer inventory/strip proof differs')
         self.audit('beta', BETA_WORK/'receipt.json')
+        self.retained_snapshot_proof(BETA_SOURCE, BETA_WORK, beta)
         native_plan = self.inherited_freeze(NATIVE_SOURCE)
         environment, omitted = driver_environment(native_plan['environment'], self.core.ARTIFACTS/'tmp')
         self.require(self.plan['environment'] == environment
@@ -272,6 +315,7 @@ class Stage:
                      and [str(self.core.B3/name) for name in result['ordered_driver_destinations']]
                          == self.plan['ordered_driver_pair'], 'hash role pair differs from actual native controls')
         self.audit('native', NATIVE_WORK/'receipt.json')
+        self.retained_snapshot_proof(NATIVE_SOURCE, NATIVE_WORK, native)
         recipe_plan = self.inherited_freeze(RECIPE_SOURCE)
         recipe = self.read_json(RECIPE_WORK/'receipt.json')
         recipe_result = self.read_json(RECIPE_WORK/'result.json')
@@ -351,32 +395,73 @@ class Stage:
         return bundle.loader.closure(binary, cwd=self.core.S, dyld='',
             admitted=self.plan['runtime_private_providers'], macho=self.modules['metadata'].macho)
 
+    def bind_snapshot_plan(self, snapshot_plan_sha256):
+        self.snapshot_plan_file = self.comp.check_file(dict(
+            path=str(HERE/'snapshot-plan.json'), sha256=snapshot_plan_sha256))
+        self.require(self.snapshot_plan_file['size'] <= SNAPSHOT_LIMITS['maximum_manifest_bytes'],
+                     'bounded hash snapshot projection required')
+        self.snapshot_plan = self.read_json(HERE/'snapshot-plan.json', frozen=False)
+        self.require(self.snapshot_plan['inputs_sha256'] == self.inputs_sha256
+                     and self.snapshot_plan['limits'] == SNAPSHOT_LIMITS
+                     and self.snapshot_plan['remaining_evidence_reservation_bytes'] == REMAINING_EVIDENCE_RESERVATION
+                     and self.snapshot_plan['evidence_cap_bytes'] == 256*2**20
+                     and self.snapshot_plan['helper'] == dict(path=str(SNAPSHOT_SOURCE),
+                         sha256=self.freeze['files'][str(SNAPSHOT_SOURCE)]['sha256']),
+                     'hash snapshot projection policy or helper differs')
+
+    def snapshot_qualification(self):
+        paths = [SNAPSHOT_SOURCE, SNAPSHOT_SOURCE.with_name('test_proof_snapshots.py'),
+            SNAPSHOT_CONTROLS/'inputs.json', SNAPSHOT_CONTROLS/'launch.json', SNAPSHOT_AUDIT,
+            *[SNAPSHOT_CONTROL_WORK/name for name in ['receipt.json', 'result.json',
+                'command/receipt.json', 'command/stdout', 'command/stderr']]]
+        for path in paths:
+            self.frozen(path)
+        controls = self.read_json(SNAPSHOT_CONTROLS/'inputs.json')
+        for path in [SNAPSHOT_SOURCE, SNAPSHOT_SOURCE.with_name('test_proof_snapshots.py')]:
+            self.require(controls['files'][str(path)]['sha256'] == self.freeze['files'][str(path)]['sha256'],
+                         'snapshot helper differs from tested source')
+        terminal, audit = self.read_json(SNAPSHOT_CONTROL_WORK/'receipt.json'), self.read_json(SNAPSHOT_AUDIT)
+        result = self.read_json(SNAPSHOT_CONTROL_WORK/'result.json')
+        self.require(terminal['status'] == 'passed' and terminal['controls_passed'] == 7
+                     and terminal['inputs_sha256'] == self.owned.sha(SNAPSHOT_CONTROLS/'inputs.json')
+                     and terminal['result_sha256'] == audit['result_sha256'] == self.owned.sha(SNAPSHOT_CONTROL_WORK/'result.json')
+                     and audit['status'] == 'verified' and audit['controls'] == 7
+                     and audit['receipt_sha256'] == self.owned.sha(SNAPSHOT_CONTROL_WORK/'receipt.json')
+                     and result['status'] == 'passed' and result['tests_run'] == 7
+                     and all(result[key] == 0 for key in ['failures', 'errors', 'skipped',
+                         'expected_failures', 'unexpected_successes', 'child_processes', 'compiler_calls']),
+                     'actual seven-control snapshot qualification required')
+
     def retain_sources(self):
-        """Copy bounded controller/proof bytes; provider payloads remain inventoried."""
-        names = self.freeze['snapshot_inputs']
-        self.require(type(names) is list and names == sorted(set(names))
-                     and set(names) <= set(self.freeze['files']), 'invalid source snapshot selection')
-        rows = {name: dict(path=name, **self.freeze['files'][name]) for name in names}
-        freeze_path = HERE/'inputs.json'
-        rows[str(freeze_path)] = self.comp.check_file(dict(path=str(freeze_path), sha256=self.inputs_sha256))
-        self.require(all(row['size'] <= SNAPSHOT_FILE_LIMIT for row in rows.values())
-                     and sum(row['size'] for row in rows.values()) <= SNAPSHOT_TOTAL_LIMIT,
-                     'bounded source/proof snapshot budget exceeded')
-        directory = WORK/'source-snapshots'
-        directory.mkdir()
-        manifest = {}
-        for name, row in sorted(rows.items()):
-            self.budget()
-            destination = directory/row['sha256']
-            if not destination.exists():
-                with destination.open('xb') as stream:
-                    self.require(self.comp.check_file(row, stream, self.budget) == row,
-                                 'source changed during retained copy')
-                    stream.flush(); os.fsync(stream.fileno())
-            self.require(self.owned.sha(destination) == row['sha256']
-                         and destination.stat().st_size == row['size'], 'retained source readback differs')
-            manifest[name] = dict(path=str(destination), sha256=row['sha256'], bytes=row['size'])
-        self.owned.write(WORK/'source-snapshots.json', manifest)
+        """Retain complete selected bytes within the unchanged physical evidence cap."""
+        self.snapshot_qualification()
+        last_sample = [float('-inf')]
+        def capacity():
+            self.owned.disk(ROOT, 9)
+            if time.monotonic()-last_sample[0] >= 5:
+                self.budget(); last_sample[0] = time.monotonic()
+        records = snapshot_records(self.freeze, self.inputs_sha256, self.comp)
+        projection = self.snapshots.measure(records, SNAPSHOT_LIMITS, capacity)
+        self.require(projection == self.snapshot_plan['projection'], 'hash snapshot projection differs')
+        current = self.budget(); reservation = snapshot_reservation(projection, records)
+        self.require(reservation == self.snapshot_plan['projected_reservation_bytes']
+                     and current['evidence_allocated_bytes'] + reservation <= 256*2**20,
+                     'hash snapshots and remaining stage exceed aggregate evidence cap')
+        self.record['snapshot_admission'] = dict(existing_evidence_bytes=current['evidence_allocated_bytes'],
+            projected_reservation_bytes=reservation, evidence_cap_bytes=256*2**20)
+        self.save()
+        manifest = self.snapshots.write_verified(records, WORK/'source-snapshots', projection, SNAPSHOT_LIMITS, capacity)
+        data = self.snapshots.encoded(manifest)
+        self.require(len(data) <= SNAPSHOT_LIMITS['maximum_manifest_bytes'], 'bounded hash snapshot manifest required')
+        with (WORK/'source-snapshots.json').open('xb') as stream:
+            stream.write(data); stream.flush(); os.fsync(stream.fileno())
+        self.require(self.owned.sha(WORK/'source-snapshots.json') == self.comp.digest(data),
+                     'hash snapshot manifest readback differs')
+        with (WORK/'snapshot-plan.json').open('xb') as stream:
+            self.comp.check_file(self.snapshot_plan_file, stream, capacity)
+            stream.flush(); os.fsync(stream.fileno())
+        self.require(self.owned.sha(WORK/'snapshot-plan.json') == self.record['snapshot_plan_sha256'],
+                     'retained hash snapshot projection differs')
         self.record['source_snapshots_sha256'] = self.owned.sha(WORK/'source-snapshots.json')
         self.save(); self.budget()
 
@@ -409,4 +494,6 @@ class Stage:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--inputs-sha256', required=True)
-    Stage(parser.parse_args().inputs_sha256).execute()
+    parser.add_argument('--snapshot-plan-sha256', required=True)
+    args = parser.parse_args()
+    Stage(args.inputs_sha256, args.snapshot_plan_sha256).execute()

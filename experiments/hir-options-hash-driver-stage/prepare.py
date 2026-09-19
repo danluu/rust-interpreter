@@ -100,7 +100,7 @@ class Discovery:
             if 'stamp' in expected:
                 require(stamp(path) == expected['stamp'], 'historical input stamp changed')
         if snapshot:
-            require(row['size'] <= stage.SNAPSHOT_FILE_LIMIT, 'bounded source/proof snapshot required')
+            require(row['size'] <= stage.SNAPSHOT_LIMITS['maximum_file_bytes'], 'bounded source/proof snapshot required')
             self.snapshots.add(str(path))
         return path
 
@@ -141,6 +141,8 @@ class Discovery:
         source = Path(source)
         freeze = read(self.add(source/'inputs.json', snapshot=True))
         plan = read(self.add(source/'plan.json', snapshot=True))
+        if source in [stage.BETA_SOURCE, stage.NATIVE_SOURCE]:
+            self.add(source/'snapshot-plan.json', snapshot=True)
         require(sha(source/'plan.json') == freeze['plan_sha256'], 'predecessor plan hash differs')
         for name, row in freeze['files'].items():
             self.add(name, row)
@@ -186,7 +188,7 @@ def main():
     d = Discovery(modules); core = modules['core']; support = modules['bundle'].support
     require(support.BHERE == COMPILER_SOURCE and support.BUILT == COMPILER_WORK,
             'run-make adapter has not adopted the final compiler continuation03')
-    targets = [HERE/'plan.json', HERE/'inputs.json', HERE/'launch.json',
+    targets = [HERE/'plan.json', HERE/'inputs.json', HERE/'snapshot-plan.json', HERE/'launch.json',
                HERE/'metadata-preflight.json', CATALOGS, stage.WORK, core.ARTIFACTS]
     require(all(not path.exists() and not path.is_symlink() for path in targets), 'fresh hash discovery/output paths required')
     with d.owned.workload_lock(d.owned.CANONICAL_LOCK, 600):
@@ -267,6 +269,12 @@ def main():
             capacity=dict(entry_gib=24,stop_gib=9,floor_gib=8,namespace_bytes=14*2**30,evidence_bytes=256*2**20),
             qualification_scope='One compile and two hash-driver processes; no application or performance claim.')
         plan['children'] = core.desired_commands(plan)
+        for path in [stage.SNAPSHOT_SOURCE, stage.SNAPSHOT_SOURCE.with_name('test_proof_snapshots.py'),
+                     stage.SNAPSHOT_CONTROLS/'inputs.json', stage.SNAPSHOT_CONTROLS/'launch.json', stage.SNAPSHOT_AUDIT,
+                     *[stage.SNAPSHOT_CONTROL_WORK/name for name in ['receipt.json', 'result.json',
+                         'command/receipt.json', 'command/stdout', 'command/stderr']]]:
+            d.add(path, snapshot=True)
+        snapshots = stage.load_snapshots(dict(files=d.files), d.comp)
         d.imports()
         for path in [Path(__file__).resolve(), HERE/'stage.py', HERE/'controls.py', HERE/'prerequisites.py',
                      stage.ROOT/'scripts/supervise_experiment.py', *core.SOURCE_HASHES]: d.add(path, snapshot=True)
@@ -275,20 +283,35 @@ def main():
             python=str(Path(sys.executable).resolve(strict=True)), plan_sha256=sha(HERE/'plan.json'),
             launch_environment=environment, snapshot_inputs=sorted(d.snapshots))
         write(HERE/'inputs.json', freeze)
-        require((HERE/'inputs.json').stat().st_size <= stage.SNAPSHOT_FILE_LIMIT
-                and sum(d.files[name]['size'] for name in d.snapshots)
-                    + (HERE/'inputs.json').stat().st_size <= stage.SNAPSHOT_TOTAL_LIMIT,
-                'source/proof snapshot budget exceeded')
+        records = stage.snapshot_records(freeze, sha(HERE/'inputs.json'), d.comp)
+        projection = snapshots.measure(records, stage.SNAPSHOT_LIMITS, d.floor)
+        current = monitor.sample(evidence_root=stage.WORK, evidence_roots=sorted(roots))
+        require(monitor.rejection(current) is None, 'hash aggregate evidence admission failed')
+        reservation = stage.snapshot_reservation(projection, records)
+        require(current['evidence_allocated_bytes'] + reservation <= 256*2**20,
+                'hash compressed proof and remaining stage exceed evidence cap')
+        snapshot_plan = dict(inputs_sha256=sha(HERE/'inputs.json'), limits=stage.SNAPSHOT_LIMITS,
+            helper=dict(path=str(stage.SNAPSHOT_SOURCE), sha256=freeze['files'][str(stage.SNAPSHOT_SOURCE)]['sha256']),
+            projection=projection, remaining_evidence_reservation_bytes=stage.REMAINING_EVIDENCE_RESERVATION,
+            measured_existing_evidence_bytes=current['evidence_allocated_bytes'],
+            projected_reservation_bytes=reservation, evidence_cap_bytes=256*2**20)
+        encoded = snapshots.encoded(snapshot_plan)
+        require(len(encoded) <= stage.SNAPSHOT_LIMITS['maximum_manifest_bytes'], 'bounded hash projection required')
+        with (HERE/'snapshot-plan.json').open('xb') as stream:
+            stream.write(encoded); stream.flush(); os.fsync(stream.fileno())
+        require(sha(HERE/'snapshot-plan.json') == hashlib.sha256(encoded).hexdigest(),
+                'hash projection publication readback differs')
         # Use the exact controller readers with no __init__/WORK creation and
         # no execute/core invocation. This catches actual schema mismatches.
         probe = stage.Stage.__new__(stage.Stage)
         probe.modules, probe.core, probe.monitor, probe.owned, probe.comp = modules, core, monitor, d.owned, d.comp
         probe.require = require; probe.freeze = freeze; probe.plan = plan
         probe.inputs_sha256 = sha(HERE/'inputs.json'); probe.environment = environment
+        probe.bind_snapshot_plan(sha(HERE/'snapshot-plan.json'))
         original_environment = dict(os.environ)
         os.environ.clear(); os.environ.update(environment)
         try:
-            probe.guard(True); observed = probe.prerequisites(); budget = probe.budget()
+            probe.guard(True); probe.snapshot_qualification(); observed = probe.prerequisites(); budget = probe.budget()
         finally:
             os.environ.clear(); os.environ.update(original_environment)
         d.floor()
@@ -296,11 +319,13 @@ def main():
             finished_at=time.time(), free_bytes_before=free_before, free_bytes_after=d.floor(),
             discovery_entry_gib=16, discovery_live_floor_gib=9, workload_children=0,
             prerequisites=observed, budget=budget, files=len(d.files), input_bytes=d.total,
-            inputs_sha256=sha(HERE/'inputs.json'), work_created=False))
+            inputs_sha256=sha(HERE/'inputs.json'), snapshot_plan_sha256=sha(HERE/'snapshot-plan.json'),
+            snapshot_reservation_bytes=reservation, work_created=False))
         launch = dict(status='prepared-unrun-awaiting-review', owner=str(stage.ROOT),
             environment=environment, command=[freeze['python'],'-B',str(stage.ROOT/'scripts/supervise_experiment.py'),
                 '--run-id','hir-options-hash-driver-supervisor-01','--',freeze['python'],'-B',str(HERE/'stage.py'),
-                '--inputs-sha256',sha(HERE/'inputs.json')], inputs_sha256=sha(HERE/'inputs.json'),
+                '--inputs-sha256',sha(HERE/'inputs.json'), '--snapshot-plan-sha256',sha(HERE/'snapshot-plan.json')],
+            inputs_sha256=sha(HERE/'inputs.json'), snapshot_plan_sha256=sha(HERE/'snapshot-plan.json'),
             plan_sha256=sha(HERE/'plan.json'), helper_sha256=sha(HERE/'stage.py'),
             expected_children=3, driver_processes=2, contexts_per_process=8, capacity=plan['capacity'])
         write(HERE/'launch.json', launch)

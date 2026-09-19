@@ -20,15 +20,14 @@ controller's read-only guards and prerequisite parsers on the concrete frozen
 proposal before publishing `launch.json`. It never calls `Stage.__init__`,
 `execute`, or the workload core and never creates the driver evidence/artifacts.
 
-The O run-make adapter now selects the final compiler continuation03. Its
-concrete run-make packet passed source and input review but remains unexecuted.
-The preparer refuses an adapter pointing to02. B3 source and work paths now
-select the planned composition07 successor. Composition06 passed 97 parser
-controls, then failed read-only discovery at the bootstrap source-link inventory
-before producing a launch packet or composing B3. Composition07 must qualify
-that inventory handling and complete discovery and execution independently.
-Native and run-make audit paths remain required arguments; no successful actual
-receipts for these stages are inferred from their source reviews.
+The O run-make adapter selects the final compiler continuation03. Its actual
+two-command run-make history passed and was independently audited, including
+all 230 nested commands. The preparer refuses an adapter pointing to02. B3
+source and work paths select composition08, whose complete actual history and
+audit remain required. The 97 producer-parser controls, six source-link
+inventory controls and seven lossless-retention controls passed independently;
+none substitutes for actual B3 or native qualification. Native and run-make
+audit paths remain required arguments.
 The native plan is expected to expose the `environment`, `clang`,
 `runtime_closure.libraries` and relative `ordered_driver_destinations` consumed
 by its reviewed recipe/controller. The discovery preflight checks those actual
@@ -41,3 +40,15 @@ every omitted bootstrap-only key. `prerequisites.py` and the three-command core
 remain unchanged. Nine bounded admission controls have imported the draft and
 tested rejection before provider discovery, environment selection and alias
 restoration. Concrete preparation and workload execution remain unrun.
+
+The selected proof files exceed the original unexecuted plain-copy draft's
+128 MiB limit. The revised draft retains every selected byte with the qualified
+lossless snapshot helper. Its finite read limits are 1024 files, 64 MiB each and
+512 MiB total; compressed payloads remain capped at 128 MiB. The unchanged
+256 MiB aggregate physical cap includes existing evidence plus measured
+compressed bytes, block rounding, two bounded 4 MiB documents and 32 MiB of
+remaining stage evidence. A separate launch-hashed projection includes the
+finalized freeze. The pure preflight binds that projection and repeats the
+seven-control qualification before publishing a launch. This integration
+received independent source review and AST parsing only; it has no concrete
+projection, discovery result or execution yet.
