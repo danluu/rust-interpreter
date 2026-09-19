@@ -101,3 +101,10 @@ snapshotsets (~1.8GiB); originalplaintextsha=filename=closed-evidencesha. Existi
 qualifiedcompression/birthtimehelpersunchanged. No mutationlaunchedyet. Next
 commit/push, supervisecompression, independentclose, freshfloor, thenheapfocus.
 No activeownedcommands; negativeoverwrittenpublication mayneedpushverification.
+
+Remaining-artifact-compression01 sourced15b8db4 supervisor10674/controller10677
+FAILED beforeinventory/mutation: oldparser frozenownership value is{kind:file,
+sha256}, notbarehash. ActualownerSHA exactlymatches. Closedpreflightfailure
+retained; new02 normalizesonlythetwoexactformats andbindsfailure. No replay.
+Main4be97e5e overwrittennegativepublicationverified, preservingpeeree68f923.
+HeapfocusstillUNRUN; commitcorrectionthenlaunchcompression02 beforebuildadmission.

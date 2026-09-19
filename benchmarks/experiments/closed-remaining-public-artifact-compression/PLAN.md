@@ -24,3 +24,10 @@ Shared lock45s,12GiB initial/8GiB children. Record every temporary state and raw
 receipt. No guest, compiler or executable is run, no benchmark timing changes,
 and no failed candidate is revived. Actual final disk headroom, not estimates,
 controls subsequent compilation admission. Never replay a completed inventory.
+
+Attempt01 failed before inventory or mutation: parser histories encode frozen
+files as {kind:file,sha256:...}, while the newer fre history uses a hash string.
+The actual ownership-file hash matches the original typed binding. Retain this
+failed source/terminal/log and verify that no inventory exists. Attempt02 accepts
+only either exact representation, requires kind=file for typed bindings, and
+checks the same original SHA256 before fresh selection. No mutation is replayed.

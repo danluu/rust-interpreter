@@ -20,3 +20,6 @@ overwrittenwrites0current1933/1429samples. PARKboth. Older typedoverwrite and
 broad/conditionaldemandJIT alreadynegative; do not recreate/retime. Main968b1472
 publishedslotproofpreservingpeer608da6ba. Overwrittenpublication exec26569 needs
 verification. No activeownedcommands atcheckpoint; sharedlock45s/2workers.
+Compression01failed beforeinventory/mutation ontypedfile-hashschema; retained
+verifiedfailure, actualownershipSHAunchanged. New02correctsreader andbindsfailure.
+Launch02next; focusstillUNRUN. Main4be97e5e pushednegativeevidencepreservingpeers.

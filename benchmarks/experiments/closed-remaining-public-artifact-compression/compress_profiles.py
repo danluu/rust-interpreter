@@ -8,7 +8,7 @@ sys.path.insert(0,str(ROOT/'benchmarks/experiments/closed-public-artifact-compre
 from compress import identity,unopened,attributes,verify,sha,read,write,capture,acquire_lock,require_space,PRESERVE
 from birthtime import birthtime,set_birthtime
 
-RUN='closed-remaining-public-artifact-compression-01'
+RUN='closed-remaining-public-artifact-compression-02'
 RUNS='compact-switch-adopted-screen-token-01 conditional-demand-parser-screen-incremental-01 scratch-memory-values-parser-edits-incremental-01 scratch-memory-values-parser-edits-repository-01 emitter-register-workspace-parser-screen-incremental-01 indexed-switches-parser-screen-incremental-01 shared-emission-templates-parser-screen-incremental-01'.split()
 
 def manifest_hashes(obj):
@@ -37,6 +37,15 @@ def main():
             if expected is not None:assert digest==expected,p
             frozen[str(p.relative_to(ROOT))]=digest
             return read(p)
+        failed=ROOT/'results/closed-remaining-public-artifact-compression-01'
+        fc=bind(failed/'closure.json');assert fc['status']=='closed' and fc['no_mutation_stage_reached']
+        fs=bind(failed/'summary.json',fc['summary_sha256']);ft=bind(failed/'terminal.json',fc['terminal_sha256'])
+        assert fs['status']=='preflight-failed' and fs['mutations']==0 and not fs['raw_inventory_created']
+        assert fs['expected_binding']['kind']=='file' and fs['expected_binding']['sha256']==fs['actual_owner_sha256']
+        assert ft['status']=='finished' and ft['returncode']==1
+        assert not (ROOT/'.work/closed-remaining-public-artifact-compression-01').exists()
+        for name,digest in fs['evidence'].items():
+            p=ROOT/name;assert sha(p)==digest;frozen[name]=digest
         qualification=ROOT/'results/closed-public-artifact-compression-recovery-02'
         qc=bind(qualification/'closure.json');assert qc['status']=='closed'
         qs=bind(qualification/'summary.json',qc['summary_sha256'])
@@ -68,7 +77,11 @@ def main():
             project='fre' if name=='compact-switch-adopted-screen-token-01' else 'pgrust'
             package='fre-kernels' if project=='fre' else 'gram_core'
             source=ROOT/'.work/sources'/project;owner_path=source/'.rust-interp-owned.json'
-            owner=bind(owner_path,plan['frozen'][str(owner_path.relative_to(ROOT))])
+            expected=plan['frozen'][str(owner_path.relative_to(ROOT))]
+            if isinstance(expected,dict):
+                assert expected['kind']=='file';expected=expected['sha256']
+            assert isinstance(expected,str) and len(expected)==64 and all(c in '0123456789abcdef' for c in expected)
+            owner=bind(owner_path,expected)
             assert owner['owner']==str(ROOT) and owner['revision']==plan['revision']
             for row in rows:
                 command=row['command']
