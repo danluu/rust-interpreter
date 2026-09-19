@@ -1,0 +1,71 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/retained-proof-copy-retirement-01/execute_retirement.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/execute_retained_proof_copy_retirement_audit_02.py
+@@ -17,11 +17,13 @@
+ import time
+ import types
+ 
+-HERE=Path(__file__).resolve().parent
++HERE=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/retained-proof-copy-retirement-01')
+ ROOT=HERE.parents[1]
+ WORK=ROOT/'.work/retained-proof-copy-retirement-01'
+ PACKET=HERE/'plan-01.json'
+-AUDIT=ROOT/'.work/retained-proof-copy-retirement-independent-verification-01.json'
++AUDIT=ROOT/'.work/retained-proof-copy-retirement-independent-verification-02.json'
++AUDITOR=ROOT/'.work/verify_retained_proof_copy_retirement_02.py'
++AUDITOR_SHA='4c942eaa1cd70e00ab8d3bbbccc8a3d7f6cebbd62ec903677020b3695a0f83b6'
+ PYTHON=Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14')
+ OWNED=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/stable-cgu/owned_stage.py')
+ OWNED_SHA='7021a15d3b806ab908f03276051d9d9ca9c9e208bbf8933a60229c9fb35bb68e'
+@@ -41,6 +43,9 @@
+ 
+ 
+ def sources():
++    require(AUDITOR.resolve(strict=True)==AUDITOR and stat.S_ISREG(AUDITOR.lstat().st_mode)
++        and AUDITOR.stat().st_size<=2**20 and digest(AUDITOR)==AUDITOR_SHA,
++        'exact separately reviewed successor audit source required')
+     require(type(SOURCE_BINDINGS) is dict and set(SOURCE_BINDINGS)==
+         {'recovery.py','retire.py','no_consumer.py','prepare_retirement.py','verify_retirement.py'},
+         'reviewed source bindings remain unset')
+@@ -60,7 +65,7 @@
+ 
+ 
+ def main(phase):
+-    require(phase in ['prepare','retire','audit'] and Path.cwd()==ROOT
++    require(phase=='audit' and Path.cwd()==ROOT
+         and Path(sys.executable).resolve()==PYTHON and sys.dont_write_bytecode and not sys.flags.optimize,
+         'fixed phase/route/interpreter')
+     sources()
+@@ -74,7 +79,7 @@
+             and digest(ROOT/'.work/retained-proof-copy-retirement-execution-01/record.json')==ACTUAL_CLOSURE['execution_sha256'],
+             'actual retirement closure changed')
+     suffix={'prepare':'retirement-preparation','retire':'retirement','audit':'retirement-audit'}[phase]
+-    evidence=ROOT/('.work/retained-proof-copy-'+suffix+'-execution-01')
++    evidence=ROOT/'.work/retained-proof-copy-retirement-audit-execution-02'
+     require(not evidence.exists() and not evidence.is_symlink(),'distinct fresh one-shot execution required')
+     required=9*2**30+LIMIT if phase=='retire' else 16*2**30
+     require(shutil.disk_usage(ROOT).free>=required,'fresh phase entry before evidence')
+@@ -86,14 +91,15 @@
+     for name in SOURCE_BINDINGS:(evidence/'source'/name).write_bytes((HERE/name).read_bytes())
+     (evidence/'source/execute_retirement.py').write_bytes(Path(__file__).read_bytes())
+     (evidence/'source/owned_stage.py').write_bytes(OWNED.read_bytes())
++    (evidence/'source/auditor-02.py').write_bytes(AUDITOR.read_bytes())
+     script={'prepare':'prepare_retirement.py','retire':'retire.py','audit':'verify_retirement.py'}[phase]
+-    command=[str(PYTHON),'-B',str(HERE/script)]
++    command=[str(PYTHON),'-B',str(AUDITOR)]
+     if phase!='prepare':command+=['--inputs-sha256',ACTUAL_PACKET_SHA]
+     if phase=='audit':command+=['--receipt-sha256',ACTUAL_CLOSURE['receipt_sha256'],
+         '--execution-sha256',ACTUAL_CLOSURE['execution_sha256']]
+     record=dict(status='waiting',phase=phase,started_at=time.time(),parent_pid=os.getpid(),parent_parent_pid=os.getppid(),
+         command=command,cwd=str(ROOT),environment=ENV,source_sha256=SOURCE_BINDINGS,
+-        wrapper_sha256=digest(__file__),owned_sha256=OWNED_SHA,signals=[],compiler_calls=0,
++        wrapper_sha256=digest(__file__),auditor_sha256=AUDITOR_SHA,owned_sha256=OWNED_SHA,signals=[],compiler_calls=0,
+         canonical_lock=str(owned.CANONICAL_LOCK),canonical_owner='child' if phase=='retire' else 'wrapper',
+         wait_seconds=600,observation_seconds=1250 if phase=='retire' else 650,
+         capacity=dict(entry_gib=9 if phase=='retire' else 16,live_gib=9,floor_gib=8,
+@@ -180,5 +186,5 @@
+ 
+ 
+ if __name__=='__main__':
+-    parser=argparse.ArgumentParser();parser.add_argument('--phase',choices=['prepare','retire','audit'],required=True)
++    parser=argparse.ArgumentParser();parser.add_argument('--phase',choices=['audit'],required=True)
+     main(parser.parse_args().phase)

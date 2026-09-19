@@ -1,0 +1,77 @@
+--- /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/retained-proof-copy-publication-before-audit02-01/scope.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/retained-proof-copy-publication-01/scope.py
+@@ -25,6 +25,9 @@
+ RECOVERY_EXECUTION_SHA = '85ce36c2e82e112a03cb18e6d429a3aa5b04c24caa7c3a279e884c9bb93e1862'
+ READER_AUDIT_SHA = '494e64b61b17b943334d062f882d0fa944e7864e76d57d3ff9b2d97ece787662'
+ READER_PUBLICATION_SHA = '78f5e9f47db952c7a81fc81f99fcdeec557ecd365dea8438d4220c318d251f32'
++FAILED_AUDIT_RECORD_SHA = 'c6c07ff73138803ce147fd67219f82ad8efcb7ea8a3400b422fa06bfbdacdb96'
++FAILED_AUDIT_STDERR_SHA = 'f6d0270953f468523d91237df3b0eb029b198a963449bce7c5299d7a9b67cff4'
++PUBLICATION_HISTORY = O/'.work/retained-proof-copy-publication-before-audit02-01'
+ ACTUAL = None  # receipt_sha256, execution_sha256, audit_sha256, audit_execution_sha256
+ REVIEW_FILES = None  # Exact list of final {path,sha256} root/peer source reviews.
+ LIMITS = dict(maximum_files=256, maximum_file_bytes=4*2**20,
+@@ -144,6 +147,33 @@
+         self.tree(directory, 'complete closed '+phase+' source/raw/record')
+         return record
+ 
++    def failed_audit(self, actual):
++        directory = ROOT/'.work/retained-proof-copy-retirement-audit-execution-01'
++        record = self.document(directory/'record.json', 'original closed failed audit01', FAILED_AUDIT_RECORD_SHA)
++        require(record['status'] == 'finished' and type(record['returncode']) is int
++                and record['returncode'] == 1 and record['phase'] == 'audit'
++                and record['pid'] == 19237 and record['parent_pid'] == 18291
++                and record['observation_errors'] == [] and not record.get('child_may_remain_live')
++                and 'canonical_released_at' not in record
++                and record['started_at'] <= record['child_started_at'] <= record['finished_at'],
++                'preserve exact failed audit closure without inventing a release')
++        require(record['command'] == [
++                '/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14',
++                '-B', str(SOURCE/'verify_retirement.py'), '--inputs-sha256', PACKET_SHA,
++                '--receipt-sha256', actual['receipt_sha256'], '--execution-sha256', actual['execution_sha256']]
++                and record['error'] == "RuntimeError('phase failed after explicit child closure; no retry')",
++                'failed audit belongs to unchanged passed retirement')
++        self.add(directory/'stdout', 'original empty failed audit stdout', record['stdout_sha256'])
++        self.add(directory/'stderr', 'original failed audit traceback', FAILED_AUDIT_STDERR_SHA)
++        require(self.files[str(directory/'stdout')]['size'] == 0
++                and record['stderr_sha256'] == FAILED_AUDIT_STDERR_SHA
++                and not os.path.lexists(ROOT/'.work/retained-proof-copy-retirement-independent-verification-01.json'),
++                'original failed audit never produced a qualified report')
++        self.tree(directory, 'complete failed audit01 source/raw/record')
++        return dict(execution=dict(path=str(directory/'record.json'), sha256=FAILED_AUDIT_RECORD_SHA),
++                    stderr=dict(path=str(directory/'stderr'), sha256=FAILED_AUDIT_STDERR_SHA),
++                    status='finished', returncode=1, report_absent=True, release_timestamp_recorded=False)
++
+ 
+ def main():
+     require(type(ACTUAL) is dict and set(ACTUAL) ==
+@@ -167,9 +197,12 @@
+             and recovered['result_sha256'] == RECOVERY_SHA, 'actual recovery association')
+     terminal = c.document(WORK/'receipt.json', 'actual retirement terminal', ACTUAL['receipt_sha256'])
+     outer = c.closed(ROOT/'.work/retained-proof-copy-retirement-execution-01', ACTUAL['execution_sha256'], 'retirement')
+-    audit_path = ROOT/'.work/retained-proof-copy-retirement-independent-verification-01.json'
++    failed_audit = c.failed_audit(ACTUAL)
++    audit_path = ROOT/'.work/retained-proof-copy-retirement-independent-verification-02.json'
+     audit = c.document(audit_path, 'actual independent retirement audit', ACTUAL['audit_sha256'])
+-    audited = c.closed(ROOT/'.work/retained-proof-copy-retirement-audit-execution-01', ACTUAL['audit_execution_sha256'], 'retirement audit')
++    audited = c.closed(ROOT/'.work/retained-proof-copy-retirement-audit-execution-02', ACTUAL['audit_execution_sha256'], 'retirement audit02')
++    c.add(ROOT/'.work/verify_retained_proof_copy_retirement_02.py', 'separate corrected audit02 source', audited['auditor_sha256'])
++    c.add(ROOT/'.work/execute_retained_proof_copy_retirement_audit_02.py', 'separate audit02 execution source', audited['wrapper_sha256'])
+     require(terminal['status'] == 'passed' and terminal['packet_sha256'] == PACKET_SHA
+             and outer['receipt_sha256'] == ACTUAL['receipt_sha256']
+             and outer['pid'] == terminal['pid'] and outer['parent_pid'] == terminal['parent_pid']
+@@ -197,6 +230,7 @@
+                 'actual preparation output/release association')
+     c.tree(SOURCE, 'complete immutable recovery/retirement source and packets')
+     c.tree(HERE, 'publication source')
++    c.tree(PUBLICATION_HISTORY, 'preserved unbound publication draft and audit02 correction')
+     declarations = c.document(packet['declarations']['path'], 'four-owner concrete declaration', packet['declarations']['sha256'])
+     for row in declarations['no_consumer']['acknowledgments'].values():
+         c.document(row['path'], 'actual owner acknowledgment', row['sha256'])
+@@ -243,6 +277,7 @@
+         require(identity(row['source']) == row['identity'], 'selected publication input changed before scope return')
+     scope = dict(status='proposed-unpublished', destination=str(DEST), files=files, file_count=len(files),
+                  source_bytes=sum(row['size'] for row in files), trees=c.trees, limits=LIMITS, actual=ACTUAL,
++                 failed_independent_audit=failed_audit,
+                  packet_sha256=PACKET_SHA, selected_paths=selected, external_recovery=external,
+                  generated_files=['README.md', 'summary.json', 'manifest.json', 'publication-scope.json'],
+                  claims=dict(removed_files=21, preserved_files=40, durable_events=63,

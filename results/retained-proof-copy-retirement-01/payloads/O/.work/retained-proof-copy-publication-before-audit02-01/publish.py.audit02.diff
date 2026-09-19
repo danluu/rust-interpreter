@@ -1,0 +1,22 @@
+--- /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/retained-proof-copy-publication-before-audit02-01/publish.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/retained-proof-copy-publication-01/publish.py
+@@ -25,7 +25,10 @@
+ The retained source packets, actual receipts/raw, two read-only observations,
+ 63-event ledger and independent audit document removal of exactly 21 historical
+ proof copies while preserving the other 40 files and their directory. Recovery
+-was separately completed before removal. Original failures remain failures.
++was separately completed before removal. Audit01 failed on its directory link-count
++assumption; its complete source, raw output and closed execution are retained.
++The separately corrected audit02 verifies the same completed retirement.
++Original failures remain failures; no release timestamp is invented for audit01.
+ 
+ publication-scope.json retains the complete source-to-payload map and the exact
+ 21 original/archive-member/gzip-witness associations. The existing run-make
+@@ -131,6 +134,7 @@
+             require(found == wanted, 'closed evidence tree changed')
+     summary = dict(status='published-independently-verified-proof-copy-retirement', scope_sha256=expected,
+                    actual=scope['actual'], packet_sha256=scope['packet_sha256'], claims=scope['claims'],
++                   failed_independent_audit=scope['failed_independent_audit'],
+                    source_file_count=len(files), source_bytes=scope['source_bytes'],
+                    originals_preserved=True, external_recovery='See publication-scope.json external_recovery.',
+                    git_mutations=False)

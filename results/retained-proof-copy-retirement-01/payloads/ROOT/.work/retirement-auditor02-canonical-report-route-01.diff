@@ -1,0 +1,46 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/retirement-auditor02-before-canonical-report-route-01.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/verify_retained_proof_copy_retirement_02.py
+@@ -23,7 +23,8 @@
+ WORK=ROOT/'.work/retained-proof-copy-retirement-01'
+ OUTER=ROOT/'.work/retained-proof-copy-retirement-execution-01'
+ PACKET=HERE/'plan-01.json'
+-OUTPUT=ROOT/'.work/retained-proof-copy-retirement-independent-verification-02.json'
++OUTPUT=ROOT/'.work/retained-proof-copy-retirement-independent-verification-01.json'
++FAILED_AUDIT={'path': '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/retained-proof-copy-retirement-audit-execution-01/record.json', 'sha256': 'c6c07ff73138803ce147fd67219f82ad8efcb7ea8a3400b422fa06bfbdacdb96'}
+ TARGET=Path('/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/hir-options-hash-run-make-01/retained')
+ PYTHON=Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14')
+ RECOVERY_SOURCE_SHA='572907bc8ebd093b33cbe82906e8ed5c1409eadd9de3adbe27bf8c3604009474'
+@@ -346,6 +347,24 @@
+         and digest(raw)==RECOVERY_SOURCE_SHA,'qualified actual recovery reader source')
+     r=types.ModuleType('_retirement_audit_recovery');r.__file__=str(source);exec(compile(raw,str(source),'exec'),r.__dict__)
+     reader=r.Reader(guard);reader.file(source)
++    # This fresh canonical report is for retirement01, produced by audit attempt02.
++    # The earlier closed failed audit remains immutable and is not relabeled.
++    failed=reader.json(FAILED_AUDIT['path'],FAILED_AUDIT['sha256'])
++    require(failed['status']=='finished' and type(failed['returncode']) is int and failed['returncode']==1
++        and failed['phase']=='audit' and failed['pid']==19237 and failed['parent_pid']==18291
++        and failed['observation_errors']==[] and 'canonical_released_at' not in failed
++        and 'result_path' not in failed and 'result_sha256' not in failed
++        and failed.get('child_may_remain_live') is None,'exact original closed failed audit01 required')
++    failed_root=Path(FAILED_AUDIT['path']).parent
++    for stream in ['stdout','stderr']:
++        row=reader.file(failed_root/stream)
++        require(row['sha256']==failed[stream+'_sha256'],'original failed-audit raw changed')
++    for name,expected in failed['source_sha256'].items():
++        require('/' not in name and reader.file(failed_root/'source'/name)['sha256']==expected,
++            'original failed-audit selected source changed')
++    require(reader.file(failed_root/'source/execute_retirement.py')['sha256']==failed['wrapper_sha256']
++        and reader.file(failed_root/'source/owned_stage.py')['sha256']==failed['owned_sha256'],
++        'original failed-audit wrapper/helper source changed')
+     packet=reader.json(PACKET,packet_sha);terminal=reader.json(WORK/'receipt.json',receipt_sha)
+     outer=reader.json(OUTER/'record.json',execution_sha)
+     require(packet['target']==str(TARGET) and packet['proposal_sha256']==r.PROPOSAL_SHA
+@@ -469,6 +488,8 @@
+     require(outer_files==outer_expected and outer_dirs=={'source'},'complete outer source/raw/record membership')
+     for path,row in reader.records.items():require(same(r.identity(path),row['identity']),'audited current input changed before return')
+     report=dict(status='verified-exact-proof-copy-retirement',started_at=started,finished_at=time.time(),
++        audit_attempt=2,prior_failed_audit=FAILED_AUDIT,
++        audit_execution_directory=str(ROOT/'.work/retained-proof-copy-retirement-audit-execution-02'),
+         pid=os.getpid(),parent_pid=os.getppid(),verifier_sha256=digest(Path(__file__).read_bytes()),
+         proposal_sha256=r.PROPOSAL_SHA,historical_source_stage03_wire_sha256=r.STAGE_INPUTS_SHA,
+         receipt_sha256=receipt_sha,packet_sha256=packet_sha,execution_sha256=execution_sha,ledger_sha256=terminal['ledger_sha256'],

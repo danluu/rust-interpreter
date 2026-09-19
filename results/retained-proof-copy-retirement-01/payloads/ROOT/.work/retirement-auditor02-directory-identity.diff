@@ -1,0 +1,29 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/retained-proof-copy-retirement-01/verify_retirement.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/verify_retained_proof_copy_retirement_02.py
+@@ -18,12 +18,12 @@
+ import time
+ import types
+ 
+-HERE=Path(__file__).resolve().parent
++HERE=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/retained-proof-copy-retirement-01')
+ ROOT=HERE.parents[1]
+ WORK=ROOT/'.work/retained-proof-copy-retirement-01'
+ OUTER=ROOT/'.work/retained-proof-copy-retirement-execution-01'
+ PACKET=HERE/'plan-01.json'
+-OUTPUT=ROOT/'.work/retained-proof-copy-retirement-independent-verification-01.json'
++OUTPUT=ROOT/'.work/retained-proof-copy-retirement-independent-verification-02.json'
+ TARGET=Path('/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/hir-options-hash-run-make-01/retained')
+ PYTHON=Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14')
+ RECOVERY_SOURCE_SHA='572907bc8ebd093b33cbe82906e8ed5c1409eadd9de3adbe27bf8c3604009474'
+@@ -90,7 +90,10 @@
+         identity(after);identity(parent_after)
+         require(all(after[k]==before[k] for k in ['dev','ino','mode','size','mtime_ns'])
+             and after['nlink']==0 and after['ctime_ns']>=before['ctime_ns'],'observed held-inode removal transition')
+-        require(all(parent_after[k]==parent[k] for k in ['dev','ino','mode','nlink'])
++        # Directory size/link count are observed filesystem-maintained metadata.
++        # Keep their full identity chain and verify final current membership below;
++        # stable directory ownership is dev/ino/mode, as in the qualified remover.
++        require(all(parent_after[k]==parent[k] for k in ['dev','ino','mode'])
+             and parent_after['mtime_ns']>=parent['mtime_ns'] and parent_after['ctime_ns']>=parent['ctime_ns'],
+             'only directory membership/time changed')
+         require(not (TARGET/name).exists() and not (TARGET/name).is_symlink(),'selected path remains or was recreated')

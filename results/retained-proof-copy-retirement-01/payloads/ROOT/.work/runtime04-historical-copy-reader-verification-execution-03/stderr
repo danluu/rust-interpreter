@@ -1,0 +1,25 @@
+Traceback (most recent call last):
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/verify_runtime04_historical_copy_reader_03.py", line 715, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/verify_runtime04_historical_copy_reader_03.py", line 644, in main
+    producer=producer_delta(freeze,old,result,plan)
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/verify_runtime04_historical_copy_reader_03.py", line 412, in producer_delta
+    bindings=pinned(delta['runtime_bindings']);previous=pinned(delta['predecessor_bindings']);pinned(delta['factory'])
+                                                                                              ~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/verify_runtime04_historical_copy_reader_03.py", line 144, in pinned
+    return read(reference['path'])
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/verify_runtime04_historical_copy_reader_03.py", line 137, in read
+    def read(path):return decode(raw(path))
+                          ~~~~~~^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/verify_runtime04_historical_copy_reader_03.py", line 91, in decode
+    return json.loads(data,object_pairs_hook=unique,
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        parse_constant=lambda value:(_ for _ in ()).throw(ValueError(value)))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/__init__.py", line 365, in loads
+    return cls(**kw).decode(s)
+           ~~~~~~~~~~~~~~~~^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/decoder.py", line 348, in decode
+    raise JSONDecodeError("Extra data", s, end)
+json.decoder.JSONDecodeError: Extra data: line 1 column 3 (char 2)

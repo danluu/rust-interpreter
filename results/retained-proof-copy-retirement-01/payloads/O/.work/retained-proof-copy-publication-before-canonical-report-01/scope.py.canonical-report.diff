@@ -1,0 +1,72 @@
+--- /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/retained-proof-copy-publication-before-canonical-report-01/scope.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/retained-proof-copy-publication-01/scope.py
+@@ -27,7 +27,10 @@
+ READER_PUBLICATION_SHA = '78f5e9f47db952c7a81fc81f99fcdeec557ecd365dea8438d4220c318d251f32'
+ FAILED_AUDIT_RECORD_SHA = 'c6c07ff73138803ce147fd67219f82ad8efcb7ea8a3400b422fa06bfbdacdb96'
+ FAILED_AUDIT_STDERR_SHA = 'f6d0270953f468523d91237df3b0eb029b198a963449bce7c5299d7a9b67cff4'
++AUDIT_SOURCE_HANDOFF = ROOT/'.work/retirement-saved-auditor02-source-handoff-02.json'
++AUDIT_SOURCE_HANDOFF_SHA = 'ef5a86265f2f7066ca7af6d9c6575eec8d8d1fe2bb73fa8d27255d070905fbc0'
+ PUBLICATION_HISTORY = O/'.work/retained-proof-copy-publication-before-audit02-01'
++INTERIM_PUBLICATION_HISTORY = O/'.work/retained-proof-copy-publication-before-canonical-report-01'
+ ACTUAL = None  # receipt_sha256, execution_sha256, audit_sha256, audit_execution_sha256
+ REVIEW_FILES = None  # Exact list of final {path,sha256} root/peer source reviews.
+ LIMITS = dict(maximum_files=256, maximum_file_bytes=4*2**20,
+@@ -167,12 +170,13 @@
+         self.add(directory/'stderr', 'original failed audit traceback', FAILED_AUDIT_STDERR_SHA)
+         require(self.files[str(directory/'stdout')]['size'] == 0
+                 and record['stderr_sha256'] == FAILED_AUDIT_STDERR_SHA
+-                and not os.path.lexists(ROOT/'.work/retained-proof-copy-retirement-independent-verification-01.json'),
+-                'original failed audit never produced a qualified report')
++                and 'result_path' not in record and 'result_sha256' not in record,
++                'original failed audit has no successful report association')
+         self.tree(directory, 'complete failed audit01 source/raw/record')
+         return dict(execution=dict(path=str(directory/'record.json'), sha256=FAILED_AUDIT_RECORD_SHA),
+                     stderr=dict(path=str(directory/'stderr'), sha256=FAILED_AUDIT_STDERR_SHA),
+-                    status='finished', returncode=1, report_absent=True, release_timestamp_recorded=False)
++                    status='finished', returncode=1, successful_report_association=False,
++                    release_timestamp_recorded=False)
+ 
+ 
+ def main():
+@@ -198,17 +202,30 @@
+     terminal = c.document(WORK/'receipt.json', 'actual retirement terminal', ACTUAL['receipt_sha256'])
+     outer = c.closed(ROOT/'.work/retained-proof-copy-retirement-execution-01', ACTUAL['execution_sha256'], 'retirement')
+     failed_audit = c.failed_audit(ACTUAL)
+-    audit_path = ROOT/'.work/retained-proof-copy-retirement-independent-verification-02.json'
++    audit_path = ROOT/'.work/retained-proof-copy-retirement-independent-verification-01.json'
+     audit = c.document(audit_path, 'actual independent retirement audit', ACTUAL['audit_sha256'])
+     audited = c.closed(ROOT/'.work/retained-proof-copy-retirement-audit-execution-02', ACTUAL['audit_execution_sha256'], 'retirement audit02')
+-    c.add(ROOT/'.work/verify_retained_proof_copy_retirement_02.py', 'separate corrected audit02 source', audited['auditor_sha256'])
+-    c.add(ROOT/'.work/execute_retained_proof_copy_retirement_audit_02.py', 'separate audit02 execution source', audited['wrapper_sha256'])
++    handoff = c.document(AUDIT_SOURCE_HANDOFF, 'corrected audit02 canonical report provenance', AUDIT_SOURCE_HANDOFF_SHA)
++    require(handoff['verifier']['sha256'] == audited['auditor_sha256']
++            and handoff['executor']['sha256'] == audited['wrapper_sha256']
++            and handoff['original_failed_audit'] == failed_audit['execution'],
++            'exact reviewed corrected audit02 sources and failed01 association')
++    for key in ['verifier', 'executor', 'before_verifier', 'before_executor']:
++        row = handoff[key]; c.add(row['path'], 'corrected audit02 source history', row['sha256'])
++    prior_ref = handoff['prior_handoff']
++    prior_handoff = c.document(prior_ref['path'], 'initial audit02 directory-identity correction', prior_ref['sha256'])
++    for row in handoff['diffs']+prior_handoff['diffs']:
++        c.add(row['path'], 'exact audit02 source correction diff', row['sha256'])
+     require(terminal['status'] == 'passed' and terminal['packet_sha256'] == PACKET_SHA
+             and outer['receipt_sha256'] == ACTUAL['receipt_sha256']
+             and outer['pid'] == terminal['pid'] and outer['parent_pid'] == terminal['parent_pid']
+             and terminal['finished_at'] <= terminal['canonical_released_at'] <= outer['finished_at'],
+             'actual passed retirement/outer association')
+     require(audit['status'] == 'verified-exact-proof-copy-retirement'
++            and type(audit['audit_attempt']) is int and audit['audit_attempt'] == 2
++            and audit['prior_failed_audit'] == failed_audit['execution']
++            and audit['audit_execution_directory'] == str(ROOT/'.work/retained-proof-copy-retirement-audit-execution-02')
++            and audit['verifier_sha256'] == handoff['verifier']['sha256']
+             and audit['receipt_sha256'] == ACTUAL['receipt_sha256'] and audit['execution_sha256'] == ACTUAL['execution_sha256']
+             and audit['packet_sha256'] == PACKET_SHA and audit['selected_paths'] == selected
+             and all(type(audit[key]) is int and audit[key] == value for key, value in
+@@ -231,6 +248,7 @@
+     c.tree(SOURCE, 'complete immutable recovery/retirement source and packets')
+     c.tree(HERE, 'publication source')
+     c.tree(PUBLICATION_HISTORY, 'preserved unbound publication draft and audit02 correction')
++    c.tree(INTERIM_PUBLICATION_HISTORY, 'preserved interim report02 route and canonical report01 correction')
+     declarations = c.document(packet['declarations']['path'], 'four-owner concrete declaration', packet['declarations']['sha256'])
+     for row in declarations['no_consumer']['acknowledgments'].values():
+         c.document(row['path'], 'actual owner acknowledgment', row['sha256'])
