@@ -1,0 +1,139 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/audit_owner.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/audit_owner.py
+@@ -8,15 +8,18 @@
+ from pathlib import Path
+ import environment
+ 
+-ADAPTER = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05')
++ADAPTER = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01')
+ STARTUP_SOURCE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01')
++PREFLIGHT_SOURCE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05')
++PREFLIGHT_ROUTES = PREFLIGHT_SOURCE/'routes.json'
++PREFLIGHT_ROUTES_SHA256 = '893d6102741b5206a829e2f5e130614667140b1eacc09d0c55616f7311f82e6a'
+ ROUTES = ADAPTER/'routes.json'
+-ROUTES_SHA256 = '893d6102741b5206a829e2f5e130614667140b1eacc09d0c55616f7311f82e6a'
+-
+-
+-def attempt_routes(plan, *, phase, sha, read_json, original, validate_retry_qualification):
++ROUTES_SHA256 = '789fbe817e19c886824cda20ad66fd020e57d7a862af627986cdad40bc07605f'
++
++
++def attempt_routes(plan, *, phase, sha, read_json, original, validate_retry_qualification, validate_installation_qualification):
+     require, same = original.require, original.same
+-    require(phase == 'preflight' and plan['phase'] == phase, 'retry owner is preflight-only')
++    require(phase == 'installation' and plan['phase'] == phase, 'owner is installation-only')
+     require(plan.get('attempt') == dict(path=str(ROUTES), sha256=ROUTES_SHA256)
+         and sha(ROUTES) == ROUTES_SHA256, 'exact authenticated retry descriptor required')
+     routes = read_json(ROUTES)
+@@ -25,14 +28,47 @@
+         and same(plan['capacity'], routes['capacity']), 'exact retry phase/capacity differs')
+     require(validate_retry_qualification(copy.deepcopy(plan['retry_qualification'])) is True,
+         'separate actual retry controls required')
++    require(validate_installation_qualification(copy.deepcopy(plan['installation_qualification'])) is True,
++        'separate actual installation controls required')
+     return routes
+ 
+ 
++def preflight_admission(plan,*,expected,sha,read_json,original):
++    require,same=original.require,original.same
++    require(sha(PREFLIGHT_ROUTES)==PREFLIGHT_ROUTES_SHA256,'exact preflight05 descriptor required')
++    prior=read_json(PREFLIGHT_ROUTES);routes=read_json(ROUTES)
++    require(prior['phase']=='preflight' and prior['attempt_source']==str(PREFLIGHT_SOURCE),
++        'preflight05 route owner differs')
++    selected=dict(descriptor=dict(path=str(PREFLIGHT_ROUTES),sha256=PREFLIGHT_ROUTES_SHA256),
++        **{key:prior[key] for key in ['packet','work','supervisor','launcher_execution','preparation_execution','report']})
++    require(same(routes['preflight'],selected),'installation predecessor differs')
++    reference=expected['source_preflight_audit']
++    require(type(reference) is dict and set(reference)=={'path','sha256'}
++        and reference['path']==prior['report'] and sha(reference['path'])==reference['sha256']
++        and same(plan['source_preflight_readback']['audit'],reference), 'explicit preflight05 audit reference differs')
++    packet,work=Path(prior['packet']),Path(prior['work'])
++    terminal=read_json(work/'receipt.json');audit=read_json(reference['path'])
++    result=dict(path=str(work/'source-probe/result.json'),sha256=sha(work/'source-probe/result.json'))
++    require(same(plan['source_preflight'],result) and same(plan['source_preflight_readback']['reference'],result)
++        and terminal['status']=='passed' and terminal['phase']=='preflight'
++        and terminal['source_preflight_sha256']==result['sha256']
++        and audit['status']=='verified' and audit['phase']=='preflight'
++        and type(audit['actual_children']) is int and audit['actual_children']==2
++        and same(audit['attempt'],selected['descriptor']) and audit['receipt_sha256']==sha(work/'receipt.json')
++        and audit['result_sha256']==result['sha256'] and audit['inputs_sha256']==sha(packet/'inputs.json')
++        and audit['plan_sha256']==sha(packet/'plan.json')
++        and audit['outer_sha256']==sha(Path(prior['supervisor'])/'status.json')
++        and audit['launcher_record_sha256']==sha(Path(prior['launcher_execution'])/'record.json'),
++        'actual completed preflight05 association differs')
++    return copy.deepcopy(reference)
++
++
+ def startup_admission(plan, launch, *, phase, expected, sha, read_json, original,
+-                      workload_environment, validate_qualification, runtime_started_at, validate_retry_qualification):
++                      workload_environment, validate_qualification, runtime_started_at, validate_retry_qualification, validate_installation_qualification):
+     require, same = original.require, original.same
+     routes = attempt_routes(plan, phase=phase, sha=sha, read_json=read_json, original=original,
+-        validate_retry_qualification=validate_retry_qualification)
++        validate_retry_qualification=validate_retry_qualification,validate_installation_qualification=validate_installation_qualification)
++    preflight_admission(plan,expected=expected,sha=sha,read_json=read_json,original=original)
+     proof = plan['startup_environment']
+     require(type(proof) is dict and set(proof) == {'derivation', 'policy', 'qualification',
+         'preparer', 'preparation_record', 'source_manifest'}, 'exact startup provenance schema required')
+@@ -70,6 +106,9 @@
+         and same(environment.decode(argument('--preparation-passed-environment-json')),record['environment'])
+         and argument('--startup-audit-sha256') == proof['qualification']['audit']['sha256']
+         and argument('--retry-audit-sha256') == plan['retry_qualification']['audit']['sha256']
++        and argument('--installation-audit-sha256') == plan['installation_qualification']['audit']['sha256']
++        and argument('--source-preflight-audit') == expected['source_preflight_audit']['path']
++        and argument('--source-preflight-audit-sha256') == expected['source_preflight_audit']['sha256']
+         and argument('--startup-source-manifest') == proof['source_manifest']['path']
+         and argument('--startup-source-manifest-sha256') == proof['source_manifest']['sha256'],
+         'actual preparation startup arguments differ')
+@@ -101,13 +140,14 @@
+     invocation_value = read_json(invocation['path'])
+     require(same(invocation_value['adapter'], dict(preparer=proof['preparer'],
+         source_manifest=proof['source_manifest'],startup_controls=proof['qualification']['audit'],
+-        retry_controls=plan['retry_qualification']['audit'])),
++        retry_controls=plan['retry_qualification']['audit'],installation_controls=plan['installation_qualification']['audit']))
++        and same(invocation_value['preflight'],expected['source_preflight_audit']),
+         'actual invoked startup source association differs')
+     manifest=proof['source_manifest']
+     require(set(manifest)=={'path','sha256'} and sha(manifest['path'])==manifest['sha256'],
+             'startup source manifest differs')
+     source_rows=read_json(manifest['path'])
+-    require(set(source_rows)=={'status','files'} and source_rows['status']=='reviewed-runtime-preflight05-startup-source-closure',
++    require(set(source_rows)=={'status','files'} and source_rows['status']=='reviewed-runtime-installation05-startup-source-closure',
+             'startup source manifest schema differs')
+     for role in ['policy','preparer']:
+         require(source_rows['files'][proof[role]['path']]['sha256']==proof[role]['sha256'],
+@@ -120,11 +160,11 @@
+     return copy.deepcopy(proof)
+ 
+ 
+-def owner(plan, launch, terminal, outer, launcher, *, phase, expected, sha, read_json, original, workload_environment, validate_qualification, validate_retry_qualification):
++def owner(plan, launch, terminal, outer, launcher, *, phase, expected, sha, read_json, original, workload_environment, validate_qualification, validate_retry_qualification, validate_installation_qualification):
+     """Bind the original completed owner; never manufacture a passed terminal."""
+     require, same, R = original.require, original.same, original.R
+     routes = attempt_routes(plan, phase=phase, sha=sha, read_json=read_json, original=original,
+-        validate_retry_qualification=validate_retry_qualification)
++        validate_retry_qualification=validate_retry_qualification,validate_installation_qualification=validate_installation_qualification)
+     paths = dict(packet=Path(routes['packet']), work=Path(routes['work']),
+         outer=Path(routes['supervisor']), report=Path(routes['report']))
+     packet, work = paths['packet'], paths['work']
+@@ -144,9 +184,9 @@
+             and sha(work/'receipt.json') == expected['receipt'], 'actual packet/terminal association differs')
+     startup_admission(plan, launch, phase=phase, expected=expected, sha=sha, read_json=read_json,
+         original=original, workload_environment=workload_environment, validate_qualification=validate_qualification,
+-        runtime_started_at=terminal['started_at'],validate_retry_qualification=validate_retry_qualification)
++        runtime_started_at=terminal['started_at'],validate_retry_qualification=validate_retry_qualification,validate_installation_qualification=validate_installation_qualification)
+     require(launch['cwd'] == str(R) and launch['environment'] == plan['launch_environment']
+-            and launch['capacity'] == plan['capacity'] == dict(entry_gib=16, stop_gib=9, floor_gib=8,
++            and launch['capacity'] == plan['capacity'] == dict(entry_gib=24, stop_gib=9, floor_gib=8,
+                 combined_namespace_bytes=14*2**30, evidence_bytes=256*2**20), 'runtime context or limits changed')
+     require(outer['status'] == 'finished' and type(outer['returncode']) is int and outer['returncode'] == 0
+             and outer['child_pid'] == terminal['pid'] and outer['supervisor_pid'] == terminal['parent_pid']
+@@ -155,7 +195,7 @@
+             and outer['log_sha256'] == sha(paths['outer']/'command.log'), 'actual runtime supervisor closure differs')
+     require(outer['child_started_at'] <= terminal['started_at'] <= terminal['admitted_at']
+             <= terminal['finished_at'] <= outer['finished_at']
+-            and terminal['free_bytes_before'] >= 16*2**30 and terminal['free_bytes_after'] >= 9*2**30,
++            and terminal['free_bytes_before'] >= 24*2**30 and terminal['free_bytes_after'] >= 9*2**30,
+             'actual runtime admission/timing differs')
+     # New launchers must follow the already reviewed actual hash launch schema.
+     # Old legacy wrapper-only "finished" records are not relabeled as closure.

@@ -1,0 +1,126 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/prepare_once.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/prepare_once.py
+@@ -1,4 +1,4 @@
+-"""Bounded launcher for the fresh preflight05 read-only preparation.
++"""Bounded launcher for the installation-after-preflight05 read-only preparation.
+ 
+ An explicit reviewed invocation binds actual rehearsal, retirement and source
+ evidence. Preparation owns canonical admission itself; this outer does not nest
+@@ -21,8 +21,8 @@
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ SOURCE = X/'experiments/hir-options-hash/runtime-installation-04'
+-ADAPTER = ROOT/'experiments/runtime-preflight-retry-05'
+-ROUTES_SHA = '893d6102741b5206a829e2f5e130614667140b1eacc09d0c55616f7311f82e6a'
++ADAPTER = ROOT/'experiments/runtime-installation-after-preflight05-01'
++ROUTES_SHA = '789fbe817e19c886824cda20ad66fd020e57d7a862af627986cdad40bc07605f'
+ HASH = ROOT/'experiments/hir-options-hash-driver-stage-03'
+ PYTHON = Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14')
+ CANONICAL = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+@@ -102,10 +102,10 @@
+     rows = {name: row for name, row in files.items()
+             if name.startswith('/Users/danluu/dev/') and Path(name).suffix == '.py'}
+     adapter = invocation['adapter']
+-    require(type(adapter) is dict and set(adapter) == {'preparer', 'source_manifest', 'startup_controls', 'retry_controls'}
++    require(type(adapter) is dict and set(adapter) == {'preparer', 'source_manifest', 'startup_controls', 'retry_controls', 'installation_controls'}
+             and adapter['preparer']['path'] == str(ADAPTER/'prepare.py'), 'exact preparation adapter declaration')
+     manifest = document(adapter['source_manifest'])
+-    require(set(manifest) == {'status', 'files'} and manifest['status'] == 'reviewed-runtime-preflight05-startup-source-closure'
++    require(set(manifest) == {'status', 'files'} and manifest['status'] == 'reviewed-runtime-installation05-startup-source-closure'
+             and type(manifest['files']) is dict, 'reviewed complete startup source closure')
+     historical = set(document(invocation['retirement'])['selected_paths'])
+     extra = dict(manifest['files'])
+@@ -121,17 +121,19 @@
+             and adapter['startup_controls']['path'] in rows
+             and rows[adapter['startup_controls']['path']]['sha256'] == adapter['startup_controls']['sha256']
+             and adapter['retry_controls']['path'] in rows
+-            and rows[adapter['retry_controls']['path']]['sha256'] == adapter['retry_controls']['sha256'],
+-            'adapter source and both actual control proofs must be members of the source manifest')
++            and rows[adapter['retry_controls']['path']]['sha256'] == adapter['retry_controls']['sha256']
++            and adapter['installation_controls']['path'] in rows
++            and rows[adapter['installation_controls']['path']]['sha256'] == adapter['installation_controls']['sha256'],
++            'adapter source and all three actual control proofs must be members of the source manifest')
+     require(0 < len(rows) <= 512 and sum(row['size'] for row in rows.values()) <= 8*2**20,
+             'finite complete local Python and supplemental source closure')
+     for name, row in rows.items():
+         require(encoded(raw(name)[1]) == encoded(row), 'authenticated producer source changed')
+     require(str(SOURCE/'prepare.py') in rows, 'producer preparer absent from source closure')
+     require({str(ADAPTER/name) for name in ['entry.py', 'controller.py', 'audit_owner.py',
+-            'routes.json', 'prepare.py', 'prepare_once.py', 'launch.py', 'test_retry.py']} <= set(rows)
++            'routes.json', 'prepare.py', 'prepare_once.py', 'launch.py', 'test_installation.py']} <= set(rows)
+             and rows[str(ADAPTER/'routes.json')]['sha256'] == ROUTES_SHA,
+-            'complete fresh retry source and fixed route descriptor required')
++            'complete fresh installation source and fixed route descriptor required')
+     return rows
+ 
+ 
+@@ -141,10 +143,10 @@
+     require(raw(Path(__file__).resolve())[1]['sha256'] == args.source_sha256, 'reviewed launcher source required')
+     invocation = document(dict(path=args.invocation, sha256=args.invocation_sha256))
+     require(set(invocation) == {'status', 'phase', 'rehearsal', 'rehearsal_inputs', 'retirement',
+-            'hash_plan', 'audits', 'evidence', 'preflight', 'adapter'} and invocation['status'] == 'reviewed-runtime-preflight05-preparation',
++            'hash_plan', 'audits', 'evidence', 'preflight', 'adapter'} and invocation['status'] == 'reviewed-runtime-installation05-preparation',
+             'concrete invocation remains unprepared or differs')
+     phase = invocation['phase']
+-    require(phase == args.phase and phase == 'preflight', 'exact runtime phase')
++    require(phase == args.phase and phase == 'installation', 'exact runtime phase')
+     rehearsal = document(invocation['rehearsal'])
+     retirement = document(invocation['retirement'])
+     require(rehearsal['status'] == 'verified-strict-callback-rehearsal'
+@@ -179,9 +181,13 @@
+     retry = document(adapter['retry_controls'])
+     require(retry['status'] == 'verified' and type(retry['controls']) is int and retry['controls'] > 0,
+             'actual independently verified retry controls required')
++    installation = document(adapter['installation_controls'])
++    require(installation['status']=='verified' and type(installation['controls']) is int and installation['controls']>0,
++        'actual independently verified installation controls required')
+     command = [str(PYTHON), '-B', str(ADAPTER/'prepare.py'), '--phase', phase,
+         '--startup-audit-sha256', adapter['startup_controls']['sha256'],
+         '--retry-audit-sha256', adapter['retry_controls']['sha256'],
++        '--installation-audit-sha256', adapter['installation_controls']['sha256'],
+         '--preparation-passed-environment-json', encoded(ENV).decode().strip(),
+         '--preparation-record', str(R/('.work/hir-options-hash-runtime-'+phase+'-preparation-execution-05/record.json')),
+         '--startup-source-manifest', adapter['source_manifest']['path'],
+@@ -202,7 +208,14 @@
+                     '--copy-retirement-audit-sha256', invocation['retirement']['sha256']])
+     if phase == 'installation':
+         prior = document(invocation['preflight'])
+-        require(prior['status'] == 'verified' and prior['phase'] == 'preflight', 'actual independent source preflight')
++        routes=document(dict(path=str(ADAPTER/'routes.json'),sha256=ROUTES_SHA))
++        selected=routes['preflight'];work=Path(selected['work']);packet=Path(selected['packet'])
++        require(invocation['preflight']['path']==selected['report'] and prior['status']=='verified'
++            and prior['phase']=='preflight' and type(prior['actual_children']) is int and prior['actual_children']==2
++            and prior['attempt']==selected['descriptor'] and prior['receipt_sha256']==raw(work/'receipt.json')[1]['sha256']
++            and prior['result_sha256']==raw(work/'source-probe/result.json')[1]['sha256']
++            and prior['inputs_sha256']==raw(packet/'inputs.json')[1]['sha256']
++            and prior['plan_sha256']==raw(packet/'plan.json')[1]['sha256'], 'actual independent preflight05 required')
+         command.extend(['--source-preflight-audit', invocation['preflight']['path'],
+                         '--source-preflight-audit-sha256', invocation['preflight']['sha256']])
+     else:
+@@ -289,7 +302,7 @@
+     supervisor = R/('.work/experiments/hir-options-hash-runtime-'+phase+'-supervisor-05')
+     require(all(not p.exists() and not p.is_symlink() for p in [packet, evidence, runtime, supervisor]), 'fresh preparation scope')
+     free = shutil.disk_usage(R).free
+-    require(free >= 16*2**30, 'fresh16GiB before preparation evidence or process')
++    require(free >= 24*2**30, 'fresh24GiB before preparation evidence or process')
+     evidence.mkdir(mode=0o700)
+     source, row = raw(Path(__file__).resolve())
+     with (evidence/'launcher.py').open('xb') as stream:
+@@ -305,7 +318,7 @@
+         parent_pid=os.getpid(), parent_parent_pid=os.getppid(), parent_pgid=os.getpgrp(),
+         cwd=str(R), command=argv, producer_command=command, environment=ENV,
+         canonical_lock=str(CANONICAL), canonical_owner='producer-child', wait_seconds=600,
+-        entry_free_bytes=free, capacity=dict(entry_gib=16, live_gib=9, floor_gib=8),
++        entry_free_bytes=free, capacity=dict(entry_gib=24, live_gib=9, floor_gib=8),
+         maximum_observation_seconds=MAXIMUM_OBSERVATION_SECONDS, maximum_child_seconds=MAXIMUM_CHILD_SECONDS,
+         maximum_cpu_seconds=MAXIMUM_CPU_SECONDS, source_sha256=row['sha256'],
+         invocation=dict(path=args.invocation, sha256=args.invocation_sha256), samples=[], observation_errors=[],
+@@ -374,7 +387,7 @@
+ 
+ if __name__ == '__main__':
+     parser = argparse.ArgumentParser()
+-    parser.add_argument('--phase', choices=['preflight'], required=True)
++    parser.add_argument('--phase', choices=['installation'], required=True)
+     parser.add_argument('--invocation', required=True)
+     parser.add_argument('--invocation-sha256', required=True)
+     parser.add_argument('--source-sha256', required=True)

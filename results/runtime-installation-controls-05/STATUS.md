@@ -1,0 +1,15 @@
+# Status
+
+All 25 installation route, phase, and prerequisite controls passed once in the frozen bounded harness: seven route cases, seven phase and separate-qualification cases, and eleven completed-preflight admission cases. The independent saved-evidence audit passed. No tests were skipped; no compiler calls, provider probes, nested workload calls, or explicit process signals occurred.
+
+The independent audit is 087f48fb2c2c7a7ab35f29fb8d10b3d652a73307bb7ffcb4d87769974b0b86e5. It checked all 18 frozen inputs (971,269 bytes), 19 routes, exact raw test names, source identities, and actual process closure. Supervisor 28157 owned controller 28161 and test child 28163; the outer closed at 1789823424.255904. Audit child 31999 closed with exit 0 under parent 31282. No contemporaneous cwd observation was missing.
+
+The first 16 GiB dispatcher attempt failed its disk admission assertion before creating its work, launcher, or outer paths and before any test child. Its source, original packet, completed preparation05, failure record, and raw trace remain preserved. A reviewed policy change assigned these small pure controls a 10 GiB entry threshold while retaining the 9 GiB stop, 8 GiB floor, CPU 60 seconds, alarm 120 seconds, 256 KiB file bound, and 2 MiB retained-output bound. The no-explicit-signals audit hook and canonical serialization remain unchanged. New preparation-execution06 produced the current packet at the intended controls05 routes. The original inputs and launch were archived and read back before explicit replacement; their recorded identities remain historical. Superseded unrun route-renamed controls06 drafts are also retained.
+
+Development attempt01 failed before test import because the initial IO guard refused an absent Python cache lookup. Development attempt02 passed all 25 after the reviewed cache-only correction. Those ordinary development attempts are retained separately and are not the frozen qualification proof.
+
+The tested installation production scripts and test source remained unchanged throughout the control-resource correction. Their installation policy remains 24/9/8 GiB and their actual installation phase remains unrun. These controls do not qualify a compiler, installed runtime, application workload, or performance claim. Actual independent preflight proof remains a separate prerequisite; none is fabricated by this publication.
+
+Payloads retain sources, packet, preparation, dispatcher, supervisor, raw tests, independent audit, closed execution, source reviews, preservation manifest, and policy/binding diffs. A pre-copy publication check failed before creating this destination because full stat-result comparison included access time; its record is retained. The corrected copy check compares the seven fields used in the frozen identity and requires exact byte equality before and after each copy.
+
+The preceding source-and-development publication manifest is included as a historical reference; its original capsule remains unchanged. Manifest source identities describe the originals, and copied payloads have independent destination identities. manifest.json has no self-row.
