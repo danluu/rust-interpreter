@@ -1,0 +1,13 @@
+--- /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/runtime-installation-controls07-publication-before-name-parser-01/verify_runtime_installation_controls07_publication_01.py
++++ /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/verify_runtime_installation_controls07_publication_01.py
+@@ -66,7 +66,9 @@
+     assert command['pid']==audit['test_pid']==receipt['commands'][0]['pid']
+     assert sha(W/'command/receipt.json')==receipt['commands'][0]['sha256']
+     rawstderr=copies[str(W/'command/stderr')].decode()
+-    names=sorted(f'{cls}.{method}' for method,cls in re.findall(r'^(test_\w+) \(([^)]+)\) \.\.\. ok$',rawstderr,re.M))
++    matches=re.findall(r'^(test_\w+) \(([^)]+)\) \.\.\. ok$',rawstderr,re.M)
++    assert all(full.rsplit('.',1)[-1]==method for method,full in matches)
++    names=sorted(full for method,full in matches)
+     assert names==audit['exact_names']==inputs['expected_names']==result['expected_names'] and len(names)==25
+     assert re.search(r'\nRan 25 tests in [^\n]+\n\nOK\n$',rawstderr) and copies[str(W/'command/stdout')]==b''
+     for name in ['stdout','stderr']:assert sha(W/'command'/name)==command[name+'_sha256']==audit['raw_sha256'][name]

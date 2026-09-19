@@ -1,0 +1,109 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/bind_runtime_installation05_preparation_03.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/bind_runtime_installation06_preparation_04.py
+@@ -13,9 +13,9 @@
+ 
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+-SOURCE = ROOT/'experiments/runtime-installation-after-preflight05-01'
+-CONTROL = ROOT/'experiments/runtime-installation-controls-05'
+-WORK = ROOT/'.work/runtime-installation-controls-05'
++SOURCE = ROOT/'experiments/runtime-installation-after-preflight05-02'
++CONTROL = ROOT/'experiments/runtime-installation-controls-07'
++WORK = ROOT/'.work/runtime-installation-controls-07'
+ FIELDS = ('dev', 'ino', 'mode', 'nlink', 'size', 'mtime_ns', 'ctime_ns')
+ 
+ 
+@@ -60,9 +60,9 @@
+     args = parser.parse_args()
+     assert Path.cwd() == ROOT
+     assert all(re.fullmatch('[a-f0-9]{64}', value) for value in vars(args).values())
+-    audit_path = ROOT/'.work/runtime-installation-controls-independent-verification-05.json'
++    audit_path = ROOT/'.work/runtime-installation-controls-independent-verification-07.json'
+     audit = document(audit_path, args.controls_audit_sha256)
+-    execution_path = ROOT/'.work/runtime-installation-controls-verification-execution-05/record.json'
++    execution_path = ROOT/'.work/runtime-installation-controls-verification-execution-07/record.json'
+     execution = document(execution_path, args.controls_execution_sha256)
+     assert audit['status'] == 'verified' and type(audit['controls']) is int and audit['controls'] == 25
+     assert execution['status'] == 'finished' and type(execution['returncode']) is int and execution['returncode'] == 0
+@@ -84,7 +84,7 @@
+ 
+     preflight_path = R/'.work/hir-options-hash-runtime-preflight-independent-verification-05.json'
+     preflight = document(preflight_path, args.preflight_audit_sha256)
+-    preflight_execution_path = ROOT/'.work/runtime09-saved-audit-preflight-execution-01/record.json'
++    preflight_execution_path = ROOT/'.work/runtime10-saved-audit-preflight-execution-01/record.json'
+     preflight_execution = document(preflight_execution_path, args.preflight_execution_sha256)
+     assert preflight['status'] == 'verified' and preflight['phase'] == 'preflight'
+     assert type(preflight['actual_children']) is int and preflight['actual_children'] == 2
+@@ -100,13 +100,13 @@
+         assert ref(preflight_execution_path.parent/name)['sha256'] == preflight_execution[name+'_sha256']
+     assert raw(preflight_execution_path.parent/'stderr')[0] == b''
+ 
+-    # The closed preparation06 replaced only the archived unused16GiB packet.
+-    controls_preparation_path = ROOT/'.work/runtime-installation-controls-preparation-execution-06/record.json'
++    # The closed preparation07 froze the fresh installation16 sources and exact direct25 provenance.
++    controls_preparation_path = ROOT/'.work/runtime-installation-controls-preparation-execution-07/record.json'
+     controls_preparation = document(controls_preparation_path,
+-        '4bfaefc92c67d7bee373c03aabc4816dbe496b1e9634559572398bb6f993ef47')
+-    controls_preparer = ROOT/'.work/prepare_runtime_installation_controls_06_once.py'
++        'c2677570a8fceaa67b4964715ce008bc658c3c827a96b06cd1da670f2d2e84d5')
++    controls_preparer = ROOT/'.work/prepare_runtime_installation_controls_07_once.py'
+     assert ref(controls_preparer)['sha256'] == controls_preparation['execution_source_sha256'] == \
+-        '0c344a938dce81286422122d6bdaddf407f8dce50932da08428db54992a1cee8'
++        '09b98f1dcfb171b603288e6422e0673c92e02c34ff5b3713716bce867d143298'
+     assert ref(controls_preparation_path.parent/'source/execution.py')['sha256'] == controls_preparation['execution_source_sha256']
+     assert controls_preparation['status'] == 'finished' and type(controls_preparation['returncode']) is int and controls_preparation['returncode'] == 0
+     assert controls_preparation['observation_errors'] == [] and 'execution_error' not in controls_preparation
+@@ -124,7 +124,7 @@
+     assert raw(controls_preparation_path.parent/'stderr')[0] == b''
+     prepared = controls_preparation['prepared_packet']
+     assert document(controls_preparation_path.parent/'stdout') == prepared
+-    assert prepared == dict(status='prepared-unrun', controls=25, files=18, bytes=971269,
++    assert prepared == dict(status='prepared-unrun', controls=25, files=31, bytes=1019352,
+         inputs_sha256=ref(CONTROL/'inputs.json')['sha256'], launch_sha256=ref(CONTROL/'launch.json')['sha256'])
+ 
+     inputs = document(CONTROL/'inputs.json')
+@@ -151,7 +151,10 @@
+         assert raw(name)[1] == row
+     source_names = ['entry.py','controller.py','audit_owner.py','routes.json',
+                     'prepare.py','prepare_once.py','launch.py','test_installation.py']
+-    for path in [SOURCE/name for name in source_names] + [audit_path, preflight_path]:
++    # The preflight JSON is authenticated separately by invocation.preflight before
++    # producer imports. It is then re-read into the producer's physical file table
++    # by completed_preflight; it is not executable startup source.
++    for path in [SOURCE/name for name in source_names] + [audit_path]:
+         row = raw(path)[1]
+         assert str(path) not in files or files[str(path)] == row
+         files[str(path)] = row
+@@ -172,16 +175,16 @@
+         union[name] = row
+     assert len(union)+1 <= 512
+     assert sum(row['size'] for row in union.values()) + 256*1024 <= 8*2**20
+-    manifest_path = ROOT/'.work/runtime-installation05-startup-qualified-source-manifest-01.json'
+-    invocation_path = ROOT/'.work/runtime-installation05-preparation-invocation-01.json'
+-    review_path = ROOT/'.work/runtime-installation05-preparation-source-binding-review-01.json'
++    manifest_path = ROOT/'.work/runtime-installation06-startup-qualified-source-manifest-01.json'
++    invocation_path = ROOT/'.work/runtime-installation06-preparation-invocation-01.json'
++    review_path = ROOT/'.work/runtime-installation06-preparation-source-binding-review-01.json'
+     assert all(not os.path.lexists(path) for path in [manifest_path, invocation_path, review_path])
+     for name, row in union.items():
+         assert raw(name)[1] == row
+-    write(manifest_path, dict(status='reviewed-runtime-installation05-startup-source-closure', files=files))
++    write(manifest_path, dict(status='reviewed-runtime-installation06-startup-source-closure', files=files))
+     union[str(manifest_path)] = raw(manifest_path)[1]
+     assert len(union) <= 512 and sum(row['size'] for row in union.values()) <= 8*2**20
+-    invocation['status'] = 'reviewed-runtime-installation05-preparation'
++    invocation['status'] = 'reviewed-runtime-installation06-preparation'
+     invocation['phase'] = 'installation'
+     invocation['preflight'] = ref(preflight_path)
+     invocation['adapter'] = dict(preparer=ref(SOURCE/'prepare.py'), source_manifest=ref(manifest_path),
+@@ -194,8 +197,9 @@
+         controls_preparation=ref(controls_preparation_path), controls_preparer=ref(controls_preparer),
+         preflight_audit=ref(preflight_path), preflight_execution=ref(preflight_execution_path),
+         retained_old_manifest_rows=46, omitted_from_preimport_only=sorted(set(old['files'])-set(files)),
++        separately_authenticated_preflight=ref(preflight_path), preflight_omitted_from_preimport_only=True,
+         omitted_files_deleted=False,
+-        reason='All previously allowed Python retained; omit four nonexecuted old33 record/raw files from preimport-only. Full prerequisite evidence remains separately read by qualified production validation.',
++        reason='All previously allowed Python retained; omit four nonexecuted old33 record/raw files from preimport-only. The nonexecutable preflight audit is authenticated before imports through invocation.preflight and re-read into the complete producer table. Full prerequisite evidence remains separately read by qualified production validation.',
+         new_harness_executed_by_preparer=False,
+         manifest_files=len(files), full_preimport_files=len(union),
+         full_preimport_bytes=sum(row['size'] for row in union.values()),

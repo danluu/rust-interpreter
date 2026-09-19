@@ -1,0 +1,22 @@
+--- /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/runtime-installation-controls07-publication-before-name-parser-01/publish_runtime_installation_controls_07.py
++++ /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/publish_runtime_installation_controls_07.py
+@@ -63,7 +63,9 @@
+     assert len(inputs['files'])==31 and sum(row['stamp'][3] for row in inputs['files'].values())==1019352
+     for name in ['stdout','stderr']:assert sha(W/'command'/name)==audit['raw_sha256'][name]
+     raw=read(W/'command/stderr')[0].decode()
+-    names=[f'{cls}.{method}' for method,cls in re.findall(r'^(test_\w+) \(([^)]+)\) \.\.\. ok$',raw,re.M)]
++    matches=re.findall(r'^(test_\w+) \(([^)]+)\) \.\.\. ok$',raw,re.M)
++    assert all(full.rsplit('.',1)[-1]==method for method,full in matches)
++    names=[full for method,full in matches]
+     assert sorted(names)==inputs['expected_names'] and len(names)==25 and re.search(r'\nRan 25 tests in [^\n]+\n\nOK\n$',raw)
+     assert read(W/'command/stdout')[0]==b''
+     terminal,launcher=doc(U/'status.json'),doc(L/'record.json')
+@@ -77,7 +79,7 @@
+     assert prep['finished_at']<=prep['canonical_released_at']<=receipt['started_at']
+     assert prep['prepared_packet']==doc(P/'stdout')==dict(status='prepared-unrun',controls=25,files=31,bytes=1019352,
+         inputs_sha256=sha(H/'inputs.json'),launch_sha256=sha(H/'launch.json'))
+-    roots=[H,W,P,L,E,U,D];trees={str(p):tree(p) for p in roots}
++    roots=[H,W,P,L,E,U,D,O/'.work/runtime-installation-controls07-publication-before-name-parser-01'];trees={str(p):tree(p) for p in roots}
+     paths={root/name for root in roots for name,row in trees[str(root)].items() if stat.S_ISREG(row['mode'])}
+     old=doc(OLD);old_rows={row['path']:row for row in old['files']}
+     reused=[]

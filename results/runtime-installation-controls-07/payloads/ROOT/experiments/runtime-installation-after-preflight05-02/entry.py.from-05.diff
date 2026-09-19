@@ -1,0 +1,45 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/entry.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/entry.py
+@@ -14,9 +14,9 @@
+ import sys
+ 
+ HERE=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-04')  # Immutable qualified52 source owner.
+-ATTEMPT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01')
++ATTEMPT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02')
+ ROUTES=ATTEMPT/'routes.json'
+-ROUTES_SHA256='789fbe817e19c886824cda20ad66fd020e57d7a862af627986cdad40bc07605f'
++ROUTES_SHA256='ef75ddf2057ebd395a159623d387b01051ee1479363bf9c878f7641b99ec0dd2'
+ LOCK_SOURCE=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/stable-cgu/owned_stage.py')
+ RETRY_CONTROLS=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-controls-05')
+ RETRY_CONTROL_WORK=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime-preflight-retry-controls-05')
+@@ -26,9 +26,9 @@
+ PREFLIGHT_SOURCE=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')/'experiments/runtime-preflight-retry-05'
+ PREFLIGHT_ROUTES=PREFLIGHT_SOURCE/'routes.json'
+ PREFLIGHT_ROUTES_SHA256='893d6102741b5206a829e2f5e130614667140b1eacc09d0c55616f7311f82e6a'
+-INSTALLATION_CONTROLS=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')/'experiments/runtime-installation-controls-05'
+-INSTALLATION_CONTROL_WORK=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')/'.work/runtime-installation-controls-05'
+-INSTALLATION_CONTROL_AUDIT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')/'.work/runtime-installation-controls-independent-verification-05.json'
++INSTALLATION_CONTROLS=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')/'experiments/runtime-installation-controls-07'
++INSTALLATION_CONTROL_WORK=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')/'.work/runtime-installation-controls-07'
++INSTALLATION_CONTROL_AUDIT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')/'.work/runtime-installation-controls-independent-verification-07.json'
+ INSTALLATION_CONTROL_COUNT=25  # Exact source-derived focused suite; actual proof remains required.
+ INSTALLATION_SOURCE_NAMES=RETRY_SOURCE_NAMES
+ R=Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+@@ -334,7 +334,7 @@
+     require(sha(ROUTES)==ROUTES_SHA256,'exact reviewed retry routes required')
+     value=read_json(ROUTES)
+     require(value['phase']=='installation' and value['qualified_source']==str(HERE)
+-        and value['attempt_source']==str(ATTEMPT) and value['installation_entry_gib']==24,
++        and value['attempt_source']==str(ATTEMPT) and value['installation_entry_gib']==16,
+         'installation-only routing owner differs')
+     return value
+ 
+@@ -407,7 +407,7 @@
+         'prepared retry routing differs')
+     early_owned=definition('early_owned',LOCK_SOURCE)
+     with early_owned.workload_lock(early_owned.CANONICAL_LOCK,600) as canonical_fd:
+-        early_owned.disk(R,24)
++        early_owned.disk(R,16)
+         _execute_admitted(packet,inputs_sha256,snapshot_sha256,f,plan,bound,canonical_fd)
+ 
+ 

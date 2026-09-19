@@ -1,0 +1,71 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/prepare.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/prepare.py
+@@ -1,7 +1,7 @@
+ """Read-only runtime discovery from four actual audits; no provider execution.
+ 
+-Source draft only. Canonical24/9 admission precedes all provider discovery and
+-proposal writes. This fresh attempt admits only installation24/9/8; completed preflight05 remains immutable.
++Source draft only. Canonical16/9 admission precedes all provider discovery and
++proposal writes. This fresh attempt admits only installation16/9/8; completed preflight05 remains immutable.
+ """
+ import argparse
+ import ast
+@@ -104,7 +104,7 @@
+     f.require(works==expected_works,'explicit evidence differs from actual adopted hash prerequisite roles')
+     d=entry.discovery(modules)
+     with d.owned.workload_lock(d.owned.CANONICAL_LOCK,600):
+-        started=time.time();free_before=d.owned.disk(R,24)
++        started=time.time();free_before=d.owned.disk(R,16)
+         f.require(all(not p.exists() and not p.is_symlink() for p in [packet,work,supervisor,launcher_work]),'runtime namespace appeared during admission wait')
+         hash_plan=d.inherit(entry.HASH_SOURCE)
+         d.add(entry.HASH_SOURCE/'snapshot-plan.json',snapshot=True)
+@@ -189,7 +189,7 @@
+         d.add(source_manifest['path'],source_manifest,snapshot=True)
+         source_rows=read_json(source_manifest['path'])
+         f.require(set(source_rows)=={'status','files'}
+-            and source_rows['status']=='reviewed-runtime-installation05-startup-source-closure'
++            and source_rows['status']=='reviewed-runtime-installation06-startup-source-closure'
+             and ({str(ADAPTER/name) for name in entry.RETRY_SOURCE_NAMES}
+                  | {str(STARTUP_SOURCE/name) for name in STARTUP_FILES})<=set(source_rows['files']),
+             'complete reviewed startup source closure required')
+@@ -276,19 +276,26 @@
+             qualification=startup_qualification,
+             preparer=dict(path=str(Path(__file__).resolve()),sha256=sha(Path(__file__).resolve())),
+             preparation_record=str(preparation_record),source_manifest=source_manifest)
+-        packet.mkdir()
+-        policy_path=packet/'source-policy-proof.json';write(policy_path,policy);d.add(policy_path,snapshot=True)
++        policy_path=packet/'source-policy-proof.json'
++        policy_digest=hashlib.sha256((json.dumps(policy,sort_keys=True,indent=2)+'\n').encode()).hexdigest()
+         if phase=='installation':
+             spec=modules.recipe.final_specification(modules.q,candidate,preflight_reference=preflight['reference'],preflight=preflight['result'],
+-                policy_reference=dict(path=str(policy_path),sha256=sha(policy_path)),policy=policy)
++                policy_reference=dict(path=str(policy_path),sha256=policy_digest),policy=policy)
+         else:spec=candidate
+-        specification=packet/'specification.json';write(specification,spec);d.add(specification,snapshot=True)
+         if phase=='preflight':
+             children=modules.recipe.preflight_commands(modules.q,spec,R,work/'source-probe',environment);key=modules.q.runtime.digest(modules.q.runtime.identity_for(spec));installation=None
+         else:
+             key,new_sysroot,children=modules.recipe.installation_commands(modules.q,spec,R,work,environment);installation=new_sysroot.parent
+             f.require(not installation.exists() and not installation.is_symlink(),'new runtime prefix must be absent')
+-        monitor=modules.controller.configure_monitor(modules.monitor,installation_directory=installation)
++        resource_controller=factory.load('installation06_resource_controller',ADAPTER/'controller.py',lambda p:d.add(p,snapshot=True))
++        resource_summary=resource_controller.copy_budget(spec,modules.q.runtime.identity_for(spec),
++            [modules.q.runtime.inspect_component(c) for c in spec['components']],directory=installation)
++        f.require(len(children)==resource_summary['total_children']==15,'finite installation recipe differs')
++        packet.mkdir()
++        write(policy_path,policy);d.add(policy_path,snapshot=True)
++        f.require(sha(policy_path)==policy_digest,'prewrite policy digest differs')
++        specification=packet/'specification.json';write(specification,spec);d.add(specification,snapshot=True)
++        monitor=resource_controller.configure_monitor(modules.monitor,installation_directory=installation)
+         # Both outputs are future roots at preparation, so declare the launcher
+         # explicitly rather than allowing its creation to invalidate the budget.
+         roots={work,launcher_work}
+@@ -355,7 +362,7 @@
+             copy_retirement=retirement,
+             environment=environment,launch_environment=launch_environment,children=children,evidence_roots=sorted(map(str,roots)),
+             startup_environment=startup_environment,
+-            capacity=routes['capacity'])
++            capacity=routes['capacity'],installation_resources=resource_summary)
+         if phase=='installation':plan.update(sysroot=str(new_sysroot),source_preflight=preflight['reference'],source_preflight_readback=preflight)
+         for path in HERE.iterdir():
+             if path.is_file():d.add(path,snapshot=True)

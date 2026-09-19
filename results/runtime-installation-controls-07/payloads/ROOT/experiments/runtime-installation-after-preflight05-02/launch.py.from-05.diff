@@ -1,0 +1,89 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/launch.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/launch.py
+@@ -1,7 +1,7 @@
+ """Launch one reviewed installation proposal and observe its detached supervisor to closure.
+ 
+ The launch digest is supplied only after concrete packet review. No provider,
+-compiler or controller starts before the phase-specific fresh 24 GiB entry check.
++compiler or controller starts before the phase-specific fresh 16 GiB entry check.
+ An observation timeout preserves the running task and reports it as unclosed.
+ """
+ import argparse
+@@ -20,7 +20,7 @@
+ HERE = Path(__file__).resolve().parent
+ ROOT = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ SOURCE = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-04')
+-CAPACITY = dict(entry_gib=24,stop_gib=9,floor_gib=8,
++CAPACITY = dict(entry_gib=16,stop_gib=9,floor_gib=8,
+                 combined_namespace_bytes=14*2**30,evidence_bytes=256*2**20)
+ MAXIMUM_OBSERVATION_SECONDS = 1800
+ MAXIMUM_WRAPPER_SECONDS = 30
+@@ -61,15 +61,15 @@
+     sha256='24faa0611eacda26748727e443bef844c695c3ed362cda75b5aa60223e4d6055')
+ PREPARATION_LAUNCHER = HERE/'prepare_once.py'
+ PREFLIGHT_SOURCE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05')
+-INSTALLATION_CONTROL = PROOF_ROOT/'experiments/runtime-installation-controls-05'
+-INSTALLATION_WORK = PROOF_ROOT/'.work/runtime-installation-controls-05'
+-INSTALLATION_AUDIT = PROOF_ROOT/'.work/runtime-installation-controls-independent-verification-05.json'
++INSTALLATION_CONTROL = PROOF_ROOT/'experiments/runtime-installation-controls-07'
++INSTALLATION_WORK = PROOF_ROOT/'.work/runtime-installation-controls-07'
++INSTALLATION_AUDIT = PROOF_ROOT/'.work/runtime-installation-controls-independent-verification-07.json'
+ RETRY_CONTROL = PROOF_ROOT/'experiments/runtime-preflight-retry-controls-05'
+ RETRY_WORK = PROOF_ROOT/'.work/runtime-preflight-retry-controls-05'
+ RETRY_AUDIT = PROOF_ROOT/'.work/runtime-preflight-retry-controls-independent-verification-05.json'
+ RETRY_SOURCES = ['entry.py', 'controller.py', 'audit_owner.py', 'routes.json',
+                  'prepare.py', 'prepare_once.py', 'launch.py']
+-ROUTES_SHA = '789fbe817e19c886824cda20ad66fd020e57d7a862af627986cdad40bc07605f'
++ROUTES_SHA = 'ef75ddf2057ebd395a159623d387b01051ee1479363bf9c878f7641b99ec0dd2'
+ POLICY_SHA = 'fbc563accfeebe2650902263ed9972031d37c84bc8c21986a3545ae4020d314d'
+ OWNER_SHA = 'f93dd25d4d58e3133d2737c718f6b4e41d1f37ad788f914f9ed2adf268fca595'
+ 
+@@ -99,7 +99,7 @@
+     require(row['sha256']==expected and row['size']==path.stat().st_size
+         and same(identity(path),row['identity']),'current selected qualified source differs')
+     data=read_bytes(path);require(hashlib.sha256(data).hexdigest()==expected,'qualified source bytes differ')
+-    module=ModuleType('_runtime_installation05_launch_'+name);module.__file__=str(path)
++    module=ModuleType('_runtime_installation06_launch_'+name);module.__file__=str(path)
+     missing=object();before={key:sys.modules.get(key,missing) for key in dependencies or {}}
+     sys.modules.update(dependencies or {})
+     try:
+@@ -220,7 +220,7 @@
+     require(same(plan['source_preflight_readback']['audit'],preflight_audit),'externally pinned preflight05 audit differs')
+     owner=qualified_module('owner',HERE/'audit_owner.py',frozen['files'][str(HERE/'audit_owner.py')]['sha256'],
+         frozen['files'],dependencies={'environment':policy})
+-    preparation=dict(path=str(ROOT/('.work/hir-options-hash-runtime-'+args.phase+'-preparation-execution-05/record.json')),
++    preparation=dict(path=str(ROOT/('.work/hir-options-hash-runtime-'+args.phase+'-preparation-execution-06/record.json')),
+         sha256=args.preparation_sha256)
+     preparation_launcher=dict(path=str(PREPARATION_LAUNCHER),sha256=args.preparation_launcher_sha256)
+     context=SimpleNamespace(require=require,same=same,R=ROOT,
+@@ -256,9 +256,9 @@
+             and sha(Path(__file__))==args.launcher_sha256,'exact independently reviewed launcher source required')
+     packet=HERE/(phase+'-plan-01')
+     LAUNCH=packet/'launch.json'
+-    WORK=ROOT/('.work/hir-options-hash-runtime-'+phase+'-launch-execution-05')
+-    OUTER=ROOT/('.work/experiments/hir-options-hash-runtime-'+phase+'-supervisor-05')
+-    CONTROLLER=ROOT/('.work/hir-options-hash-runtime-'+phase+'-05')
++    WORK=ROOT/('.work/hir-options-hash-runtime-'+phase+'-launch-execution-06')
++    OUTER=ROOT/('.work/experiments/hir-options-hash-runtime-'+phase+'-supervisor-06')
++    CONTROLLER=ROOT/('.work/hir-options-hash-runtime-'+phase+'-06')
+     require(Path.cwd() == ROOT and sys.dont_write_bytecode and not sys.flags.optimize,
+             'fixed owner and unoptimized Python -B required')
+     require(re.fullmatch('[a-f0-9]{64}', expected) and sha(LAUNCH) == expected,
+@@ -274,7 +274,7 @@
+             and routes['attempt_source']==str(HERE) and routes['packet']==str(packet)
+             and routes['work']==str(CONTROLLER) and routes['supervisor']==str(OUTER)
+             and routes['launcher_execution']==str(WORK) and routes['capacity']==CAPACITY
+-            and routes['installation_entry_gib']==24, 'runtime installation routes differ')
++            and routes['installation_entry_gib']==16, 'runtime installation routes differ')
+     base = dict(path='/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-native-controls-03/inputs.json',
+                 sha256='8569abb81a61e34b6b5a892116af5218557ceb0436ab8dbf8a31f2aec55b1b1d')
+     integrity = frozen.get('file_table_integrity')
+@@ -310,7 +310,7 @@
+     require(all(not p.exists() and not p.is_symlink() for p in [WORK, OUTER, CONTROLLER]),
+             'fresh launch and workload namespaces required')
+     free = shutil.disk_usage(ROOT).free
+-    require(free >= CAPACITY['entry_gib'] * 2**30, 'fresh 24 GiB required before controller or WORK')
++    require(free >= CAPACITY['entry_gib'] * 2**30, 'fresh 16 GiB required before controller or WORK')
+     WORK.mkdir()
+     source_bytes=Path(__file__).read_bytes()
+     require(hashlib.sha256(source_bytes).hexdigest()==args.launcher_sha256,'launcher changed before source retention')
