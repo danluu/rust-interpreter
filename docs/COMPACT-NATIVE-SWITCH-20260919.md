@@ -99,6 +99,18 @@ and642 evidence files. Wall/adopted is0.983587 with A/A0.043175, giving margin
 margin0.988662. Native wall ratio is0.973575. This passes the regression guard;
 the wall difference is inside its measured variation and is not a clear gain.
 
-Next complete the176-command pgrust history. Private rg, both parser guards and
-Nushell remain required before current-main integration. The runtime is still
-experimental; no default change follows from these two public guards alone.
+The full pgrust hash-function guard (`compact-native-switch-edit-pgrust-01`,
+source`9874477b`, independent closure74098) passes176 commands and both strict
+controls, retaining all4 original tests. Its closure checks5,357 inputs and588
+evidence files. Wall/adopted is1.001753 with the predeclared per-edit median A/A
+envelope0.016019, margin1.017771; CPU/adopted is0.995725 with A/A0.021030,
+margin1.016754. Native wall ratio is1.120580. This is a neutral regression pass.
+The worst individual A/A deviations are36.29% wall and33.32% CPU; all pairs
+remain recorded, and the original median-based gate is unchanged.
+
+All three public histories now pass. Private rg, both parser guards and Nushell
+remain required before current-main integration. The runtime is still
+experimental; no default change follows from these public guards alone.
+The large/private adapter binds the actual27-control portable proof02 in code;
+its frozen planning note still names the earlier proof01. That stale prose does
+not select the proof or change the actual source/diagnostic checks.
