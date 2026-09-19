@@ -1,19 +1,24 @@
 # Next runtime work
 
-Current branch diagnostic/session-worker-tail-20260919. Shared-key candidate is
-PARKED: full678/profile17ignored+33diag+10offsession31offmodel/defaultVM pass;
-actual1824/19673verifiedhits (10978 CLOSED17870), phase1824/19151observedhits
-(29352 CLOSED33152/33156). Keymedian9.003vsparent10.278ms, ordinary21.952vs21.703;
-summedordinary287.264vs282.252 across10workers. No affirmativeaggregatebenefit;
-NO install/newprimary/primary05cleanup. Allcontrollers for those remainunstarted.
+Current branch experiment/session-duration-order-20260919. Generic previous-
+duration priority implemented (jit-session-duration-order), sharedkeysOFF/literal-v1.
+Bounded4MiB/16384hints,latestcomplete coverage only,originalindex ties,unknown0;
+all current entries/fresh guests/currentlimits/canonicalreports unchanged.
+Focused01 source3d288774 12620/12623 failed9pass1fixture(readonlyProgram.data),
+CLOSED24324. Fixed writabletaggedstatics fixture6c5cc0e4 focused02 complete
+30526/30529 CLOSED87092:10servercontrols/profile+4featureoff. No runtime defect.
+Fullqualification01 sourceb38c4b3c ACTIVE9037/controller9040:679Rust/profile17ignored,
+39diagnostic,10offsession31offmodel/defaultVM,442Python+22skip hashboundreuse.
+Freeze crates/scripts/tests andsession-duration-order-workspace throughclosure.
+Replay/phase/install controllers prepared, notstarted; primary06 notyetbound.
 
-Next bounded read-only session-worker-tail-census01 prepared. Preliminarysaved
-primary05 rows: reference-vector test index113 islast in all5validrequests,
-196.8-228.7ms itself after37.5-62.7ms prior tests onitsworker; peerthenidle.
-General previous-duration priority hypothesis needs completecensus beforecode.
-Keep everycurrententry/freshguest/currentlimits andcanonicaloriginalreportindex.
-No name-specific scheduling, cachedresult, assertion/workload change. Future
-candidate should use literalparameterization but sharedkey featureOFF.
+Shared-key candidate PARKED: full678/profile17ignored andactual1824/19673verified
+hits; phase19151observedhits,key9.003vsparent10.278ms butordinary21.952vs21.703.
+No install/primary/cleanup. Worker-tailcensusececc7b0 completed55074/55105 CLOSED74675:
+10reports1140intervals,heaviestlast10/10;candidate203.713ms after41.111ms prior,
+peer41.556ms total. Scheduling hypothesis isgeneric, not a benchmark-name policy.
+Main9e506a1c pushedshared-key+tailproofs preservingpeerbdd02387.
+
 Parent parameterized-literals candidate remains experimental and primary05failed. Explicit selected large
 literals are opaque to folding/range/call-slot analyses; checked native relocation
 sites and a separate emission manifest carry their current values. Preserve small

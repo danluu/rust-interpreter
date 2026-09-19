@@ -1,20 +1,15 @@
-# Literal-parameter diagnostic attribution
+# Observe real parser scheduling and preparation costs
 
-Require closed full679/profile+17ignored qualification and actual1824 parser
-invocations with fresh verification of every hit. Replay the same16saved suites
-through separately retained diagnostic binaries, verification off for timing.
-Reconcile exact outcomes/failure text, all phase sums, cache bounds and kernelCPU.
-New owned endpoints duration-phases-01-*, ownerEOF/wait4reap, no processsignals.
+Require closed full679/profile+17ignored qualification and1824actualparser
+invocations with fresh verification of every hit. Run the same16saved suites
+through separate retained diagnostic binaries, verificationoff, durationorderON,
+sharedkeysOFF,bufferingOFF,literal-v1. Preserve exact outcomes/wrong-edit text,
+resource limits, cache bounds, all input/output/preparation phase sums and full
+kernel CPU. New owned endpoints duration-phases-01-*, ownerEOF/wait4reap only.
 
-The hypothesis is fewer recompilations across changed data offsets, traded against
-opaque-literal emission and additional key/restore work. Compare hits, miss emission,
-key construction, restoration and worker ordinary preparation with prior unbuffered
-closed evidence. Separately collected intervals are descriptive, not causal E2E
-speedups. No adoption follows. If mechanism is useful, install qualified normal
-binaries then run new changed-source primary06 with the unchanged acceptance gate.
-Serialize sharedlock45s,12GiB admission/8GiB childfloor,two workers. Source freeze
-through closure; preserve strict checking and all existing memory/history limits.
-
-Duration orderingON,sharedkeysOFF,literal-v1; all current outcomes and original
-indices remain exact. Current client reports retain actual per-worker test order
-for a closed ordering audit. Do not infer gains from overlapping phase sums.
+Read the retained ordered per-worker test records afterward to establish whether
+previous-duration priorities start slow tests earlier. Test durations, cache
+assignment and misses can change with order; overlapping phase sums and separate
+runs are not end-to-end gains. Installation and new primary06 require useful
+mechanism evidence plus all correctness gates. No default adoption. Sharedlock45s,
+12GiB admission/8GiB childfloor,two workers; freeze throughclosure.
