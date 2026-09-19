@@ -1,0 +1,5 @@
+Installation07 passed with all fifteen expected children: ten explicit ARM64 loader probes, three compiler information probes and two expected E0080 source probes. The separate saved audit12 failed closed with return code1 and produced no report. Its undeclared provider-identity path traceback is retained. No std, exporter, application or performance qualification is claimed.
+
+The deterministic archive retains all 322 files from the eight closed packet/execution/manifest trees, publication metadata and bounded readbacks. It includes the 230 new compressed snapshots; 302 reused snapshots and all provider/binary payloads retain exact external references. Already committed source and control evidence is referenced by commit, path and SHA instead of recursively copied. The bounded completion readback checks current installed metadata; it is not a provider-payload rehash.
+
+Publication verifies gzip EOF, exact archive membership, every retained byte and current original stamps. All originals remain unchanged. Parent Git publication must verify the complete finite output set and every HEAD blob, including the archive.

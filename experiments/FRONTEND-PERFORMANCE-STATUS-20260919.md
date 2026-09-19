@@ -49,10 +49,14 @@ ordinary runs of 30 installation and factory checks. Integration source and both
 development runs passed independent review. All 48 controlled checks and their
 independent audit also passed. Production installation07 passed all 15 probes:
 ten native loader checks, three compiler information checks and two expected
-source-probe errors. Its independent saved-output audit remains pending. All
-libraries and ordered loader commands remain checked. The audit's 29 focused
-regressions passed, and its actual 326-file source manifest was prepared after
-installation released the workload lock. Neither result measures build speed.
+source-probe errors. Its independent saved-output audit12 failed because the
+reader declared provider directories from file and symlink ancestors, omitting
+two empty directories correctly retained by the installer. All file and symlink
+paths were covered. A successor reader is being prepared to declare the complete
+directory metadata from the saved admission record. The same installation will
+be audited again; the original failure stays retained. The audit's 29 focused
+regressions and its actual 326-file source-manifest preparation had passed.
+Neither result measures build speed.
 
 Evidence entry points:
 
@@ -72,6 +76,8 @@ Evidence entry points:
 - [Installation integration and both development runs](../results/runtime-installation07-source-development-review-01/STATUS.md)
 - [Passed current integration controls and independent audit](../results/runtime-installation-controls-08/STATUS.md)
 - [Installation auditor source and passed ordinary regressions](../results/runtime12-installation-audit-source-01/STATUS.md)
+- [Passed installation07 and retained audit12 failure](../results/runtime-installation07-success-01/STATUS.md)
+- [Standard-library adapter source and 12 focused tests](../results/runtime-std07-source-development-01/STATUS.md)
 
 Historical plans and source manifests retain their original status text. The
 linked actual-result records establish which work has since run; an old plan's
