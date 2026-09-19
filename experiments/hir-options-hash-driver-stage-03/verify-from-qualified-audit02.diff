@@ -1,0 +1,433 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-audit-02/verify.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage-03/verify.py
+@@ -21,9 +21,9 @@
+ import time
+ from types import ModuleType
+ 
+-HERE=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage-02')
++HERE=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage-03')
+ ROOT=HERE.parents[1]
+-ORIGINAL_VERIFIER=dict(path=str(HERE/'verify.py'),
++ORIGINAL_VERIFIER=dict(path=str(ROOT/'experiments/hir-options-hash-driver-stage-02/verify.py'),
+     sha256='cbff690675b8697855bb87b0e09d9b77495fc0b8968855301e1a88612ec62a3f')
+ A=Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918')
+ X=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+@@ -40,13 +40,13 @@
+ RECON_WORK=A/'.work/hir-options-hash-native-controls-reconciliation-01'
+ NATIVE_FAILURE_AUDIT=dict(path=str(A/'.work/native-controls-failure-verification-03.json'),
+     sha256='1058d64e64d75748a3da12115a8400a01daa5cd499b39b09c8d29520eaab4f24')
+-ARTIFACTS=N/'hash-driver-01'
+-WORK=ROOT/'.work/hir-options-hash-driver-01'
+-OUTER=ROOT/'.work/experiments/hir-options-hash-driver-supervisor-01'
+-OUT=ROOT/'.work/hir-options-hash-driver-independent-verification-01.json'
+-DRIVER=X/'experiments/hir-options-hash/controls/driver.rs'
++ARTIFACTS=N/'hash-driver-02'
++WORK=ROOT/'.work/hir-options-hash-driver-02'
++OUTER=ROOT/'.work/experiments/hir-options-hash-driver-supervisor-02'
++OUT=ROOT/'.work/hir-options-hash-driver-independent-verification-02.json'
++DRIVER=X/'experiments/hir-options-hash/controls/driver-v2.rs'
+ FIXTURE=X/'experiments/hir-options-hash/controls/fixture.rs'
+-SOURCE_HASHES={DRIVER:'3953c595bb37a6c05661d9a399599bf5529b6a847629d2e1aa4c47eb8314605b',
++SOURCE_HASHES={DRIVER:'17ce949e8005bc185245a444a3dfc046944c1f2d5bc7297ae8f1939d25a779e9',
+     FIXTURE:'d7f59ad74eb839ba84ce5ef1e8493bdd6f36d0304f240c080582a17824bfbb3d'}
+ REVISION='4de35bdacef0e3cd18a66bc30b5459c19e09b118'
+ FIELDS=('dev','ino','mode','nlink','size','mtime_ns','ctime_ns')
+@@ -653,7 +653,7 @@
+             result=dict(path=str(RECON_WORK/'native-controls.json'),sha256=sha(RECON_WORK/'native-controls.json')),
+             audit=plan['independent_audits']['native']))
+ 
+-def verify_snapshot_catalog(freeze,plan,limits):
++def verify_original_snapshot_catalog(freeze,plan,limits):
+     """Rebuild both original v1 catalogs without importing the producer binder."""
+     supplied=plan['snapshot_reuse'];records=[];roots={};proofs=[];paths=set()
+     require(set(supplied)=={'policy','priority','predecessors','records','evidence_roots'}
+@@ -809,20 +809,370 @@
+         new_compressed_allocated_bytes=new_allocated,projected_reservation_bytes=reservation,
+         helper_qualification=qualification,full_gzip_eof_crc=True,full_logical_hashes=True)
+ 
++# Independently decoded complete plan; no producer helper import.
++METADATA_PLAN_REFERENCE=dict(path=str(X/'experiments/hir-options-hash/compiler-metadata-03/plan.json'),
++    sha256='250b19e48b158efe78e726e78223791cb4ff55b5b5d2b9eaa59b41ba2b1727c2')
++FAILED_SOURCE=ROOT/'experiments/hir-options-hash-driver-stage-02'
++FAILED_WORK=ROOT/'.work/hir-options-hash-driver-01'
++FAILED_ARTIFACTS=N/'hash-driver-01'
++FAILED_OUTER=ROOT/'.work/experiments/hir-options-hash-driver-supervisor-01'
++FAILED_DISPATCH=ROOT/'.work/hash-driver-launch-execution-01'
++FAILED_AUDIT=ROOT/'.work/hir-options-hash-driver-failure-verification-01.json'
++
++
++def complete_plan(document, *, expected_reference, read_reference):
++    wire=json.loads(audit_json_bytes(document),object_pairs_hook=unique)
++    require(type(wire) is dict and set(wire)=={'policy','member','reference','remainder','integrity'}
++        and wire['policy']=='external-json-member-v1' and wire['member']=='metadata_plan',
++        'exact independently reconstructed metadata-plan envelope')
++    reference=wire['reference'];require(type(reference) is dict and set(reference)=={'path','sha256'}
++        and audit_json_bytes(reference)==audit_json_bytes(expected_reference),'exact admitted metadata-plan reference')
++    name=reference['path'];digest=reference['sha256']
++    require(type(name) is str and name.startswith('/') and not name.startswith('//') and name!='/'
++        and str(Path(name))==name and '..' not in Path(name).parts and len(name.encode())<=4096
++        and all(ord(c)>=32 and ord(c)!=127 for c in name)
++        and type(digest) is str and re.fullmatch('[a-f0-9]{64}',digest),'bounded ordinary reference tokens')
++    require(type(wire['remainder']) is dict and 'metadata_plan' not in wire['remainder'],'disjoint complete plan member')
++    check=wire['integrity'];require(type(check) is dict and set(check)=={'sha256','bytes'}
++        and type(check['sha256']) is str and re.fullmatch('[a-f0-9]{64}',check['sha256'])
++        and type(check['bytes']) is int and 0<check['bytes']<=64*2**20,'typed full-plan integrity')
++    value=read_reference(name);require(type(value) is bytes and len(value)<=64*2**20
++        and hashlib.sha256(value).hexdigest()==digest,'exact referenced metadata bytes')
++    metadata=json.loads(value,object_pairs_hook=unique,
++        parse_constant=lambda value:(_ for _ in ()).throw(ValueError(value)))
++    audit_json_bytes(metadata)
++    full=wire['remainder'];full['metadata_plan']=metadata
++    data=audit_json_bytes(full)
++    require(len(data)==check['bytes'] and hashlib.sha256(data).hexdigest()==check['sha256'],'full typed plan reconstruction')
++    return full
++
++
++def failed_owner_history(freeze,plan):
++    owner=plan['failed_driver']
++    require(type(owner) is dict and set(owner)=={'role','source','evidence','audit'}
++        and owner['role']=='failed-hash-driver-01' and owner['source']==str(FAILED_SOURCE)
++        and owner['evidence']==str(FAILED_WORK) and owner['audit']==dict(path=str(FAILED_AUDIT),
++            sha256='ee81a129d5d1742074619ea31b75ad06512abd110dd102dc0ac8bec8c3eda8b3'),
++        'exact explicit failed predecessor role and routes')
++    audit=verified_reference(owner['audit'],freeze)
++    terminal=read(frozen(FAILED_WORK/'receipt.json',freeze))
++    old_plan=read(frozen(FAILED_SOURCE/'plan.json',freeze));launch=read(frozen(FAILED_SOURCE/'launch.json',freeze))
++    require(encoded(old_plan['metadata_plan'])==encoded(plan['metadata_plan'])
++        and encoded(old_plan['independent_audits'])==encoded(plan['independent_audits']),
++        'complete metadata and four actual prerequisite audits unchanged')
++    compiled=read(frozen(FAILED_WORK/'compile/receipt.json',freeze))
++    outer=read(frozen(FAILED_OUTER/'status.json',freeze));dispatch=read(frozen(FAILED_DISPATCH/'record.json',freeze))
++    require(audit['status']=='verified-retained-failure' and audit['owner_status']==terminal['status']=='failed'
++        and audit['source']==str(FAILED_SOURCE) and audit['evidence']==str(FAILED_WORK)
++        and audit['receipt_sha256']==sha(FAILED_WORK/'receipt.json')
++        and audit['compile_receipt_sha256']==sha(FAILED_WORK/'compile/receipt.json')
++        and audit['actual_children']==audit['actual_compiler_children']==1
++        and audit['actual_driver_processes']==audit['qualified_hash_driver_processes']==0,
++        'actual failed compiler remains unqualified')
++    require(all(audit[k] is False and terminal[k] is False for k in ['hash_driver_qualified','application_qualified','performance_measurement','runtime_installation'])
++        and all(audit[k] is True for k in ['full_frozen_byte_rehash','full_provider_inventories','full_sdk_inventory',
++            'complete_failed_raw_history','full_snapshot_selection','retained_snapshot_owner_only','compiler_failure_preserved'])
++        and audit['compressed_snapshots']['full_gzip_eof_crc'] is audit['compressed_snapshots']['full_logical_hashes'] is True,
++        'complete audited failed owner without qualification substitution')
++    wanted=historical_commands(old_plan)
++    require(old_plan['children']==wanted and len(wanted)==3
++        and sha(FAILED_SOURCE/'launch.json')==audit['launch_sha256']=='e315c703101fb5d8e9f732a10db9b07883792057c0f833b71979cf54efcbfc43'
++        and sha(FAILED_SOURCE/'inputs.json')==audit['inputs_sha256']==terminal['inputs_sha256']==launch['inputs_sha256']
++        and sha(FAILED_SOURCE/'plan.json')==audit['plan_sha256']==launch['plan_sha256']
++        and terminal['error']=="AssertionError('unexpected compiler-stage return code')",'original failed exact plan')
++    require(compiled['status']=='failed' and type(compiled['returncode']) is int and compiled['returncode']==1
++        and compiled['expected']==[0] and compiled['error']==terminal['error'] and compiled['command']==wanted[0]['argv']
++        and compiled['cwd']==str(S) and compiled['environment']==wanted[0]['environment']
++        and compiled['supervisor_pid']==terminal['pid'] and compiled['parent_pid']==terminal['parent_pid']
++        and terminal['admitted_at']<=compiled['started_at']<=compiled['finished_at']<=terminal['finished_at'],
++        'one original failed compiler receipt')
++    missing=[];process_identity(compiled,wanted[0]['argv'],terminal['pid'],missing,'failed-compile',strict=True)
++    for stream in ['stdout','stderr']:
++        frozen(FAILED_WORK/'compile'/stream,freeze)
++        require(sha(FAILED_WORK/'compile'/stream)==compiled[stream+'_sha256'],'original failed compiler raw')
++    require(not raw(FAILED_WORK/'compile/stdout') and compiled['stderr_sha256']=='789be46bc0f46a221859863de9fa28103a928ba8c4d5b51bd83e101dde06698f',
++        'exact original E0277 marker diagnostic')
++    for row in compiled['samples']:
++        require(row['free_bytes']>=9*2**30 and row['namespace_allocated_bytes']<=14*2**30
++            and row['evidence_allocated_bytes']<=256*2**20 and not row['allocation_errors']
++            and row['evidence_root']==str(FAILED_WORK) and row['evidence_roots']==old_plan['evidence_roots'],
++            'historical original resource scope preserved')
++    require(compiled['samples'] and terminal['free_bytes_before']>=24*2**30,'original admission and sample history')
++    require(outer['status']=='finished' and outer['returncode']==1 and outer['child_pid']==terminal['pid']
++        and outer['supervisor_pid']==terminal['parent_pid'] and outer['command']==launch['command'][6:]
++        and outer['cwd']==str(ROOT) and outer['plan_sha256']==sha(frozen(FAILED_OUTER/'plan.json',freeze))
++        and outer['log_sha256']==sha(frozen(FAILED_OUTER/'command.log',freeze))
++        and outer['child_started_at']<=terminal['started_at']<=terminal['admitted_at']<=terminal['finished_at']<=outer['finished_at'],
++        'original failed outer closure')
++    require(dispatch['status']=='terminal-observed' and dispatch['returncode']==1 and dispatch['launcher_returncode']==0
++        and dispatch['outer_sha256']==sha(FAILED_OUTER/'status.json') and dispatch['command']==launch['command']
++        and dispatch['cwd']==str(ROOT) and dispatch['environment']==launch['environment']
++        and dispatch['supervisor_pid']==outer['supervisor_pid'] and dispatch['controller_pid']==terminal['pid']
++        and dispatch['launch_sha256']==audit['launch_sha256']
++        and sha(frozen(dispatch['launcher_source_path'],freeze))==dispatch['launcher_source_sha256']
++        and dispatch['started_at']<=dispatch['launcher_finished_at']<=dispatch['finished_at']
++        and outer['finished_at']<=dispatch['terminal_observed_at']<=dispatch['finished_at'],'original launcher owns failed closure')
++    for stream in ['stdout','stderr']:
++        require(sha(frozen(FAILED_DISPATCH/stream,freeze))==dispatch[stream+'_sha256'],'original launcher raw')
++    handoff=read(FAILED_DISPATCH/'stdout')
++    require(handoff==dispatch['supervisor_handoff'] and handoff['directory']==str(FAILED_OUTER)
++        and handoff['supervisor_pid']==outer['supervisor_pid'],'original detached wrapper handoff')
++    require(audit['closure']==dict(outer_status='finished',outer_returncode=1,outer_sha256=sha(FAILED_OUTER/'status.json'),
++        launcher_status='terminal-observed',launcher_returncode=0,actual_returncode=1,
++        launcher_record_sha256=sha(FAILED_DISPATCH/'record.json'),actual_outer_closed=True,actual_wrapper_closed=True,
++        supervisor_pid=terminal['parent_pid'],controller_pid=terminal['pid']),'actual failure audit closure association')
++    absent=[FAILED_WORK/'result.json',FAILED_WORK/'serial',FAILED_WORK/'parallel',FAILED_WORK/'linker-command.json',
++        FAILED_WORK/'driver-loader-closure.json',FAILED_ARTIFACTS/'hash-control-driver']
++    require(all(not p.exists() and not p.is_symlink() for p in absent),'failed predecessor gained a result or workload output')
++    require(set(p.name for p in FAILED_WORK.iterdir())=={'receipt.json','compile','source-snapshots','source-snapshots.json','snapshot-plan.json'}
++        and set(p.name for p in (FAILED_WORK/'compile').iterdir())=={'receipt.json','stdout','stderr'},'original failed evidence membership')
++    require(set(p.name for p in FAILED_ARTIFACTS.iterdir())=={'fixture.rs','serial','parallel','tmp'}
++        and sha(frozen(FAILED_ARTIFACTS/'fixture.rs',freeze))==SOURCE_HASHES[FIXTURE]
++        and all((FAILED_ARTIFACTS/name).resolve(strict=True)==FAILED_ARTIFACTS/name and (FAILED_ARTIFACTS/name).is_dir()
++            and not list((FAILED_ARTIFACTS/name).iterdir()) for name in ['serial','parallel','tmp']), 'unchanged failed artifact closure')
++    require(inventory(FAILED_ARTIFACTS)==audit['artifacts'],'complete failed artifact identity inventory')
++    return dict(owner=owner,audit=audit,terminal=terminal,plan=old_plan,launch=launch,
++        receipt_sha256=sha(FAILED_WORK/'receipt.json'),actual_children=1,qualified_children=0)
++
++
++def verify_snapshot_catalog(freeze,plan,limits):
++    supplied=plan['snapshot_reuse'];failed=failed_owner_history(freeze,plan);old_plan=failed['plan']
++    prior=verify_original_snapshot_catalog(freeze,old_plan,limits)
++    require(encoded(old_plan['snapshot_reuse'])==encoded(prior),'complete original inherited catalog retained')
++    compact=read(frozen(FAILED_SOURCE/'inputs.json',freeze))
++    original=complete_file_table(compact,expected_base=dict(path=str(NATIVE_SOURCE/'inputs.json'),
++        sha256='8569abb81a61e34b6b5a892116af5218557ceb0436ab8dbf8a31f2aec55b1b1d'))
++    for name,row in original['files'].items():
++        require(name in freeze['files'] and encoded(row)==encoded(freeze['files'][name]),'complete failed-owner original file identity inherited')
++    require(set(old_plan['evidence_roots'])<=set(plan['evidence_roots']) and str(FAILED_WORK) in plan['evidence_roots'],
++        'original physical accounting remains complete')
++    proof=retained_failed_snapshots(original,failed['terminal'],failed['launch'],old_plan)
++    require(encoded(proof)==encoded(failed['audit']['compressed_snapshots']),'complete independent failed snapshot readback matches audit')
++    manifest=read(frozen(FAILED_WORK/'source-snapshots.json',freeze));snapshot=read(frozen(FAILED_SOURCE/'snapshot-plan.json',freeze))
++    root=FAILED_WORK/'source-snapshots';info=ordinary_snapshot_route(root,directory=True)
++    require(str(root) not in prior['evidence_roots'],'new failed-owner physical root')
++    association=dict(role='failed-hash-driver-01',source=str(FAILED_SOURCE),evidence=str(FAILED_WORK),completion='failed',
++        inherited_catalog_sha256=hashlib.sha256(encoded(prior)).hexdigest())
++    for key,path in [('receipt',FAILED_WORK/'receipt.json'),('audit',FAILED_AUDIT),('inputs',FAILED_SOURCE/'inputs.json'),
++        ('plan',FAILED_SOURCE/'plan.json'),('projection',FAILED_SOURCE/'snapshot-plan.json'),
++        ('retained_projection',FAILED_WORK/'snapshot-plan.json'),('manifest',FAILED_WORK/'source-snapshots.json')]:
++        association[key]=dict(path=str(path),sha256=sha(frozen(path,freeze)))
++    association['helper']=snapshot['helper'];association['snapshot_root']=str(root)
++    association['file_table_base']=compact['file_table_base']
++    require(association['audit']==failed['owner']['audit'] and failed['audit']['inputs_sha256']==association['inputs']['sha256']
++        and failed['audit']['plan_sha256']==association['plan']['sha256']
++        and failed['audit']['snapshot_plan_sha256']==association['projection']['sha256']==association['retained_projection']['sha256']
++        and failed['audit']['source_snapshots_sha256']==association['manifest']['sha256'],'all failed audit snapshot associations')
++    records=list(prior['records']);paths={row['path'] for row in records};physical={(r['identity']['dev'],r['identity']['ino']) for r in records}
++    for key,blob in sorted(manifest['blobs'].items()):
++        storage=manifest['storage'][key]
++        if storage['kind']=='reused':continue
++        require(storage==dict(kind='stored',path=str(root/(key+'.gz'))),'exact failed stored route')
++        path=frozen(storage['path'],freeze);current=ordinary_snapshot_route(path)
++        require(str(path) not in paths and (current['dev'],current['ino']) not in physical,'unique newly inherited failed physical blob')
++        snapshot_blob(path,blob);paths.add(str(path));physical.add((current['dev'],current['ino']))
++        records.append(dict(path=str(path),identity=current,blob=blob,evidence_root=str(root)))
++    roots=dict(prior['evidence_roots']);roots[str(root)]=info
++    answer=dict(policy='closed-failed-proof-snapshot-catalog-v2',priority=prior['priority']+['failed-hash-driver-01'],
++        predecessors=prior['predecessors']+[association],records=records,evidence_roots=dict(sorted(roots.items())))
++    require(encoded(answer)==encoded(supplied),'complete independently reconstructed failed-owner catalog')
++    require(ordinary_snapshot_route(root,directory=True)==info,'failed snapshot root unchanged')
++    return answer
++
++
++def continuation_qualification(freeze,plan):
++    source=ROOT/'experiments/hash-continuation-controls-01';work=ROOT/'.work/hash-continuation-controls-01'
++    audit_path=ROOT/'.work/hash-continuation-controls-independent-verification-01.json'
++    catalog=ROOT/'experiments/completed-proof-snapshot-catalog-02/catalog.py';reference=HERE/'plan_reference.py'
++    tests=[catalog.with_name('test_catalog.py'),catalog.with_name('test_failed_catalog.py'),reference.with_name('test_plan_reference.py')]
++    inputs=read(frozen(source/'inputs.json',freeze));launch=read(frozen(source/'launch.json',freeze))
++    terminal=read(frozen(work/'receipt.json',freeze));result=read(frozen(work/'result.json',freeze))
++    child=read(frozen(work/'command/receipt.json',freeze));audit=read(frozen(audit_path,freeze))
++    require(type(inputs['files']) is dict and len(inputs['files'])<=64
++        and sum(row['stamp'][3] for row in inputs['files'].values())<=16*2**20,'bounded complete continuation control closure')
++    for name,row in inputs['files'].items():
++        current=frozen(name,freeze);require(sha(current)==row['sha256'] and stamp(current)==row['stamp'],'complete tested input identity and bytes')
++    for name,target in inputs['routes'].items():
++        require(str(Path(name).resolve(strict=True))==target and target in inputs['files'],'tested executable routes')
++    names=[]
++    for path in [catalog,reference,*tests]:
++        frozen(path,freeze);require(inputs['files'][str(path)]['sha256']==sha(path),'exact helper/reader tested source')
++    for path in tests:
++        for cls in ast.parse(raw(path),filename=str(path)).body:
++            if isinstance(cls,ast.ClassDef):
++                names.extend(path.stem+'.'+cls.name+'.'+test.name for test in cls.body
++                    if isinstance(test,ast.FunctionDef) and test.name.startswith('test_'))
++    names=sorted(names)
++    require(len(names)==len(set(names))==70 and names==inputs['expected_names']==result['expected_names']==sorted(audit['exact_names']),
++        'complete independent seventy-control identities')
++    require(terminal['status']==result['status']=='passed' and audit['status']=='verified'
++        and all(type(value) is int and value==70 for value in [terminal['controls_passed'],result['tests_run'],audit['controls'],launch['controls']])
++        and terminal['inputs_sha256']==launch['inputs_sha256']==sha(source/'inputs.json')
++        and terminal['result_sha256']==audit['result_sha256']==sha(work/'result.json')
++        and audit['receipt_sha256']==sha(work/'receipt.json'),'actual independent control qualification')
++    require(all(type(result[key]) is int and result[key]==0 for key in ['failures','errors','skipped','expected_failures',
++        'unexpected_successes','child_processes','compiler_calls'])
++        and all(type(terminal[key]) is int and terminal[key]==0 for key in ['compiler_calls','provider_probes','B3_compositions']),
++        'no missing controls or extra workloads')
++    require(child['status']=='finished' and type(child['returncode']) is int and child['returncode']==0
++        and child['command']==inputs['command'] and child['environment']==inputs['environment']
++        and child['cwd']==str(catalog.parent) and child['supervisor_pid']==terminal['pid'] and child['parent_pid']==terminal['parent_pid']
++        and terminal['started_at']<=terminal['admitted_at']<=child['started_at']<=child['finished_at']<=terminal['finished_at']
++        and terminal['commands']==[dict(path=str(work/'command/receipt.json'),pid=child['pid'],sha256=sha(work/'command/receipt.json'))],
++        'actual one-child continuation control recipe')
++    for stream in ['stdout','stderr']:
++        require(sha(frozen(work/'command'/stream,freeze))==child[stream+'_sha256']==audit['raw_sha256'][stream],'actual continuation control raw')
++    stderr=raw(work/'command/stderr').decode('utf-8','strict')
++    actual=re.findall(r'^test_[A-Za-z0-9_]+ \(([^)]+)\) \.\.\. ok$',stderr,re.M)
++    require(not raw(work/'command/stdout') and sorted(actual)==names
++        and re.search(r'^Ran 70 tests in [0-9.]+s\n\nOK\n$',stderr,re.M),'all raw outcomes and actual test names')
++    proof=dict(controls=70,audit=dict(path=str(audit_path),sha256=sha(audit_path)),
++        inputs=dict(path=str(source/'inputs.json'),sha256=sha(source/'inputs.json')),
++        receipt=dict(path=str(work/'receipt.json'),sha256=sha(work/'receipt.json')),
++        result=dict(path=str(work/'result.json'),sha256=sha(work/'result.json')),
++        sources={str(p):sha(p) for p in [catalog,reference,*tests]})
++    require(encoded(proof)==encoded(plan['continuation_controls']),'complete actual continuation proof bound to plan')
++    return proof
++
++
++def driver_derivation(freeze):
++    original=frozen(X/'experiments/hir-options-hash/controls/driver.rs',freeze)
++    before=raw(original);after=raw(frozen(DRIVER,freeze))
++    require(hashlib.sha256(before).hexdigest()=='3953c595bb37a6c05661d9a399599bf5529b6a847629d2e1aa4c47eb8314605b'
++        and hashlib.sha256(after).hexdigest()==SOURCE_HASHES[DRIVER],'exact original and successor driver bytes')
++    replacements=[(b'use rustc_data_structures::sync::{is_dyn_thread_safe, par_join};',
++        b'use rustc_data_structures::sync::{IntoDynSyncSend, is_dyn_thread_safe, par_join};'),
++        (b'let barrier = Barrier::new(2);',b'let barrier = IntoDynSyncSend(Barrier::new(2));')]
++    candidate=before
++    for old,new in replacements:
++        require(candidate.count(old)==1,'unique exact synchronization wrapper replacement');candidate=candidate.replace(old,new)
++    require(candidate==after,'only exact marker import and barrier wrapper changed')
++    return dict(original=dict(path=str(original),sha256=hashlib.sha256(before).hexdigest()),
++        derived=dict(path=str(DRIVER),sha256=hashlib.sha256(after).hexdigest()),
++        policy='exact-two-barrier-dynsync-adapter-replacements',all_other_driver_bytes_unchanged=True)
++
++
++def historical_commands(plan):
++    require(plan['roles']==dict(build_compiler=str(D2),build_sysroot=str(B3),runtime_compiler=str(E2),application_sysroot=str(E2)),'exact compiler roles')
++    pair=plan['ordered_driver_pair'];require(type(pair) is list and len(pair)==2,'ordered driver pair')
++    dylib,rmeta=map(Path,pair);require(dylib.parent==rmeta.parent==B3/'lib/rustlib'/HOST/'lib'
++        and re.fullmatch(r'librustc_driver-[a-f0-9]+\.dylib',dylib.name) and rmeta==dylib.with_suffix('.rmeta'),'exact driver pair route')
++    env=plan['environment'];require(env['TMPDIR']==str(FAILED_ARTIFACTS/'tmp') and env['SDKROOT']==plan['sdk'],'owned temporary directory and SDK')
++    require(set(env)<={'PATH','HOME','USER','LOGNAME','LANG','LC_ALL','TZ','TMPDIR','SDKROOT','PYTHONDONTWRITEBYTECODE','PYTHONNOUSERSITE','__CF_USER_TEXT_ENCODING'},'ambient driver environment')
++    binary=FAILED_ARTIFACTS/'hash-control-driver'
++    compile_argv=[str(D2/'bin/rustc'),'--sysroot='+str(B3),'--edition=2024','--crate-name=hash_cache_control_driver','--print=link-args',str(X/'experiments/hir-options-hash/controls/driver.rs'),
++        '--extern','rustc_driver='+pair[0],'--extern','rustc_driver='+pair[1],'-Lnative='+str(E2/'lib'),'-Clinker='+plan['clang'],
++        '-C','link-arg=-Wl,-rpath,'+str(E2/'lib'),'-o',str(binary)]
++    return [dict(argv=compile_argv,cwd=str(S),environment=env|{'RUSTC_BOOTSTRAP':'1'}),
++        *[dict(argv=[str(binary),str(E2),str(FAILED_ARTIFACTS/'fixture.rs'),str(FAILED_ARTIFACTS/mode),mode],cwd=str(S),
++            environment=env|{'DYLD_PRINT_LIBRARIES':'1'}) for mode in ['serial','parallel']]]
++
++
++def retained_failed_snapshots(freeze,terminal,launch,plan):
++    require(all(path.stat().st_size<=4*2**20 for path in [FAILED_SOURCE/'snapshot-plan.json',FAILED_WORK/'snapshot-plan.json',FAILED_WORK/'source-snapshots.json']),'bounded snapshot documents')
++    projection_plan=read(FAILED_SOURCE/'snapshot-plan.json');projection=projection_plan['projection'];manifest=read(FAILED_WORK/'source-snapshots.json')
++    require(sha(FAILED_SOURCE/'snapshot-plan.json')==sha(FAILED_WORK/'snapshot-plan.json')==launch['snapshot_plan_sha256']==terminal['snapshot_plan_sha256']
++        and sha(FAILED_WORK/'source-snapshots.json')==terminal['source_snapshots_sha256'],'snapshot projection/manifest hashes')
++    require(projection_plan['inputs_sha256']==sha(FAILED_SOURCE/'inputs.json') and projection_plan['evidence_cap_bytes']==256*2**20
++        and projection_plan['remaining_evidence_reservation_bytes']==32*2**20,'snapshot reservation policy')
++    helper=A/'experiments/bounded-proof-snapshots-v2/proof_snapshots.py'
++    limits=dict(maximum_files=1024,maximum_file_bytes=64*2**20,maximum_logical_bytes=512*2**20,
++        maximum_compressed_bytes=128*2**20,maximum_manifest_bytes=4*2**20)
++    require(projection_plan['limits']==projection['limits']==limits
++        and projection_plan['helper']==dict(path=str(helper),sha256=freeze['files'][str(helper)]['sha256']),'qualified snapshot helper/policy')
++    qualification=snapshot_helper_qualification(freeze)
++    require(manifest['policy']==projection['policy']=='bounded-gzip-proof-snapshots-v2'
++        and manifest['projection_sha256']==hashlib.sha256(encoded(projection)).hexdigest()
++        and manifest['blobs']==projection['blobs'] and manifest['full_logical_readback'] is True and manifest['full_gzip_eof'] is True,'snapshot projection exactness')
++    wanted=set(freeze['snapshot_inputs'])|{str(FAILED_SOURCE/'inputs.json')}
++    require(len(wanted)<=1024 and wanted==set(projection['files'])==set(manifest['files']),'complete logical snapshots')
++    bindings=verify_original_snapshot_catalog(freeze,plan,limits)
++    selected={};used_roots=set();inodes=set()
++    wanted_sizes={}
++    for row in projection['files'].values():
++        require(row['sha256'] not in wanted_sizes or wanted_sizes[row['sha256']]==row['size'],'logical alias size consistency')
++        wanted_sizes[row['sha256']]=row['size']
++    for ref in bindings['records']:
++        key=ref['blob']['logical_sha256']
++        if key in wanted_sizes and key not in selected:
++            inode=(ref['identity']['dev'],ref['identity']['ino'])
++            require(ref['blob']['logical_bytes']==wanted_sizes[key] and inode not in inodes,'exact unique reused physical input')
++            selected[key]=ref;inodes.add(inode);used_roots.add(ref['evidence_root'])
++    roots={name:bindings['evidence_roots'][name] for name in sorted(used_roots)}
++    require(projection_plan['reuse_selection']==dict(records=[selected[key] for key in sorted(selected)],evidence_roots=roots)
++        and projection['reuse']==manifest['reuse']==selected
++        and projection['evidence_roots']==manifest['evidence_roots']==roots,'independent deterministic beta-first reuse selection')
++    blobs=projection['blobs'];require(set(blobs)==set(wanted_sizes),'complete unique logical snapshot payloads')
++    storage={key:(dict(kind='reused',path=selected[key]['path']) if key in selected else dict(kind='stored')) for key in blobs}
++    physical={key:(storage[key] if key in selected else dict(kind='stored',path=str(FAILED_WORK/'source-snapshots'/(key+'.gz')))) for key in blobs}
++    require(projection['storage']==storage and manifest['storage']==physical,'complete physical stored/reused snapshot routes')
++    new_root=FAILED_WORK/'source-snapshots';new_identity=ordinary_snapshot_route(new_root,directory=True)
++    new_names={row['filename'] for key,row in blobs.items() if key not in selected}
++    require(set(p.name for p in new_root.iterdir())==new_names,'only newly stored physical blobs in new directory')
++    logical=0
++    for name,row in projection['files'].items():
++        require(row['path']==name and row['size']<=64*2**20 and sha(name)==row['sha256'] and identity(name)==row['identity'],'snapshot original selected bytes')
++        if name!=str(FAILED_SOURCE/'inputs.json'):require(row==dict(path=name,**freeze['files'][name]),'snapshot frozen mapping')
++        require(manifest['files'][name]==dict(path=physical[row['sha256']]['path'],sha256=row['sha256'],size=row['size'],encoding='gzip'),'logical snapshot route')
++        require(projection['blobs'][row['sha256']]['logical_bytes']==row['size'],'logical alias to physical blob size')
++        logical+=row['size']
++    require(logical==projection['logical_bytes']<=512*2**20
++        and projection['unique_logical_bytes']==sum(wanted_sizes.values())
++        and projection['manifest_reservation_bytes']==2*limits['maximum_manifest_bytes'],'logical proof accounting');compressed=0;new=0;allocated=0;new_allocated=0
++    for digest,row in projection['blobs'].items():
++        require(set(row)=={'filename','logical_sha256','logical_bytes','sha256','compressed_bytes'}
++            and re.fullmatch('[a-f0-9]{64}',digest) and row['logical_sha256']==digest and row['filename']==digest+'.gz'
++            and re.fullmatch('[a-f0-9]{64}',row['sha256']) and type(row['logical_bytes']) is int
++            and 0<=row['logical_bytes']==wanted_sizes[digest]<=64*2**20
++            and type(row['compressed_bytes']) is int and 0<row['compressed_bytes']<=128*2**20,'bounded gzip blob')
++        path=Path(physical[digest]['path'])
++        if digest in selected:
++            ref=selected[digest]
++            require(ref['blob']==row and identity(path)==ref['identity']
++                and identity(ref['evidence_root'])==roots[ref['evidence_root']],'exact frozen reused bytes/root before readback')
++        snapshot_blob(path,row);compressed+=row['compressed_bytes'];allocation=(row['compressed_bytes']+4095)//4096*4096
++        allocated+=allocation
++        if digest not in selected:new+=row['compressed_bytes'];new_allocated+=allocation
++        else:require(identity(path)==selected[digest]['identity'],'reused blob identity after readback')
++    require(compressed==projection['compressed_bytes']==manifest['compressed_bytes'] and compressed<=128*2**20,'compressed proof bound')
++    require(new==projection['new_compressed_bytes']==manifest['new_compressed_bytes']
++        and compressed-new==projection['reused_compressed_bytes']==manifest['reused_compressed_bytes']
++        and allocated==projection['compressed_allocated_bytes'] and new_allocated==projection['new_compressed_allocated_bytes'],
++        'total and new physical snapshot accounting')
++    for root,expected in roots.items():require(ordinary_snapshot_route(root,directory=True)==expected,'referenced root changed during readback')
++    require(ordinary_snapshot_route(new_root,directory=True)==new_identity
++        and set(p.name for p in new_root.iterdir())==new_names,'new snapshot directory changed during readback')
++    reservation=new_allocated+4096*len(new_names)+2*4*2**20+32*2**20
++    admission=terminal['snapshot_admission'];require(reservation==projection_plan['projected_reservation_bytes']==admission['projected_reservation_bytes']
++        and admission['existing_evidence_bytes']+reservation<=admission['evidence_cap_bytes']==256*2**20,'actual snapshot admission')
++    require(projection_plan['measured_existing_evidence_bytes']+reservation<=256*2**20,'prepared aggregate reservation')
++    return dict(logical_files=len(wanted),physical_blobs=len(blobs),new_physical_blobs=len(new_names),reused_physical_blobs=len(selected),
++        logical_bytes=logical,compressed_bytes=compressed,new_compressed_bytes=new,reused_compressed_bytes=compressed-new,
++        new_compressed_allocated_bytes=new_allocated,projected_reservation_bytes=reservation,
++        helper_qualification=qualification,full_gzip_eof_crc=True,full_logical_hashes=True)
++
++
+ def main():
+     parser=argparse.ArgumentParser();parser.add_argument('--launch-sha256',required=True);parser.add_argument('--launcher-record',required=True,type=Path);args=parser.parse_args()
+     require(Path.cwd()==ROOT and sys.dont_write_bytecode and not sys.flags.optimize and not OUT.exists(),'fresh explicit audit owner/Python')
+     require(re.fullmatch('[a-f0-9]{64}',args.launch_sha256) and sha(HERE/'launch.json')==args.launch_sha256,'reviewed exact launch digest')
+     require(args.launcher_record.is_relative_to(ROOT/'.work') and args.launcher_record.name=='record.json','explicit owned launcher record')
+-    started=time.time();launch=read(HERE/'launch.json');compact_freeze=read(HERE/'inputs.json');plan=read(HERE/'plan.json')
++    started=time.time();launch=read(HERE/'launch.json');compact_freeze=read(HERE/'inputs.json')
+     require(sha(HERE/'inputs.json')==launch['inputs_sha256'],'exact compact input bytes required before reconstruction')
+     freeze=complete_file_table(compact_freeze,expected_base=dict(path=str(NATIVE_SOURCE/'inputs.json'),
+         sha256='8569abb81a61e34b6b5a892116af5218557ceb0436ab8dbf8a31f2aec55b1b1d'))
++    plan=complete_plan(read(HERE/'plan.json'),expected_reference=METADATA_PLAN_REFERENCE,
++        read_reference=lambda path:raw(frozen(path,freeze),64*2**20))
++    continuation=continuation_qualification(freeze,plan)
++    failed_predecessor=failed_owner_history(freeze,plan)
++    driver_source_derivation=driver_derivation(freeze)
+     terminal=read(WORK/'receipt.json');result=read(WORK/'result.json');outer=read(OUTER/'status.json');dispatch=read(args.launcher_record)
+     require(sha(HERE/'inputs.json')==launch['inputs_sha256']==terminal['inputs_sha256'] and sha(HERE/'plan.json')==freeze['plan_sha256']==launch['plan_sha256'],'launch/freeze/plan association')
+     require(terminal['status']=='passed-awaiting-independent-audit' and result['status']=='hash-driver-observations-passed-awaiting-independent-audit'
+         and sha(WORK/'result.json')==terminal['result_sha256'] and terminal['candidate_revision']==result['candidate_revision']==plan['candidate_revision']==REVISION
+         and result['source_identity']==plan['source_identity'],'completed exact candidate stage')
++    require(all(encoded(terminal[key])==encoded(result[key])==encoded(plan[key])
++        for key in ['failed_driver','continuation_controls']),'actual terminal/result retain full failed history and control qualification')
+     require(all(terminal[k] is False for k in ['hash_driver_qualified','application_qualified','performance_measurement','runtime_installation'])
+         and result['application_qualified'] is result['performance_measurement'] is False,'pre-audit qualification scope')
+     require(outer['status']=='finished' and outer['returncode']==0 and outer['child_pid']==terminal['pid'] and outer['supervisor_pid']==terminal['parent_pid']
+@@ -853,6 +1203,7 @@
+     for name in freeze['files']:frozen(name,freeze)
+     require(sha(frozen(ORIGINAL_VERIFIER['path'],freeze))==ORIGINAL_VERIFIER['sha256'],
+         'exact original frozen verifier retained; successor is separately authenticated')
++    require(sha(frozen(Path(__file__).resolve(),freeze))==sha(Path(__file__).resolve()),'current independent verifier frozen exactly')
+     file_table_proof=file_table_helper_qualification(freeze)
+     for name,row in freeze['links'].items():
+         path=Path(name);require(path.is_symlink() and stamp(path)==row['stamp'] and os.readlink(path)==row['target']
+@@ -980,6 +1331,9 @@
+         candidate_revision=REVISION,source_identity=plan['source_identity'],actual_children=3,compilation_count=1,driver_process_count=2,
+         contexts_per_process=8,stdout_records_per_process=9,child_pids=pids,workload_identities=workload_identities,
+         processes=proofs,unavailable_contemporaneous_observations=missing,
++        historical_failed_compiler_children=1,total_actual_hash_children=4,
++        failed_predecessor=dict(owner=plan['failed_driver'],receipt_sha256=failed_predecessor['receipt_sha256'],actual_children=1,qualified_children=0),
++        continuation_controls=continuation,metadata_plan_reference=METADATA_PLAN_REFERENCE,driver_source_derivation=driver_source_derivation,
+         launcher_identity=launcher_identity,wrapper_identity_limitation=dispatch['wrapper_identity_limitation'],
+         frozen_files=len(freeze['files']),frozen_bytes=sum(r['size'] for r in freeze['files'].values()),frozen_links=len(freeze['links']),
+         full_frozen_byte_rehash=True,full_provider_inventories=True,static_and_actual_loaders_verified=True,compressed_snapshots=snapshot_proof,
