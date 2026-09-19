@@ -949,7 +949,3 @@ mod slot_arguments;
 
 #[path="budget_register_tests.rs"]
 mod budget_register;
-
-#[cfg(feature="branch-budget-reservation")]
-#[path="branch_budget_tests.rs"]
-mod branch_budget;

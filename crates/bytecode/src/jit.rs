@@ -48,8 +48,6 @@ mod values;
 mod transfers;
 mod guarded_ranges;
 mod scratch_values;
-#[cfg(feature = "branch-budget-reservation")]
-mod budget_reservations;
 
 #[cfg(test)]
 mod limit_tests;
@@ -368,8 +366,6 @@ pub(crate) struct Jit<'a> {
     persistent_registers: bool,
     resumable: Option<resumable::Entries>,
     scalar: Option<scalar_calls::State>,
-    #[cfg(feature="branch-budget-reservation")]
-    budget_reservations_enabled: bool,
     #[cfg(test)]
     disable_call_slot_hints: bool,
     #[cfg(test)]
@@ -413,8 +409,6 @@ impl<'a> Jit<'a> {
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
             assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None, scalar: None,
-            #[cfg(feature="branch-budget-reservation")]
-            budget_reservations_enabled: true,
             #[cfg(test)]
             disable_call_slot_hints: false,
             #[cfg(test)]
@@ -572,14 +566,6 @@ impl<'a> Jit<'a> {
                 starts[pc + 1] = true;
             }
         }
-        #[cfg(feature="branch-budget-reservation")]
-        let mut reservations = if resumable && self.budget_reservations_enabled {
-            budget_reservations::prepare(f, &starts, native, &mut range_work)
-        } else { None };
-        #[cfg(feature="branch-budget-reservation")]
-        let mut fast_entries = if reservations.is_some() { vec![None; f.code.len()] } else { vec![] };
-        #[cfg(feature="branch-budget-reservation")]
-        let mut reservation_links = BTreeMap::<usize, bool>::new();
         let mut pc = 0;
         while pc < f.code.len() {
             let start = pc;
@@ -636,10 +622,6 @@ impl<'a> Jit<'a> {
                 // Every internal/resume entry runs this preflight. Declines
                 // consume no guest work and use the existing resumable tail.
                 let range_declines = if resumable {
-                    #[cfg(feature="branch-budget-reservation")]
-                    let plan = if let Some(prepared) = &mut reservations { prepared.take_range(start) }
-                        else { range_groups::runtime_plan(f, start, pc, &mut range_work) };
-                    #[cfg(not(feature="branch-budget-reservation"))]
                     let plan = range_groups::runtime_plan(f, start, pc, &mut range_work);
                     a.prepare_guarded_range(plan)?
                 } else { vec![] };
@@ -649,22 +631,13 @@ impl<'a> Jit<'a> {
                 // one instruction at a time, preserving fault ordering.
                 let budget = if resumable { resumable::BUDGET_REGISTER } else { 9 };
                 if !resumable { a.emit(0xf9400269); } // ordinary Cursor.remaining
-                let steps = pc - start;
-                #[cfg(feature="branch-budget-reservation")]
-                let steps = reservations.as_ref().map_or(steps, |p| p.credit(start).steps);
-                #[cfg(feature="branch-budget-reservation")]
-                let suffix = reservations.as_ref().map_or(0, |p| p.credit(start).suffix);
-                a.imm(10, steps as u64);
+                a.imm(10, (pc - start) as u64);
                 a.cmp(budget, 10);
                 let budget_exit = a.words.len();
                 a.emit(0x54000003); // b.lo budget_exit
                 a.three(0xcb000000, budget, budget, 10);
                 if !resumable { a.emit(0xf9000269); }
                 span!(Budget, None);
-                // Certified native edges already reserved this region. External,
-                // resumed, call-return and cut edges still enter above the guard.
-                #[cfg(feature="branch-budget-reservation")]
-                if reservations.is_some() { fast_entries[start] = Some(words.len() + a.words.len()); }
                 if self.profiled {
                     // The VM supplies this function's stable counter array.
                     // The emitted offset is a validated PC, never guest data.
@@ -712,8 +685,6 @@ impl<'a> Jit<'a> {
                         continue;
                     }
                     let target = a.words.len();
-                    #[cfg(feature="branch-budget-reservation")]
-                    a.refund_budget(suffix)?;
                     a.imm(0, kind as u64);
                     a.return_to_vm();
                     span!(FaultTail, None);
@@ -726,8 +697,6 @@ impl<'a> Jit<'a> {
                 // host string pointer or a continuation.
                 for (at, code) in std::mem::take(&mut a.assertions) {
                     let target = a.words.len();
-                    #[cfg(feature="branch-budget-reservation")]
-                    a.refund_budget(suffix)?;
                     a.imm(0, code);
                     a.return_to_vm();
                     span!(AssertionTail, None);
@@ -743,30 +712,8 @@ impl<'a> Jit<'a> {
                 // these edges with direct branches to internal entries.
                 for (at, successor) in std::mem::take(&mut a.links) {
                     let fallback = a.words.len();
-                    #[cfg(feature="branch-budget-reservation")]
-                    a.refund_budget(suffix)?;
                     a.return_pc(successor);
                     span!(SuccessorFallback, None);
-                    #[cfg(feature="branch-budget-reservation")]
-                    if let Some(prepared) = &reservations {
-                        let edge = prepared.edge(start, successor);
-                        if !edge.native_target {
-                            patch_jump(&mut a.words, at, fallback)?;
-                            continue;
-                        }
-                        let link = if edge.refund != 0 {
-                            let thunk = a.words.len();
-                            a.refund_budget(edge.refund)?;
-                            let link = a.words.len();
-                            a.emit(0x14000000);
-                            patch_jump(&mut a.words, at, thunk)?;
-                            span!(BudgetEdge, None);
-                            link
-                        } else { at };
-                        reservation_links.insert(words.len() + link, edge.fast);
-                        links.push((words.len() + link, successor, words.len() + fallback));
-                        continue;
-                    }
                     links.push((words.len() + at, successor, words.len() + fallback));
                 }
                 debug_assert_eq!(covered, a.words.len());
@@ -835,14 +782,6 @@ impl<'a> Jit<'a> {
         }
         for (at, successor, fallback) in links {
             let target = internal_entries.get(successor).copied().flatten().unwrap_or(fallback);
-            #[cfg(feature="branch-budget-reservation")]
-            let target = if let Some(&fast) = reservation_links.get(&at) {
-                let entries = if fast { &fast_entries } else { &internal_entries };
-                // A refund thunk must never fall through to the full-refund VM
-                // tail. Missing certified entries reject unpublished staging.
-                entries.get(successor).copied().flatten()
-                    .ok_or(EmitError::InvalidRelocation("missing certified budget entry"))?
-            } else { target };
             patch_jump(&mut words, at, target)?;
         }
         Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
@@ -1219,16 +1158,6 @@ impl Default for Assembler<'_> {
     }
 }
 impl Assembler<'_> {
-    #[cfg(feature="branch-budget-reservation")]
-    fn refund_budget(&mut self, refund: usize) -> Result<(), EmitError> {
-        if refund == 0 { return Ok(()); }
-        if !self.resumable || refund >= 4096 {
-            return Err(EmitError::InvalidRelocation("invalid budget refund"));
-        }
-        let r = resumable::BUDGET_REGISTER;
-        self.emit(0x91000000 | ((refund as u32) << 10) | (r << 5) | r); // add x22,x22,#refund; preserves NZCV
-        Ok(())
-    }
     fn assertion(&mut self, value: Reg, expected: bool, code: u64) {
         // Bytecode truth is nonzero across all 128 bits, including values
         // produced by hand-built programs rather than Rust bool lowering.

@@ -25,8 +25,6 @@ mod continuation_census;
 pub(super) enum Kind {
     Entry, RangeGuard, Budget, Profile, Operation, Flush, RegionExit, FaultTail,
     AssertionTail, BudgetFallback, SuccessorFallback, Transition, ScalarLeaf,
-    #[cfg(feature="branch-budget-reservation")]
-    BudgetEdge,
 }
 
 #[derive(Debug, Serialize)]
