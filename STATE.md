@@ -75,13 +75,17 @@ fault/replay and private memory; call/branch/resource controls retained.
 - Large protocol01 source97ddb268:73784,all23 fresh controls pass. Independent
   CLOSED84235; controller session-runtime-composition-large-guards.
 
-- Full folded01 source07f614bf is ACTIVE:91338/91341, launched03:44:00.
-  176 changed-source commands plus2 strict controls, same qualified public controller.
-  Freeze all bound inputs/owned fre source until independent close.py.
+- Full folded01 source07f614bf:91338/91341, all176 commands+2strict passed,
+  independently CLOSED95676. Wall/adopted.9863968592+A/A.0197796103=1.0061764695;
+  CPU/adopted.9649114604+A/A.0221465280=.9870579884. Regression gate PASS;
+  no wall-gain claim beyond noise. Candidate/nativewall1.0105716567.
+- Full token cache retirement sourcebb657235 is ACTIVE:6128, started03:50:04.
+  Only nine exact closed full-token namespaces. Wait/close with bb657235 before
+  pgrust; no folded/later/peer/source/artifact cleanup.
 
 ## Next actions
 
-Finish and independently close folded. If it passes, run pgrust under the same
+Finish and independently close token cache retirement, then run pgrust under the
 qualified public protocol. A failure stops every later guard. The private/Nushell adapters and both parser guards
 remain required before integration. Their controllers are prepared in
 session-runtime-composition-large-guards and session-runtime-composition-parser-guards;
@@ -123,9 +127,9 @@ Publish exact proof/docs paths on main, fetch/ff first; do not copy experimental
 runtime or overwrite compiler work. Prior detail archived at
  docs/history/STATE-20260919-before-session-runtime-composition.md.
 
-New prepared, UNSTARTED exact full-token retirement:
+New ACTIVE exact full-token retirement:
 benchmarks/experiments/session-runtime-token-cache-retirement. Only nine completed
-full-token namespaces, no folded/later cache. May run after terminal folded and
-independent closure, under lock and fresh build/parser disk admission. Older
+full-token namespaces, no folded/later cache. Running after independently closed folded, under lock and fresh build/parser
+disk admission; do not duplicate it. Older
 Nushell/custom/native/native-lines/check retirement receipts already exist; do
 not revisit those caches blindly or repeat them for a hoped-for larger result.

@@ -55,8 +55,14 @@ pass across three cycles. Startup, shutdown and full server kernel CPU are charg
 
 The identical composed runtime without history has median wall/baseline0.9592759008;
 candidate/history-off is0.9773742242. These ratios describe distinct paired
-comparisons and are not additive component gains. Folded, pgrust, private rg-aot,
-both parser profiles and Nushell remain outstanding. Folded is now running.
+comparisons and are not additive component gains. Pgrust, private rg-aot,
+both parser profiles and Nushell remain outstanding. The
+[176-command folded guard](../results/session-runtime-composition-edit-folded-01/summary.json)
+has now passed and closed: wall/adopted0.9863968592 with A/A0.0197796103,
+CPU/adopted0.9649114604 with A/A0.0221465280; regression margins1.0061764695
+and0.9870579884 are below1.05. The folded wall difference is within its noise
+allowance. Candidate/native wall1.0105716567 and CPU1.0228477609 remain scoped
+to this workload. Pgrust is admitted next; no unchanged timing is repeated.
 The remaining adapters passed14 parser controls (6 fresh/8 exact reused) and23
 fresh large/private controls, both independently closed. Later timing still
 requires each preceding gate to pass and close.
