@@ -38,7 +38,7 @@ budgets and code capacity still need a complete reuse contract. Measure cache
 keying/I/O/population costs inside any later real workflow. No cache is admitted
 or implemented by this audit. Compiler/Cargo work stays with its owner.
 
-The first evidence-closing command timed out45seconds on the shared lock after
-the complete successful audit. The named closure retry also timed out45seconds on the same shared lock;
-closure remains pending, with the successful analysis untouched;
-none of the95receipts or seven controls need rerunning to close the evidence.
+The first two evidence-closing attempts timed out45seconds on the shared lock.
+Closure03 completed under60841/60866 once the lock became available, verifying
+141frozen inputs,12source bindings and136evidence files against the original
+successful audit terminal33033/33036. No receipt or control was rerun.

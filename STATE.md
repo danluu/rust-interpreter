@@ -37,8 +37,9 @@ The95-receipt audit and7controls are prepared in
 `benchmarks/experiments/jit-preparation-costs`, including the incremental parser
 and latest primary baseline. Audit02 passes7controls and95receipts under33033/33036, source272e041d.
 Its direct closer and named retry69934/69938 both timed out45seconds waiting
-for the shared lock; neither reran analysis. Keep all frozen inputs unchanged
-until closure succeeds. Root production source remains exactly adopted.
+for the shared lock; neither reran analysis. Closure03 under60841/60866 succeeds,
+binding141inputs,12source files and136evidence files to the original terminal.
+Root production source remains exactly adopted.
 Median compiler-interval sums are258ms token,73ms folded,4.7ms pgrust,2.5ms
 private,15ms Nushell types,214ms parser and255ms recent token. These overlap
 across workers and are not promised savings. Next typed identity feasibility
@@ -49,10 +50,12 @@ Its plan is `benchmarks/experiments/native-reuse-inputs/PLAN.md`. It hashes
 complete Function bodies plus direct-callee bodies and a conservative program
 namespace, preserves numeric IDs, validates full artifacts, and emits no code.
 Bounds:128artifacts,128MiB/artifact,4GiB total input,2million function records,
-512MiB total output. No controller, tests or artifact census has run yet.
-Prepare the bounded controller and chronological analyzer next. The old
-preparation audit freezes only4Rust counter sources, none changed by this new
-integration-test module; its closure must still finish before new execution.
+512MiB total output. The controller and chronological analyzer are prepared,
+including4Python controls,7Rust controls/profile and1ignored typed observer.
+Next execute native-reuse-inputs-01 under the shared lock and fresh disk
+admission. Expected133chronological transitions include95valid edits; all
+original, wrong-edit and revert snapshots remain included. No guest or runtime
+implementation is admitted. The preparation audit closure is complete.
 
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally
