@@ -128,3 +128,5 @@ holdouts or any claim of a faster application configuration.
 - [Corrected prospective mechanism screen](hir-options-hash/ruff-screen-02/PROTOCOL.md)
 
 - [Frontend correctness and installed exporter evidence](../results/runtime-exporter07-frontend-publication02-01/STATUS.md)
+
+- [Actual strict Ruff history and mechanism eligibility](../results/ruff-options-hash-strict-01/STATUS.md)
