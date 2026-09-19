@@ -995,7 +995,10 @@ fn patch_jump(words: &mut [u32], at: usize, target: usize) -> Result<(), EmitErr
 
 #[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
 mod link_tests {
-    use super::*;
+use super::*;
+
+#[cfg(test)]
+mod relocatable_immediate_census;
     use crate::{Slot, VERSION};
 
     #[test]
