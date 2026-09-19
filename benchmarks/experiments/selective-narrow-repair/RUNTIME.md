@@ -16,7 +16,12 @@ Run11 native/VM controls and4 role controls per profile. Then require634workspac
 tests/profile with16ignored observers, the full Python suite,121strict/cache
 commands and3original profiles. The latter must reconstruct code and preserve
 original logical counts, and compare native bytes with the retained conservative
-prototype. Only the interpreter's normalization work should change.
+prototype. Cross-process comparison requires identical ranges/spans and bytes
+except validated MOVZ/MOVK x16 immediates immediately before BLR x16 inside
+Call transitions. Each decoded address must name the same published scalar
+body at the same relative offset; all other bits remain exact. If address
+materialization length differs, retain the successful capture and diagnose
+the comparison without repeating the guest. Only the interpreter's normalization work should change.
 
 Any new primary still compares to adopted df4006e0, with ordinary entropy and
 the same wall/CPU/A/A gate. No result from the parked primary is discarded or

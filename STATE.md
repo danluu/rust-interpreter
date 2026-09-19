@@ -100,8 +100,9 @@ Current new variant moves that exact classifier into production and repairs
 only full-width interpreted consumers. Native emission/proof admission stays
 unchanged from parked3e53b127. Add2native/VM controls for low-only backing and
 heap fallbacks followed by full reads; focused stage expects15controls/profile
-(11native/VM +4role), then634workspace tests/profile/16ignored. No new tool is
-installed or timing admitted yet. See `benchmarks/experiments/selective-narrow-repair/focus.py`
+(11native/VM +4role), then634workspace tests/profile/16ignored. Focused01 is closed:15controls/profile,4commands, sourcec38c2c03,
+supervisor57029/child57032. No new tool is installed or timing admitted yet.
+The full634/16 build is prepared with two workers and fresh disk admission. See `benchmarks/experiments/selective-narrow-repair/focus.py`
 and `docs/SELECTIVE-NARROW-REPAIR-20260918.md`. Main ccb3b465 contains only the
 closed conservative-primary outcome; root owns this new experimental branch.
 
