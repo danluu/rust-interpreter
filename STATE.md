@@ -34,24 +34,28 @@ passed7 tests per profile; setup20.22s. Independently CLOSED28426. Tests cover
 full128-bit zero/small/general/empty cases, duplicates, backward edges, every
 budget, profile/interpreter agreement, capacity fallback and native encodings.
 
-ACTIVE compact-switch-adopted-workspace-01, sourcecae542ff,
-supervisor51392/controller51396, started2026-09-19 06:11:54 local. Python468
-found/446passed/22skip; debug615passed/13ignored. Release in progress at last
-check. Read terminal, then independently run same qualify.py --close under
-compact-switch-adopted-workspace-01-close. Folder
-benchmarks/experiments/compact-switch-adopted-workspace. Freeze inputs through
-closure. Four commands total: Python, debug, release, normal release VM build.
-Expected615Rust/profile13ignored. Retain .work/compact-switch-adopted-workspace-01/rust-interp-vm.
+The isolated workspace is CLOSED7950: sourcecae542ff,4 commands,
+615Rust/profile13ignored,446Python22skip;setup109.079s. Retained VM
+.work/compact-switch-adopted-workspace-01/rust-interp-vm SHA
+ da0cc6b3a59dab092ae1e0ed71ccf1067f232277d362958bd871a365ce7ba6bd.
 
-Next prepare real-workload semantic/profile qualification for this ordinary VM:
-replay the three original public tests against retained adopted exact per-PC,
-memory and entropy evidence in scratch-memory-values-profile-01, using its
-qualified native_observation validator and current-runtime-boundaries-02 tapes.
-No old guest/profile rerun; only the new VM executes. The existing pinned frontend
-can reuse its closed121 strict/cache controls because exporter/wrapper are byte
-identical; actual unreachable type/borrow controls must also precede the new
-40-command changed-source primary. Installation and primary controllers are NOT
-prepared yet. Preserve ordinary native/adopted/A-A/anchor arms and all gates.
+Historical profile01 FAILED after first original assertion passed:18 extra
+logical instructions. Saved-PC analysis confines all difference to fre CPU
+feature detection (FAMINMAX/LUT query success-with-zero versus old errorpaths).
+Do not rerun/mutate original folder. New compact-switch-current-host-01,
+source5e90c0ae,supervisor12836, five fresh guests plus retainedcandidate0:
+unchanged adopted VM and candidate agree EXACTLY at everyPC, memory,entropy,
+assertions and complete native maps on all3originalworkloads. All historical
+profiles have the same18-instruction drift. Current sysctl facts retained before
+andafter. Independently CLOSED29386;both qualification and originalfailure are
+preserved inresults. No timing or runtimegate tolerance used.
+
+Next install new VM with byte-identical adopted exporter/wrapper and closed121
+frontendcontrols. Controllercompact-switch-adopted-install is prepared, notrun.
+New ordinary40-command primary controllercompact-switch-adopted-screen is being
+prepared and still needs tests/protocolqualification; do NOTlaunch yet. No
+session/indirect/readonly/successor composition. Preserve strictE0308/E0499,
+native/adopted/A-A/anchor arms and originalwall/CPUgates. No timinghasstarted.
 
 ## Resource work completed this turn (NEVER repeat)
 
@@ -153,7 +157,7 @@ Historydocs/history/STATE-20260919-before-switch-isolation.md hasexactolderdetai
 
 Main51967bb2 publishesallfourfullhistories/failedgate, preservingpeerf040a175.
 Rootbranch experiment/compact-switch-adopted-20260919;cae542ff pushed.
-Only active command is the isolated workspace qualification above. Private evidence stays local.
+No active runtime command; preparing installation and ordinary primary. Private evidence stays local.
 Cleanerreadonly:/usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status;
 PID29541; no competingcleanup/guard/processcontrol. Recheckdisk/memory/lock.
 suggestions.txtunmodified/untrackedSHA
