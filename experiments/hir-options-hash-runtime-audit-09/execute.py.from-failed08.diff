@@ -1,0 +1,57 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-08/execute.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-09/execute.py
+@@ -22,7 +22,7 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-HERE = ROOT/'experiments/hir-options-hash-runtime-audit-08'
++HERE = ROOT/'experiments/hir-options-hash-runtime-audit-09'
+ QUALIFIED_AUDIT = ROOT/'experiments/hir-options-hash-runtime-audit-05'
+ ATTEMPT = ROOT/'experiments/runtime-preflight-retry-05'
+ ROUTES_PATH = ATTEMPT/'routes.json'
+@@ -119,10 +119,10 @@
+ 
+ def inventory(args):
+     value = read(args.source_inventory, args.source_inventory_sha256, 2**20)
+-    require(set(value) == {'policy', 'sources'} and value['policy'] == 'runtime08-reviewed-sources-v1'
++    require(set(value) == {'policy', 'sources'} and value['policy'] == 'runtime09-reviewed-sources-v1'
+             and type(value['sources']) is dict and 8 <= len(value['sources']) <= 24,
+             'bounded reviewed final source inventory required')
+-    required = {str(HERE/name) for name in ['bootstrap.py','audit.py','prepare_manifest.py','execute.py']} | {
++    required = {str(HERE/name) for name in ['bootstrap.py','audit.py','prepare_manifest.py','execute.py','test_completed_directories.py']} | {
+         str(QUALIFIED_AUDIT/name) for name in ['audit_io.py','reader.py','test_reader.py','test_audit_io.py']}
+     require(required <= set(value['sources']), 'complete enclosing source inventory required')
+     total = 0
+@@ -204,12 +204,12 @@
+ 
+ def manifest_root(phase):
+     require(phase in ['preflight'], 'exact runtime phase')
+-    return ROOT/('.work/runtime08-saved-audit-'+phase+'-manifest-01')
++    return ROOT/('.work/runtime09-saved-audit-'+phase+'-manifest-01')
+ 
+ 
+ def preparation_execution(phase):
+     require(phase in ['preflight'], 'exact runtime phase')
+-    return ROOT/('.work/runtime08-saved-audit-'+phase+'-manifest-preparation-execution-01')
++    return ROOT/('.work/runtime09-saved-audit-'+phase+'-manifest-preparation-execution-01')
+ 
+ 
+ def attempt_routes():
+@@ -251,7 +251,7 @@
+     preparation = read(output/'preparation.json', args.preparation_sha256, 4*2**20)
+     execution = read(preparation_evidence/'record.json', args.preparation_record_sha256, 4*2**20)
+     require(set(manifest) == {'policy', 'files', 'actual53', 'phase45', 'preparation', 'preparation_launcher', 'startup_controls', 'retry_controls', 'frozen_links_controls', 'failed_audit'}
+-            and manifest['policy'] == 'runtime05-frozen-links-saved-audit-source-manifest-v1'
++            and manifest['policy'] == 'runtime05-completed-directories-saved-audit-source-manifest-v1'
+             and type(manifest['files']) is dict and 0 < len(manifest['files']) <= 256
+             and all(type(row['size']) is int and row['size'] >= 0 for row in manifest['files'].values())
+             and sum(row['size'] for row in manifest['files'].values()) <= 8*2**20,
+@@ -347,7 +347,7 @@
+     output = manifest_root(args.phase); preparation_evidence = preparation_execution(args.phase)
+     sources = inventory(args)
+     source = HERE/('prepare_manifest.py' if args.mode == 'prepare' else 'bootstrap.py')
+-    evidence = preparation_evidence if args.mode == 'prepare' else ROOT/('.work/runtime08-saved-audit-'+args.phase+'-execution-01')
++    evidence = preparation_evidence if args.mode == 'prepare' else ROOT/('.work/runtime09-saved-audit-'+args.phase+'-execution-01')
+     report = output/'preparation.json' if args.mode == 'prepare' else Path(attempt_routes()['report'])
+     require(not os.path.lexists(evidence) and not os.path.lexists(report)
+             and (args.mode != 'prepare' or not os.path.lexists(output)), 'fresh execution and publication routes')

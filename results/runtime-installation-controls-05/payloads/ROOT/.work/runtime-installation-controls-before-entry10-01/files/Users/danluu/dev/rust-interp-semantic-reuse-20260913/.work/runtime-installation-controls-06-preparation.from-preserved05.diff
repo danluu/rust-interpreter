@@ -1,0 +1,34 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/prepare_runtime_installation_controls_05_once.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/prepare_runtime_installation_controls_06_once.py
+@@ -4,10 +4,10 @@
+ O = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+-H = O/'experiments/runtime-installation-controls-05'
+-E = O/'.work/runtime-installation-controls-preparation-execution-05'
++H = O/'experiments/runtime-installation-controls-06'
++E = O/'.work/runtime-installation-controls-preparation-execution-06'
+ P = Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14')
+-EXPECTED = {'run.py': '5189719ce1161f4377f8985d2ca36a77764c1ba8445fc7de134139753fe33cc3', 'child.py': 'e3ce3929276bea6b190648f45f07ba8be9bec84d899d45d216053998429f6199', 'prepare.py': '3997a109b85f98fddb697b0941881f127b827e11dd21c8e14e952e92b2510b28'}
++EXPECTED = {'run.py': '0306141dadb78c0f63d2755529e552828317206270ee87fee107c6be87e7a499', 'child.py': '6c616a8451cd271eb370b60f6376b276fdf34791119fed9a8e7bb6a8736e1a74', 'prepare.py': '340d27642e2923b8fcd03d5fb8833836a1b9c090b4e843d550301bc20d79a91b'}
+ sha = lambda p: hashlib.sha256(Path(p).read_bytes()).hexdigest()
+ TESTED = {'/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/entry.py': 'b2da15b61e76db36449087a456761e28bf66efa1243e7502966062ac0ea981de', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/controller.py': 'e34eb2e38d35edb9df5f564e96049c225878a09ad3a49a0b1aa4a10176a70639', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/audit_owner.py': '67956f34cf5dba104a802ef812ed3bf3820fbf00340a1ce2ef83a30447043ed0', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/routes.json': '789fbe817e19c886824cda20ad66fd020e57d7a862af627986cdad40bc07605f', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/prepare.py': '3e58c461b22ac1ffd6f21b28b1391f3633e3fa2e284e1ff5b1bbb45ee314bef4', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/prepare_once.py': '7ec5a06e6dc95a48b7f4587dce1b829777bb161eec4c9e6af7715e2be28aa398', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/launch.py': '9163460b82f8aa5af3ce51ac1243e00bceebe5e09cfe566d7c8740450afa04d8', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-01/test_installation.py': '84d06e5184e0534a00a2d3b8f2d3699fae2fd502b505d72ccff27d1c55add1a1', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01/environment.py': 'fbc563accfeebe2650902263ed9972031d37c84bc8c21986a3545ae4020d314d', '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/routes.json': '893d6102741b5206a829e2f5e130614667140b1eacc09d0c55616f7311f82e6a', '/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/stable-cgu/owned_stage.py': '7021a15d3b806ab908f03276051d9d9ca9c9e208bbf8933a60229c9fb35bb68e'}
+ def validate_sources():
+@@ -29,14 +29,14 @@
+ for name in EXPECTED: (E/'source'/name).write_bytes((H/name).read_bytes())
+ (E/'source'/'execution.py').write_bytes(Path(__file__).read_bytes())
+ (E/'source'/'owned_stage.py').write_bytes(owned_path.read_bytes())
+-env = dict(HOME='/Users/danluu',USER='danluu',LOGNAME='danluu',LANG='C',LC_ALL='C',TZ='UTC',PATH='/usr/bin:/bin:/usr/sbin:/sbin',PYTHONDONTWRITEBYTECODE='1',PYTHONNOUSERSITE='1',TMPDIR=str(O/'.work/runtime-installation-controls-05/tmp'))
++env = dict(HOME='/Users/danluu',USER='danluu',LOGNAME='danluu',LANG='C',LC_ALL='C',TZ='UTC',PATH='/usr/bin:/bin:/usr/sbin:/sbin',PYTHONDONTWRITEBYTECODE='1',PYTHONNOUSERSITE='1',TMPDIR=str(O/'.work/runtime-installation-controls-06/tmp'))
+ command=[str(P),'-B',str(H/'prepare.py')]
+-r=dict(status='waiting',started_at=time.time(),parent_pid=os.getpid(),supervisor_parent_pid=os.getppid(),command=command,cwd=str(O),environment=env,source_sha256=EXPECTED,execution_source_sha256=sha(__file__),owned_source_sha256=sha(owned_path),canonical_lock=str(owned.CANONICAL_LOCK),wait_seconds=600,capacity=dict(entry_gib=16,stop_gib=9,floor_gib=8),mode='authorized one-shot read-only proposal preparation; no test or compiler workload',identity_limitation='Popen PID and in-process parent identity retained; no independent ps/cwd probes and no signals.',disk_samples=[])
++r=dict(status='waiting',started_at=time.time(),parent_pid=os.getpid(),supervisor_parent_pid=os.getppid(),command=command,cwd=str(O),environment=env,source_sha256=EXPECTED,execution_source_sha256=sha(__file__),owned_source_sha256=sha(owned_path),canonical_lock=str(owned.CANONICAL_LOCK),wait_seconds=600,capacity=dict(entry_gib=10,stop_gib=9,floor_gib=8),mode='authorized one-shot read-only proposal preparation; no test or compiler workload',identity_limitation='Popen PID and in-process parent identity retained; no independent ps/cwd probes and no signals.',disk_samples=[])
+ def save(): owned.write(E/'record.json',r)
+ save()
+ try:
+  with owned.workload_lock(owned.CANONICAL_LOCK,600) as fd:
+-  r.update(admitted_at=time.time(),free_bytes_before=owned.disk(O,16)); save()
++  r.update(admitted_at=time.time(),free_bytes_before=owned.disk(O,10)); save()
+   validate_sources()
+   resource.setrlimit(resource.RLIMIT_CPU,(60,60)); resource.setrlimit(resource.RLIMIT_FSIZE,(256*1024,256*1024))
+   with (E/'stdout').open('xb') as stdout,(E/'stderr').open('xb') as stderr:

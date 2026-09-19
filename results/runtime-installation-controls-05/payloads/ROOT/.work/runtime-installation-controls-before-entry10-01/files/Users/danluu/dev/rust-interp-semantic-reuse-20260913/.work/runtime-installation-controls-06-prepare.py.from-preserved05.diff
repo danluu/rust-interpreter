@@ -1,0 +1,29 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-controls-05/prepare.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-controls-06/prepare.py
+@@ -11,7 +11,7 @@
+     here, source, owner = control.HERE, control.SOURCE, control.OWNER
+     assert Path.cwd() == owner and sys.dont_write_bytecode
+     assert not any((here / name).exists() for name in ['inputs.json', 'launch.json'])
+-    assert not control.WORK.exists() and not (owner / '.work/experiments/runtime-installation-controls-supervisor-05').exists()
++    assert not control.WORK.exists() and not (owner / '.work/experiments/runtime-installation-controls-supervisor-06').exists()
+     names = []
+     modules = ['test_installation']
+     for module in modules:
+@@ -53,7 +53,7 @@
+     freeze = dict(status='prepared-unrun', owner=str(owner), python=str(python), environment=environment,
+                   files=files, routes=routes, expected_names=sorted(names), command=command,
+                   canonical_lock=str(control.owned.CANONICAL_LOCK), wait_seconds=600,
+-                  capacity=dict(entry_gib=16, stop_gib=9, floor_gib=8),
++                  capacity=dict(entry_gib=10, stop_gib=9, floor_gib=8),
+                   bounds=dict(child_alarm_seconds=120, child_cpu_seconds=60, maximum_file_bytes=256 * 1024,
+                               maximum_writable_names=256, maximum_directory_names=2048,
+                               maximum_cumulative_child_file_payload_bytes=258 * 256 * 1024,
+@@ -62,7 +62,7 @@
+     control.owned.write(here / 'inputs.json', freeze)
+     launch = dict(status='prepared-unrun-awaiting-review', owner=str(owner), environment=environment,
+                   command=[str(python), '-B', str(owner / 'scripts/supervise_experiment.py'), '--run-id',
+-                           'runtime-installation-controls-supervisor-05', '--', str(python), '-B',
++                           'runtime-installation-controls-supervisor-06', '--', str(python), '-B',
+                            str(here / 'run.py'), '--inputs-sha256', control.owned.sha(here / 'inputs.json')],
+                   inputs_sha256=control.owned.sha(here / 'inputs.json'), helper_sha256=control.owned.sha(here / 'run.py'),
+                   expected_children=1, controls=25, capacity=freeze['capacity'], bounds=freeze['bounds'])

@@ -1,0 +1,87 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-08/bootstrap.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-09/bootstrap.py
+@@ -21,7 +21,7 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-HERE = ROOT/'experiments/hir-options-hash-runtime-audit-08'
++HERE = ROOT/'experiments/hir-options-hash-runtime-audit-09'
+ QUALIFIED_AUDIT = ROOT/'experiments/hir-options-hash-runtime-audit-05'
+ ATTEMPT = ROOT/'experiments/runtime-preflight-retry-05'
+ ROUTES_PATH = ATTEMPT/'routes.json'
+@@ -46,8 +46,10 @@
+ LINK_CONTROL = ROOT/'experiments/runtime-frozen-link-controls-01'
+ LINK_RESULT = ROOT/'results/runtime-frozen-link-controls-01/result.json'
+ LINK_COUNT = 24  # Separate direct control proof; no actual53 relabeling.
+-FAILED_AUDIT = dict(path=str(ROOT/'.work/runtime06-saved-audit-preflight-execution-01/record.json'),
++FAILED_LINK_AUDIT = dict(path=str(ROOT/'.work/runtime06-saved-audit-preflight-execution-01/record.json'),
+     sha256='4b7e57aa4a1aa0bf09a6725dd47056497cd7a5ef56b0f3a36f2a77fce60fdb2b')
++FAILED_AUDIT = dict(path=str(ROOT/'.work/runtime08-saved-audit-preflight-execution-01/record.json'),
++    sha256='71c59ba889fa71da8ea326b1f04723a472db7e1f580b545a13071dcbee12975c')
+ BASE = dict(path='/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-native-controls-03/inputs.json',
+             sha256='8569abb81a61e34b6b5a892116af5218557ceb0436ab8dbf8a31f2aec55b1b1d')
+ CANONICAL = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+@@ -193,7 +195,7 @@
+         if key.endswith('_sha256'):require(re.fullmatch('[a-f0-9]{64}',value),'concrete reviewed SHA required')
+     manifest=read(args.source_manifest,args.source_manifest_sha256)
+     require(set(manifest)=={'policy','files','actual53','phase45','preparation','preparation_launcher','startup_controls','retry_controls','frozen_links_controls','failed_audit'}
+-        and manifest['policy']=='runtime05-frozen-links-saved-audit-source-manifest-v1'
++        and manifest['policy']=='runtime05-completed-directories-saved-audit-source-manifest-v1'
+         and type(manifest['files']) is dict and len(manifest['files'])<=256
+         and sum(row['size'] for row in manifest['files'].values())<=8*2**20,
+         'bounded separately reviewed audit source manifest required')
+@@ -250,6 +252,18 @@
+     if args.phase=='installation':
+         require(re.fullmatch('[a-f0-9]{64}',plan['runtime_key']),'derived installation key required')
+         roots.append(R/'.work/runtime-compilers'/plan['runtime_key'])
++    # The orchestration module imports stdlib definitions only. Its bytes are
++    # authenticated before deriving metadata authorization; no producer import.
++    audit=load('orchestration',HERE/'audit.py',inspection['value']['files'])
++    def completed_bytes(value):
++        name=str(value);table=inspection['value']['files']
++        require(name in table,'completed-owner authority is outside frozen ordinary rows')
++        data=raw(name,table[name]['sha256'])
++        require(same(OBSERVED[name],table[name]),'completed-owner authority identity changed')
++        return data
++    declared=audit.completed_directory_declarations(plan,inspection['value']['files'],
++        read_json=lambda name:json.loads(completed_bytes(name)),read_bytes=completed_bytes,
++        sha=lambda name:hashlib.sha256(completed_bytes(name)).hexdigest())
+     entries={name:dict(zip(['dev','ino','mode','size','mtime_ns','ctime_ns','nlink'],row['stamp'],strict=True))
+         for name,row in prepared['links'].items()}
+     entries.update(plan['snapshot_reuse']['evidence_roots'])
+@@ -267,7 +281,18 @@
+                 row=stamp(os.stat(leaf,dir_fd=parent,follow_symlinks=False));io_module.typed_identity(row,'directory')
+             require(str(p) not in entries or same(entries[str(p)],row),'metadata entry identity conflict')
+             entries[str(p)]=row
++    for name in declared['directories']:
++        p=io_module.path(name)
++        require(name not in inspection['value']['files'] and name not in historical
++            and not any(p==root or root in p.parents for root in roots),
++            'completed directory must remain exact metadata outside output subtrees')
++        with io_module.parent_descriptor(p) as (parent,leaf):
++            observed=stamp(os.stat(leaf,dir_fd=parent,follow_symlinks=False))
++            io_module.typed_identity(observed,'directory')
++        require(name not in entries or same(entries[name],observed),'completed metadata identity conflicts')
++        entries[name]=observed
+     io=io_module.Access(inspection['value']['files'],historical_paths=historical,entries=entries,output_roots=roots,guard=guard)
++    completed_evidence=dict(declaration=declared,observed=audit.completed_directory_readback(declared,io))
+     # Helper29 authentication and complete expansion are performed by the
+     # unchanged qualified runtime Reader before any ordinary history checks.
+     # This bootstrap's independent union never substitutes raw-wire digests.
+@@ -289,7 +314,6 @@
+         read_json=io.read_json,read_bytes=io.read_bytes,sha=io.sha,identity=io.identity)
+     require(type(retry_proof['controls']) is int and retry_proof['controls']==RETRY_COUNT
+         and same(retry_proof['audit'],manifest['retry_controls']), 'actual separate retry controls differ before import')
+-    audit=load('orchestration',HERE/'audit.py',io.files)
+     link_proof=audit.frozen_link_controls(manifest['frozen_links_controls'],read_json=io.read_json,
+         read_bytes=io.read_bytes,sha=io.sha,identity=io.identity)
+     require(type(link_proof['tests']) is int and link_proof['tests']==LINK_COUNT,
+@@ -308,7 +332,7 @@
+         reader=reader,factory=factory,entry=entry,actual53=manifest['actual53'],
+         startup_owner=startup_owner,actual39=manifest['startup_controls'],actual_retry=manifest['retry_controls'],
+         link_reader=link_reader,actual_links=manifest['frozen_links_controls'],failed_audit=manifest['failed_audit'],
+-        guard=guard,**phase_modules)
++        completed_evidence=completed_evidence,guard=guard,**phase_modules)
+     result.update(pid=os.getpid(),parent_pid=os.getppid(),source_manifest=dict(path=str(args.source_manifest),
+         sha256=args.source_manifest_sha256),source_rows=rows,samples=SAMPLES)
+     # Every initial source/packet observation is checked once more; no current

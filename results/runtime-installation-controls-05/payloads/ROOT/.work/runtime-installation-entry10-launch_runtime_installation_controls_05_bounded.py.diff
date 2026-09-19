@@ -1,0 +1,20 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime-installation-controls-before-entry10-01/files/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/launch_runtime_installation_controls_05_bounded.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/launch_runtime_installation_controls_05_bounded.py
+@@ -11,7 +11,7 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ HERE = ROOT/'experiments/runtime-installation-controls-05'
+ LAUNCH = HERE/'launch.json'
+-EXPECTED = '273cd72239ab959a761ee829bb058f242bcea4000c6b91eaf9362d5f575628cd'
++EXPECTED = None
+ WORK = ROOT/'.work/runtime-installation-controls-launcher-05'
+ OUTER = ROOT/'.work/experiments/runtime-installation-controls-supervisor-05'
+ sha = lambda p: hashlib.sha256(Path(p).read_bytes()).hexdigest()
+@@ -21,7 +21,7 @@
+ plan = json.loads(LAUNCH.read_bytes())
+ assert sha(HERE/'inputs.json') == plan['inputs_sha256'] and sha(HERE/'run.py') == plan['helper_sha256']
+ assert plan['owner'] == str(ROOT) and plan['controls'] == 25 and plan['expected_children'] == 1
+-assert shutil.disk_usage(ROOT).free >= 16*2**30
++assert shutil.disk_usage(ROOT).free >= 10*2**30
+ assert not WORK.exists() and not WORK.is_symlink() and not OUTER.exists() and not OUTER.is_symlink()
+ WORK.mkdir()
+ record = dict(status='starting', launcher_source_path=str(Path(__file__).resolve()), launcher_source_sha256=sha(__file__),

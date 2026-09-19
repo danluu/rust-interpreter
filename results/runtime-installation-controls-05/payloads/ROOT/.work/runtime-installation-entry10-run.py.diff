@@ -1,0 +1,11 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime-installation-controls-before-entry10-01/files/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-controls-05/run.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-controls-05/run.py
+@@ -57,7 +57,7 @@
+     save()
+     try:
+         with owned.workload_lock(owned.CANONICAL_LOCK, 600) as fd:
+-            receipt.update(status='running', admitted_at=time.time(), free_bytes_before=owned.disk(OWNER, 16)); save()
++            receipt.update(status='running', admitted_at=time.time(), free_bytes_before=owned.disk(OWNER, 10)); save()
+             guard(freeze); (WORK / 'tmp').mkdir()
+             environment = freeze['environment'] | {'TMPDIR': str(WORK / 'tmp')}
+             def refuse_explicit_signals(event, args):

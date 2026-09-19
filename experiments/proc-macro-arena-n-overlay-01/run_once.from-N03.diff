@@ -1,0 +1,488 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-03/run_once.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-overlay-01/run_once.py
+@@ -1,5 +1,6 @@
+-"""One-shot matched N client builds and real compiler tests. No retries or signals."""
++"""One-shot default proc_macro discovery through finite matched N overlays."""
+ from pathlib import Path
++import argparse
+ import fcntl
+ import hashlib
+ import json
+@@ -10,17 +11,16 @@
+ import stat
+ import subprocess
+ import time
+-
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+-SOURCE = ROOT/'experiments/proc-macro-arena-n-client-03'
+-WORK = ROOT/'.work/proc-macro-arena-n-client-03'
+-OUT = ROOT/'results/proc-macro-arena-n-client-03'
++SOURCE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-overlay-01')
++WORK = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/proc-macro-arena-n-overlay-01')
++OUT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-n-overlay-01')
+ TC = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1')
+ LOCK = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+-PLAN_SHA = '360a6d21eb3520880a6cbf491219139c77767858e9c48ce0ab138fa98d3a6306'
+-FIELDS = ('dev', 'ino', 'mode', 'nlink', 'size', 'mtime_ns', 'ctime_ns')
++PLAN_SHA = '2a47bdd12f42c197438b11a9114e76551ed037875b2e39d773c987c9606b2356'
++FIELDS = ("dev", "ino", "mode", "nlink", "size", "mtime_ns", "ctime_ns")
+ START = time.monotonic()
+-
++ALIASES = {}
+ 
+ 
+ def require(value, message):
+@@ -30,13 +30,6 @@
+ 
+ def stamp(info):
+     return {name: getattr(info, 'st_'+name) for name in FIELDS}
+-
+-
+-def guard(entry=False):
+-    require(time.monotonic()-START < 2400, 'overall observer deadline expired')
+-    free = shutil.disk_usage(ROOT).free
+-    require(free >= (14 if entry else 9)*2**30, 'compiler free-space gate refused')
+-    return free
+ 
+ 
+ def file_record(path):
+@@ -74,20 +67,6 @@
+     if replace:
+         os.replace(temporary, path)
+     require(path.read_bytes() == data, 'record readback differs')
+-
+-
+-def work_size():
+-    total = 0; count = 0
+-    for root, directories, files in owned_walk():
+-        for name in directories + files:
+-            p = Path(root)/name; info = p.lstat(); count += 1
+-            require(count <= 1024 and not stat.S_ISLNK(info.st_mode), 'unexpected owned output membership')
+-            if stat.S_ISREG(info.st_mode):
+-                total += info.st_size
+-            else:
+-                require(stat.S_ISDIR(info.st_mode), 'unexpected owned output kind')
+-    require(total <= 256*2**20, 'fresh work/results exceed 256MiB')
+-    return total
+ 
+ 
+ def limits(cpu):
+@@ -241,46 +220,213 @@
+     require(sum(r['bytes'] for r in observed.values() if r['kind'] == 'file') == inventory['logical_file_bytes'], 'runtime byte accounting differs')
+     return dict(entries=observed, directories=directories, full_payload_readback=payloads)
+ 
+-
+-def input_paths(plan):
+-    require(len(plan['inputs']) <= 128, 'bounded source and provenance inputs')
++def guard(entry=False):
++    require(time.monotonic()-START < 2400, 'overall observer deadline expired')
++    free = shutil.disk_usage(ROOT).free
++    require(free >= (16 if entry else 9)*2**30, 'compiler free-space gate refused')
++    return free
++
++
++def work_size():
++    total = 0; count = 0
++    for root, directories, files in owned_walk():
++        for name in directories + files:
++            p = Path(root)/name; info = p.lstat(); count += 1
++            require(count <= 1024, 'bounded owned output membership')
++            if stat.S_ISLNK(info.st_mode):
++                require(str(p) in ALIASES and os.readlink(p) == ALIASES[str(p)], 'only finite declared overlay links')
++                require(p.resolve(strict=True) == Path(ALIASES[str(p)]), 'overlay link resolved elsewhere')
++                total += info.st_size
++            elif stat.S_ISREG(info.st_mode):
++                total += info.st_size
++            else:
++                require(stat.S_ISDIR(info.st_mode), 'unexpected owned output kind')
++    require(total <= 256*2**20, 'fresh work/results exceed 256MiB')
++    return total
++
++
++def source_readback(plan):
++    require(len(plan['inputs']) <= 40, 'bounded fixture and provenance inputs')
+     rows = {}
+     for name, expected in plan['inputs'].items():
+         require(name == expected['path'], 'input route differs')
+         actual = file_record(name)
+         require(actual == {k:expected[k] for k in ['sha256','bytes','identity']}, 'exact source or provenance input changed')
+         rows[name] = actual
+-    for path in [SOURCE/'plan.json', SOURCE/'run_once.py', SOURCE/'README.md', SOURCE/'source-review.json']:
+-        rows[str(path)] = file_record(path)
++    for name in ['plan.json','run_once.py','README.md','source-review.json','prerequisite-template.json']:
++        rows[str(SOURCE/name)] = file_record(SOURCE/name)
+     require(rows[str(SOURCE/'plan.json')]['sha256'] == PLAN_SHA, 'plan changed')
+-    bindings = read(SOURCE/'source-bindings.json',plan['source_bindings']['sha256'])
+-    for pair in bindings['copies'].values():
+-        require(rows[pair['origin']['path']]['sha256'] == rows[pair['copy']['path']]['sha256'], 'copied source provenance differs')
+-    differences = []
+-    for name in sorted(bindings['copies']):
+-        path = Path(name)
+-        if path.is_relative_to(SOURCE/'source/stock/proc_macro'):
+-            rel = path.relative_to(SOURCE/'source/stock/proc_macro')
+-            other = str(SOURCE/'source/candidate/proc_macro'/rel)
+-            if rows[name]['sha256'] != rows[other]['sha256']:
+-                differences.append(str(rel))
+-    require(differences == bindings['source_difference_paths'], 'only Arena and Symbol may differ between client sources')
++    bindings = read(SOURCE/'source-bindings.json', plan['source_bindings']['sha256'])
++    require(len(bindings['copies']) == 9, 'exact nine original fixture files')
++    for copy, pair in bindings['copies'].items():
++        require(copy == pair['copy']['path'] and rows[copy]['sha256'] == rows[pair['origin']['path']]['sha256'], 'fixture bytes differ')
+     return rows
+ 
+ 
+-def test_result(label, spec):
+-    require((OUT/(label+'.stderr')).read_bytes() == b'', 'test harness stderr must be empty')
+-    raw = (OUT/(label+'.stdout')).read_text(); lines = [line for line in raw.splitlines() if line]
+-    names = spec['tests']; count = len(names)
+-    require(len(lines) == count+2 and lines[0] == f'running {count} tests', 'exact native test count/header')
+-    require(lines[1:-1] == [f'test {name} ... ok' for name in names], 'all exact native tests must pass without skips')
+-    require(re.fullmatch(r'test result: ok\. '+str(count)+r' passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in [0-9]+\.[0-9]+s', lines[-1]) is not None,
+-            'exact native test result summary')
+-    return dict(tests=names, passed=count, stock_empty_harness_is_smoke_only=spec['arm']=='stock')
+-
+-
+-def dependency_proof(spec, built):
+-    outputs = [spec['output']] + ([spec['metadata']] if 'metadata' in spec else [])
++def prerequisite(plan, expected_sha):
++    require(re.fullmatch('[0-9a-f]{64}', expected_sha) is not None, 'actual prerequisite SHA is mandatory')
++    path = Path(plan['prerequisite']['path']); first = file_record(path)
++    binding = read(path, expected_sha)
++    require(binding['policy'] == 'reviewed-passed-n-client04-for-default-discovery-v1'
++            and binding['actual_success'] is True, 'successful reviewed N04 prerequisite required')
++    owner = Path(plan['prerequisite']['owner_source']); output = Path(plan['prerequisite']['owner_results'])
++    wanted = {name:str(output/name) for name in ['result.json','execution.json','built-artifacts.json','inputs-before.json','inputs-after.json','runtime-before.json','runtime-after.json']}
++    wanted.update({'owner-plan':str(owner/'plan.json'),'owner-runner':str(owner/'run_once.py'),
++                   'independent-readback':plan['prerequisite']['independent_readback']['path']})
++    require(set(binding['proofs']) == set(wanted), 'exact completed owner proof set')
++    require(binding['proofs']['owner-plan']['sha256'] == plan['inputs'][str(owner/'plan.json')]['sha256']
++            and binding['proofs']['owner-runner']['sha256'] == plan['inputs'][str(owner/'run_once.py')]['sha256'],
++            'exact reviewed successful-owner source required')
++    proofs = {}; rows = {str(path):first}
++    for name, target in wanted.items():
++        ref = binding['proofs'][name]
++        require(set(ref) == {'path','sha256'} and ref['path'] == target
++                and isinstance(ref['sha256'], str) and re.fullmatch('[0-9a-f]{64}', ref['sha256']), 'actual proof route/hash required')
++        record = file_record(target); require(record['sha256'] == ref['sha256'], 'completed owner proof changed')
++        rows[target] = record
++        if name != 'owner-runner':
++            proofs[name] = read(target, ref['sha256'])
++    result = proofs['result.json']; execution = proofs['execution.json']; owner_plan = proofs['owner-plan']
++    audit = proofs['independent-readback']
++    require(binding['proofs']['independent-readback'] == plan['prerequisite']['independent_readback']
++            and audit['status'] == 'verified' and audit['command_count'] == len(audit['children']) == 27
++            and audit['stable_caller_pairs'] == 9 and audit['current_inputs_match'] is True
++            and audit['full_input_before_after_rows'] == 122
++            and audit['native_tests']['candidate']['passed'] == 13
++            and audit['native_tests']['stock']['passed'] == 0
++            and audit['native_tests']['stock']['stock_empty_harness_is_smoke_only'] is True
++            and audit['no_target_imports_or_child_calls'] is True
++            and audit['real_N_external_client_integration'] is True
++            and audit['benchmark'] is audit['compiler_distribution_qualified']
++            is audit['runtime_composition_qualified'] is audit['holdout_qualified'] is False,
++            'independently verified N04 scope')
++    for name, key in [('result','result.json'),('execution','execution.json'),('plan','owner-plan'),('runner','owner-runner')]:
++        require(audit[name] == binding['proofs'][key], 'independent owner/source reference differs')
++    require(audit['runtime']['before'] == binding['proofs']['runtime-before.json']
++            and audit['runtime']['after'] == binding['proofs']['runtime-after.json']
++            and audit['runtime']['full_payload_rehash'] is audit['runtime']['complete_membership'] is True
++            and audit['runtime']['files'] == 63 and audit['runtime']['links'] == 2
++            and audit['runtime']['logical_file_bytes'] == 564106543, 'independent full runtime proof')
++    require(result['status'] == 'passed' and result['children'] == 27
++            and result['library_builds'] == 3 and result['whole_crate_test_builds'] == 2
++            and result['native_tests_passed'] == {'stock':0,'candidate':13}
++            and result['caller_cases_per_arm'] == 9 and result['inputs_unchanged'] is True
++            and result['complete_N_runtime_unchanged'] is True
++            and result['real_N_external_client_integration'] is True
++            and result['compiler_server_unchanged'] is True
++            and result['builtin_quote_optimized'] is result['compiler_distribution_qualified']
++            is result['runtime_composition_qualified'] is result['holdout_qualified'] is result['benchmark'] is False,
++            'complete successful N04 scope required')
++    require(result['execution_sha256'] == binding['proofs']['execution.json']['sha256']
++            and execution['status'] == 'passed' and execution['children'] == 27
++            and execution['plan_sha256'] == binding['proofs']['owner-plan']['sha256']
++            and execution['started_at'] <= execution['admitted_at'] <= execution['finished_at']
++            <= execution['parent_lock_closed_at'] <= execution['canonical_released_at']
++            and execution['signals'] == [] and execution['retries'] == 0,
++            'actual N04 owner and canonical closure')
++    require(owner_plan['compiler'] == str(TC/'bin/rustc') and owner_plan['sysroot'] == str(TC)
++            and len(owner_plan['commands']) == len(execution['command_records']) == 27,
++            'exact matched N04 command plan')
++    for record, spec in zip(execution['command_records'], owner_plan['commands']):
++        require(record['status'] == 'closed' and record['may_be_live'] is False
++                and record['returncode'] == record['expected_returncode'] == spec['expected_returncode']
++                and record['command'] == spec['argv'] and record['cwd'] == spec['cwd']
++                and record['environment'] == spec['environment'] and not record['observation_errors']
++                and execution['admitted_at'] <= record['started_at'] <= record['spawned_at']
++                <= record['finished_at'] <= execution['finished_at'], 'all actual N04 children closed correctly')
++    before = proofs['inputs-before.json']; after = proofs['inputs-after.json']
++    require(before == after and len(before) <= 160, 'full N04 source before/after')
++    for name, saved in before.items():
++        require(file_record(name) == saved, 'completed N04 source/provenance changed')
++        rows[name] = saved
++    require(before[str(owner/'plan.json')]['sha256'] == binding['proofs']['owner-plan']['sha256']
++            and before[str(owner/'run_once.py')]['sha256'] == binding['proofs']['owner-runner']['sha256'],
++            'actual source associations required')
++    runtime = proofs['runtime-before.json']
++    require(runtime == proofs['runtime-after.json'] and runtime['full_payload_readback'] is True
++            and len(runtime['entries']) == 65, 'complete actual N runtime association')
++    selected = binding['selected_artifacts']; wanted_artifacts = set()
++    for names in plan['overlay']['owned_per_arm'].values():
++        wanted_artifacts.update(names)
++    require(set(selected) == wanted_artifacts and len(selected) == 6, 'exact six prerequisite artifacts')
++    for name, saved in selected.items():
++        require(type(saved) is dict and saved == proofs['built-artifacts.json'][name] == audit['built_artifacts'][name]
++                and file_record(name) == saved, 'actual N04 artifact hash and identity required')
++        rows[name] = saved
++    require(file_record(path) == first, 'prerequisite changed during authentication')
++    return binding, rows, runtime
++
++
++def copy_ordinary(source, dest, expected):
++    require(file_record(source) == expected, 'source artifact changed before copy')
++    digest = hashlib.sha256(); count = 0
++    with Path(source).open('rb') as stream, dest.open('xb') as output:
++        while chunk := stream.read(2**20):
++            output.write(chunk); digest.update(chunk); count += len(chunk); guard()
++        output.flush(); os.fsync(output.fileno())
++    actual = file_record(dest)
++    require(digest.hexdigest() == actual['sha256'] == expected['sha256']
++            and count == actual['bytes'] == expected['bytes'] and file_record(source) == expected,
++            'exact artifact copy with full readback')
++    return actual
++
++
++def create_overlays(plan, selected):
++    overlay = plan['overlay']; expected_links = overlay['aliases']; owned = {}
++    require(len(expected_links) == 52 and len(overlay['excluded_original_paths']) == 4, 'finite overlay scope')
++    for arm in ['stock','candidate']:
++        root = WORK/arm/'sysroot'
++        for relative in overlay['directories']:
++            (root/relative).mkdir(parents=True, exist_ok=True)
++        for relative, declaration in expected_links.items():
++            target = Path(declaration['path']); destination = root/relative
++            require(target == TC/relative and declaration['record']['kind'] == 'file'
++                    and target.resolve(strict=True) == target
++                    and stamp(target.lstat()) == expected_identity(declaration['record']['stamp']),
++                    'exact ordinary already-read N alias target')
++            ALIASES[str(destination)] = str(target)
++            os.symlink(str(target), destination)
++        for source in overlay['owned_per_arm'][arm]:
++            destination = root/'lib/rustlib/aarch64-apple-darwin/lib'/Path(source).name
++            owned[str(destination)] = copy_ordinary(source, destination, selected[source])
++        require(all(not os.path.lexists(root/path) for path in overlay['excluded_original_paths']), 'old client/literal cannot enter overlay')
++    return owned
++
++
++def overlay_readback(plan, owned):
++    observed = {}; directories = {}
++    for arm in ['stock','candidate']:
++        base = WORK/arm/'sysroot'; found = set(); found_dirs = set()
++        expected_names = {str(base/relative) for relative in plan['overlay']['aliases']}
++        expected_names.update(name for name in owned if Path(name).is_relative_to(base))
++        for root, dirs, files in os.walk(base, followlinks=False):
++            path = Path(root); relative = str(path.relative_to(base)); found_dirs.add(relative)
++            require(relative in plan['overlay']['directories'] and path.resolve(strict=True) == path, 'ordinary finite overlay directories')
++            directories[str(path)] = stamp(path.lstat())
++            for name in dirs + files:
++                child = path/name; identity = stamp(child.lstat())
++                if stat.S_ISDIR(identity['mode']):
++                    continue
++                key = str(child); found.add(key)
++                require(key in expected_names, 'unexpected overlay member')
++                if key in ALIASES:
++                    target = ALIASES[key]
++                    require(stat.S_ISLNK(identity['mode']) and os.readlink(child) == target
++                            and child.resolve(strict=True) == Path(target), 'exact N link association')
++                    relative = str(child.relative_to(base)); row = plan['overlay']['aliases'][relative]['record']
++                    require(stamp(Path(target).lstat()) == expected_identity(row['stamp']), 'unchanged N alias target identity')
++                    observed[key] = dict(kind='link',identity=identity,target=target,resolved=target)
++                else:
++                    require(file_record(child) == owned[key], 'owned client/literal copy changed')
++                    observed[key] = dict(kind='file',**owned[key])
++            require(len(found) <= 56 and len(found_dirs) <= 7, 'bounded overlay membership')
++        require(found == expected_names and found_dirs == set(plan['overlay']['directories']), 'complete overlay membership')
++    require(len(observed) == 112 and len(directories) == 14, 'two exact overlays')
++    return dict(entries=observed,directories=directories,old_client_and_literal_absent=True)
++
++
++def dependency_proof(spec, built, owned):
++    outputs = [spec['output']]
+     if spec['expected_returncode'] != 0:
+         require(all(not os.path.lexists(p) for p in outputs), 'failed compiler emitted success metadata')
+         return dict(success_outputs_absent=outputs)
+@@ -288,62 +434,47 @@
+     dep = Path(spec['depinfo']); dep_row = file_record(dep)
+     require(dep_row['bytes'] <= 2**20, 'bounded dependency proof')
+     text = dep.read_text(); require(file_record(dep) == dep_row, 'dep-info changed during reading')
+-    # Binary dep-info must name actual source and matching split metadata/code pairs.
+-    require('/.rustup/toolchains/' not in text, 'installed T artifact entered matched N dependency closure')
++    require('/.rustup/toolchains/' not in text and 'libproc_macro-452900db9815e688.' not in text
++            and 'librustc_literal_escaper-f4f532eb55f87a02.' not in text, 'old/T client or literal fallback')
+     for arg in spec['argv']:
+         if arg.endswith('.rs'):
+             require(arg in text, 'actual Rust source missing from dep-info')
+-    if spec['role'] != 'caller':
+-        require('/libproc_macro-452900db9815e688.' not in text, 'old N client silently selected')
+-    literal_dependency = None
+-    if spec['role'] in ['build-stock-client','build-candidate-client','build-whole-crate-tests','build-macro-dylib']:
+-        metadata_only = spec['role'] in ['build-stock-client','build-candidate-client']
+-        supplied = {}
+-        for suffix in ['rlib','rmeta']:
+-            name = str(WORK/'dependency'/('librustc_literal_escaper-arena04_n_dep01.'+suffix))
+-            require(file_record(name) == built[name], 'matched normal literal artifact changed')
+-            require(any(spec['argv'][i:i+2] == ['--extern','rustc_literal_escaper='+name]
+-                        for i in range(len(spec['argv'])-1)), 'explicit literal metadata/code argument missing')
+-            if suffix == 'rmeta' or not metadata_only:
+-                require(name in text, 'required literal crate source missing from dep-info')
+-            supplied[suffix] = dict(path=name, **built[name])
+-        # locator.rs::extract_one intentionally does not discover the unused
+-        # rlib when producing an rlib after loading its rmeta. Record the
+-        # supplied code archive without mislabeling it as selected or linked.
+-        literal_dependency = dict(metadata_only_rlib_build=metadata_only, supplied=supplied,
+-            required_depinfo_flavors=['rmeta'] if metadata_only else ['rlib','rmeta'],
+-            code_archive_linkage_required=not metadata_only,
+-            code_archive_present_in_depinfo=supplied['rlib']['path'] in text)
+-        require('/librustc_literal_escaper-f4f532eb55f87a02.' not in text, 'old private literal selected')
++    arm = spec['arm']; other = 'stock' if arm == 'candidate' else 'candidate'
++    require(str(WORK/other/'sysroot') not in text, 'opposite overlay selected')
++    selected = {}
+     if spec['role'] == 'build-macro-dylib':
+-        for suffix in ['rlib','rmeta']:
+-            name = str(WORK/spec['arm']/(f'libproc_macro-arena04_n_{spec["arm"]}01.'+suffix))
+-            require(name in text and file_record(name) == built[name], 'matched N client pair not linked')
+-        other = 'stock' if spec['arm']=='candidate' else 'candidate'
+-        require(str(WORK/other) not in text, 'other arm entered macro build')
++        require(not any(arg.startswith(('proc_macro=','rustc_literal_escaper=','dependency=')) for arg in spec['argv']), 'default discovery cannot use explicit dependency override')
++        for name,row in owned.items():
++            if Path(name).is_relative_to(WORK/arm/'sysroot'):
++                require(name in text and file_record(name) == row, 'default-discovered client and transitive literal pairs must be linked')
++                selected[name] = row
++        require(len(selected) == 4, 'exact matched owned default dependencies')
+     if spec['role'] == 'caller':
+-        name = str(WORK/'macro-tests'/spec['arm']/'libarena04_macros.dylib')
+-        other = str(WORK/'macro-tests'/('stock' if spec['arm']=='candidate' else 'candidate')/'libarena04_macros.dylib')
+-        require(name in text and other not in text and file_record(name) == built[name], 'caller selected wrong macro dylib')
+-    proof = dict(outputs=rows,depinfo=dict(path=str(dep),**dep_row))
+-    if literal_dependency is not None:
+-        proof['normal_literal_dependency'] = literal_dependency
+-    return proof
++        name = str(WORK/'macro-tests'/arm/'libarena04_macros.dylib')
++        opposite = str(WORK/'macro-tests'/other/'libarena04_macros.dylib')
++        require(name in text and opposite not in text and file_record(name) == built[name], 'caller selected wrong macro dylib')
++    return dict(outputs=rows,depinfo=dict(path=str(dep),**dep_row),default_discovered=selected)
+ 
+ 
+ def main():
++    parser = argparse.ArgumentParser(); parser.add_argument('--prerequisite-sha256',required=True); args = parser.parse_args()
+     require(Path(__file__) == SOURCE/'run_once.py' and Path.cwd() == ROOT, 'exact runner path and cwd')
+     require(not os.path.lexists(WORK) and not os.path.lexists(OUT), 'fresh work/results required')
+     plan = read(SOURCE/'plan.json',PLAN_SHA)
+-    require(len(plan['commands']) == 27 and len(plan['cases']) == 9 and plan['actual_result'] is None, 'fixed unrun plan')
+-    require(plan['compiler'] == str(TC/'bin/rustc') and plan['sysroot'] == str(TC), 'matched N compiler only')
++    require(len(plan['commands']) == 20 and len(plan['cases']) == 9 and plan['actual_result'] is None,
++            'fixed unrun semantic plan')
++    require(plan['compiler'] == str(TC/'bin/rustc'), 'matched N compiler only')
++    # Validate literal presence without consuming a future success claim.
++    require(re.fullmatch('[0-9a-f]{64}',args.prerequisite_sha256) is not None
++            and args.prerequisite_sha256 == plan['prerequisite']['sha256'], 'actual reviewed prerequisite SHA required')
+     guard(entry=True); OUT.mkdir(); WORK.mkdir()
+-    for relative in ['dependency','stock','candidate','macro-tests/stock','macro-tests/candidate']:
+-        (WORK/relative/'tmp').mkdir(parents=True)
++    for arm in ['stock','candidate']:
++        (WORK/'macro-tests'/arm/'tmp').mkdir(parents=True)
+     shutil.copyfile(SOURCE/'run_once.py',OUT/'run_once.py'); shutil.copyfile(SOURCE/'plan.json',OUT/'plan.json')
+     records=[]; summary=dict(status='waiting',started_at=time.time(),parent_pid=os.getpid(),plan_sha256=PLAN_SHA,
+-        command_records=records,children=0,signals=[],retries=0,real_N_external_client_integration=False,
+-        compiler_distribution_qualified=False,runtime_composition_qualified=False,benchmark=False)
++        prerequisite_sha256=args.prerequisite_sha256,command_records=records,children=0,signals=[],retries=0,
++        default_discovery_qualified=False,compiler_distribution_qualified=False,runtime_composition_qualified=False,
++        benchmark=False)
+     write('execution.json',summary);lock=None
+     try:
+         require(LOCK.resolve(strict=True)==LOCK and stat.S_ISREG(LOCK.lstat().st_mode),'ordinary canonical lock')
+@@ -356,39 +487,45 @@
+             except BlockingIOError:
+                 require(time.monotonic()<deadline,'canonical wait expired');time.sleep(.25)
+         summary.update(status='admitted',admitted_at=time.time(),free_bytes_before=guard(entry=True))
+-        before=input_paths(plan);write('inputs-before.json',before)
++        before=source_readback(plan);write('inputs-before.json',before)
++        qualified,prerequisite_before,previous_runtime=prerequisite(plan,args.prerequisite_sha256)
++        write('prerequisite.json',qualified);write('prerequisite-before.json',prerequisite_before)
+         inventory=read(SOURCE/'runtime-inventory.json',plan['runtime_inventory']['sha256'])
+         compiled=read(inventory['compiled']['path'],inventory['compiled']['sha256'])
+         require(compiled['stage1']==inventory['entries'] and compiled['source_identity']==inventory['source_identity'], 'old N compiler proof differs')
+         runtime_before=runtime_readback(inventory,True);write('runtime-before.json',runtime_before)
+-        cases={case['name']:case for case in plan['cases']};compared={};proofs=[];built={}
++        require(runtime_before==previous_runtime,'current N differs from successful predecessor')
++        owned=create_overlays(plan,qualified['selected_artifacts'])
++        overlay_before=overlay_readback(plan,owned);write('overlays-before.json',overlay_before)
++        cases={case['name']:case for case in plan['cases']};compared={};built={}
+         for index,spec in enumerate(plan['commands']):
+             current=runtime_readback(inventory,False)
+             require(current['entries']==runtime_before['entries'] and current['directories']==runtime_before['directories'], 'N runtime identity/membership changed')
++            require(overlay_readback(plan,owned)==overlay_before,'overlay changed before child')
+             require(all(file_record(name)==row for name,row in built.items()),'previously built artifact changed')
+-            label,record=run(index,spec,lock,records)
+-            summary['children']+=1
+-            if spec['role']=='run-whole-crate-tests':
+-                proof=dict(label=label,native_tests=test_result(label,spec))
+-            else:
+-                observed=diagnostics(label,spec,cases);dep=dependency_proof(spec,built)
+-                if spec['role']=='caller':
+-                    key=spec['case']
+-                    if spec['arm']=='stock':compared[key]=observed
+-                    else:require(observed==compared[key],'stock/candidate stable diagnostics differ')
+-                if spec['expected_returncode']==0:built.update(dep['outputs'])
+-                proof=dict(label=label,diagnostics=observed,dependency=dep)
++            label,record=run(index,spec,lock,records);summary['children']+=1
++            observed=diagnostics(label,spec,cases);dep=dependency_proof(spec,built,owned)
++            if spec['role']=='caller':
++                key=spec['case']
++                if spec['arm']=='stock':compared[key]=observed
++                else:require(observed==compared[key],'stock/candidate stable diagnostics differ')
++            if spec['expected_returncode']==0:built.update(dep['outputs'])
+             require(all(file_record(name)==row for name,row in built.items()),'built artifact changed during child')
+-            proofs.append(proof);write(label+'-verification.json',proof);write('execution.json',summary,replace=True)
++            require(overlay_readback(plan,owned)==overlay_before,'overlay changed during child')
++            write(label+'-verification.json',dict(label=label,diagnostics=observed,dependency=dep));write('execution.json',summary,replace=True)
+         after={name:file_record(name) for name in before};write('inputs-after.json',after)
+         require(after==before,'source/provenance input changed')
++        prior_after={name:file_record(name) for name in prerequisite_before};write('prerequisite-after.json',prior_after)
++        require(prior_after==prerequisite_before,'completed predecessor changed')
+         runtime_after=runtime_readback(inventory,True);write('runtime-after.json',runtime_after)
+         require(runtime_after==runtime_before,'full N runtime changed')
++        overlay_after=overlay_readback(plan,owned);write('overlays-after.json',overlay_after)
++        require(overlay_after==overlay_before,'full overlay changed')
+         write('built-artifacts.json',built)
+-        require(len(records)==27 and all(row['status']=='closed' and not row['may_be_live'] for row in records),'all children must close')
+-        summary.update(status='passed',real_N_external_client_integration=True,finished_at=time.time(),
++        require(len(records)==20 and all(row['status']=='closed' and not row['may_be_live'] for row in records),'all children must close')
++        summary.update(status='passed',default_discovery_qualified=True,finished_at=time.time(),
+             free_bytes_after=guard(),work_and_results_bytes=work_size(),compared_cases=9,input_files=len(before),
+-            runtime_files=63,runtime_links=2,native_tests=plan['whole_crate_test_names'])
++            runtime_files=63,runtime_links=2,overlay_links=104,overlay_owned_files=8)
+     except BaseException as error:
+         summary.update(status='failed',error=repr(error),observed_at=time.time());raise
+     finally:
+@@ -400,14 +537,14 @@
+         try:write('execution.json',summary,replace=True)
+         except BaseException as error:
+             print(json.dumps(dict(status='final-publication-failed',error=repr(error),observed=summary)),flush=True);raise
+-    write('result.json',dict(status='passed',children=27,library_builds=3,whole_crate_test_builds=2,
+-        native_tests_passed={'stock':0,'candidate':13},stock_empty_harness_is_smoke_only=True,caller_cases_per_arm=9,
+-        execution_sha256=file_record(OUT/'execution.json')['sha256'],inputs_unchanged=True,complete_N_runtime_unchanged=True,
+-        real_N_external_client_integration=True,compiler_server_unchanged=True,builtin_quote_optimized=False,
+-        compiler_distribution_qualified=False,runtime_composition_qualified=False,holdout_qualified=False,benchmark=False))
++    write('result.json',dict(status='passed',children=20,macro_dylib_builds=2,caller_cases_per_arm=9,
++        execution_sha256=file_record(OUT/'execution.json')['sha256'],prerequisite_sha256=args.prerequisite_sha256,
++        inputs_unchanged=True,complete_N_runtime_unchanged=True,overlays_unchanged=True,
++        default_discovery_qualified=True,real_N_external_client_integration=True,compiler_server_unchanged=True,
++        builtin_quote_optimized=False,compiler_distribution_qualified=False,runtime_composition_qualified=False,
++        holdout_qualified=False,benchmark=False))
+     print(json.dumps(dict(status='passed',result_sha256=file_record(OUT/'result.json')['sha256'])))
+ 
+ 
+ if __name__ == '__main__':
+     main()
+-

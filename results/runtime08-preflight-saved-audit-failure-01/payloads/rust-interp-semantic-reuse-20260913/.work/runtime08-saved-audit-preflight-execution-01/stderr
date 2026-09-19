@@ -1,0 +1,71 @@
+Traceback (most recent call last):
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-08/bootstrap.py", line 324, in <module>
+    main()
+    ~~~~^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-08/bootstrap.py", line 307, in main
+    result=audit.verify(phase=args.phase,expected=expected,prepared=prepared,inspection=inspection,io=io,
+        reader=reader,factory=factory,entry=entry,actual53=manifest['actual53'],
+        startup_owner=startup_owner,actual39=manifest['startup_controls'],actual_retry=manifest['retry_controls'],
+        link_reader=link_reader,actual_links=manifest['frozen_links_controls'],failed_audit=manifest['failed_audit'],
+        guard=guard,**phase_modules)
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-08/audit.py", line 411, in verify
+    state = modules.prerequisites.Reader(modules.stage, modules.hash_modules,
+        combined_freeze=inspection['value'], references=plan['independent_audits'],
+        read_json=io.read_json, sha=io.sha,
+        copy_partition=lambda r: entry.copy_partition(modules, r, load=factory.load,
+            directory_record=io.directory_record, saved=prepared['historical_copies']))
+  File "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-04/prerequisites.py", line 94, in __init__
+    self.partition()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-04/prerequisites.py", line 111, in partition
+    state = self._partition(self)
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-08/audit.py", line 414, in <lambda>
+    copy_partition=lambda r: entry.copy_partition(modules, r, load=factory.load,
+                             ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        directory_record=io.directory_record, saved=prepared['historical_copies']))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/entry.py", line 150, in copy_partition
+    return c.bootstrap(modules.stage,modules.hash_modules,reader.original,reader.plan,s.freeze['files'],
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        reader.plan['evidence_roots'],references,snapshots,helper_qualification=proof,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        read_json=s.read_json,read_bytes=s.read_bytes,sha=lambda p:s.owned.sha(s.frozen(p)),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        file_record=lambda p:dict(path=str(s.frozen(p)),**s.freeze['files'][str(p)]),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        directory_record=directory_record,check_absent=absent,guard=lambda:s.owned.disk(ROOT,9),saved=saved)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-04/copies.py", line 137, in bootstrap
+    catalog = stage.continued_catalog(modules, dict(files=context, absent_paths=original['absent_paths']),
+        modules['comp'], plan['independent_audits'], evidence_roots, snapshots,
+        read_json=read_json, read_bytes=read_bytes, sha=sha, file_record=physical_record,
+        directory_record=directory_record, check_absent=check_absent, guard=guard)
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage-03/stage.py", line 217, in continued_catalog
+    result = catalog.extend_failed(prior, failed_owner(), evidence_roots, SNAPSHOT_LIMITS,
+        read_json=read_json, file_record=file_record, directory_record=directory_record,
+    ...<2 lines>...
+            read_json=read_json, read_bytes=read_bytes, sha=sha, check_absent=check_absent,
+            directory_record=directory_record))
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/completed-proof-snapshot-catalog-02/catalog.py", line 287, in extend_failed
+    require(validate_failure(clone(owner), clone(receipt), clone(audit)) is True,
+            ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage-03/stage.py", line 220, in <lambda>
+    validate_failure=lambda owner, terminal, audit: failure.validate(owner, terminal, audit,
+                                                    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+        read_json=read_json, read_bytes=read_bytes, sha=sha, check_absent=check_absent,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        directory_record=directory_record))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage-03/failed_driver.py", line 98, in validate
+    require(directory_record(directory)['children'] == sorted(names), 'failed-owner exact directory membership')
+            ~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-05/audit_io.py", line 271, in directory_record
+    p = self._scope(value); name = str(p); self.guard()
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-05/audit_io.py", line 193, in _scope
+    require((current if frozen is True else output if frozen is False else current or output),
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            'undeclared saved-evidence path')
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-05/audit_io.py", line 25, in require
+    raise RuntimeError(message)
+RuntimeError: undeclared saved-evidence path

@@ -1,0 +1,60 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/verify_runtime_installation_controls_05.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/verify_runtime_installation_controls_06.py
+@@ -1,16 +1,16 @@
+ """Read-only actual25 audit. Execute only after passed terminal and outer release."""
+ import hashlib,json,re,time
+ from pathlib import Path
+-EXPECTED_LAUNCH = '273cd72239ab959a761ee829bb058f242bcea4000c6b91eaf9362d5f575628cd'
+-EXPECTED_INPUTS = '6743b2633384ee9f8d7b00df4b3e73639fcfb9ddc4d55b74b3da683b56d7ea71'
+-EXPECTED_DISPATCHER = '2c832eaf28725a5e539b3327e3e7887f6e092fbbc462fd670a121883bbe0fd9c'
+-EXPECTED_INPUT_BYTES = 971269
+-EXPECTED_INPUT_FILES = 18
++EXPECTED_LAUNCH = None
++EXPECTED_INPUTS = None
++EXPECTED_DISPATCHER = None
++EXPECTED_INPUT_BYTES = None
++EXPECTED_INPUT_FILES = None
+ A=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+-D=A/'experiments/runtime-installation-controls-05'
+-W=A/'.work/runtime-installation-controls-05'
+-S=A/'.work/experiments/runtime-installation-controls-supervisor-05'
+-L=A/'.work/runtime-installation-controls-launcher-05'
++D=A/'experiments/runtime-installation-controls-06'
++W=A/'.work/runtime-installation-controls-06'
++S=A/'.work/experiments/runtime-installation-controls-supervisor-06'
++L=A/'.work/runtime-installation-controls-launcher-06'
+ def read(p):
+  assert p.stat().st_size<=2*2**20,'bounded actual JSON required'
+  return json.loads(p.read_bytes())
+@@ -27,7 +27,7 @@
+  p=Path(n);assert p.resolve(strict=True)==p and stamp(p)==v['stamp'] and sha(p)==v['sha256'] and stamp(p)==v['stamp'],n
+ for n,v in f['routes'].items():assert str(Path(n).resolve(strict=True))==v,n
+ assert l['launch_path']==str(D/'launch.json') and l['launch_sha256']==sha(D/'launch.json')
+-assert Path(l['launcher_source_path'])==A/'.work/launch_runtime_installation_controls_05_bounded.py' and l['launcher_source_sha256']==sha(Path(l['launcher_source_path']))
++assert Path(l['launcher_source_path'])==A/'.work/launch_runtime_installation_controls_06_bounded.py' and l['launcher_source_sha256']==sha(Path(l['launcher_source_path']))
+ assert l['status']=='terminal-observed' and l['returncode']==0 and l['launcher_returncode']==0 and l['command']==launch['command'] and l['environment']==launch['environment'] and l['cwd']==str(A)
+ assert l['launcher_source_sha256']==EXPECTED_DISPATCHER
+ assert l['observation_errors']==[] and l['wrapper_may_be_live'] is False and l['actual_task_may_be_live'] is False
+@@ -65,7 +65,7 @@
+ assert re.search(r'^Ran 25 tests in [0-9.]+s\n\nOK\n$',raw,re.M) and not (W/'command/stdout').read_bytes()
+ assert t['status']=='passed' and t['tests_run']==25 and all(t[k]==0 for k in ['failures','errors','skipped','expected_failures','unexpected_successes','child_processes','compiler_calls'])
+ assert all(r[k]==0 for k in ['compiler_calls','provider_probes','B3_compositions']) and not list((W/'tmp').iterdir())
+-assert r['free_bytes_before']>=16*2**30 and r['free_bytes_after']>=9*2**30
++assert r['free_bytes_before']>=10*2**30 and r['free_bytes_after']>=9*2**30
+ assert len(f['files'])==EXPECTED_INPUT_FILES and sum(v['stamp'][3] for v in f['files'].values())==EXPECTED_INPUT_BYTES
+ assert read(S/'plan.json')['command']==launch['command'][6:] and read(S/'plan.json')['supervisor_sha256']==sha(A/'scripts/supervise_experiment.py')
+ for rawpath in [W/'command/stdout',W/'command/stderr',W/'result.json']:
+@@ -77,11 +77,11 @@
+   assert path.stat().st_size<=256*1024;retained+=path.stat().st_size
+  else:assert path.is_dir()
+ assert retained<=2*2**20 and r['retained_file_bytes']<=retained
+-assert f['capacity']==launch['capacity']==dict(entry_gib=16,stop_gib=9,floor_gib=8)
++assert f['capacity']==launch['capacity']==dict(entry_gib=10,stop_gib=9,floor_gib=8)
+ prefix_counts={'test_installation.Routes.test_':7,'test_installation.Phase.test_':7,'test_installation.Preflight.test_':11}
+ assert all(name.startswith(tuple(prefix_counts)) for name in names) and len(set(names))==25
+ for prefix,count in prefix_counts.items():assert sum(name.startswith(prefix) for name in names)==count
+ proof=dict(status='verified',finished_at=time.time(),controls=25,input_files=len(f['files']),input_bytes=sum(v['stamp'][3] for v in f['files'].values()),receipt_sha256=sha(W/'receipt.json'),result_sha256=sha(W/'result.json'),raw_sha256={s:sha(W/'command'/s) for s in ['stdout','stderr']},supervisor_pid=o['supervisor_pid'],helper_pid=r['pid'],test_pid=c['pid'],exact_names=names,compiler_calls=0,provider_probes=0,process_signals=0,retained_file_bytes=retained,launcher_sha256=sha(L/'record.json'),outer_sha256=sha(S/'status.json'),wrapper_identity_limitation=l['wrapper_identity_limitation'],unavailable_contemporaneous_cwd=missing_cwd,observed_context='Twenty-five pure installation route/phase/prerequisite controls;7 route fixtures,7 phase and separate-qualification fixtures,11 completed-preflight admission fixtures; history callback checks routing/refusal only; no compiler/provider/nested process calls and no actual runtime qualification',verifier_sha256=sha(Path(__file__)))
+-out=A/'.work/runtime-installation-controls-independent-verification-05.json'
++out=A/'.work/runtime-installation-controls-independent-verification-06.json'
+ with out.open('x') as f:json.dump(proof,f,indent=2,sort_keys=True);f.write('\n')
+ print(json.dumps(dict(path=str(out),sha256=sha(out),receipt_sha256=proof['receipt_sha256'])))
