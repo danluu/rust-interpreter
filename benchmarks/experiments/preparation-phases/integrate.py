@@ -41,7 +41,7 @@ def main():
             require_space(ROOT,8);assert shutil.disk_usage(ROOT).free>=needed
             command=['cargo','+nightly-2026-09-08','test',*extra,'--locked','--offline','--jobs','2',
                 '--manifest-path',str(ROOT/'Cargo.toml'),'--target-dir',str(target),'-p','rust-interp-bytecode',
-                '--features','preparation-observer','--lib','preparation_']
+                '--features','preparation-observer','--lib','preparation_o']
             if label in ['observer','ordinary']:
                 command=['cargo','+nightly-2026-09-08','build' if label=='observer' else 'check',*extra,'--locked','--offline','--jobs','2',
                     '--manifest-path',str(ROOT/'Cargo.toml'),'--target-dir',str(target),'-p','rust-interp-bytecode','--message-format=json']
