@@ -1,0 +1,38 @@
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-04/imports.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03/imports.py
+@@ -10,7 +10,8 @@
+ import sys
+ from types import SimpleNamespace
+ 
+-HERE = Path(__file__).resolve().parent
++HERE = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-04')
++NATIVE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-native-loader-probes-01')
+ QUALIFIED = HERE.with_name('runtime-installation-01')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ 
+@@ -35,7 +36,7 @@
+ def load(name, path, check_source, dependencies=None):
+     path = Path(path)
+     check_source(path)
+-    full = '_runtime_options_04_'+name
++    full = '_runtime_options_installation07_'+name
+     if full in sys.modules:
+         value = sys.modules[full]
+         if Path(value.__file__).resolve(strict=True) != path:
+@@ -68,13 +69,14 @@
+     public = {}
+     for name in ['custom_compiler','workflow_io','std_mir','compare_saved_runtime','toolchain_lookup',
+                  'runtime_compiler','std_mir_source_paths','verified_std_diagnostics']:
+-        public[name] = load('r_'+name, scripts/(name+'.py'), check_source, public)
++        path = NATIVE/'runtime_compiler.py' if name == 'runtime_compiler' else scripts/(name+'.py')
++        public[name] = load('r_'+name, path, check_source, public)
+     q = load('source_qualification', R/'experiments/runtime-compiler-installation/source_qualification.py',
+              check_source, public)
+     own = {'prerequisites':load('prerequisites', HERE/'prerequisites.py', check_source),
+            'copies':load('copies', HERE/'copies.py', check_source),
+            'preflight_history':load('preflight_history', HERE/'preflight_history.py', check_source)}
+-    own.update({name:load(name, QUALIFIED/(name+'.py'), check_source)
++    own.update({name:load(name, NATIVE/'producer_recipe.py' if name == 'recipe' else QUALIFIED/(name+'.py'), check_source)
+                 for name in ['recipe','discovery','controller']})
+     monitor = load('private_monitor', QUALIFIED/'monitor.py', check_source, {'owned_stage':modules['monitor'].owned})
+     if monitor is modules['monitor']:

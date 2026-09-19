@@ -7,17 +7,19 @@ installation work are separate from application build timings.
 | Candidate | Completed checks | Remaining performance evidence |
 | --- | --- | --- |
 | Cache the immutable incremental option hash once per compiler context | Compiler build; serial and parallel hash controls; compiler behavior controls; runtime preflight and its independent saved-result audit | Complete runtime installation and composition, then real edited Ruff builds with HIR caching off/on and independent holdouts |
-| Retain the first ordinary procedural-macro arena page across reset | Corrected native and Miri checks; real macro callers against both N client libraries; default sysroot discovery with matching dependency evidence | Complete the fixed Ruff native frontend screen; pursue application qualification only if its gain exceeds the measured stock/stock variation |
+| Retain the first ordinary procedural-macro arena page across reset | Corrected native and Miri checks; real macro callers against both N client libraries; default sysroot discovery; all 36 native frontend timings and restoration checks completed | Parked: median improvement 0.5894% did not exceed 3.4410% stock/stock variation; independent saved-result review pending |
 
 The hash candidate retains the complete original hash and its wire encoding.
 The arena candidate retains only an ordinary first page after clearing interned
 references. Neither change selects applications, omits compiler checks, or edits
 Ruff or Nushell to obtain a speedup.
 
-The next arena measurement has six blocks, twelve stock/candidate pairs and six
-stock/stock pairs: 36 timed compiler calls. Untimed warmup, restoration and Cargo
-setup remain separate. A native nonincremental frontend screen cannot establish
-the full interpreter edit-to-run target.
+The completed arena measurement has six blocks, twelve stock/candidate pairs
+and six stock/stock pairs: 36 timed compiler calls. Twelve untimed warmups,
+twelve restoration checks and two Cargo setups remain separate. The observed
+candidate/stock median is 0.9941062; the fixed comparison rule rejects this as a
+performance win. No unchanged retry is allowed. A native nonincremental frontend
+screen cannot establish the full interpreter edit-to-run target.
 
 The first two screen attempts stopped during Cargo setup. Attempt 01 rejected
 Cargo's ordinary `-Z embed-metadata=no`; attempt 02 rejected a build-script
@@ -30,12 +32,23 @@ Original arguments and failure records remain retained. Successor harness
 changes must preserve those arguments, all diagnostic records and the fixed
 comparison rule.
 
+Attempt 04 accepts all four JSON record kinds selected by the captured Cargo
+command and compares every ordered nonartifact report across the paired arms.
+The parser passed checks against three unchanged captured streams, five valid
+fixtures and 29 malformed-output cases before the timed screen. The screen
+completed successfully; its timing outcome is reported above. Neither the parser
+checks nor this screen qualify full application behavior or edit-to-run latency.
+
 Runtime installation06 also stopped before completion. Its ten loader probes
 returned successfully, but the reader concatenated three architecture sections
 from four universal macOS libraries while the specification described ARM64.
-The failed prefix remains intact. A prospective correction will explicitly
-select the admitted host architecture and bind that policy into the runtime
-identity; it will not remove libraries or discard mismatched load commands.
+The failed prefix remains intact. The correction explicitly selects the admitted
+host architecture and binds that policy into a distinct runtime identity.
+Eighteen focused policy, identity and recipe checks passed, followed by two
+ordinary runs of 30 installation and factory checks. Integration source and both
+development runs passed independent review. Controlled qualification and
+production installation remain pending. All libraries and ordered loader
+commands remain checked.
 
 Evidence entry points:
 
@@ -47,6 +60,11 @@ Evidence entry points:
 - [First Ruff setup failure](../results/proc-macro-arena-ruff-screen-01-publication/README.md)
 - [Second Ruff setup failure](../results/proc-macro-arena-ruff-screen-02-publication/README.md)
 - [Third screen's frozen source and protocol](proc-macro-arena-ruff-screen-03/README.md)
+- [Third screen's closed failure evidence](../results/proc-macro-arena-ruff-screen-03-publication/README.md)
+- [Corrected JSON parser development checks](../results/proc-macro-arena-ruff-screen04-parser-development-01/STATUS.md)
+- [Failed runtime installation](../results/runtime-installation06-failure-01/STATUS.md)
+- [Native loader correction development checks](../results/runtime-native-loader-development-01/STATUS.md)
+- [Installation integration and both development runs](../results/runtime-installation07-source-development-review-01/STATUS.md)
 
 Historical plans and source manifests retain their original status text. The
 linked actual-result records establish which work has since run; an old plan's

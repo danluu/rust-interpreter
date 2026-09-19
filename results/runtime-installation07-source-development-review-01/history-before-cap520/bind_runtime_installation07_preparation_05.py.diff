@@ -1,0 +1,69 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime-installation07-before-source-cap520-01/bind_runtime_installation07_preparation_05.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/bind_runtime_installation07_preparation_05.py
+@@ -144,16 +144,17 @@
+     for name, target in inputs['routes'].items():
+         assert str(Path(name).resolve(strict=True)) == target
+ 
+-    old_path = ROOT/'.work/runtime05-startup-qualified-source-manifest-01.json'
+-    old = document(old_path, '762772c931cf932967da56c5a2fcfa398f2427f58cf0291a854772e3f719aae0')
+-    old_invocation_path = ROOT/'.work/runtime05-preflight-preparation-invocation-01.json'
+-    invocation = document(old_invocation_path, '00761b5f52d684ba5163b1c8d1a493172c6c3dd5f3e0497873839bbe267f5036')
+-    old_adapter = ROOT/'experiments/runtime04-environment-adapter-01'
+-    keep_noncode = {str(old_adapter/name) for name in ['README.md','source-bindings.json']}
+-    keep_noncode.update(invocation['adapter'][key]['path'] for key in ['startup_controls','retry_controls'])
+-    keep_noncode.add(str(ROOT/'experiments/runtime-preflight-retry-05/routes.json'))
+-    files = {name: row for name, row in old['files'].items() if name.endswith('.py') or name in keep_noncode}
+-    assert len(files) == 46
++    # Retain every row from actual preparation06, including historical02
++    # source, actual07 control proof and its old manifest; no source is dropped.
++    old_path = R/'.work/hir-options-hash-runtime-installation-preparation-execution-06/source-rows.json'
++    old_record_path = old_path.with_name('record.json')
++    old_record = document(old_record_path, '2979f64660c2154d6fda90da711f3c967e15442cdb93191ff854ced5385c90f8')
++    old = document(old_path)
++    files = dict(old)
++    assert len(files) == 502
++    assert document(old_record_path.parent/'source-rows.json') == files
++    old_invocation_path = ROOT/'.work/runtime-installation06-preparation-invocation-01.json'
++    invocation = document(old_invocation_path, '0fb2866a8922cb4ba72ab6270b84b167e3725715c1bfa6a1fc25a3b7984aa32d')
+     for name, row in files.items():
+         assert raw(name)[1] == row
+     source_names = ['entry.py','controller.py','audit_owner.py','routes.json',
+@@ -163,6 +164,7 @@
+     # by completed_preflight; it is not executable startup source.
+     selected_sources=[SOURCE/name for name in source_names]+[NATIVE/name for name in
+         ['runtime_compiler.py','producer_recipe.py','audit_recipe.py','test_native_loader.py']]
++    selected_sources.append(SOURCE.with_name('runtime-installation-after-preflight05-02')/'installation-plan-01/specification.json')
+     for path in selected_sources + [audit_path]:
+         row = raw(path)[1]
+         assert str(path) not in files or files[str(path)] == row
+@@ -181,7 +183,7 @@
+         assert name not in full or full[name] == row
+         assert name not in union or union[name] == row
+         union[name] = row
+-    assert len(union)+1 <= 512
++    assert len(union)+1 <= 520
+     assert sum(row['size'] for row in union.values()) + 256*1024 <= 8*2**20
+     manifest_path = ROOT/'.work/runtime-installation07-startup-qualified-source-manifest-01.json'
+     invocation_path = ROOT/'.work/runtime-installation07-preparation-invocation-01.json'
+@@ -191,7 +193,7 @@
+         assert raw(name)[1] == row
+     write(manifest_path, dict(status='reviewed-runtime-installation07-startup-source-closure', files=files))
+     union[str(manifest_path)] = raw(manifest_path)[1]
+-    assert len(union) <= 512 and sum(row['size'] for row in union.values()) <= 8*2**20
++    assert len(union) <= 520 and sum(row['size'] for row in union.values()) <= 8*2**20
+     invocation['status'] = 'reviewed-runtime-installation07-preparation'
+     invocation['phase'] = 'installation'
+     invocation['preflight'] = ref(preflight_path)
+@@ -204,10 +206,10 @@
+         controls_audit=ref(audit_path), controls_execution=ref(execution_path),
+         controls_preparation=ref(controls_preparation_path), controls_preparer=ref(controls_preparer),
+         preflight_audit=ref(preflight_path), preflight_execution=ref(preflight_execution_path),
+-        retained_old_manifest_rows=46, omitted_from_preimport_only=sorted(set(old['files'])-set(files)),
++        retained_old_manifest_rows=502, omitted_from_preimport_only=sorted(set(old)-set(files)),
+         separately_authenticated_preflight=ref(preflight_path), preflight_omitted_from_preimport_only=True,
+         omitted_files_deleted=False,
+-        reason='All previously allowed Python retained; omit four nonexecuted old33 record/raw files from preimport-only. The nonexecutable preflight audit is authenticated before imports through invocation.preflight and re-read into the complete producer table. Full prerequisite evidence remains separately read by qualified production validation.',
++        reason='All actual06 source-rows502 retained. Add current source03/native sources and exact old specification fixture; current control audit and new manifest remain bounded. Preflight audit is authenticated separately before imports and re-added by production.',
+         new_harness_executed_by_preparer=False,
+         manifest_files=len(files), full_preimport_files=len(union),
+         full_preimport_bytes=sum(row['size'] for row in union.values()),

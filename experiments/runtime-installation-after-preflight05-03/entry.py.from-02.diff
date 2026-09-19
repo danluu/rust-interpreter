@@ -1,0 +1,77 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/entry.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03/entry.py
+@@ -14,9 +14,9 @@
+ import sys
+ 
+ HERE=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-04')  # Immutable qualified52 source owner.
+-ATTEMPT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02')
++ATTEMPT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03')
+ ROUTES=ATTEMPT/'routes.json'
+-ROUTES_SHA256='ef75ddf2057ebd395a159623d387b01051ee1479363bf9c878f7641b99ec0dd2'
++ROUTES_SHA256='d339e74a11edb948f3cf4bcc0afbbba76887cc61aed125c8bb8bf62b1633723a'
+ LOCK_SOURCE=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/stable-cgu/owned_stage.py')
+ RETRY_CONTROLS=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-controls-05')
+ RETRY_CONTROL_WORK=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime-preflight-retry-controls-05')
+@@ -26,11 +26,18 @@
+ PREFLIGHT_SOURCE=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')/'experiments/runtime-preflight-retry-05'
+ PREFLIGHT_ROUTES=PREFLIGHT_SOURCE/'routes.json'
+ PREFLIGHT_ROUTES_SHA256='893d6102741b5206a829e2f5e130614667140b1eacc09d0c55616f7311f82e6a'
+-INSTALLATION_CONTROLS=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')/'experiments/runtime-installation-controls-07'
+-INSTALLATION_CONTROL_WORK=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')/'.work/runtime-installation-controls-07'
+-INSTALLATION_CONTROL_AUDIT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')/'.work/runtime-installation-controls-independent-verification-07.json'
+-INSTALLATION_CONTROL_COUNT=25  # Exact source-derived focused suite; actual proof remains required.
+-INSTALLATION_SOURCE_NAMES=RETRY_SOURCE_NAMES
++INSTALLATION_CONTROLS=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')/'experiments/runtime-installation-controls-08'
++INSTALLATION_CONTROL_WORK=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')/'.work/runtime-installation-controls-08'
++INSTALLATION_CONTROL_AUDIT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')/'.work/runtime-installation-controls-independent-verification-08.json'
++INSTALLATION_CONTROL_COUNT=48  # Exact source-derived focused suite; actual proof remains required.
++INSTALLATION_SOURCE_NAMES=(*RETRY_SOURCE_NAMES,'imports.py')
++NATIVE_SOURCE=ATTEMPT.parent/'runtime-native-loader-probes-01'
++NATIVE_SOURCE_NAMES=('runtime_compiler.py','producer_recipe.py','audit_recipe.py')
++HISTORICAL_SOURCE=ATTEMPT.with_name('runtime-installation-after-preflight05-02')
++HISTORICAL_CONTROLS=ATTEMPT.parent/'runtime-installation-controls-07'
++HISTORICAL_WORK=ATTEMPT.parents[1]/'.work/runtime-installation-controls-07'
++HISTORICAL_AUDIT=ATTEMPT.parents[1]/'.work/runtime-installation-controls-independent-verification-07.json'
++HISTORICAL_AUDIT_SHA='f644dc4252351654dcbfea4237ab3b42e7d1df7f94555f13d6c9f8b6998b845c' 
+ R=Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ ROOT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ HASH_SOURCE=ROOT/'experiments/hir-options-hash-driver-stage-03'
+@@ -352,7 +359,18 @@
+         'focused installation source/control count remains unbound')
+     return controls_qualification(reader,source=ATTEMPT/'entry.py',test=ATTEMPT/'test_installation.py',
+         controls=INSTALLATION_CONTROLS,work=INSTALLATION_CONTROL_WORK,audit_path=INSTALLATION_CONTROL_AUDIT,
+-        count=INSTALLATION_CONTROL_COUNT,additional_sources=[ATTEMPT/name for name in INSTALLATION_SOURCE_NAMES if name!='entry.py'])
++        count=INSTALLATION_CONTROL_COUNT,additional_sources=[ATTEMPT/name for name in INSTALLATION_SOURCE_NAMES if name!='entry.py']
++        + [NATIVE_SOURCE/name for name in NATIVE_SOURCE_NAMES],
++        additional_tests=[NATIVE_SOURCE/'test_native_loader.py',ATTEMPT/'test_imports.py'])
++
++
++def historical_installation_qualification(reader):
++    result=controls_qualification(reader,source=HISTORICAL_SOURCE/'entry.py',test=HISTORICAL_SOURCE/'test_installation.py',
++        controls=HISTORICAL_CONTROLS,work=HISTORICAL_WORK,audit_path=HISTORICAL_AUDIT,count=25,
++        additional_sources=[HISTORICAL_SOURCE/name for name in RETRY_SOURCE_NAMES if name!='entry.py'])
++    require(result['audit']==dict(path=str(HISTORICAL_AUDIT),sha256=HISTORICAL_AUDIT_SHA),
++        'exact historical installation25 proof required')
++    return result
+ 
+ 
+ def preflight_routes(*,read_json,sha):
+@@ -415,8 +433,8 @@
+     bound.check(True)
+     raw=bound.value
+     require(str(Path(sys.executable).resolve(strict=True))==raw['python'],'actual Python route differs')
+-    for path in [Path(__file__).resolve(),HERE/'frozen.py',HERE/'imports.py']:bound.file(path)
+-    factory=definition('imports',HERE/'imports.py')
++    for path in [Path(__file__).resolve(),HERE/'frozen.py',ATTEMPT/'imports.py']:bound.file(path)
++    factory=definition('imports',ATTEMPT/'imports.py')
+     modules=factory.definitions(HASH_SOURCE,bound.file)
+     reader=modules.prerequisites.Reader(modules.stage,modules.hash_modules,combined_freeze=raw,
+         references=plan['independent_audits'],read_json=bound.read_json,sha=bound.sha,
+@@ -433,6 +451,7 @@
+     require(catalog_qualification(reader)==plan['catalog_qualification'],'actual catalog qualification differs')
+     require(retry_qualification(reader)==plan['retry_qualification'],'actual focused retry qualification differs')
+     require(installation_qualification(reader)==plan['installation_qualification'],'actual focused installation qualification differs')
++    require(historical_installation_qualification(reader)==plan['historical_installation_qualification'],'historical installation25 qualification differs')
+     installation_controller=factory.load('installation_after_preflight05_controller',ATTEMPT/'controller.py',bound.file)
+     catalog=factory.load('completed_catalog',CATALOG_SOURCE,bound.file)
+     snap_path=packet/'snapshot-plan.json'

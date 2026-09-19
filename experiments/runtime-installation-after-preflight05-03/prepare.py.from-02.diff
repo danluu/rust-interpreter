@@ -1,0 +1,59 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/prepare.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03/prepare.py
+@@ -22,7 +22,7 @@
+ STARTUP_SOURCE=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01')
+ f.require(entry.HERE==HERE and entry.ATTEMPT==ADAPTER and Path(entry.__file__).resolve()==ADAPTER/'entry.py'
+     and Path(f.__file__).resolve()==HERE/'frozen.py'
+-    and Path(factory.__file__).resolve()==HERE/'imports.py','exact qualified producer module routes required')
++    and Path(factory.__file__).resolve()==ADAPTER/'imports.py','exact qualified producer module routes required')
+ R=entry.R
+ X=HERE.parents[2]
+ ROOT=entry.HASH_SOURCE.parents[1]
+@@ -189,7 +189,7 @@
+         d.add(source_manifest['path'],source_manifest,snapshot=True)
+         source_rows=read_json(source_manifest['path'])
+         f.require(set(source_rows)=={'status','files'}
+-            and source_rows['status']=='reviewed-runtime-installation06-startup-source-closure'
++            and source_rows['status']=='reviewed-runtime-installation07-startup-source-closure'
+             and ({str(ADAPTER/name) for name in entry.RETRY_SOURCE_NAMES}
+                  | {str(STARTUP_SOURCE/name) for name in STARTUP_FILES})<=set(source_rows['files']),
+             'complete reviewed startup source closure required')
+@@ -200,7 +200,11 @@
+         f.require({p.name for p in STARTUP_SOURCE.iterdir()}==STARTUP_FILES,'exact qualified startup source membership required')
+         for name in sorted(STARTUP_FILES):d.add(STARTUP_SOURCE/name,snapshot=True)
+         for name in entry.RETRY_SOURCE_NAMES:d.add(entry.PREFLIGHT_SOURCE/name,snapshot=True)
+-        for name in entry.INSTALLATION_SOURCE_NAMES:d.add(ADAPTER/name,snapshot=True)
++        for name in [*entry.INSTALLATION_SOURCE_NAMES,'test_installation.py','test_imports.py']:d.add(ADAPTER/name,snapshot=True)
++        for name in [*entry.NATIVE_SOURCE_NAMES,'test_native_loader.py']:d.add(entry.NATIVE_SOURCE/name,snapshot=True)
++        for path in [entry.HISTORICAL_CONTROLS/'inputs.json',entry.HISTORICAL_CONTROLS/'launch.json',entry.HISTORICAL_AUDIT]:d.add(path,snapshot=True)
++        for name,row in read_json(entry.HISTORICAL_CONTROLS/'inputs.json')['files'].items():d.add(name,row,snapshot=True)
++        d.tree(entry.HISTORICAL_WORK)
+         for path in [entry.RETRY_CONTROLS/'inputs.json',entry.RETRY_CONTROLS/'launch.json',entry.RETRY_CONTROL_AUDIT]:
+             d.add(path,snapshot=True)
+         f.require(sha(entry.RETRY_CONTROL_AUDIT)==args['retry_audit_sha256'],'exact separately reviewed retry audit required')
+@@ -237,6 +241,7 @@
+         f.require(startup_qualification['audit']['sha256']==args['startup_audit_sha256'],
+             'startup qualification changed')
+         installation_qualification=entry.installation_qualification(reader)
++        historical_installation_qualification=entry.historical_installation_qualification(reader)
+         f.require(installation_qualification['audit']['sha256']==args['installation_audit_sha256'],'installation qualification changed')
+         retry_qualification=entry.retry_qualification(reader)
+         f.require(retry_qualification['audit']['sha256']==args['retry_audit_sha256'],'retry qualification changed')
+@@ -287,7 +292,7 @@
+         else:
+             key,new_sysroot,children=modules.recipe.installation_commands(modules.q,spec,R,work,environment);installation=new_sysroot.parent
+             f.require(not installation.exists() and not installation.is_symlink(),'new runtime prefix must be absent')
+-        resource_controller=factory.load('installation06_resource_controller',ADAPTER/'controller.py',lambda p:d.add(p,snapshot=True))
++        resource_controller=factory.load('installation07_resource_controller',ADAPTER/'controller.py',lambda p:d.add(p,snapshot=True))
+         resource_summary=resource_controller.copy_budget(spec,modules.q.runtime.identity_for(spec),
+             [modules.q.runtime.inspect_component(c) for c in spec['components']],directory=installation)
+         f.require(len(children)==resource_summary['total_children']==15,'finite installation recipe differs')
+@@ -357,7 +362,7 @@
+             source_policy=dict(path=str(policy_path),sha256=sha(policy_path)),provider_comparison=provider_ref,
+             adapter_controls=dict(receipt=str(CONTROL_WORK/'receipt.json'),audit=str(CONTROL_AUDIT)),runtime_key=key,
+             catalog_qualification=catalog_qualification,
+-            runtime_adapter_qualification=runtime_qualification,retry_qualification=retry_qualification,installation_qualification=installation_qualification,
++            runtime_adapter_qualification=runtime_qualification,retry_qualification=retry_qualification,installation_qualification=installation_qualification,historical_installation_qualification=historical_installation_qualification,
+             attempt=dict(path=str(entry.ROUTES),sha256=entry.ROUTES_SHA256),failed_predecessor=failed_reference,
+             copy_retirement=retirement,
+             environment=environment,launch_environment=launch_environment,children=children,evidence_roots=sorted(map(str,roots)),

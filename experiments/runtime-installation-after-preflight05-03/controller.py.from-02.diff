@@ -1,0 +1,30 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/controller.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03/controller.py
+@@ -16,9 +16,9 @@
+ 
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ PREFIX = 'hir-options-hash-runtime-'
+-ATTEMPT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02')
++ATTEMPT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03')
+ ROUTES = ATTEMPT/'routes.json'
+-ROUTES_SHA256 = 'ef75ddf2057ebd395a159623d387b01051ee1479363bf9c878f7641b99ec0dd2'
++ROUTES_SHA256 = 'd339e74a11edb948f3cf4bcc0afbbba76887cc61aed125c8bb8bf62b1633723a'
+ CAPACITY = dict(entry_gib=16, stop_gib=9, floor_gib=8,
+     combined_namespace_bytes=14*2**30, evidence_bytes=256*2**20)
+ RESOURCES = dict(policy='fixed-installation-prefix-budget-v1',
+@@ -214,13 +214,14 @@
+         with inherited_admission(self.owned, canonical_fd):
+             pass  # The entry owns this open description through constructor and execute.
+         self.fd = canonical_fd
+-        phase_admission(plan,sha=sha,read_json=read_json)
++        routes=phase_admission(plan,sha=sha,read_json=read_json)
+         self.work = Path(plan['work']); self.phase = plan['phase']
+         require(monitor is not reader.reader.monitor, 'do not mutate historical shared monitor')
+         require(Path.cwd() == R and dict(os.environ) == plan['launch_environment'], 'exact runtime launch context required')
+         self.spec = read_json(plan['specification']['path'])
+         require(sha(plan['specification']['path']) == plan['specification']['sha256'], 'runtime specification differs')
+         self.identity = q.runtime.identity_for(self.spec)
++        require(q.runtime.loader_probe_policy(self.spec)==routes['loader_probe'], 'current native loader probe policy required')
+         self.key = q.runtime.digest(self.identity)
+         self.environment = dict(plan['environment'])
+         q.std.validate_environment(self.environment)

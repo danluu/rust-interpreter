@@ -1,0 +1,27 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime-installation07-before-source-cap520-01/prepare_once.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03/prepare_once.py
+@@ -88,6 +88,14 @@
+         os.fsync(stream.fileno())
+     if replace:
+         target.replace(path)
++
++
++def source_admission(rows):
++    """Finite preimport closure: retain all previous rows plus current sources."""
++    require(type(rows) is dict and 0 < len(rows) <= 520
++        and all(type(row) is dict and type(row.get('size')) is int and row['size'] >= 0
++                for row in rows.values()) and sum(row['size'] for row in rows.values()) <= 8*2**20,
++        'finite complete local Python and supplemental source closure')
+ 
+ 
+ def source_rows(invocation):
+@@ -125,8 +133,7 @@
+             and adapter['installation_controls']['path'] in rows
+             and rows[adapter['installation_controls']['path']]['sha256'] == adapter['installation_controls']['sha256'],
+             'adapter source and all three actual control proofs must be members of the source manifest')
+-    require(0 < len(rows) <= 512 and sum(row['size'] for row in rows.values()) <= 8*2**20,
+-            'finite complete local Python and supplemental source closure')
++    source_admission(rows)
+     for name, row in rows.items():
+         require(encoded(raw(name)[1]) == encoded(row), 'authenticated producer source changed')
+     require(str(SOURCE/'prepare.py') in rows, 'producer preparer absent from source closure')
