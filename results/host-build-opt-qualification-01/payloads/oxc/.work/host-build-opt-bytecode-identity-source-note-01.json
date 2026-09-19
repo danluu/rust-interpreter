@@ -1,0 +1,73 @@
+{
+  "compiler_calls": 0,
+  "findings": [
+    {
+      "claim": "StableCrateId construction includes sess.opts.cg.metadata, crate name/type and compiler version.",
+      "source": "rustc_interface/passes.rs943"
+    },
+    {
+      "claim": "StableCrateId incorporates all sorted/deduplicated -Cmetadata strings; DefPathHash contains stable crate identity.",
+      "source": "rustc_span/def_id.rs143+"
+    },
+    {
+      "claim": "type_id_hash erases/anonymizes regions then stable-hashes the type with spans ignored.",
+      "source": "rustc_middle/ty/util.rs133"
+    },
+    {
+      "claim": "write_type_id writes the computed 128-bit hash as actual constant bits.",
+      "source": "rustc_const_eval/interpret/intrinsics.rs97"
+    },
+    {
+      "claim": "TypeId provenance keeps existing compiler-provided hash offsets; exporter does not canonicalize them away.",
+      "source": "mir-export/lower.rs845"
+    },
+    {
+      "claim": "Ordinary bytecode function handles are graph traversal indices; Program has no blanket raw crate identity field. A Cargo metadata change need not change every function handle, but can affect reachable typed constants and other generated content.",
+      "source": "bytecode/lib.rs Program/Function; lower.rs registration"
+    }
+  ],
+  "future_gate": [
+    "Capture exact selected target and dependency compiler argv for fixed host0/host3.",
+    "Require unchanged target profile/checks and keep generated source/build-script distinctions explicit.",
+    "Compare entire resulting RBC and ordinary tests/diagnostics before any timing interpretation; never normalize away TypeId or other observable bits to force equality."
+  ],
+  "holdout_reads": 0,
+  "source_edits": 0,
+  "sources": [
+    {
+      "bytes": 57887,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_interface/src/passes.rs",
+      "sha256": "694f94777b777832f9877f0253a9ccb9239344f01ebbe272e1d4cdd012d88079"
+    },
+    {
+      "bytes": 18256,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_span/src/def_id.rs",
+      "sha256": "e02c60e804fbd9b06ffab65bb3ece07ce4c0ef49c2c42739ee3373413e39c4d8"
+    },
+    {
+      "bytes": 70041,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_middle/src/ty/util.rs",
+      "sha256": "57b89d64ca4ba2a786e3c896dbbde2f3ea9a49662f678e837049b2e86962a505"
+    },
+    {
+      "bytes": 62579,
+      "path": "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/compiler/rustc_const_eval/src/interpret/intrinsics.rs",
+      "sha256": "8f1e6d14701460ed152a07ff9a643e08382179b43ef9d36a7bb986079f2f1d56"
+    },
+    {
+      "bytes": 130165,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/crates/mir-export/src/lower.rs",
+      "sha256": "411f409b28bdaf38130fd2ba3c1fa8a5133ef42b431109e6a9ea125538368b48"
+    },
+    {
+      "bytes": 73638,
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/crates/bytecode/src/lib.rs",
+      "sha256": "0e621a5500069bbc0601231e4a2e9c910964232c47bbfbc41007b882e1171498"
+    }
+  ],
+  "status": "source-only-caveat-no-performance-result",
+  "uncertainties": [
+    "No pinned Cargo implementation proving exact profile-to-selected-target metadata propagation was loaded here. Compare actual captured -Cmetadata, extern paths/hashes and build-script outputs before assuming either identity or difference.",
+    "No Ruff opt3 run or macro-output/bytecode parity measurement exists. Native fixture success does not establish application RBC identity."
+  ]
+}

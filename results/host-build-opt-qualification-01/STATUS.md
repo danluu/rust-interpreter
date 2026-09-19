@@ -1,0 +1,11 @@
+This finite snapshot retains host-build-opt source development and native qualification.
+
+Fixture02 PASSED under the original native Cargo/rustc: four normal closed commands, two profile_contract tests, 22 recorded Cargo compiler invocations and eight build-script profile observations. The native test and macro execution preserve enabled debug assertions and overflow checks while host optimization changes 0 to3 and target optimization remains1. Exact ordinary 16-source before/after and copied fixture checks passed. Original ten pure tests and five later saved-argv parser tests passed in separate evidence directories.
+
+Fixture01 remains FAILED: its host0 Cargo/test succeeded, then the validator rejected the ordinary valueless -C prefer-dynamic. Host3 did not start. Its original sources, raw failure, normal parent closure, traces and profile records remain separate. Successor02 changed only parsing and fresh output/manifest routes.
+
+The Cargo profile is an explicit policy, not a transparent optimization. Build-script OPT_LEVEL changes, both target crate metadata IDs change, and all three selected-test extern file hashes change between0/3. No RBCs or Ruff opt3 results were produced by this fixture. Application source/test/diagnostic and complete bytecode equality remain required before any performance interpretation. This snapshot makes no speedup, fastest-configuration, holdout or final-latency claim.
+
+The30-second command/256MiB output thresholds are observed failure thresholds. Breaches retain normal wait without signaling and can exceed the timer; they are not hard wall limits or atomic disk quotas. The passing result recorded about8MiB allocated output. Compiler argv adapters exec in place; the root's actual normal parent closure and Cargo waits are retained, without claiming separately observed OS waits for each rustc adapter.
+
+All210 payloads are finite source/text evidence. Provider binaries, fixture target binaries, caches and broader target directories are not copied. Only six exact saved--extern products were hashed during independent readback; their metadata/digests are retained. Historical source/profile memos keep external references and are not relabeled as new qualifications. Source-only handoffs retain their historical wording; this STATUS records the later actual outcomes.

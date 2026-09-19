@@ -1,0 +1,53 @@
+--- /Users/danluu/dev/rust-interp-runtime-installation-r-20260918/experiments/workflow-runtime-arms-01/verify_repeated_workflow.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-build-opt-01/verify_repeated_workflow.py
+@@ -17,6 +17,7 @@
+ workflow_placement.check_module('interpreter',_EXPECTED_ROOT/'scripts/interpreter.py',root=_EXPECTED_ROOT)
+ import workflow_compiler
+ import workflow_runtime_arms
++import host_build_profiles
+ 
+ workflow_placement.check_module('workflow_runtime_arms',Path(__file__).resolve().with_name('workflow_runtime_arms.py'))
+ 
+@@ -67,6 +68,7 @@
+     The ordinary CLI and all runtime callers keep the strict default.
+     """
+     require(report['schema_version'] == 2, 'unsupported workflow schema')
++    host_profiles=host_build_profiles.verify_summary(report)
+     flag_encoding=report.get('guest_rustflag_encoding')
+     require(flag_encoding in (None,'cargo-unit-separator','launcher-arguments'), 'unknown guest flag transport')
+     runtime=report.get('runtime_compiler')
+@@ -136,9 +138,21 @@
+         require(set(report['cache_namespaces']) == set(report['cache_workspaces']) == {'baseline', 'candidate'},
+                 'missing isolated comparison caches')
+         namespaces = report['cache_namespaces']
+-        require(all(namespaces[m] == Path(report['raw']).name + ':' + m for m in namespaces) and
++        require(all(namespaces[m] == host_build_profiles.namespace(Path(report['raw']).name,m,host_profiles) for m in namespaces) and
+                 len(set(report['cache_workspaces'].values())) == 2, 'comparison caches are not isolated')
+     rows = read(ROOT / report['raw'] / 'records.json')
++    if host_profiles is None:
++        require(all('host_build_profile' not in call for row in rows for call in row['calls']),
++                'command host setting lacks its summary policy')
++    if host_profiles is not None:
++        for row in rows:
++            for call in row['calls']:
++                host_build_profiles.verify_call(call,host_profiles,row['mode'])
++                if row['mode']=='native':
++                    command=call['command']
++                    require(command.count('--target-dir')==1 and command[command.index('--target-dir')+1]==
++                        str(host_build_profiles.target(ROOT/report['raw'],'native',host_profiles)),
++                        'native host profile cache differs')
+     native_toolchain = report.get('native_control', {}).get('toolchain')
+     if native_toolchain is not None:
+         control = report['native_control']
+@@ -415,6 +429,11 @@
+             require(check['phase'] == group[0]['phase'], 'check phase mismatch')
+             require(check['seconds'] > 0 and check['cpu_seconds'] > 0 and abs(check['cpu_seconds'] - check['cpu']['total_seconds']) < 1e-8, 'invalid check timing')
+             command = check['command']
++            if host_profiles is not None:
++                host_build_profiles.verify_call(check,host_profiles,'native')
++                require(command.count('--target-dir')==1 and command[command.index('--target-dir')+1]==
++                    str(host_build_profiles.target(ROOT/report['raw'],'check',host_profiles)),
++                    'check host profile cache differs')
+             if native_toolchain is not None:
+                 require(command[0] == native_cargo and check['native_environment'] == native_routing,
+                         'check selected a different compiler route')

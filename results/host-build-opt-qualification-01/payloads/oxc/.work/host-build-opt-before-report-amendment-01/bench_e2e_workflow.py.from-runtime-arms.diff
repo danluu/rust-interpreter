@@ -1,0 +1,182 @@
+--- /Users/danluu/dev/rust-interp-runtime-installation-r-20260918/experiments/workflow-runtime-arms-01/bench_e2e_workflow.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-build-opt-01/bench_e2e_workflow.py
+@@ -30,6 +30,7 @@
+ from suite_reports import guest_test_failure, read_report, validate_report
+ import workflow_compiler
+ import workflow_runtime_arms
++import host_build_profiles
+ workflow_placement.check_module('workflow_runtime_arms',Path(__file__).resolve().with_name('workflow_runtime_arms.py'))
+ 
+ 
+@@ -152,8 +153,10 @@
+     parser.add_argument('--comparison-engine',choices=['interpreter','jit'],help='engine for both tool builds; defaults to jit when comparing')
+     parser.add_argument('--expect-identical-bytecode',action='store_true',help='require matching executed bytecode when isolating a runtime change')
+     workflow_runtime_arms.add_arguments(parser)
++    host_build_profiles.add_arguments(parser)
+     args=parser.parse_args()
+     try:
++        host_profiles=host_build_profiles.select(args)
+         arm_selection=workflow_runtime_arms.select(args)
+         compiler_arguments=workflow_compiler.arguments(args.runtime_compiler_key,args.std_mir_key)
+         workflow_compiler.rustflags(args.guest_rustflag)
+@@ -164,8 +167,6 @@
+             parser.error('--runtime-compiler-key requires a batched comparison with explicit baseline and candidate tools')
+         if args.std_mir != (args.std_mir_key is not None):
+             parser.error('--runtime-compiler-key with --std-mir requires an explicit prepared shared --std-mir-key')
+-        if args.build_tool_opt_level is not None:
+-            parser.error('--runtime-compiler-key currently requires repository host build profiles')
+     if args.baseline_guest_rustflag is not None and args.baseline_tool_key is None:
+         parser.error('--baseline-guest-rustflag requires --baseline-tool-key')
+     encoded_guest_flags=bool(args.guest_rustflag or args.baseline_guest_rustflag is not None)
+@@ -289,6 +290,7 @@
+             args.baseline_inline_leaves==args.inline_leaves and
+             not args.compare_isolated_batches and
+             resolved_jobs['baseline']==resolved_jobs['candidate'] and
++            host_build_profiles.level(host_profiles,'baseline')==host_build_profiles.level(host_profiles,'candidate') and
+             not args.candidate_jit_native_calls and
+             args.candidate_jit_persistent_registers==args.baseline_jit_persistent_registers and
+             args.candidate_jit_resumable_calls==args.baseline_jit_resumable_calls):
+@@ -304,6 +306,7 @@
+         config['jit_native_call_stubs']=args.candidate_jit_native_call_stubs and mode=='candidate'
+         config['jit_native_calls']=args.candidate_jit_native_calls and mode=='candidate'
+         config['guest_flags']=baseline_guest_flags if mode=='baseline' else guest_flags
++        if host_profiles is not None:config['host_build_opt_level']=host_build_profiles.level(host_profiles,mode)
+     runtime=None
+     runtime_proof=None
+     arm_runtimes={}; arm_proofs={}; arm_standards={}; arm_std_options={}
+@@ -327,7 +330,7 @@
+         try:check_aa_settings(mode_tools,resolved_jobs)
+         except ValueError as error:parser.error(str(error))
+     controlled_caches=args.aa_control or args.build_metrics
+-    cache_namespaces={mode:args.run_id+':'+mode for mode in mode_tools}
++    cache_namespaces={mode:host_build_profiles.namespace(args.run_id,mode,host_profiles) for mode in mode_tools}
+     cache_workspaces={}
+     if args.trap_unsupported_calls:
+         for config in mode_tools.values():require_export_option(config['directory'],config['tool_key'],'trap-unsupported-calls')
+@@ -370,6 +373,7 @@
+     if subprocess.check_output(['git','diff','--name-only','HEAD'],cwd=source,text=True).strip():
+         raise RuntimeError('snapshot has tracked changes')
+     script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_case_file.py',ROOT/'scripts/workflow_projects.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/workflow_controls.py',ROOT/'scripts/workflow_io.py',ROOT/'scripts/std_mir.py',ROOT/'scripts/workflow_jobs.py']
++    script_paths+=[Path(host_build_profiles.__file__).resolve()]
+     script_paths+=[ROOT/'scripts/native_suite.py',ROOT/'scripts/suite_reports.py',ROOT/'scripts/compare_saved_runtime.py',
+                   ROOT/'scripts/workspace_cache.py',ROOT/'scripts/test_discovery.py',ROOT/'scripts/workflow_compiler.py',Path(workflow_runtime_arms.__file__).resolve(),Path(workflow_placement.__file__).resolve()]
+     if runtime is not None or arm_selection is not None:
+@@ -381,7 +385,7 @@
+         with snapshot.open('xb') as output:output.write(payload)
+         case_proof['snapshot']=str(snapshot.relative_to(ROOT))
+         script_paths += [case_path,snapshot]
+-    frozen_scripts={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in script_paths}
++    frozen_scripts={str(p.relative_to(ROOT) if p.is_relative_to(ROOT) else p):hashlib.sha256(p.read_bytes()).hexdigest() for p in script_paths}
+     file=source_file(source,case)
+     subprocess.run(['git','ls-files','--error-unmatch','--',case['file']],cwd=source,check=True,stdout=subprocess.DEVNULL)
+     original=file.read_bytes();current=original
+@@ -392,9 +396,6 @@
+         if name.startswith(('RUST_INTERP_','CARGO_PROFILE_')) or name in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER','CARGO_INCREMENTAL','CARGO_TARGET_DIR','CARGO_BUILD_TARGET']:
+             env.pop(name,None)
+     env.update(CARGO_TERM_COLOR='never',RUST_INTERP_LAUNCH_STATS='1')
+-    if args.build_tool_opt_level is not None:
+-        for profile in ['DEV','TEST']:
+-            env[f'CARGO_PROFILE_{profile}_BUILD_OVERRIDE_OPT_LEVEL']=str(args.build_tool_opt_level)
+     records=[];orders=[];transitions=[];built_sources={mode:None for mode in modes}
+     check_records=[]
+     def check_reference(sample):
+@@ -402,18 +403,20 @@
+         if file.read_bytes()!=current:raise RuntimeError('source changed before Cargo-check control')
+         previous=check_records[-1]['source_sha256'] if check_records else None
+         if sample['phase']!='cold' and previous==digest:raise RuntimeError('unchanged Cargo-check source')
+-        command=native_command(native_selection,source/'Cargo.toml',package,work/'check',native_jobs,
++        command=native_command(native_selection,source/'Cargo.toml',package,host_build_profiles.target(work,'check',host_profiles),native_jobs,
+             args.native_test_threads,[],check=True,cargo=None if native_identity is None else native_identity['tools']['cargo']['resolved'])
+-        child_env=native_environment(env,args.native_profile,args.native_rustflag,compiler=native_identity)
++        child_env=native_environment(host_build_profiles.environment(env,host_profiles,'native'),args.native_profile,args.native_rustflag,compiler=native_identity)
+         require_space(work,args.minimum_free_gib)
+         before=child_usage();start=time.perf_counter()
+         child,stdout,stderr=capture(command,cwd=source,env=child_env,receipt_path=work/'active-command.json',
+             receipt=dict(mode='check-floor',cycle=sample['cycle'],state=sample['state'],phase=sample['phase'],
++                         **({'host_build_profile':host_build_profiles.receipt(child_env)} if host_profiles is not None else {}),
+                          native_environment=None if native_identity is None else {k:child_env[k] for k in ['RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER']}))
+         elapsed=time.perf_counter()-start;cpu=child_cpu_since(before)
+         row=dict(cycle=sample['cycle'],state=sample['state'],phase=sample['phase'],source_sha256=digest,
+             previous_source_sha256=previous,seconds=elapsed,cpu_seconds=cpu['total_seconds'],cpu=cpu,
+             command=command,returncode=child.returncode,stdout=stdout,stderr=stderr,load=os.getloadavg(),
++            **({'host_build_profile':host_build_profiles.receipt(child_env)} if host_profiles is not None else {}),
+             native_environment=None if native_identity is None else {k:child_env[k] for k in ['RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER']})
+         check_records.append(row);write_json(work/'check-records.json',check_records)
+         if child.returncode or 'Checking '+package not in stderr:raise RuntimeError('Cargo-check control did not successfully check the edited target: '+stderr)
+@@ -435,12 +438,12 @@
+             suite_path=work/'suites'/mode/sample_path(sample,0,args.cycles,'json')
+             suite_path.parent.mkdir(parents=True,exist_ok=True)
+         if mode=='native':
+-            commands=[native_command(native_selection,manifest,package,work/'native',native_jobs,
++            commands=[native_command(native_selection,manifest,package,host_build_profiles.target(work,'native',host_profiles),native_jobs,
+                 args.native_test_threads,selected,timings=args.cargo_timings,
+                 cargo=None if native_identity is None else native_identity['tools']['cargo']['resolved'])]
+             if suite_path is not None:
+                 commands=[[sys.executable,str(ROOT/'scripts/native_suite.py'),'--manifest-path',manifest,
+-                    '--package',package,'--target-dir',str(work/'native'),'--jobs',str(native_jobs),
++                    '--package',package,'--target-dir',str(host_build_profiles.target(work,'native',host_profiles)),'--jobs',str(native_jobs),
+                     *(['--native-toolchain',native_selection,'--native-cargo',native_identity['tools']['cargo']['resolved']] if native_identity else []),
+                     '--test-threads=1','--suite-report',str(suite_path),
+                     *(['--timings'] if args.cargo_timings else []),*[a for test in selected for a in ['--entry',test]]]]
+@@ -466,8 +469,8 @@
+                 base+=['--isolated-batch','fresh' if mode=='baseline' else 'prepared','--suite-report',str(suite_path)]
+             commands=[[*base,*[arg for test in selected for arg in ['--entry',test]]]] if args.batch else [[*base,'--entry',test] for test in selected]
+         start=time.perf_counter();calls=[]
+-        child_env=env.copy()
+-        if mode=='native':child_env=native_environment(env,args.native_profile,args.native_rustflag,compiler=native_identity)
++        child_env=host_build_profiles.environment(env,host_profiles,mode)
++        if mode=='native':child_env=native_environment(host_build_profiles.environment(env,host_profiles,'native'),args.native_profile,args.native_rustflag,compiler=native_identity)
+         if mode!='native' and runtime is None and arm_selection is None:
+             child_env=workflow_compiler.flag_environment(child_env,config['guest_flags'],encoded_guest_flags)
+         for command in commands:
+@@ -477,11 +480,13 @@
+             p,stdout,stderr=capture(command,cwd=source,env=child_env,receipt_path=work/'active-command.json',
+                 receipt=dict(mode=mode,cycle=cycle,state=state,phase=phase,label=label,
+                     rustflags=child_env.get('RUSTFLAGS'),encoded_rustflags=child_env.get('CARGO_ENCODED_RUSTFLAGS'),
++                    **({'host_build_profile':host_build_profiles.receipt(child_env)} if host_profiles is not None else {}),
+                     native_environment={k:child_env[k] for k in ['RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER']} if mode=='native' and native_identity else None))
+             cpu=child_cpu_since(usage_before)
+             calls.append(dict(pid=p.pid,command=command,rustflags=child_env.get('RUSTFLAGS'),seconds=time.perf_counter()-child_start,
+                               encoded_rustflags=child_env.get('CARGO_ENCODED_RUSTFLAGS'),
+                               native_environment={k:child_env[k] for k in ['RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER']} if mode=='native' and native_identity else None,
++                              **({'host_build_profile':host_build_profiles.receipt(child_env)} if host_profiles is not None else {}),
+                               exporter_seconds=exporter_seconds(stderr) if mode!='native' else {},
+                               cpu=cpu,returncode=p.returncode,stdout=stdout,stderr=stderr))
+             if p.returncode:break
+@@ -550,7 +555,7 @@
+             reports=[];record['cargo_timings']=reports
+             for index,call in enumerate(calls):
+                 if mode=='native':
+-                    target=work/'native'
++                    target=host_build_profiles.target(work,'native',host_profiles)
+                 else:
+                     launches=[json.loads(line.split('rust-interp-launch: ',1)[1]) for line in call['stderr'].splitlines() if line.startswith('rust-interp-launch: ')]
+                     assert len(launches)==1,'missing launcher timing provenance'
+@@ -576,7 +581,7 @@
+                 # Bind the built executable outside the complete-command timer,
+                 # just as the executed bytecode snapshots are copied outside it.
+                 executable=Path(suite['executable'])
+-                assert not executable.is_symlink() and executable.resolve().is_relative_to((work/'native').resolve())
++                assert not executable.is_symlink() and executable.resolve().is_relative_to((host_build_profiles.target(work,'native',host_profiles)).resolve())
+                 record['native_executable']=dict(path=str(executable),sha256=hashlib.sha256(executable.read_bytes()).hexdigest())
+             else:
+                 assert calls[0]['launch']['suite_report_sha256']==record['suite_report']['sha256']
+@@ -684,7 +689,9 @@
+                 test_source_unchanged=True,batch=args.batch,compare_isolated_batches=args.compare_isolated_batches,cargo_timings=args.cargo_timings,vary_selection=args.vary_selection,raw=str(work.relative_to(ROOT)),
+                 build_tool_opt_level=args.build_tool_opt_level,
+                 build_jobs=args.jobs,custom_build_jobs={mode:resolved_jobs[mode] for mode in mode_tools},
++                **({'host_build_profiles':host_profiles} if host_profiles is not None else {}),
+                 native_control=dict(profile=args.native_profile,jobs=native_jobs,
++                    **({'host_build_opt_level':host_build_profiles.level(host_profiles,'native')} if host_profiles is not None else {}),
+                     test_threads=args.native_test_threads,rustflags=args.native_rustflag,
+                     isolation='one native process per test' if args.compare_isolated_batches else 'ordinary libtest batch'),
+                 instruction_limit=args.instruction_limit,allocation_limit=args.allocation_limit,
+@@ -706,6 +713,8 @@
+                 vm_sha256=hashlib.sha256((tools/'rust-interp-vm').read_bytes()).hexdigest(),
+                 exporter_sha256=hashlib.sha256((tools/'rust-interp-mir-export').read_bytes()).hexdigest(),
+                 samples=[{k:v for k,v in r.items() if k!='calls' and not (private and k=='tests')} for r in records])
++    if host_profiles is not None:
++        for mode in mode_tools:result['tool_builds'][mode]['host_build_opt_level']=host_build_profiles.level(host_profiles,mode)
+     if args.aa_control:result['aa_control']=True
+     if args.workload_lock is not None:result['workload_lock']=str(workload_lock)
+     if runtime is not None or arm_selection is not None:result['guest_rustflag_encoding']='launcher-arguments'

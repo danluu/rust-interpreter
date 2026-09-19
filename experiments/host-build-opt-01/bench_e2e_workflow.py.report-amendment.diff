@@ -1,0 +1,13 @@
+--- before/bench_e2e_workflow.py
++++ current/bench_e2e_workflow.py
+@@ -813,8 +813,8 @@
+         report+='\nThis is descriptive spread within each actual edit, not a confidence interval. Cycles share caches and host conditions.\n\n'
+     if args.trap_unsupported_calls:
+         report+='Unavailable foreign calls and catch_unwind intrinsics are explicit terminal stops. Successful tests avoided those boundaries; their call-site metadata and exact executed bytecode are retained with the command records. Ordinary type and borrow checking remained enabled.\n\n'
+-    if args.build_tool_opt_level is not None:
+-        report+=f'Host build scripts, procedural macros, and their build dependencies use optimization level {args.build_tool_opt_level} in every mode. Their first compilation is included in cold command times.\n\n'
++    if host_profiles is not None:
++        report+=f'Cargo host build-override opt levels by mode: `{json.dumps(host_profiles["modes"], sort_keys=True)}`. Explicit per-mode values override the global fallback; repository package overrides still follow Cargo precedence. Actual host compiler arguments and build-script inputs require separate validation. First compilation is included in cold command times.\n\n'
+     if runtime is not None or arm_selection is not None or encoded_guest_flags:
+         report+=f"Custom compiler arguments are recorded separately for each mode: baseline `{json.dumps(baseline_guest_flags)}`, candidate `{json.dumps(guest_flags)}`. "
+         report+=('The launcher applies these arguments only to application Cargo, after tool and standard-library selection. ' if runtime is not None or arm_selection is not None else 'Cargo receives each argument through its unit-separator encoding. ')

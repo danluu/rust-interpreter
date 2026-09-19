@@ -1,0 +1,18 @@
+--- before/qualify-fixture.py
++++ current/qualify-fixture.py
+@@ -226,7 +226,14 @@
+     profiles = load(HERE/'host_build_profiles.py', 'hostqual_profiles')
+     require(not os.path.lexists(WORK) and not os.path.lexists(OUT), 'fresh fixture output namespaces')
+     with LOCK.open('r') as lock:
+-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
++        deadline = time.monotonic() + 600
++        while True:
++            try:
++                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
++                break
++            except BlockingIOError:
++                require(time.monotonic() < deadline, 'canonical acquisition exceeded 600 seconds')
++                time.sleep(.1)
+         require(shutil.disk_usage(ROOT).free >= 2**30, 'fixture requires 1 GiB free entry space')
+         WORK.mkdir(); OUT.mkdir()
+         record = dict(status='running', pid=os.getpid(), parent_pid=os.getppid(),

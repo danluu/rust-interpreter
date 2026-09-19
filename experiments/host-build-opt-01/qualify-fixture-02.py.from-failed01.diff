@@ -1,0 +1,37 @@
+--- failed01/qualify-fixture.py
++++ successor02/qualify-fixture-02.py
+@@ -16,8 +16,8 @@
+ HERE = Path(__file__).resolve().parent
+ ROOT = HERE.parents[1]
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+-WORK = ROOT / '.work/host-build-opt-fixture-01'
+-OUT = ROOT / 'results/host-build-opt-fixture-01'
++WORK = ROOT / '.work/host-build-opt-fixture-02'
++OUT = ROOT / 'results/host-build-opt-fixture-02'
+ LOCK = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+ TOOLCHAIN = Path('/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin')
+ HOST = 'aarch64-apple-darwin'
+@@ -156,8 +156,12 @@
+     result = {}
+     for item in values:
+         key, sep, value = item.partition('=')
+-        require(sep and key not in result, 'duplicate or valueless codegen option')
+-        result[key.replace('_', '-')] = value
++        key = key.replace('_', '-')
++        if not sep:
++            require(key == 'prefer-dynamic', 'unknown valueless codegen option')
++            value = 'yes'  # rustc parse_bool(None) enables this documented option.
++        require(key not in result, 'duplicate codegen option')
++        result[key] = value
+     return result
+ 
+ 
+@@ -216,7 +220,7 @@
+     parser.add_argument('--sources-sha256', required=True)
+     args = parser.parse_args()
+     require(sys.dont_write_bytecode and not sys.flags.optimize and Path.cwd() == R, 'exact -B / unoptimized / R cwd')
+-    manifest_path = HERE/'qualification-sources.json'
++    manifest_path = HERE/'qualification-sources-02.json'
+     require(file(manifest_path)['sha256'] == args.sources_sha256, 'source manifest digest')
+     sources = json.loads(manifest_path.read_text())
+     before = {p: file(p) for p in sources['files']}

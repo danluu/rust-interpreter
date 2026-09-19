@@ -1,0 +1,7 @@
+Fixture02 is an unexecuted successor to the retained failed fixture01. The original Cargo host0 command and its native profile_contract test passed, then the saved-argv validator rejected the ordinary valueless -C prefer-dynamic. Host3 never started. The failure and all original sources remain unchanged.
+
+Only codegen parsing and fresh driver/manifest/work/result routes change. prefer-dynamic without a value now maps to yes, matching pinned rustc_session options.rs parse_bool(None). Other valueless options still reject, and normalized duplicate option names reject. All sixteen execution inputs except the successor driver retain their exact original hashes. No compiler recipe, profile, fixture, outcome requirement, resource threshold or observation policy changes.
+
+Five pure parser tests passed once over all eleven saved Cargo compiler invocations and positive/negative/duplicate cases. Their parent44560/child44636 closed0, source maps and raw names are in results/host-build-opt-codegen-parser-tests-01. The test extracts only require/codegen AST functions; it does not import or execute the workload driver, compiler or provider commands. This parser evidence does not qualify host3 or performance.
+
+The root will review the concrete successor command and schedule any actual fixture execution separately from screen03. Future results are unset. Rustc documentation: https://doc.rust-lang.org/rustc/codegen-options/index.html#prefer-dynamic

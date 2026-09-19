@@ -1,0 +1,14 @@
+--- before/qualify-fixture.py
++++ current/qualify-fixture.py
+@@ -203,7 +203,10 @@
+             'missing/duplicated host/shared/target fixture compile')
+     scripts = [r for r in rows if r['crate'] == 'build_script_build']
+     require({r['package'] for r in scripts} == {'host','shared','target'} and
+-            all(r['host'] and not r['test'] for r in scripts) and 3 <= len(scripts) <= 4,
++            all(r['host'] and not r['test'] for r in scripts) and
++            sum(r['package'] == 'host' for r in scripts) == 1 and
++            sum(r['package'] == 'target' for r in scripts) == 1 and
++            sum(r['package'] == 'shared' for r in scripts) in [1,2],
+             'exact three local build-script source roles')
+     return rows
+ 
