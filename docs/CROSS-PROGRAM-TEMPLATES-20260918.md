@@ -117,7 +117,7 @@ both profiles; the broader workspace passes628 tests/profile with15 ignored.
 The actual parser replay then executes114 test bodies over eight saved states,
 with reuse disabled and enabled:1,824 invocations. All expected outcomes match,
 including8 passes/106 failures for the deliberately wrong edit and114 passes for
-every other state. The16,301 restored blocks all match fresh code and metadata
+every other state. The16,301 restored function templates all match fresh code and metadata
 before publication. No matching template fails restoration.
 
 Actual scheduling matters: workers exchange the larger share of reached
@@ -143,3 +143,35 @@ reuse. Transport, setup, hashing, validation, misses and all session CPU must be
 included in the changed-source comparison; a session without reuse is an
 additional mechanism control, alongside adopted fresh-process and native commands.
 No production cache is enabled yet.
+
+
+The experimental `jit-template-session` library feature now passes633 workspace
+checks in both profiles (16 explicit diagnostics ignored). Public API controls
+exercise real non-test-library emission, changed callees/data, limits and current
+assertion text, invalid/partial Programs, full storage and dropped original owners.
+Ordinary and feature release VMs are retained. No default runtime is adopted.
+[Closed API qualification](../results/cross-program-template-session-api-04/summary.json).
+Earlier startup, ignored-count bookkeeping and feature configuration failures
+remain preserved; completed successful commands were retained through correction.
+
+An inherited-pipe session is now under qualification, with per-request environment
+snapshots and explicit input/report bindings. A negative wire test found serde's
+unit-variant handling accepted extra Shutdown fields; the corrected variant keeps
+that rejection test. Saved-project session replay and command-level transport
+remain required. [Transport design](TEMPLATE-SESSION-TRANSPORT-20260918.md).
+
+
+The inherited-pipe session now passes30 focused controls/profile, including
+current request environments, framing rejection and eight owned session-process
+fixtures. The real saved parser history also passes through its production
+executable:16 suites/1,824 invocations, with16,282 cache hits individually verified
+against fresh emission. Failing-edit errors match exactly with history off/on.
+Server user/system CPU snapshots reconcile with kernel wait4 totals; this confirms
+accounting, not a speedup. The two request workers retain only bounded templates.
+[Transport qualification](../results/cross-program-template-session-transport-02/summary.json),
+[actual session replay](../results/cross-program-template-session-parser-01/summary.json).
+
+Next add an explicit private local endpoint and client route so separately invoked
+strict build/test commands can use the session. Qualify that route before the full
+changed-source primary. Session startup and all remote CPU remain part of the
+comparison, with session-without-history and adopted fresh-process controls.
