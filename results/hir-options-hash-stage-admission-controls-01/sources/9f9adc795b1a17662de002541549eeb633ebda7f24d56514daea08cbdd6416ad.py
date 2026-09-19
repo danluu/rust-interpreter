@@ -284,8 +284,6 @@ class Stage:
                      'run-make compiler history association differs')
         self.require(self.owned.sha(RECIPE_WORK/'result.json') == recipe['result_sha256']
                      and recipe_result['status'] == 'passed'
-                     and recipe_result['policy'] == 'unchanged-hir-body-cache-run-make-v1'
-                     and recipe_result['source_identity'] == self.plan['source_identity']
                      and recipe_result['inputs_sha256'] == self.owned.sha(RECIPE_SOURCE/'inputs.json')
                      and recipe_result['plan_sha256'] == self.owned.sha(RECIPE_SOURCE/'plan.json')
                      and recipe_result['actual_commands'] == recipe['commands'],
@@ -316,8 +314,7 @@ class Stage:
         for filename, key in [('nested-history.json', 'nested_history_sha256'),
                               ('final-output-inventory.json', 'final_outputs_sha256'),
                               ('compiler-loader-closures.json', 'compiler_loader_closures_sha256'),
-                              ('recipe-loader-closure.json', 'recipe_loader_closure_sha256'),
-                              ('retained-inputs.json', 'retained_inputs_sha256')]:
+                              ('recipe-loader-closure.json', 'recipe_loader_closure_sha256')]:
             self.require(self.owned.sha(self.frozen(RECIPE_WORK/filename)) == recipe_result[key],
                          'run-make result proof digest differs')
         self.require(set(recipe_plan['outputs']) == set(map(str,

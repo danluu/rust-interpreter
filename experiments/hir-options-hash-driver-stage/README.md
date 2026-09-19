@@ -76,6 +76,13 @@ are retained in the plan and rechecked against that predecessor. SDK, explicit
 linker, ordinary environment and offline PATH remain bound; no ambient compiler
 or loader overrides are admitted. The three-command core is unchanged.
 
-Final run-make schema binding and integration controls remain unfinished, and
-there is no runnable admission packet. Only AST parsing and source review have
-been performed on the enclosing controller/preparer drafts.
+The source draft now binds the run-make result, its exact compiler history,
+source identity, loader proofs, retained-input manifest and complete inventories.
+Nine in-memory admission/environment/import controls passed once; raw results,
+independent audit and the exact tested sources are retained in
+`results/hir-options-hash-stage-admission-controls-01`. These controls cover
+rejection before dependency discovery, explicit environment selection and alias
+restoration. They do not exercise the complete predecessor readback or workload.
+The later result-policy/source/retention checks received source review and AST
+parsing only. There is still no concrete runnable admission packet, and final
+B3/native/run-make schemas must pass discovery against their actual results.
