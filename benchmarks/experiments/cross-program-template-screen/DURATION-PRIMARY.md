@@ -21,5 +21,8 @@ wall/CPU margins and8%unmeasurable rule unchanged; no unchanged retry.
 
 Fresh runIDcross-program-template-parser-screen-incremental-06 andprimary-06-*
 endpoints.24GiB admission,16GiB cache allowance,8GiB perchild,two workers/sharedlock.
-Not yet launched or bound to an installed tool. No default change or adoption
+Bound to qualified tool60bc004658a1db09e1c905eed50e25062f1ff8ae27811331aed9ad51b206a5a5,
+VM784aef73f3bac42d3eec002008318932ececc4ef95a677070fcd08c6ebe20f01,
+servera4634740fa5188b7b4bb5e17cd2970f1eebe14dd4e4b781d2d3657d5c031f6e1.
+Not yet launched. No default change or adoption
 before later full parser and multi-project guards.
