@@ -1,0 +1,11 @@
+--- draft02
++++ draft03
+@@ -372,7 +372,7 @@
+             return self.provider_read(path)
+         self.provider_read = Mock(side_effect=LookupError('admission passed; stop before providers'))
+         monitor = SimpleNamespace(owned=self.owned)
+-        with patch.object(c, 'os', SimpleNamespace(environ={'LANG': 'C'} if observed is None else observed)), \
++        with patch.object(c, 'os', SimpleNamespace(**dict(vars(os), environ={'LANG': 'C'} if observed is None else observed))), \
+              patch.object(c.Path, 'cwd', return_value=c.R):
+             c.Controller(plan=plan, inputs_sha256='0'*64, q=None, recipe=None,
+                 reader=SimpleNamespace(reader=SimpleNamespace(monitor=object())), monitor=monitor,

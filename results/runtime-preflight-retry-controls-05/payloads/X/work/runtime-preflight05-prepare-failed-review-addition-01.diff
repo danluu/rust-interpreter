@@ -1,0 +1,33 @@
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/runtime-preflight05-prepare-before-failed-review-01.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/prepare.py
+@@ -283,6 +283,21 @@
+         # explicitly rather than allowing its creation to invalidate the budget.
+         roots={work,launcher_work}
+         failed=routes['failed_predecessor']
++        failed_review_reference=dict(path=str(ROOT/'results/runtime04-preflight-capacity-failure-01/review.json'),
++            sha256='3d29955a0512ba66dd86da9f50c18c93a013cbb0e648f5a25ae378eaaf1afaa3')
++        d.add(failed_review_reference['path'],failed_review_reference,snapshot=True)
++        failed_review=read_json(failed_review_reference['path'])
++        f.require(failed_review['status']=='closed-capacity-failure-before-compiler-probes'
++            and failed_review['qualification_passed'] is False
++            and failed_review['actual_compiler_children']==0 and failed_review['source_probe_directory_absent'] is True,
++            'exact published failed predecessor review required')
++        for row in failed_review['packet_references'].values():
++            d.add(row['path'],dict(sha256=row['sha256'],size=row['bytes']),snapshot=True)
++        for row in failed_review['retained_records'].values():
++            d.add(row['original_path'],dict(sha256=row['sha256'],size=row['bytes']),snapshot=True)
++        failed_probe=Path(failed['work'])/'source-probe'
++        f.require(not failed_probe.exists() and not failed_probe.is_symlink(),'failed04 probe absence changed')
++        d.absent.add(str(failed_probe))
+         for name in ['packet','work','supervisor','launcher_execution']:d.tree(Path(failed[name]))
+         previous_packet=Path(failed['packet']);previous_work=Path(failed['work'])
+         previous_outer=Path(failed['supervisor']);previous_launcher=Path(failed['launcher_execution'])
+@@ -313,7 +328,7 @@
+         failed_reference=dict(receipt=dict(path=str(previous_work/'receipt.json'),sha256=sha(previous_work/'receipt.json')),
+             outer=dict(path=str(previous_outer/'status.json'),sha256=sha(previous_outer/'status.json')),
+             launcher=dict(path=str(previous_launcher/'record.json'),sha256=sha(previous_launcher/'record.json')),
+-            phase='preflight',status='failed-before-admission',children=0)
++            phase='preflight',status='failed-before-admission',children=0,review=failed_review_reference)
+ 
+         for owner in monitor.EVIDENCE_OWNERS:
+             for path in (owner/'.work').iterdir():

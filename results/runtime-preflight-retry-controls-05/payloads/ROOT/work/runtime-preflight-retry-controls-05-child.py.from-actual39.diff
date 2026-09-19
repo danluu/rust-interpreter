@@ -1,0 +1,42 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-startup-environment-controls-01/child.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-controls-05/child.py
+@@ -8,10 +8,10 @@
+ import unittest
+ 
+ HERE = Path(__file__).resolve().parent
+-SOURCE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01')
++SOURCE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05')
+ OWNER = HERE.parents[1]
+-WORK = OWNER / '.work/runtime-startup-environment-controls-01'
+-MODULES = ['test_environment', 'test_audit_owner']
++WORK = OWNER / '.work/runtime-preflight-retry-controls-05'
++MODULES = ['test_retry']
+ MAX_FILE = 256 * 1024
+ 
+ 
+@@ -51,6 +51,7 @@
+             assert path.resolve(strict=False).is_relative_to(WORK / 'tmp')
+             directories.add(str(path)); assert len(directories) <= 2048, 'fixture directory cap exceeded'
+     sys.addaudithook(audit)
++    sys.path.insert(0, str(OWNER / 'experiments/runtime04-environment-adapter-01'))
+     sys.path.insert(0, str(SOURCE))
+     suite = unittest.defaultTestLoader.loadTestsFromNames(MODULES)
+     expected = json.loads((HERE / 'inputs.json').read_bytes())['expected_names']
+@@ -58,7 +59,7 @@
+         if isinstance(item, unittest.TestSuite):
+             return [name for test in item for name in names(test)]
+         return [item.id()]
+-    assert sorted(names(suite)) == expected and len(expected) == 39
++    assert sorted(names(suite)) == expected and len(expected) == 33
+     result = unittest.TextTestRunner(verbosity=2).run(suite)
+     freeze = json.loads((HERE / 'inputs.json').read_bytes())
+     for module in list(sys.modules.values()):
+@@ -72,7 +73,7 @@
+                   maximum_file_bytes=MAX_FILE, maximum_writable_names=256,
+                   maximum_directory_names=2048, child_processes=0, compiler_calls=0)
+     (WORK / 'result.json').write_text(json.dumps(report, sort_keys=True, indent=2) + '\n')
+-    assert result.wasSuccessful() and result.testsRun == 39 and not result.skipped
++    assert result.wasSuccessful() and result.testsRun == 33 and not result.skipped
+     assert not result.expectedFailures and not result.unexpectedSuccesses
+     signal.alarm(0)
+ 

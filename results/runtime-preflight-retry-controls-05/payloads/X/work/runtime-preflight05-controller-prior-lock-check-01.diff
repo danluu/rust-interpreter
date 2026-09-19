@@ -1,0 +1,75 @@
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/runtime-preflight05-controller-before-prior-lock-check-01.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/controller.py
+@@ -5,10 +5,13 @@
+ source and every imported module before invoking it. No generic subprocess path
+ or old owned.run fallback is present.
+ """
++from contextlib import contextmanager
+ import copy
++import fcntl
+ import os
+ from pathlib import Path
+ import time
++import stat
+ 
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ PREFIX = 'hir-options-hash-runtime-'
+@@ -22,6 +25,39 @@
+ def require(value, message):
+     if not value:
+         raise RuntimeError(message)
++
++
++@contextmanager
++def inherited_admission(owned, canonical_fd):
++    """Refuse an unheld descriptor before the unchanged inherited-FD validator.
++
++    The entry retains its outer owning context throughout this function. A
++    separate open description must already be excluded, rather than allowing
++    the existing validator's flock call to acquire an otherwise free lock.
++    """
++    require(type(canonical_fd) is int and canonical_fd >= 0, 'explicit inherited canonical descriptor required')
++    path = Path(owned.CANONICAL_LOCK)
++    require(path.resolve(strict=True) == path and stat.S_ISREG(path.lstat().st_mode),
++        'ordinary canonical lock route required')
++    before = path.stat()
++    held = os.fstat(canonical_fd)
++    require((held.st_dev, held.st_ino) == (before.st_dev, before.st_ino),
++        'inherited descriptor is not the canonical lock')
++    probe = os.open(path, os.O_RDWR | os.O_NOFOLLOW)
++    try:
++        current = os.fstat(probe)
++        require((current.st_dev, current.st_ino) == (before.st_dev, before.st_ino),
++            'canonical lock changed during exclusion probe')
++        try:
++            fcntl.flock(probe, fcntl.LOCK_EX | fcntl.LOCK_NB)
++        except BlockingIOError:
++            pass
++        else:
++            raise RuntimeError('inherited canonical descriptor was not already held')
++    finally:
++        os.close(probe)
++    with owned.workload_lock(owned.CANONICAL_LOCK, 600, inherited_fd=canonical_fd):
++        yield canonical_fd
+ 
+ 
+ def configure_monitor(private_monitor, *, installation_directory):
+@@ -71,8 +107,7 @@
+         self.q, self.recipe, self.reader, self.monitor = q, recipe, reader, monitor
+         self.owned, self.check_frozen = monitor.owned, check_frozen
+         self.read_json, self.read_bytes, self.sha = read_json, read_bytes, sha
+-        require(type(canonical_fd) is int and canonical_fd >= 0, 'explicit inherited canonical descriptor required')
+-        with self.owned.workload_lock(self.owned.CANONICAL_LOCK, 600, inherited_fd=canonical_fd):
++        with inherited_admission(self.owned, canonical_fd):
+             pass  # The entry owns this open description through constructor and execute.
+         self.fd = canonical_fd
+         require(plan.get('attempt') == dict(path=str(ROUTES), sha256=ROUTES_SHA256)
+@@ -179,7 +214,7 @@
+ 
+     def execute(self):
+         try:
+-            with self.owned.workload_lock(self.owned.CANONICAL_LOCK, 600, inherited_fd=self.fd):
++            with inherited_admission(self.owned, self.fd):
+                 self.record.update(status='running', admitted_at=time.time(), free_bytes_before=self.owned.disk(R, 16))
+                 self.save(); self.full_guard()
+                 if self.phase == 'preflight':

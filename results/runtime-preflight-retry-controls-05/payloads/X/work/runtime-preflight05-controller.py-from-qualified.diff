@@ -1,0 +1,62 @@
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-01/controller.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/controller.py
+@@ -1,4 +1,4 @@
+-"""Source-only enclosing core; no CLI, concrete freeze or launch exists yet.
++"""Preflight-only admission successor; original installation controller is unchanged.
+ 
+ Construction requires the reviewed isolated modules, an exact prepared plan and
+ the complete union freeze. The eventual small launcher/preparer must bind this
+@@ -12,6 +12,11 @@
+ 
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ PREFIX = 'hir-options-hash-runtime-'
++ATTEMPT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05')
++ROUTES = ATTEMPT/'routes.json'
++ROUTES_SHA256 = '893d6102741b5206a829e2f5e130614667140b1eacc09d0c55616f7311f82e6a'
++CAPACITY = dict(entry_gib=16, stop_gib=9, floor_gib=8,
++    combined_namespace_bytes=14*2**30, evidence_bytes=256*2**20)
+ 
+ 
+ def require(value, message):
+@@ -61,16 +66,26 @@
+ 
+ class Controller:
+     def __init__(self, *, plan, inputs_sha256, q, recipe, reader, monitor,
+-                 check_frozen, read_json, read_bytes, sha):
++                 check_frozen, read_json, read_bytes, sha, canonical_fd):
+         self.plan, self.inputs_sha256 = copy.deepcopy(plan), inputs_sha256
+         self.q, self.recipe, self.reader, self.monitor = q, recipe, reader, monitor
+         self.owned, self.check_frozen = monitor.owned, check_frozen
+         self.read_json, self.read_bytes, self.sha = read_json, read_bytes, sha
++        require(type(canonical_fd) is int and canonical_fd >= 0, 'explicit inherited canonical descriptor required')
++        with self.owned.workload_lock(self.owned.CANONICAL_LOCK, 600, inherited_fd=canonical_fd):
++            pass  # The entry owns this open description through constructor and execute.
++        self.fd = canonical_fd
++        require(plan.get('attempt') == dict(path=str(ROUTES), sha256=ROUTES_SHA256)
++            and sha(ROUTES) == ROUTES_SHA256, 'exact reviewed retry routes required')
++        routes = read_json(ROUTES)
++        require(routes['phase'] == plan['phase'] == 'preflight'
++            and routes['work'] == plan['work'] and routes['supervisor'] == plan['supervisor_work']
++            and routes['capacity'] == CAPACITY and routes['installation_entry_gib'] == 24,
++            'preflight-only retry routing or phase policy differs')
+         self.work = Path(plan['work']); self.phase = plan['phase']
+-        require(self.phase in {'preflight', 'installation'} and Path(plan['owner']) == R
++        require(self.phase == 'preflight' and Path(plan['owner']) == R
+                 and self.work.parent == R/'.work' and self.work.name.startswith(PREFIX), 'exact runtime stage scope')
+-        require(plan['capacity'] == dict(entry_gib=24, stop_gib=9, floor_gib=8,
+-            combined_namespace_bytes=14*2**30, evidence_bytes=256*2**20), 'runtime bounds changed')
++        require(plan['capacity'] == CAPACITY, 'preflight retry bounds changed')
+         require(monitor is not reader.reader.monitor, 'do not mutate historical shared monitor')
+         require(Path.cwd() == R and dict(os.environ) == plan['launch_environment'], 'exact runtime launch context required')
+         self.spec = read_json(plan['specification']['path'])
+@@ -164,8 +179,8 @@
+ 
+     def execute(self):
+         try:
+-            with self.owned.workload_lock(self.owned.CANONICAL_LOCK, 600) as self.fd:
+-                self.record.update(status='running', admitted_at=time.time(), free_bytes_before=self.owned.disk(R, 24))
++            with self.owned.workload_lock(self.owned.CANONICAL_LOCK, 600, inherited_fd=self.fd):
++                self.record.update(status='running', admitted_at=time.time(), free_bytes_before=self.owned.disk(R, 16))
+                 self.save(); self.full_guard()
+                 if self.phase == 'preflight':
+                     result = self.recipe.execute_preflight(self.q, self.spec, owner=R, work=self.work/'source-probe',

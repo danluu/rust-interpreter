@@ -1,0 +1,209 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01/prepare.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/prepare.py
+@@ -1,7 +1,7 @@
+ """Read-only runtime discovery from four actual audits; no provider execution.
+ 
+ Source draft only. Canonical16/9 admission precedes all provider discovery and
+-proposal writes; actual preflight/installation remain distinct24/9/8 launches.
++proposal writes. This fresh attempt admits only preflight16/9/8; installation24 is unchanged.
+ """
+ import argparse
+ import ast
+@@ -19,7 +19,9 @@
+ # owner. The enclosing preparation wrapper supplies only this exact module path.
+ HERE=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-04')
+ ADAPTER=Path(__file__).resolve().parent
+-f.require(entry.HERE==HERE and Path(f.__file__).resolve()==HERE/'frozen.py'
++STARTUP_SOURCE=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01')
++f.require(entry.HERE==HERE and entry.ATTEMPT==ADAPTER and Path(entry.__file__).resolve()==ADAPTER/'entry.py'
++    and Path(f.__file__).resolve()==HERE/'frozen.py'
+     and Path(factory.__file__).resolve()==HERE/'imports.py','exact qualified producer module routes required')
+ R=entry.R
+ X=HERE.parents[2]
+@@ -38,7 +40,7 @@
+ STARTUP_WORK=ROOT/'.work/runtime-startup-environment-controls-01'
+ STARTUP_AUDIT=ROOT/'.work/runtime-startup-environment-controls-independent-verification-01.json'
+ STARTUP_CONTROL_COUNT=39  # 24 startup/Controller admission + 15 complete owner controls; actual proof required.
+-ADAPTER_FILES={'environment.py','prepare.py','test_environment.py','audit_owner.py',
++STARTUP_FILES={'environment.py','prepare.py','test_environment.py','audit_owner.py',
+     'test_audit_owner.py','source-bindings.json','README.md'}
+ 
+ 
+@@ -49,7 +51,7 @@
+ 
+ 
+ def main():
+-    parser=argparse.ArgumentParser();parser.add_argument('--phase',choices=['preflight','installation'],required=True)
++    parser=argparse.ArgumentParser();parser.add_argument('--phase',choices=['preflight'],required=True)
+     for role in ['beta','native','run-make','hash']:
+         parser.add_argument('--'+role+'-audit',type=Path,required=True);parser.add_argument('--'+role+'-audit-sha256',required=True)
+         parser.add_argument('--'+role+'-evidence',type=Path,required=True)
+@@ -57,6 +59,7 @@
+     parser.add_argument('--copy-retirement-audit',type=Path,required=True)
+     parser.add_argument('--copy-retirement-audit-sha256',required=True)
+     parser.add_argument('--startup-audit-sha256',required=True)
++    parser.add_argument('--retry-audit-sha256',required=True)
+     parser.add_argument('--preparation-passed-environment-json',required=True)
+     parser.add_argument('--preparation-record',type=Path,required=True)
+     parser.add_argument('--startup-source-manifest',type=Path,required=True)
+@@ -79,11 +82,14 @@
+             and terminal['status']==('passed-awaiting-independent-audit' if role=='hash' else 'passed'),
+             'actual completed independent prerequisite required: '+role)
+         audits[role]=dict(path=str(path),sha256=digest)
+-    phase=args['phase'];packet=HERE/(phase+'-plan-01');work=R/'.work'/('hir-options-hash-runtime-'+phase+'-04')
+-    supervisor=R/'.work/experiments'/('hir-options-hash-runtime-'+phase+'-supervisor-04')
+-    preparation_record=R/'.work'/('hir-options-hash-runtime-'+phase+'-preparation-execution-04')/'record.json'
++    routes=entry.attempt_routes(read_json=f.json_file,sha=f.digest)
++    phase=args['phase'];packet=Path(routes['packet']);work=Path(routes['work'])
++    supervisor=Path(routes['supervisor']);launcher_work=Path(routes['launcher_execution'])
++    preparation_record=Path(routes['preparation_execution'])/'record.json'
++    f.require(type(entry.RETRY_CONTROL_COUNT) is int and entry.RETRY_CONTROL_COUNT>0,
++        'focused retry source/control count remains unbound')
+     f.require(args['preparation_record']==preparation_record,'exact current preparation record route required')
+-    f.require(all(not p.exists() and not p.is_symlink() for p in [packet,work,supervisor]),'fresh runtime proposal/output required')
++    f.require(all(not p.exists() and not p.is_symlink() for p in [packet,work,supervisor,launcher_work]),'fresh runtime proposal/output required')
+     checked_sources={}
+     def precheck(path):
+         path=Path(path);ast.parse(path.read_text(),filename=str(path))
+@@ -98,12 +104,12 @@
+     d=entry.discovery(modules)
+     with d.owned.workload_lock(d.owned.CANONICAL_LOCK,600):
+         started=time.time();free_before=d.owned.disk(R,16)
+-        f.require(all(not p.exists() and not p.is_symlink() for p in [packet,work,supervisor]),'runtime namespace appeared during admission wait')
++        f.require(all(not p.exists() and not p.is_symlink() for p in [packet,work,supervisor,launcher_work]),'runtime namespace appeared during admission wait')
+         hash_plan=d.inherit(entry.HASH_SOURCE)
+         d.add(entry.HASH_SOURCE/'snapshot-plan.json',snapshot=True)
+         # Exact published identities of three completed hash-owner rows omitted
+         # by the historical inputs table; no guessed current identities.
+-        adapter_binding=modules.collector.read(d.add(ADAPTER/'source-bindings.json',snapshot=True))
++        adapter_binding=modules.collector.read(d.add(STARTUP_SOURCE/'source-bindings.json',snapshot=True))
+         closure=adapter_binding['reader_closure']
+         for ref in [closure['source'],closure['census']]:d.add(ref['path'],ref,snapshot=True)
+         for name,row in closure['files'].items():d.add(name,row,snapshot=True)
+@@ -182,15 +188,22 @@
+         d.add(source_manifest['path'],source_manifest,snapshot=True)
+         source_rows=read_json(source_manifest['path'])
+         f.require(set(source_rows)=={'status','files'}
+-            and source_rows['status']=='reviewed-runtime04-startup-source-closure'
+-            and {str(ADAPTER/name) for name in ADAPTER_FILES}<=set(source_rows['files']),
++            and source_rows['status']=='reviewed-runtime-preflight05-startup-source-closure'
++            and ({str(ADAPTER/name) for name in entry.RETRY_SOURCE_NAMES}
++                 | {str(STARTUP_SOURCE/name) for name in STARTUP_FILES})<=set(source_rows['files']),
+             'complete reviewed startup source closure required')
+         for name,row in source_rows['files'].items():
+             f.require(set(row)=={'sha256','size','identity'}
+                 and (name not in d.files or d.files[name]==row),'unequal startup source overlap')
+             d.add(name,row,snapshot=True)
+-        f.require({p.name for p in ADAPTER.iterdir()}==ADAPTER_FILES,'exact startup adapter source membership required')
+-        for name in sorted(ADAPTER_FILES):d.add(ADAPTER/name,snapshot=True)
++        f.require({p.name for p in STARTUP_SOURCE.iterdir()}==STARTUP_FILES,'exact qualified startup source membership required')
++        for name in sorted(STARTUP_FILES):d.add(STARTUP_SOURCE/name,snapshot=True)
++        for name in entry.RETRY_SOURCE_NAMES:d.add(ADAPTER/name,snapshot=True)
++        for path in [entry.RETRY_CONTROLS/'inputs.json',entry.RETRY_CONTROLS/'launch.json',entry.RETRY_CONTROL_AUDIT]:
++            d.add(path,snapshot=True)
++        f.require(sha(entry.RETRY_CONTROL_AUDIT)==args['retry_audit_sha256'],'exact separately reviewed retry audit required')
++        for name,row in read_json(entry.RETRY_CONTROLS/'inputs.json')['files'].items():d.add(name,row,snapshot=True)
++        d.tree(entry.RETRY_CONTROL_WORK)
+         for path in [STARTUP_CONTROLS/'inputs.json',STARTUP_CONTROLS/'launch.json',STARTUP_AUDIT]:d.add(path,snapshot=True)
+         f.require(sha(STARTUP_AUDIT)==args['startup_audit_sha256'],'exact separately reviewed startup controls audit required')
+         for name,row in read_json(STARTUP_CONTROLS/'inputs.json')['files'].items():d.add(name,row,snapshot=True)
+@@ -211,13 +224,15 @@
+         qualification=reader.check(full=True)
+         runtime_qualification=entry.runtime_qualification(reader)
+         catalog_qualification=entry.catalog_qualification(reader)
+-        startup_qualification=entry.controls_qualification(reader,source=ADAPTER/'environment.py',
+-            test=ADAPTER/'test_environment.py',controls=STARTUP_CONTROLS,work=STARTUP_WORK,
++        startup_qualification=entry.controls_qualification(reader,source=STARTUP_SOURCE/'environment.py',
++            test=STARTUP_SOURCE/'test_environment.py',controls=STARTUP_CONTROLS,work=STARTUP_WORK,
+             audit_path=STARTUP_AUDIT,count=STARTUP_CONTROL_COUNT,
+-            additional_sources=[ADAPTER/'audit_owner.py'],additional_tests=[ADAPTER/'test_audit_owner.py'])
++            additional_sources=[STARTUP_SOURCE/'audit_owner.py'],additional_tests=[STARTUP_SOURCE/'test_audit_owner.py'])
+         f.require(startup_qualification['audit']['sha256']==args['startup_audit_sha256'],
+             'startup qualification changed')
+-        startup=factory.load('startup_environment',ADAPTER/'environment.py',reader.reader.frozen)
++        retry_qualification=entry.retry_qualification(reader)
++        f.require(retry_qualification['audit']['sha256']==args['retry_audit_sha256'],'retry qualification changed')
++        startup=factory.load('startup_environment',STARTUP_SOURCE/'environment.py',reader.reader.frozen)
+         catalog=factory.load('completed_catalog',entry.CATALOG_SOURCE,lambda p:d.add(p,snapshot=True))
+         compiled=read_json(COMPILED);provider=read_json(PROVIDER);remap=read_json(REMAP);old_spec=read_json(OLD_SPEC);old_policy=read_json(OLD_POLICY)
+         source=Path(hash_plan['metadata_plan']['source']);sysroot=Path(hash_plan['roles']['runtime_compiler'])
+@@ -247,7 +262,7 @@
+         launch_environment=startup.validate(environment,startup_derivation)
+         modules.q.std.validate_environment(launch_environment)
+         startup_environment=dict(derivation=startup_derivation,
+-            policy=dict(path=str(ADAPTER/'environment.py'),sha256=sha(ADAPTER/'environment.py')),
++            policy=dict(path=str(STARTUP_SOURCE/'environment.py'),sha256=sha(STARTUP_SOURCE/'environment.py')),
+             qualification=startup_qualification,
+             preparer=dict(path=str(Path(__file__).resolve()),sha256=sha(Path(__file__).resolve())),
+             preparation_record=str(preparation_record),source_manifest=source_manifest)
+@@ -264,7 +279,42 @@
+             key,new_sysroot,children=modules.recipe.installation_commands(modules.q,spec,R,work,environment);installation=new_sysroot.parent
+             f.require(not installation.exists() and not installation.is_symlink(),'new runtime prefix must be absent')
+         monitor=modules.controller.configure_monitor(modules.monitor,installation_directory=installation)
+-        roots={work}
++        # Both outputs are future roots at preparation, so declare the launcher
++        # explicitly rather than allowing its creation to invalidate the budget.
++        roots={work,launcher_work}
++        failed=routes['failed_predecessor']
++        for name in ['packet','work','supervisor','launcher_execution']:d.tree(Path(failed[name]))
++        previous_packet=Path(failed['packet']);previous_work=Path(failed['work'])
++        previous_outer=Path(failed['supervisor']);previous_launcher=Path(failed['launcher_execution'])
++        failed_terminal=read_json(previous_work/'receipt.json');failed_outer=read_json(previous_outer/'status.json')
++        failed_launch=read_json(previous_packet/'launch.json');failed_dispatch=read_json(previous_launcher/'record.json')
++        f.require(failed_terminal['status']=='failed' and failed_terminal['phase']=='preflight'
++            and failed_terminal['children']==[] and 'admitted_at' not in failed_terminal
++            and 'source_snapshots_sha256' not in failed_terminal
++            and failed_terminal['error']=="RuntimeError('insufficient free space: 23099760640')",
++            'exact closed pre-admission failure history required')
++        f.require(failed_outer['status']=='finished' and type(failed_outer['returncode']) is int and failed_outer['returncode']==1
++            and failed_outer['child_pid']==failed_terminal['pid'] and failed_outer['supervisor_pid']==failed_terminal['parent_pid']
++            and failed_outer['command']==failed_launch['command'][6:] and failed_outer['cwd']==str(R)
++            and failed_outer['plan_sha256']==sha(previous_outer/'plan.json')
++            and failed_outer['log_sha256']==sha(previous_outer/'command.log'), 'failed predecessor supervisor differs')
++        f.require(failed_dispatch['status']=='terminal-observed' and failed_dispatch['returncode']==1
++            and failed_dispatch['launcher_returncode']==0 and failed_dispatch['outer_sha256']==sha(previous_outer/'status.json')
++            and failed_dispatch['launch_sha256']==sha(previous_packet/'launch.json')
++            and failed_dispatch['command']==failed_launch['command'] and failed_dispatch['cwd']==str(R)
++            and failed_dispatch['controller_pid']==failed_terminal['pid']
++            and failed_dispatch['supervisor_pid']==failed_terminal['parent_pid']
++            and failed_dispatch['environment']==failed_launch['environment']
++            and failed_outer['child_started_at']<=failed_terminal['started_at']<=failed_terminal['finished_at']
++                <=failed_outer['finished_at']<=failed_dispatch['terminal_observed_at']<=failed_dispatch['finished_at'],
++            'failed predecessor launcher/chronology differs')
++        for stream in ['stdout','stderr']:
++            f.require(sha(previous_launcher/stream)==failed_dispatch[stream+'_sha256'],'failed launcher raw differs')
++        failed_reference=dict(receipt=dict(path=str(previous_work/'receipt.json'),sha256=sha(previous_work/'receipt.json')),
++            outer=dict(path=str(previous_outer/'status.json'),sha256=sha(previous_outer/'status.json')),
++            launcher=dict(path=str(previous_launcher/'record.json'),sha256=sha(previous_launcher/'record.json')),
++            phase='preflight',status='failed-before-admission',children=0)
++
+         for owner in monitor.EVIDENCE_OWNERS:
+             for path in (owner/'.work').iterdir():
+                 if path.name.startswith(monitor.EVIDENCE_PREFIXES) and (path.is_dir() or path.is_symlink()):
+@@ -275,11 +325,12 @@
+             source_policy=dict(path=str(policy_path),sha256=sha(policy_path)),provider_comparison=provider_ref,
+             adapter_controls=dict(receipt=str(CONTROL_WORK/'receipt.json'),audit=str(CONTROL_AUDIT)),runtime_key=key,
+             catalog_qualification=catalog_qualification,
+-            runtime_adapter_qualification=runtime_qualification,
++            runtime_adapter_qualification=runtime_qualification,retry_qualification=retry_qualification,
++            attempt=dict(path=str(entry.ROUTES),sha256=entry.ROUTES_SHA256),failed_predecessor=failed_reference,
+             copy_retirement=retirement,
+             environment=environment,launch_environment=launch_environment,children=children,evidence_roots=sorted(map(str,roots)),
+             startup_environment=startup_environment,
+-            capacity=dict(entry_gib=24,stop_gib=9,floor_gib=8,combined_namespace_bytes=14*2**30,evidence_bytes=256*2**20))
++            capacity=routes['capacity'])
+         if phase=='installation':plan.update(sysroot=str(new_sysroot),source_preflight=preflight['reference'],source_preflight_readback=preflight)
+         for path in HERE.iterdir():
+             if path.is_file():d.add(path,snapshot=True)
+@@ -323,9 +374,9 @@
+             free_bytes_before=free_before,free_bytes_after=d.owned.disk(R,9),files=len(d.files),bytes=d.total,work_created=False,children=0,inputs_sha256=inputs_sha,
+             startup_environment=startup_environment,environment_at_completion=dict(os.environ)))
+         launch=dict(status='prepared-unrun-awaiting-exact-review',cwd=str(R),environment=launch_environment,command=[freeze['python'],'-B',str(R/'scripts/supervise_experiment.py'),
+-            '--run-id',supervisor.name,'--',freeze['python'],'-B',str(HERE/'entry.py'),'--packet',str(packet),
++            '--run-id',supervisor.name,'--',freeze['python'],'-B',str(ADAPTER/'entry.py'),'--packet',str(packet),
+             '--inputs-sha256',inputs_sha,'--snapshot-plan-sha256',f.digest(packet/'snapshot-plan.json')],inputs_sha256=inputs_sha,
+-            snapshot_plan_sha256=f.digest(packet/'snapshot-plan.json'),plan_sha256=sha(packet/'plan.json'),helper_sha256=sha(HERE/'entry.py'),children=len(children),capacity=plan['capacity'])
++            snapshot_plan_sha256=f.digest(packet/'snapshot-plan.json'),plan_sha256=sha(packet/'plan.json'),helper_sha256=sha(ADAPTER/'entry.py'),children=len(children),capacity=plan['capacity'])
+         write(packet/'launch.json',launch)
+         print(json.dumps(dict(status='prepared-unrun',phase=phase,launch_sha256=f.digest(packet/'launch.json'),inputs_sha256=inputs_sha,files=len(d.files),bytes=d.total),indent=2))
+ 

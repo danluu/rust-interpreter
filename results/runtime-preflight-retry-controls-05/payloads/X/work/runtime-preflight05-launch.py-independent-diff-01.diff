@@ -1,0 +1,153 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-launch-01/launch.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/launch.py
+@@ -1,7 +1,7 @@
+-"""Launch one reviewed runtime04 proposal and observe its detached supervisor to closure.
++"""Launch one reviewed preflight05 proposal and observe its detached supervisor to closure.
+ 
+ The launch digest is supplied only after concrete packet review. No provider,
+-compiler or controller starts before the unchanged fresh 24 GiB entry check.
++compiler or controller starts before the phase-specific fresh 16 GiB entry check.
+ An observation timeout preserves the running task and reports it as unclosed.
+ """
+ import argparse
+@@ -20,7 +20,7 @@
+ HERE = Path(__file__).resolve().parent
+ ROOT = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ SOURCE = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-04')
+-CAPACITY = dict(entry_gib=24,stop_gib=9,floor_gib=8,
++CAPACITY = dict(entry_gib=16,stop_gib=9,floor_gib=8,
+                 combined_namespace_bytes=14*2**30,evidence_bytes=256*2**20)
+ MAXIMUM_OBSERVATION_SECONDS = 1800
+ MAXIMUM_WRAPPER_SECONDS = 30
+@@ -59,7 +59,13 @@
+     sha256='016e80b8169e8da75a82d29cecb3be9c0dd3e89cd6deae90b50522b927fa88f0')
+ HASH_PLAN = dict(path=str(PROOF_ROOT/'experiments/hir-options-hash-driver-stage-03/plan.json'),
+     sha256='24faa0611eacda26748727e443bef844c695c3ed362cda75b5aa60223e4d6055')
+-PREPARATION_LAUNCHER = PROOF_ROOT/'experiments/runtime04-prepare-launch-01/prepare_once.py'
++PREPARATION_LAUNCHER = HERE/'prepare_once.py'
++RETRY_CONTROL = PROOF_ROOT/'experiments/runtime-preflight-retry-controls-05'
++RETRY_WORK = PROOF_ROOT/'.work/runtime-preflight-retry-controls-05'
++RETRY_AUDIT = PROOF_ROOT/'.work/runtime-preflight-retry-controls-independent-verification-05.json'
++RETRY_SOURCES = ['entry.py', 'controller.py', 'audit_owner.py', 'routes.json',
++                 'prepare.py', 'prepare_once.py', 'launch.py']
++ROUTES_SHA = '893d6102741b5206a829e2f5e130614667140b1eacc09d0c55616f7311f82e6a'
+ POLICY_SHA = 'fbc563accfeebe2650902263ed9972031d37c84bc8c21986a3545ae4020d314d'
+ OWNER_SHA = 'f93dd25d4d58e3133d2737c718f6b4e41d1f37ad788f914f9ed2adf268fca595'
+ 
+@@ -89,7 +95,7 @@
+     require(row['sha256']==expected and row['size']==path.stat().st_size
+         and same(identity(path),row['identity']),'current selected qualified source differs')
+     data=read_bytes(path);require(hashlib.sha256(data).hexdigest()==expected,'qualified source bytes differ')
+-    module=ModuleType('_runtime04_launch_'+name);module.__file__=str(path)
++    module=ModuleType('_runtime_preflight05_launch_'+name);module.__file__=str(path)
+     missing=object();before={key:sys.modules.get(key,missing) for key in dependencies or {}}
+     sys.modules.update(dependencies or {})
+     try:
+@@ -183,38 +189,53 @@
+     workload=dict(wire['remainder']['environment']);workload['TMPDIR']=str(controller/'tmp')
+     qualification=dict(proof,source=str(STARTUP_CONTROL),evidence=str(STARTUP_WORK))
+     policy=qualified_module('environment',ADAPTER/'environment.py',POLICY_SHA,frozen['files'])
+-    owner=qualified_module('owner',ADAPTER/'audit_owner.py',OWNER_SHA,frozen['files'],dependencies={'environment':policy})
+-    preparation=dict(path=str(ROOT/('.work/hir-options-hash-runtime-'+args.phase+'-preparation-execution-04/record.json')),
++    require(sha(RETRY_AUDIT)==args.retry_audit_sha256,'exact completed retry audit required')
++    retry_proof=controls(source=RETRY_CONTROL,work=RETRY_WORK,audit_path=RETRY_AUDIT,
++        source_paths=[HERE/name for name in RETRY_SOURCES],test_paths=[HERE/'test_retry.py'],
++        read_json=read,read_bytes=read_bytes,sha=sha,identity=identity)
++    retry_tested=read(RETRY_CONTROL/'inputs.json')
++    for name in RETRY_SOURCES:
++        path=HERE/name;row=frozen['files'][str(path)];old=retry_tested['files'][str(path)]
++        require(row['sha256']==old['sha256']
++            and same([row['identity'][key] for key in ['dev','ino','mode','size','mtime_ns','ctime_ns','nlink']],old['stamp']),
++            'retry packet source must match its actual separate controls')
++    retry_qualification=dict(retry_proof,source=str(RETRY_CONTROL),evidence=str(RETRY_WORK))
++    owner=qualified_module('owner',HERE/'audit_owner.py',frozen['files'][str(HERE/'audit_owner.py')]['sha256'],
++        frozen['files'],dependencies={'environment':policy})
++    preparation=dict(path=str(ROOT/('.work/hir-options-hash-runtime-'+args.phase+'-preparation-execution-05/record.json')),
+         sha256=args.preparation_sha256)
+     preparation_launcher=dict(path=str(PREPARATION_LAUNCHER),sha256=args.preparation_launcher_sha256)
+     context=SimpleNamespace(require=require,same=same,R=ROOT,
+-        phase_paths=lambda phase: dict(packet=SOURCE/(phase+'-plan-01')))
++        phase_paths=lambda phase: dict(packet=HERE/(phase+'-plan-01')))
+     admission_time=time.time()
+     owner.startup_admission(plan,proposal,phase=args.phase,
+         expected=dict(preparation=preparation,preparation_launcher=preparation_launcher),
+         sha=sha,read_json=read,original=context,workload_environment=workload,
+-        validate_qualification=lambda actual:same(actual,qualification),runtime_started_at=admission_time)
++        validate_qualification=lambda actual:same(actual,qualification),
++        validate_retry_qualification=lambda actual:same(actual,retry_qualification),runtime_started_at=admission_time)
+     return dict(preparation=preparation,preparation_launcher=preparation_launcher,
+-        startup_controls=STARTUP_AUDIT,workload_source=HASH_PLAN,validated_before_launch_at=admission_time,
++        startup_controls=STARTUP_AUDIT,retry_controls=dict(path=str(RETRY_AUDIT),sha256=args.retry_audit_sha256),
++        workload_source=HASH_PLAN,validated_before_launch_at=admission_time,
+         chronology_scope='Actual prelaunch bound; no future terminal or runtime-start timestamp invented.')
+ 
+ def main():
+     parser = argparse.ArgumentParser()
+-    parser.add_argument('--phase',choices=['preflight','installation'],required=True)
++    parser.add_argument('--phase',choices=['preflight'],required=True)
+     parser.add_argument('--launch-sha256',required=True)
+     parser.add_argument('--launcher-sha256',required=True)
+     parser.add_argument('--preparation-sha256',required=True)
+     parser.add_argument('--preparation-launcher-sha256',required=True)
++    parser.add_argument('--retry-audit-sha256',required=True)
+     args=parser.parse_args();expected=args.launch_sha256;phase=args.phase
+     require(all(re.fullmatch('[a-f0-9]{64}',value) for value in
+-        [args.preparation_sha256,args.preparation_launcher_sha256]),'actual preparation source/closure pins required')
++        [args.preparation_sha256,args.preparation_launcher_sha256,args.retry_audit_sha256]),'actual preparation source/closure pins required')
+     require(re.fullmatch('[a-f0-9]{64}',args.launcher_sha256)
+             and sha(Path(__file__))==args.launcher_sha256,'exact independently reviewed launcher source required')
+-    packet=SOURCE/(phase+'-plan-01')
++    packet=HERE/(phase+'-plan-01')
+     LAUNCH=packet/'launch.json'
+-    WORK=ROOT/('.work/hir-options-hash-runtime-'+phase+'-launch-execution-04')
+-    OUTER=ROOT/('.work/experiments/hir-options-hash-runtime-'+phase+'-supervisor-04')
+-    CONTROLLER=ROOT/('.work/hir-options-hash-runtime-'+phase+'-04')
++    WORK=ROOT/('.work/hir-options-hash-runtime-'+phase+'-launch-execution-05')
++    OUTER=ROOT/('.work/experiments/hir-options-hash-runtime-'+phase+'-supervisor-05')
++    CONTROLLER=ROOT/('.work/hir-options-hash-runtime-'+phase+'-05')
+     require(Path.cwd() == ROOT and sys.dont_write_bytecode and not sys.flags.optimize,
+             'fixed owner and unoptimized Python -B required')
+     require(re.fullmatch('[a-f0-9]{64}', expected) and sha(LAUNCH) == expected,
+@@ -222,6 +243,15 @@
+     proposal = read(LAUNCH)
+     frozen = read(packet/'inputs.json')
+     plan = read(packet/'plan.json')
++    require(sha(HERE/'routes.json') == ROUTES_SHA
++            and plan['attempt'] == dict(path=str(HERE/'routes.json'), sha256=ROUTES_SHA),
++            'fixed reviewed preflight retry descriptor required')
++    routes=read(HERE/'routes.json')
++    require(routes['phase']==phase and routes['qualified_source']==str(SOURCE)
++            and routes['attempt_source']==str(HERE) and routes['packet']==str(packet)
++            and routes['work']==str(CONTROLLER) and routes['supervisor']==str(OUTER)
++            and routes['launcher_execution']==str(WORK) and routes['capacity']==CAPACITY
++            and routes['installation_entry_gib']==24, 'runtime retry routes differ')
+     base = dict(path='/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-native-controls-03/inputs.json',
+                 sha256='8569abb81a61e34b6b5a892116af5218557ceb0436ab8dbf8a31f2aec55b1b1d')
+     integrity = frozen.get('file_table_integrity')
+@@ -234,7 +264,7 @@
+             'reviewed compact input representation required')
+     python = str(Path(sys.executable).resolve(strict=True))
+     command=[python,'-B',str(ROOT/'scripts/supervise_experiment.py'),'--run-id',OUTER.name,'--',
+-             python,'-B',str(SOURCE/'entry.py'),'--packet',str(packet),
++             python,'-B',str(HERE/'entry.py'),'--packet',str(packet),
+              '--inputs-sha256',proposal['inputs_sha256'],
+              '--snapshot-plan-sha256',proposal['snapshot_plan_sha256']]
+     require(proposal['cwd']==str(ROOT) and proposal['command']==command and frozen['python']==python
+@@ -244,7 +274,7 @@
+     require(sha(packet/'inputs.json')==proposal['inputs_sha256']
+             and sha(packet/'plan.json')==frozen['plan_sha256']==proposal['plan_sha256']
+             and sha(packet/'snapshot-plan.json')==proposal['snapshot_plan_sha256']
+-            and sha(SOURCE/'entry.py')==proposal['helper_sha256']==frozen['files'][str(SOURCE/'entry.py')]['sha256'],
++            and sha(HERE/'entry.py')==proposal['helper_sha256']==frozen['files'][str(HERE/'entry.py')]['sha256'],
+             'reviewed runtime proposal and frozen entry changed')
+     specification=packet/'specification.json'
+     require(plan['specification']==dict(path=str(specification),sha256=sha(specification)),
+@@ -257,7 +287,7 @@
+     require(all(not p.exists() and not p.is_symlink() for p in [WORK, OUTER, CONTROLLER]),
+             'fresh launch and workload namespaces required')
+     free = shutil.disk_usage(ROOT).free
+-    require(free >= 24 * 2**30, 'fresh 24 GiB required before controller or WORK')
++    require(free >= CAPACITY['entry_gib'] * 2**30, 'fresh 16 GiB required before controller or WORK')
+     WORK.mkdir()
+     source_bytes=Path(__file__).read_bytes()
+     require(hashlib.sha256(source_bytes).hexdigest()==args.launcher_sha256,'launcher changed before source retention')

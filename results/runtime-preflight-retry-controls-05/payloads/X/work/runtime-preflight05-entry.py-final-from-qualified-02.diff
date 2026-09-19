@@ -1,0 +1,94 @@
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-04/entry.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/entry.py
+@@ -13,7 +13,16 @@
+ import re
+ import sys
+ 
+-HERE=Path(__file__).resolve().parent
++HERE=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-04')  # Immutable qualified52 source owner.
++ATTEMPT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05')
++ROUTES=ATTEMPT/'routes.json'
++ROUTES_SHA256='893d6102741b5206a829e2f5e130614667140b1eacc09d0c55616f7311f82e6a'
++LOCK_SOURCE=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/stable-cgu/owned_stage.py')
++RETRY_CONTROLS=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-controls-05')
++RETRY_CONTROL_WORK=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime-preflight-retry-controls-05')
++RETRY_CONTROL_AUDIT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime-preflight-retry-controls-independent-verification-05.json')
++RETRY_CONTROL_COUNT=None  # Bound only to the frozen focused suite before actual qualification.
++RETRY_SOURCE_NAMES=('entry.py','controller.py','audit_owner.py','routes.json','prepare.py','prepare_once.py','launch.py')
+ R=Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ ROOT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ HASH_SOURCE=ROOT/'experiments/hir-options-hash-driver-stage-03'
+@@ -312,16 +321,49 @@
+     return owner,validate
+ 
+ 
++def attempt_routes(*, read_json, sha):
++    require(sha(ROUTES)==ROUTES_SHA256,'exact reviewed retry routes required')
++    value=read_json(ROUTES)
++    require(value['phase']=='preflight' and value['qualified_source']==str(HERE)
++        and value['attempt_source']==str(ATTEMPT) and value['installation_entry_gib']==24,
++        'preflight-only routing owner differs')
++    return value
++
++
++def retry_qualification(reader):
++    require(type(RETRY_CONTROL_COUNT) is int and RETRY_CONTROL_COUNT>0,
++        'focused retry controls have not been bound')
++    return controls_qualification(reader,source=ATTEMPT/'entry.py',test=ATTEMPT/'test_retry.py',
++        controls=RETRY_CONTROLS,work=RETRY_CONTROL_WORK,audit_path=RETRY_CONTROL_AUDIT,
++        count=RETRY_CONTROL_COUNT,additional_sources=[ATTEMPT/name for name in RETRY_SOURCE_NAMES if name!='entry.py'])
++
++
+ def execute(packet,inputs_sha256,snapshot_sha256):
+     require(Path.cwd()==R and sys.dont_write_bytecode and not sys.flags.optimize,'fixed R owner/Python flags required')
+-    require(packet.parent==HERE and packet.name in ['preflight-plan-01','installation-plan-01'],'exact reviewed packet namespace required')
++    require(packet==ATTEMPT/'preflight-plan-01','exact reviewed retry packet namespace required')
+     f=definition('frozen',HERE/'frozen.py')
+     require(f.digest(packet/'inputs.json')==inputs_sha256,'exact union freeze required')
+     wire=f.json_file(packet/'inputs.json');plan=f.json_file(packet/'plan.json')
+     require(f.digest(packet/'plan.json')==wire['plan_sha256'] and plan['hash_source']==str(HASH_SOURCE),'actual plan/source binding differs')
+-    require(plan['phase']==('preflight' if packet.name=='preflight-plan-01' else 'installation'),'phase packet differs')
++    require(plan['phase']=='preflight','retry is preflight-only; installation retains original24 policy')
+     table=load_table(wire,f)
+-    bound=f.Frozen(packet/'inputs.json',inputs_sha256,output_root=plan['work'],table=table,base=FILE_TABLE_BASE);bound.check(True)
++    bound=f.Frozen(packet/'inputs.json',inputs_sha256,output_root=plan['work'],table=table,base=FILE_TABLE_BASE)
++    # Authenticate the exact existing lock helper before importing it. All
++    # provider/file-table guards still run inside this same owning context.
++    for path in [Path(__file__).resolve(),HERE/'frozen.py',ROUTES,LOCK_SOURCE]:bound.file(path)
++    routes=attempt_routes(read_json=bound.read_json,sha=bound.sha)
++    require(plan.get('attempt')==dict(path=str(ROUTES),sha256=ROUTES_SHA256)
++        and str(packet)==routes['packet'] and plan['work']==routes['work']
++        and plan['supervisor_work']==routes['supervisor'] and plan['capacity']==routes['capacity'],
++        'prepared retry routing differs')
++    early_owned=definition('early_owned',LOCK_SOURCE)
++    with early_owned.workload_lock(early_owned.CANONICAL_LOCK,600) as canonical_fd:
++        early_owned.disk(R,16)
++        _execute_admitted(packet,inputs_sha256,snapshot_sha256,f,plan,bound,canonical_fd)
++
++
++def _execute_admitted(packet,inputs_sha256,snapshot_sha256,f,plan,bound,canonical_fd):
++    bound.check(True)
+     raw=bound.value
+     require(str(Path(sys.executable).resolve(strict=True))==raw['python'],'actual Python route differs')
+     for path in [Path(__file__).resolve(),HERE/'frozen.py',HERE/'imports.py']:bound.file(path)
+@@ -340,6 +382,8 @@
+     reader.reader.snapshot_qualification()
+     require(runtime_qualification(reader)==plan['runtime_adapter_qualification'],'actual runtime adapter qualification differs')
+     require(catalog_qualification(reader)==plan['catalog_qualification'],'actual catalog qualification differs')
++    require(retry_qualification(reader)==plan['retry_qualification'],'actual focused retry qualification differs')
++    retry_controller=factory.load('preflight_retry_controller',ATTEMPT/'controller.py',bound.file)
+     catalog=factory.load('completed_catalog',CATALOG_SOURCE,bound.file)
+     snap_path=packet/'snapshot-plan.json'
+     require(f.digest(snap_path)==snapshot_sha256,'exact reviewed runtime snapshot projection required')
+@@ -387,8 +431,9 @@
+             controller.record.update(snapshot_plan_sha256=snapshot_sha256,source_snapshots_sha256=f.digest(controller.work/'source-snapshots.json'))
+             controller.save();controller.capacity(force=True)
+     with factory.aliases(modules.public_aliases):
+-        controller=modules.controller.Controller(plan=plan,inputs_sha256=inputs_sha256,q=modules.q,recipe=modules.recipe,
+-            reader=reader,monitor=modules.monitor,check_frozen=check,read_json=bound.read_json,read_bytes=bound.read_bytes,sha=bound.sha)
++        controller=retry_controller.Controller(plan=plan,inputs_sha256=inputs_sha256,q=modules.q,recipe=modules.recipe,
++            reader=reader,monitor=modules.monitor,check_frozen=check,read_json=bound.read_json,read_bytes=bound.read_bytes,sha=bound.sha,
++            canonical_fd=canonical_fd)
+         state['controller']=controller
+         controller.record.update(plan_sha256=f.digest(packet/'plan.json'),snapshot_plan_sha256=snapshot_sha256)
+         controller.save();controller.execute()

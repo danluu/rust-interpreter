@@ -1,0 +1,29 @@
+--- draft01
++++ draft02
+@@ -284,7 +284,7 @@
+             with self.subTest(key=key), self.assertRaises(RuntimeError): f.check()
+ 
+ 
+-class LockFixture(unittest.TestCase):
++class OwnedLockFixture:
+     def setUp(self):
+         self.tmp = tempfile.TemporaryDirectory(prefix='runtime-retry-lock-')
+         self.addCleanup(self.tmp.cleanup)
+@@ -306,6 +306,8 @@
+         with self.path.open('r+') as other:
+             fcntl.flock(other, fcntl.LOCK_EX | fcntl.LOCK_NB)
+ 
++
++class InheritedLock(OwnedLockFixture, unittest.TestCase):
+     def test_owner_fd_is_accepted_and_stays_owned_after_nested_scope(self):
+         with self.owned.workload_lock(self.path, 1) as fd:
+             with self.inherited(fd): self.assert_excluded()
+@@ -357,7 +359,7 @@
+         self.assert_available()
+ 
+ 
+-class ControllerAdmission(LockFixture):
++class ControllerAdmission(OwnedLockFixture, unittest.TestCase):
+     def reach(self, fd, *, change=None, observed=None):
+         c = controller
+         plan = dict(attempt=dict(path=str(c.ROUTES), sha256=c.ROUTES_SHA256), phase='preflight', owner=str(c.R),
