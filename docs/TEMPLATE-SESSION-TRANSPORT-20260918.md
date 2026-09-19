@@ -60,3 +60,12 @@ authentication/server identity, schema/sequence/unknown fields, cwd/report error
 lost response without replay and ownerEOF while waiting in accept. Private token
 files remain0600 in0700 directories; published receipts contain only public
 identity or file hashes. No independent-command client or performance claim yet.
+
+The explicit VM client is qualified at8bf8d47a by client01 (closed). Nine session
+controls/profile launch22 owned servers and32 actual VM client commands across
+both profiles. Requests with changed inputs and guest failures preserve current
+semantics; wrong modes, stale identity, permissions and reserved outputs fail
+without execution. A malformed artifact returns an error and the next valid
+request succeeds. The client does not decode the Program or retry requests. A
+bounded create-new report sidecar identifies the actual server, CPU counters and
+result digest. The next gate connects strict Cargo commands to this client.

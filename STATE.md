@@ -264,3 +264,11 @@ suite. Privateendpoint/identity, boundedrawenvironment and report/receiptreserva
 are checked; actualserverPID/SHA, CPU and hashes recorded in .session.json sidecar.
 Nineprocessfixturecontrols/profile expect22servers/32VMclients, includingwrong
 options/identity/modes/outputs and malformedartifact recovery. Controller client.py.
+
+Client01 source8bf8d47a passes84597/84600, CLOSED88896/88941. Nine session
+controls/profile pass,22servers/32VMclients allreaped. VM flags reject incompatible
+execution, actual changedinputs work, staleidentity/privatepermissions andreserved
+outputs execute no request, malformedartifact error recovers without fallback.
+Actualserveridentity/CPU/result hashes persist in bounded sidecar receipts; no
+credential/environment contents. No active experiment. Next launcher plumbing,
+retainedrealparser throughVMclients, then fullchangedsourceprimary at24GiB gate.
