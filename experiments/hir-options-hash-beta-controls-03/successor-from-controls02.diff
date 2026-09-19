@@ -1,0 +1,175 @@
+--- passed63/run.py
++++ proposed82/run.py
+@@ -10,11 +10,11 @@
+ 
+ HERE = Path(__file__).resolve().parent
+ OWNER = HERE.parents[1]
+-SOURCE = HERE.with_name('hir-options-hash-beta-composition-03')
++SOURCE = HERE.with_name('hir-options-hash-beta-composition-04')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ sys.path.insert(0, str(X / 'experiments/stable-cgu'))
+ import owned_stage as owned
+-WORK = OWNER / '.work/hir-options-hash-beta-controls-02'
++WORK = OWNER / '.work/hir-options-hash-beta-controls-03'
+ 
+ 
+ def read(path):
+@@ -71,10 +71,10 @@
+             stderr = (WORK / 'command/stderr').read_text()
+             names = re.findall(r'^test_[A-Za-z0-9_]+ \(([^)]+)\) \.\.\. ok$', stderr, re.M)
+             assert sorted(names) == freeze['expected_names']
+-            assert re.search(r'^Ran 63 tests in [0-9.]+s\n\nOK\n$', stderr, re.M)
++            assert re.search(r'^Ran 82 tests in [0-9.]+s\n\nOK\n$', stderr, re.M)
+             assert not (WORK / 'command/stdout').read_bytes()
+             result = read(WORK / 'result.json')
+-            assert result['status'] == 'passed' and result['tests_run'] == 63 and result['expected_names'] == freeze['expected_names']
++            assert result['status'] == 'passed' and result['tests_run'] == 82 and result['expected_names'] == freeze['expected_names']
+             assert all(result[name] == 0 for name in ['failures', 'errors', 'skipped', 'expected_failures', 'unexpected_successes', 'child_processes', 'compiler_calls'])
+             assert not list((WORK / 'tmp').iterdir()), 'synthetic fixture cleanup incomplete'
+             total = 0
+@@ -87,7 +87,7 @@
+                     assert path.is_dir()
+             assert total <= 2 * 1024 * 1024, 'retained pure-control output cap exceeded'
+             guard(freeze)
+-            receipt.update(status='passed', controls_passed=63, result_sha256=owned.sha(WORK / 'result.json'),
++            receipt.update(status='passed', controls_passed=82, result_sha256=owned.sha(WORK / 'result.json'),
+                            retained_file_bytes=total, free_bytes_after=owned.disk(OWNER, 9))
+     except BaseException as error:
+         receipt.update(status='failed', error=repr(error)); raise
+--- passed63/child.py
++++ proposed82/child.py
+@@ -8,10 +8,10 @@
+ import unittest
+ 
+ HERE = Path(__file__).resolve().parent
+-SOURCE = HERE.with_name('hir-options-hash-beta-composition-03')
++SOURCE = HERE.with_name('hir-options-hash-beta-composition-04')
+ OWNER = HERE.parents[1]
+-WORK = OWNER / '.work/hir-options-hash-beta-controls-02'
+-MODULES = ['test_compose_sysroot', 'test_strip', 'test_producer', 'test_controller', 'test_ancestor_workspace', 'test_timing_context']
++WORK = OWNER / '.work/hir-options-hash-beta-controls-03'
++MODULES = ['test_compose_sysroot', 'test_strip', 'test_producer', 'test_controller', 'test_ancestor_workspace', 'test_timing_context', 'test_output_catalog', 'test_provider_observations', 'test_history']
+ MAX_FILE = 256 * 1024
+ 
+ 
+@@ -27,7 +27,7 @@
+     # This is a resource guard for frozen tests, not a general security sandbox.
+     writable, directories = set(), set()
+     def audit(event, args):
+-        if event.startswith(('subprocess.', 'os.exec', 'os.posix_spawn')) or event in ['os.system', 'socket.connect']:
++        if event.startswith(('subprocess.', 'os.exec', 'os.posix_spawn')) or event in ['os.system', 'socket.connect', 'os.kill', 'os.killpg']:
+             raise RuntimeError('pure controls cannot launch a process or network connection')
+         if event == 'open':
+             name, mode, flags = args
+@@ -50,7 +50,7 @@
+         if isinstance(item, unittest.TestSuite):
+             return [name for test in item for name in names(test)]
+         return [item.id()]
+-    assert sorted(names(suite)) == expected and len(expected) == 63
++    assert sorted(names(suite)) == expected and len(expected) == 82
+     result = unittest.TextTestRunner(verbosity=2).run(suite)
+     freeze = json.loads((HERE / 'inputs.json').read_bytes())
+     for module in list(sys.modules.values()):
+@@ -64,7 +64,7 @@
+                   maximum_file_bytes=MAX_FILE, maximum_writable_names=256,
+                   maximum_directory_names=2048, child_processes=0, compiler_calls=0)
+     (WORK / 'result.json').write_text(json.dumps(report, sort_keys=True, indent=2) + '\n')
+-    assert result.wasSuccessful() and result.testsRun == 63 and not result.skipped
++    assert result.wasSuccessful() and result.testsRun == 82 and not result.skipped
+     assert not result.expectedFailures and not result.unexpectedSuccesses
+     signal.alarm(0)
+ 
+--- passed63/prepare.py
++++ proposed82/prepare.py
+@@ -11,16 +11,16 @@
+     here, source, owner = control.HERE, control.SOURCE, control.OWNER
+     assert Path.cwd() == owner and sys.dont_write_bytecode
+     assert not any((here / name).exists() for name in ['inputs.json', 'launch.json'])
+-    assert not control.WORK.exists() and not (owner / '.work/experiments/hir-options-hash-beta-controls-supervisor-02').exists()
++    assert not control.WORK.exists() and not (owner / '.work/experiments/hir-options-hash-beta-controls-supervisor-03').exists()
+     names = []
+-    modules = ['test_compose_sysroot', 'test_strip', 'test_producer', 'test_controller', 'test_ancestor_workspace', 'test_timing_context']
++    modules = ['test_compose_sysroot', 'test_strip', 'test_producer', 'test_controller', 'test_ancestor_workspace', 'test_timing_context', 'test_output_catalog', 'test_provider_observations', 'test_history']
+     for module in modules:
+         tree = ast.parse((source / (module + '.py')).read_text())
+         for node in tree.body:
+             if isinstance(node, ast.ClassDef):
+                 names.extend(module + '.' + node.name + '.' + child.name for child in node.body
+                              if isinstance(child, ast.FunctionDef) and child.name.startswith('test_'))
+-    assert len(names) == len(set(names)) == 63
++    assert len(names) == len(set(names)) == 82
+     files, routes = {}, {}
+     def add(path):
+         path = Path(path); resolved = path.resolve(strict=True)
+@@ -38,12 +38,12 @@
+             assert path.is_file() and not path.is_symlink()
+             add(path)
+     references = control.read(source / 'source-bindings.json')
+-    for row in [*references['references'].values(), *references['predecessor_draft'].values(), *references['timing_sources'].values()]:
++    for row in [*references['references'].values(), *references['predecessor_draft'].values(), *references['timing_sources'].values(), *references['provider_grammar_references'].values()]:
+         add(row['path']); record = files[str(Path(row['path']).resolve(strict=True))]
+         assert record['sha256'] == row['sha256'] and record['stamp'][3] == row['size']
+     python = Path(sys.executable).resolve(strict=True)
+     for path in [python, '/opt/homebrew/bin/python3', '/bin/ps', '/usr/sbin/lsof',
+-                 owner / 'scripts/supervise_experiment.py', control.X / 'experiments/stable-cgu/owned_stage.py']:
++                 owner / 'scripts/supervise_experiment.py', owner / 'experiments/hir-options-hash-stage-monitor/monitor.py', control.X / 'experiments/stable-cgu/owned_stage.py']:
+         add(path)
+     environment = dict(HOME='/Users/danluu', USER='danluu', LOGNAME='danluu', LANG='C', LC_ALL='C', TZ='UTC',
+                        PATH='/usr/bin:/bin:/usr/sbin:/sbin', PYTHONDONTWRITEBYTECODE='1', PYTHONNOUSERSITE='1',
+@@ -61,15 +61,15 @@
+     control.owned.write(here / 'inputs.json', freeze)
+     launch = dict(status='prepared-unrun-awaiting-review', owner=str(owner), environment=environment,
+                   command=[str(python), '-B', str(owner / 'scripts/supervise_experiment.py'), '--run-id',
+-                           'hir-options-hash-beta-controls-supervisor-02', '--', str(python), '-B',
++                           'hir-options-hash-beta-controls-supervisor-03', '--', str(python), '-B',
+                            str(here / 'run.py'), '--inputs-sha256', control.owned.sha(here / 'inputs.json')],
+                   inputs_sha256=control.owned.sha(here / 'inputs.json'), helper_sha256=control.owned.sha(here / 'run.py'),
+-                  expected_children=1, controls=63, capacity=freeze['capacity'], bounds=freeze['bounds'])
++                  expected_children=1, controls=82, capacity=freeze['capacity'], bounds=freeze['bounds'])
+     control.owned.write(here / 'launch.json', launch)
+     control.guard(freeze)
+     print(json.dumps(dict(status='prepared-unrun', launch_sha256=control.owned.sha(here / 'launch.json'),
+                          inputs_sha256=launch['inputs_sha256'], files=len(files),
+-                         bytes=sum(row['stamp'][3] for row in files.values()), controls=63), indent=2))
++                         bytes=sum(row['stamp'][3] for row in files.values()), controls=82), indent=2))
+ 
+ 
+ if __name__ == '__main__':
+--- passed63/README.md
++++ proposed82/README.md
+@@ -1,11 +1,11 @@
+-This packet runs 63 synthetic controls for B3 successor03 in one Python child.
++This packet runs 82 synthetic controls for B3 successor04 in one Python child.
+ It also parses complete retained native005 and successful lowering-test stdout,
+ without admitting either as a completed candidate compiler build. It does not
+ run a compiler, provider probe, B3 composition, application or
+ benchmark. The compositor controls create small fake inputs under the new
+ owned temporary directory. One ancestor control reads the frozen real build02,
+ acquisition and original workspace-control catalogs plus both parent manifest
+-versions, without inspecting compiler outputs. Draft01 remains unchanged.
++versions, without inspecting compiler outputs. Sources01/02/03 and both previous pure-control histories remain unchanged.
+ 
+ The exact resolved Python, scripts, all candidate and predecessor sources,
+ source references, manifest/catalog bytes, process-identity executors and
+@@ -14,7 +14,7 @@
+ test child inherits the held canonical descriptor. Schedule only when doing so
+ does not delay an admitted compiler; a timeout is retained, never retried here.
+ 
+-The test child rejects subprocess and network-connect audit events, has a
++The test child rejects subprocess, process-signal and network-connect audit events, has a
+ 120-second alarm and 60-second CPU limit, caps every file at 256 KiB, and caps
+ cumulative writable names at 256 and directory names at 2,048. Test write-open
+ and directory-creation routes must remain in its owned namespace. Together with
+@@ -32,4 +32,11 @@
+ It does not execute controls. `run.py` requires the reviewed freeze hash.
+ 
+ Preparation and execution remain unrun pending source review. The completed
+-predecessor02 and its 49-control evidence are immutable and separate.
++predecessor03 and its 63-control evidence are immutable and separate. The nineteen
++new controls cover complete competing output selection and saved beta/objcopy
++text grammar, plus distinct failed/successful three-history association. They do not qualify the actual candidate outputs or its incomplete
++compiler history. The source04 actual composition prerequisite remains closed.
++
++The exact A-owned shared monitor source path is frozen because its owner tuple
++is derived from its file location. An identical source copy under another
++checkout does not have an interchangeable ownership contract.

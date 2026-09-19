@@ -1,0 +1,11 @@
+# HIR producer and inventory control evidence
+
+The retained histories are: source03 63 controls passed; source04 82 passed; source05 93 ran with 92 passed and one error; source06 97 passed after correcting repeated/comma crate-type handling; source07 six inventory controls passed. Counts overlap across successors and are not independent coverage totals. All five actual processes, raw output, exact frozen source, launch/outer histories, and independent audits are preserved.
+
+Read-only discovery04 failed on valid binary/rustdoc output forms. Its source05 successor preserved the non-private commands, then the 93-test run found valid repeated crate-type flags. Source06 fixed those flags and passed the complete retained 256-private-producer catalog test. Read-only discovery06 then rejected bootstrap's exact stage0 source symlink because it used an SDK-only inventory helper. Source07's narrow no-follow inventory helper passed six controls without relaxing the SDK policy.
+
+The archive passed complete logical-member and gzip EOF/CRC readback: 365 logical members, 251 physical members, 11,078,020 compressed bytes. Independent actual audit is in `retention/`, with a path/hash mapping for the small execution records. Retention ran zero workload children and did not rerun the original tests or discoveries.
+
+The existing 49-control/source01–02 archive remains an immutable hash-bound reference. Live compiler, SDK, registry and executor payloads are excluded; their recorded catalogs and the selected source/raw proof bytes remain archived. The first draft retention preparation rejected an overly strict failed-test footer pattern before creating a proposal; both that raw preparation and its corrected read-only preparation are kept in `retention/`.
+
+This is control and source-format evidence, not B3/native qualification or a performance measurement. Source07's later prepared-unrun `plan.json`, `inputs.json`, and `launch.json` are excluded from this closed-control commit. They remain unchanged on the original owner with `.work/beta-composition-prelaunch-rejection-07.json`: plain snapshots plus the freeze exceeded the aggregate evidence cap before any launch. Source08 and its actual B3 history belong to a separate retention scope.

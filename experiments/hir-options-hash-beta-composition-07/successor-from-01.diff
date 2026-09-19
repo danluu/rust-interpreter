@@ -1,0 +1,606 @@
+--- draft01/README.md
++++ draft02/README.md
+@@ -13,6 +13,39 @@
+ eight-context hash-driver processes. Those remain separately admitted stages.
+ No runtime is installed, and the strict Ruff frozen owner and scripts are
+ unchanged. This is setup/correctness work, with no application timing claim.
++
++## Successor02 changes
++
++Draft01 remains byte-for-byte unchanged and unrun. This successor addresses
++only actual Cargo-context ambiguity, explicit build02 workspace guard adoption,
++and its separate evidence namespace. The compositor and strip algorithms,
++19-child order, candidate revision, resource gates and later role qualification
++requirements remain unchanged. `successor-from-01.diff` records the source delta;
++`source-bindings.json` retains every draft01 file hash plus new guard references.
++
++A selected bootstrap stdout line cannot establish nesting of a Cargo stderr
++`Running` line. Every native-tree Cargo context in the same successful child
++must independently pass the exact D2/two-shim route checks and yield the same
++**complete effective compiler environment**, after unsets, Cargo assignments
++and actual Running-line additions. This includes arbitrary environment keys,
++not merely RUSTC/CFG/provider prefixes. Any difference rejects discovery; no
++new compiler rebuild is requested to conceal ambiguity. A different successful
++child remains a separate producing context. Actual compiler argv/output proof
++and the complete raw Cargo catalog remain mandatory.
++
++This source explicitly adopts `compiler-build-02`, whose successful outputs do
++not yet exist. The unchanged metadata03 guard is supplemented by
++`ancestor_workspace.py`. It derives every ancestor Cargo.toml from both acquired
++source catalogs and requires the exact build02 path set (present and absent).
++All present files require current B3 freeze bindings and exact identity/bytes;
++all absent files must remain absent, with ordinary parent routes. These guards
++run before/after B3 operations. The semantic parent-manifest change replaces the original two exclusions
++(`.work/sources/cg-clif`, `.work/sources/rg-aot`) with `workspace.exclude = [".work"]`;
++original and resulting bytes are bound separately. A pure control uses the actual
++saved manifests and build02/acquisition/control catalogs, not just synthetic data.
++The original workspace-control catalog, six actual metadata children, their
++raw/PID/time/supervisor associations, and the failed zero-stage build01 receipt
++remain historical proofs. No old stamp or catalog is relabeled as current.
+ 
+ ## Source roles and preserved rules
+ 
+@@ -66,7 +99,8 @@
+ 
+ - `actual_build`: exact owned successful build source/evidence directories and
+   all retained candidate build evidence directories for the aggregate budget.
+-  The controller does not hardcode the failed build01 as a successful result.
++  This successor accepts only the explicit build02 route and retains failed
++  build01 in the aggregate evidence budget. A later route requires source review.
+ - The passed acquisition/metadata/build source and raw proofs, independent
+   build verification, regenerated source identity and complete actual source,
+   SDK, executor and provider identity closure. Root review must independently
+@@ -78,6 +112,10 @@
+   policy. The current source imports the accepted metadata03 guard. A build
+   successor that changes source ownership or metadata guard requires a
+   corresponding explicit source successor here; no path relabeling is valid.
++  Build02's `ancestor_manifests`, original parent snapshot, workspace-controls
++  source/catalog/raw proofs and acquired source catalog must also be frozen.
++  The new current freeze must include every present ancestor manifest; historical
++  control catalogs remain immutable evidence rather than current file records.
+ - `composition`, obtained from `compose_sysroot.inspect_inputs` with the new
+   exact stamp/private records, current beta archives, D2 executable, E2 driver
+   and complete small proof list; plus its canonical JSON SHA-256. No counts or
+@@ -168,14 +206,15 @@
+ 
+ The packet contains all ten historical compositor controls, adapted to
+ explicit roots and exact private stamps, four additional bounds/role controls,
+-the six retained object-strip controls, nine actual-command producer grammar
+-controls and five command/loader controls: **34 written, zero executed**.
++the six retained object-strip controls, fifteen actual-command producer grammar
++and context controls, five command/loader controls and nine ancestor-workspace
++controls: **49 written, zero executed**.
+ Pure controls need their own reviewed bounded launch. No synthetic control
+ would substitute for the actual new producer, loader, copy or strip results.
+ 
+ Before execution, review must also check the actual new compiler namespace
+-and metadata guard after the workspace-isolation failure, producer parse
+-coverage, complete freeze/snapshot membership, actual archive ceilings,
++and the explicit build02 ancestor guards, producer parse
++coverage and any same-child context differences, complete freeze/snapshot membership, actual archive ceilings,
+ aggregate capacity reservation, actual current executor/library closure and
+ the complete concrete ordered command plan. No old receipt is rewritten or
+ relabeled to satisfy those conditions.
+--- /dev/null
++++ draft02/ancestor_workspace.py
+@@ -0,0 +1,138 @@
++"""Explicit build02 workspace transition and current manifest closure.
++
++The metadata03 catalog predates the ancestor-workspace fix and does not bind
++X/Cargo.toml. Its guard remains unchanged. The build02 plan separately binds
++every Cargo.toml ancestor of each acquired source manifest, including absent
++paths; the six-control historical catalog retains the pre-fix parent bytes.
++No historical input catalog is rewritten or treated as a current stamp.
++"""
++import json
++from pathlib import Path
++import stat
++import tomllib
++
++from compose_sysroot import digest, require
++
++
++def read(path):
++    return json.loads(Path(path).read_bytes())
++
++
++def manifest_paths(acquired, source):
++    source = Path(source)
++    result = set()
++    for root, records in [(source, acquired['source_files']),
++                          (source / 'library/backtrace', acquired['backtrace_files'])]:
++        for name in records:
++            relative = Path(name)
++            require(str(relative) == name and not relative.is_absolute()
++                    and '..' not in relative.parts, 'noncanonical acquired source member')
++            if relative.name == 'Cargo.toml':
++                parent = (root / relative).parent
++                result.update(str(directory / 'Cargo.toml') for directory in [parent, *parent.parents])
++    require(result, 'acquired source has no Cargo manifests')
++    return result
++
++
++def contract(plan, acquired, owner, source, before_raw, after_raw, controls_freeze):
++    """Pure relation between original proof, approved change and full path set."""
++    owner, source = Path(owner), Path(source)
++    workspace = plan['ancestor_workspace']
++    require(plan['owner'] == str(owner) and workspace['path'] == str(owner / 'Cargo.toml'),
++            'workspace owner differs')
++    require(digest(before_raw) == workspace['before_sha256']
++            and digest(after_raw) == workspace['after_sha256'], 'workspace transition bytes differ')
++    before, after = tomllib.loads(before_raw.decode()), tomllib.loads(after_raw.decode())
++    before['workspace']['exclude'] = ['.work']
++    require(before == after, 'workspace change exceeds generated .work exclusion')
++    require(controls_freeze['files'][str(owner / 'Cargo.toml')]['sha256'] == workspace['before_sha256'],
++            'original workspace-control catalog does not bind pre-fix bytes')
++    paths = manifest_paths(acquired, source)
++    require(str(owner / 'Cargo.toml') in paths and str(source / 'src/bootstrap/Cargo.toml') in paths,
++            'workspace/bootstrap ancestors omitted')
++    require(set(plan['ancestor_manifests']) == paths, 'complete ancestor manifest path set differs')
++    require(plan['ancestor_manifests'][str(owner / 'Cargo.toml')]['sha256'] == workspace['after_sha256'],
++            'current ancestor catalog does not bind post-fix parent')
++    return paths
++
++
++def guard_manifests(records, stamp, sha, full):
++    """Existing and absent paths are checked before/after every B3 operation."""
++    for name, expected in records.items():
++        path = Path(name)
++        require(path.resolve(strict=False) == path and not path.is_symlink(),
++                'ancestor manifest route changed: ' + name)
++        if expected is None:
++            require(not path.exists(), 'previously absent ancestor manifest appeared: ' + name)
++        else:
++            require(path.is_file() and stat.S_ISREG(path.lstat().st_mode)
++                    and stamp(path) == expected['stamp'], 'ancestor manifest identity changed: ' + name)
++            if full:
++                require(sha(path) == expected['sha256'] and stamp(path) == expected['stamp'],
++                        'ancestor manifest bytes changed: ' + name)
++
++
++def historical_controls(plan, owner, build_source, frozen, sha):
++    """Reconcile the actual six controls separately from current source guards.
++
++    `frozen` must validate each required ordinary file against the new B3
++    freeze. Historical file records inside inputs.json are evidence only.
++    """
++    owner, build_source = Path(owner), Path(build_source)
++    here = owner / 'experiments/hir-options-hash/workspace-controls-01'
++    work = owner / '.work/hir-options-hash-workspace-controls-01'
++    outer = owner / '.work/experiments/hir-options-hash-workspace-controls-supervisor-01'
++    proof = plan['workspace_controls']
++    require(set(proof['membership']) == {str(work), str(outer)}, 'workspace proof roots differ')
++    for name, members in proof['membership'].items():
++        root = Path(name)
++        actual = []
++        for path in root.rglob('*'):
++            require(not path.is_symlink(), 'workspace evidence contains a link')
++            if path.is_file():
++                actual.append(str(path.relative_to(root)))
++                frozen(path)
++            else:
++                require(path.is_dir(), 'workspace evidence contains a special file')
++        require(sorted(actual) == members, 'workspace evidence membership differs')
++    for path in [here / 'plan.json', here / 'inputs.json', build_source / 'ancestor-Cargo.before.toml']:
++        frozen(path)
++    terminal, status = read(work / 'receipt.json'), read(outer / 'status.json')
++    control_plan, freeze = read(here / 'plan.json'), read(here / 'inputs.json')
++    require(sha(work / 'receipt.json') == proof['receipt_sha256']
++            and sha(here / 'inputs.json') == proof['inputs_sha256']
++            and sha(here / 'plan.json') == freeze['plan_sha256'], 'workspace control receipt/plan differs')
++    require(terminal['status'] == 'passed' and terminal['controls_passed'] == 6
++            and terminal['compiler_builds'] == 0 and len(terminal['commands']) == 6,
++            'actual six metadata-only workspace controls required')
++    require(status['status'] == 'finished' and status['returncode'] == 0
++            and status['child_pid'] == terminal['pid'] and status['supervisor_pid'] == terminal['parent_pid']
++            and sha(outer / 'plan.json') == status['plan_sha256']
++            and sha(outer / 'command.log') == status['log_sha256'], 'workspace supervisor association differs')
++    require(status['started_at'] <= terminal['started_at'] <= terminal['admitted_at']
++            <= terminal['finished_at'] <= status['finished_at'], 'workspace supervisor time association differs')
++    result = read(work / 'controls.json')
++    require(sha(work / 'controls.json') == terminal['controls_sha256'] and result['status'] == 'passed'
++            and result['metadata_commands'] == 6 and result['compiler_builds'] == 0
++            and result['candidate_workspace']['exclude'] == ['.work'], 'workspace controls result differs')
++    require(freeze['files'][str(owner / 'Cargo.toml')]['sha256']
++            == sha(build_source / 'ancestor-Cargo.before.toml') == plan['ancestor_workspace']['before_sha256'],
++            'workspace control historical parent differs')
++    previous = terminal['admitted_at']
++    for index, (ref, wanted, observed) in enumerate(zip(terminal['commands'], control_plan['children'], result['rows'], strict=True)):
++        directory = work / 'commands' / f'{index:03}'
++        child = read(directory / 'receipt.json')
++        require(ref == dict(label=wanted['label'], path=str(directory / 'receipt.json'),
++                            sha256=sha(directory / 'receipt.json'), pid=child['pid']), 'workspace command reference differs')
++        require(child['command'] == wanted['argv'] and child['cwd'] == wanted['cwd']
++                and child['environment'] == wanted['environment'] and child['status'] == 'finished'
++                and child['returncode'] == wanted['expected_returncode'] == observed['expected_returncode']
++                and observed['label'] == wanted['label'] and child['supervisor_pid'] == terminal['pid']
++                and child['parent_pid'] == terminal['parent_pid'], 'workspace actual command association differs')
++        require(previous <= child['started_at'] <= child['finished_at'] <= terminal['finished_at'],
++                'workspace child time association differs')
++        previous = child['finished_at']
++        for stream in ['stdout', 'stderr']:
++            require(sha(directory / stream) == child[stream + '_sha256'] == observed[stream + '_sha256'],
++                    'workspace actual raw stream differs')
++    return freeze
+--- draft01/bounded_stage.py
++++ draft02/bounded_stage.py
+@@ -16,7 +16,7 @@
+ import owned_stage as owned
+ 
+ NAMESPACE = OWNER/'.work/hir-options-hash-compiler-01'
+-EVIDENCE = CONTROLLER_OWNER/'.work/hir-options-hash-beta-composition-01'
++EVIDENCE = CONTROLLER_OWNER/'.work/hir-options-hash-beta-composition-02'
+ GIB = 2**30
+ 
+ 
+--- draft01/compose.py
++++ draft02/compose.py
+@@ -16,6 +16,7 @@
+ import bounded_stage as bounded
+ import compose_sysroot as comp
+ import producer
++import ancestor_workspace as workspace
+ from strip_object import check_strip
+ 
+ HERE = Path(__file__).resolve().parent
+@@ -152,8 +153,15 @@
+         require(self.build.parent == X / '.work' and re.fullmatch(r'hir-options-hash-compiler-build-[0-9]+', self.build.name)
+                 and self.build_source.parent == X / 'experiments/hir-options-hash'
+                 and re.fullmatch(r'compiler-build-[0-9]+', self.build_source.name), 'owned actual build paths required')
++        # This successor explicitly adopts build02's workspace transition.
++        # A later build/ownership change requires another source review.
++        require(self.build == X / '.work/hir-options-hash-compiler-build-02'
++                and self.build_source == X / 'experiments/hir-options-hash/compiler-build-02',
++                'this source successor requires the actual build02 route')
++        self.build_plan = read(self.build_source / 'plan.json')
+         self.prior_evidence = tuple(map(comp.absolute, self.plan['actual_build']['retained_evidence']))
+-        require(self.build in self.prior_evidence, 'actual build omitted from aggregate evidence budget')
++        require({self.build, X / '.work/hir-options-hash-compiler-build-01'} <= set(self.prior_evidence),
++                'actual or retained failed build omitted from aggregate evidence budget')
+         self.m = load_metadata()
+         self.metadata_freeze = read(METADATA_SOURCE / 'inputs.json')
+         self.environment = dict(os.environ)
+@@ -214,6 +222,7 @@
+         for name, resolved in self.plan['executor_routes'].items():
+             require(str(Path(name).resolve(strict=True)) == resolved, 'executor route changed')
+         self.m.guard(self.plan['metadata_plan'], self.metadata_freeze, full)
++        self.workspace_guard(full)
+         for module in list(sys.modules.values()):
+             path = getattr(module, '__file__', None)
+             if path and path.startswith('/Users/danluu/dev/'):
+@@ -224,6 +233,22 @@
+                 require(comp.ordinary(B3 / name) == row['identity'], 'new B3 file changed')
+             if full:
+                 require(comp.output_inventory(B3) == self.installed, 'complete B3 membership/bytes changed')
++
++    def workspace_guard(self, full):
++        controls = X / 'experiments/hir-options-hash/workspace-controls-01/inputs.json'
++        before = self.build_source / 'ancestor-Cargo.before.toml'
++        required = [self.build_source / 'plan.json', self.build_source / 'inputs.json',
++                    before, self.m.ACQUIRED, controls, X / 'Cargo.toml']
++        require(all(str(path) in self.freeze['files'] for path in required),
++                'workspace transition/source catalog omitted from current freeze')
++        require(read(self.build_source / 'plan.json') == self.build_plan,
++                'actual build02 ancestor policy changed')
++        workspace.contract(self.build_plan, read(self.m.ACQUIRED), X, S,
++                           before.read_bytes(), (X / 'Cargo.toml').read_bytes(), read(controls))
++        records = self.build_plan['ancestor_manifests']
++        require(all(name in self.freeze['files'] for name, row in records.items() if row is not None),
++                'current ancestor manifest omitted from B3 freeze')
++        workspace.guard_manifests(records, self.m.stamp, owned.sha, full)
+ 
+     def predecessor(self):
+         def frozen(path):
+@@ -243,6 +268,16 @@
+         terminal = read(self.build / 'receipt.json')
+         compiled = read(self.build / 'compiled.json')
+         build_plan = read(self.build_source / 'plan.json')
++        require(build_plan == self.build_plan, 'actual build02 source policy changed')
++        workspace.historical_controls(build_plan, X, self.build_source, frozen, owned.sha)
++        prior = X / '.work/hir-options-hash-compiler-build-01'
++        old_source = X / 'experiments/hir-options-hash/compiler-build-01'
++        frozen(prior / 'receipt.json'); frozen(old_source / 'inputs.json')
++        failure = read(prior / 'receipt.json')
++        require(owned.sha(prior / 'receipt.json') == build_plan['prior_build']['receipt_sha256']
++                and owned.sha(old_source / 'inputs.json') == build_plan['prior_build']['inputs_sha256']
++                and failure['status'] == 'failed' and failure['compiler_stages_completed'] == 0
++                and len(failure['commands']) == 3, 'retained pre-compilation workspace failure differs')
+         require(read(self.build_source / 'inputs.json')['plan_sha256'] == owned.sha(self.build_source / 'plan.json'),
+                 'actual compiler build plan/freeze differs')
+         require(terminal['status'] == 'passed' and terminal['compiler_stages_completed'] == 8
+--- draft01/producer.py
++++ draft02/producer.py
+@@ -142,6 +142,49 @@
+     return environment
+ 
+ 
++def unambiguous_environment(row, candidates, source):
++    """Every plausible same-child context must yield the same complete environment.
++
++    stdout/stderr coordinates do not prove which bootstrap Cargo invocation
++    enclosed a Running line. Reject ambiguity instead of inferring nesting.
++    Compare all keys (including arbitrary env! inputs and provider settings),
++    not just known RUSTC/CFG prefixes. Actual rustc argv is separately retained.
++    """
++    require(candidates, 'no plausible native Cargo context for actual producer')
++    expected = None
++    for candidate in candidates:
++        environment = mechanism(row, candidate['cargo'], candidate['inherited'], source)
++        if expected is None:
++            expected = environment
++        else:
++            require(environment == expected,
++                    'ambiguous same-child Cargo compiler environment')
++    return expected
++
++
++def actual_command(binding, cargo_catalog, streams, source):
++    coordinate, cargo_coordinate = binding['command'], binding['cargo_command']
++    require(coordinate['stream'] in streams and cargo_coordinate['stream'] in streams,
++            'producer command outside successful compiler history')
++    one, outer = streams[coordinate['stream']], streams[cargo_coordinate['stream']]
++    require(one['child_receipt'] == outer['child_receipt'], 'Cargo mechanism belongs to another child')
++    row = running_line(one['raw'], coordinate)
++    cargo = bootstrap_line(outer['raw'], cargo_coordinate, source)
++    require(any(item['command'] == cargo_coordinate for item in cargo_catalog), 'unlisted actual Cargo mechanism')
++    require(row == binding['parsed'] and cargo == binding['parsed_cargo'], 'actual producer/Cargo command differs')
++    # The catalog is complete across both retained streams. A convenient
++    # coordinate alone does not prove nesting or inherited source flags.
++    plausible = [item for item in cargo_catalog if item['child_receipt'] == one['child_receipt']]
++    candidates = []
++    for item in plausible:
++        context = streams[item['command']['stream']]
++        require(context['environment'] == one['environment'],
++                'same child has inconsistent inherited environment records')
++        candidates.append(dict(cargo=item['parsed'], inherited=context['environment']))
++    environment = unambiguous_environment(row, candidates, source)
++    return row, environment
++
++
+ def validate(proof, composition, streams, revision):
+     """streams contains qualified successful stages, never an unrelated build.
+ 
+@@ -169,22 +212,10 @@
+     require(cargo_catalog and proof['cargo_catalog'] == cargo_catalog,
+             'complete actual native Cargo command catalog differs')
+     commands = {}
+-    def actual(binding):
+-        coordinate, cargo_coordinate = binding['command'], binding['cargo_command']
+-        require(coordinate['stream'] in streams and cargo_coordinate['stream'] in streams,
+-                'producer command outside successful compiler history')
+-        one, outer = streams[coordinate['stream']], streams[cargo_coordinate['stream']]
+-        require(one['child_receipt'] == outer['child_receipt'], 'Cargo mechanism belongs to another child')
+-        row = running_line(one['raw'], coordinate)
+-        cargo = bootstrap_line(outer['raw'], cargo_coordinate, composition['source'])
+-        require(any(item['command'] == cargo_coordinate for item in cargo_catalog), 'unlisted actual Cargo mechanism')
+-        require(row == binding['parsed'] and cargo == binding['parsed_cargo'], 'actual producer/Cargo command differs')
+-        environment = mechanism(row, cargo, one['environment'], composition['source'])
+-        return row, environment
+     for source, binding in proof['private'].items():
+         coordinate = binding['command']
+         key = (coordinate['stream'], coordinate['line'])
+-        row, environment = actual(binding)
++        row, environment = actual_command(binding, cargo_catalog, streams, composition['source'])
+         require(source in rust_outputs(row['argv']), 'stamp source is not this actual compiler output')
+         file = private[source]['file']
+         require(check_file(file) == file, 'private output changed after actual discovery')
+@@ -201,7 +232,7 @@
+                     'compiler source remapping differs')
+         commands[key] = row
+     consumer = proof['consumer']
+-    row, environment = actual(consumer)
++    row, environment = actual_command(consumer, cargo_catalog, streams, composition['source'])
+     require(single(row['argv'], '--crate-name') == 'rustc_main',
+             'actual rustc_main consumer required')
+     pair = []
+--- /dev/null
++++ draft02/test_ancestor_workspace.py
+@@ -0,0 +1,123 @@
++"""Synthetic workspace proof controls; no Cargo/compiler subprocesses."""
++import copy
++import json
++from pathlib import Path
++import tempfile
++import unittest
++
++import ancestor_workspace as workspace
++from compose_sysroot import digest
++
++
++class AncestorControls(unittest.TestCase):
++    def fixture(self):
++        owner = Path('/owner'); source = owner / '.work/candidate/source'
++        acquired = dict(source_files={'Cargo.toml': {}, 'src/bootstrap/Cargo.toml': {}, 'nested/lib/Cargo.toml': {}},
++                        backtrace_files={'Cargo.toml': {}, 'crates/test/Cargo.toml': {}})
++        before = b'[workspace]\nmembers = ["one"]\nexclude = [".work/sources/cg-clif", ".work/sources/rg-aot"]\n'
++        after = b'[workspace]\nmembers = ["one"]\nexclude = [".work"]\n'
++        manifests = {name: None for name in workspace.manifest_paths(acquired, source)}
++        manifests[str(owner / 'Cargo.toml')] = dict(sha256=digest(after), stamp=[])
++        plan = dict(owner=str(owner), ancestor_manifests=manifests,
++                    ancestor_workspace=dict(path=str(owner / 'Cargo.toml'), before_sha256=digest(before), after_sha256=digest(after)))
++        controls = dict(files={str(owner / 'Cargo.toml'): dict(sha256=digest(before))})
++        return plan, acquired, owner, source, before, after, controls
++
++    def test_actual_saved_build02_workspace_contract(self):
++        refs = json.loads(Path(__file__).with_name('source-bindings.json').read_bytes())['references']
++        def saved(label):
++            row = refs[label]; raw = Path(row['path']).read_bytes()
++            self.assertEqual(len(raw), row['size'])
++            self.assertEqual(digest(raw), row['sha256'])
++            return raw
++        plan = json.loads(saved('build02_plan'))
++        acquired = json.loads(saved('candidate_acquired_catalog'))
++        controls = json.loads(saved('workspace_controls_historical_catalog'))
++        before, after = saved('build02_original_parent'), saved('build02_current_parent')
++        source = Path(plan['owner']) / '.work/hir-options-hash-compiler-01/source'
++        paths = workspace.contract(plan, acquired, plan['owner'], source, before, after, controls)
++        self.assertEqual(paths, set(plan['ancestor_manifests']))
++
++    def test_exact_workspace_transition_and_complete_present_absent_path_set(self):
++        args = self.fixture()
++        paths = workspace.contract(*args)
++        self.assertIn('/Cargo.toml', paths)
++        self.assertIn('/owner/.work/Cargo.toml', paths)
++        self.assertIn('/owner/.work/candidate/source/library/backtrace/crates/Cargo.toml', paths)
++        self.assertEqual(paths, set(args[0]['ancestor_manifests']))
++
++    def test_omitted_or_extra_ancestor_path_is_rejected(self):
++        for extra in [False, True]:
++            args = list(self.fixture())
++            if extra:
++                args[0]['ancestor_manifests']['/unrelated/Cargo.toml'] = None
++            else:
++                del args[0]['ancestor_manifests']['/owner/.work/Cargo.toml']
++            with self.subTest(extra=extra), self.assertRaises(ValueError):
++                workspace.contract(*args)
++
++    def test_other_workspace_changes_rejected_even_with_matching_supplied_hash(self):
++        for after in [b'[workspace]\nmembers=["other"]\nexclude=[".work"]\n',
++                      b'[workspace]\nmembers=["one"]\nexclude=[".work", "other"]\n']:
++            args = list(self.fixture()); args[5] = after
++            args[0]['ancestor_workspace']['after_sha256'] = digest(after)
++            args[0]['ancestor_manifests']['/owner/Cargo.toml']['sha256'] = digest(after)
++            with self.assertRaises(ValueError):
++                workspace.contract(*args)
++
++    def test_historical_catalog_must_keep_original_not_current_parent(self):
++        args = list(self.fixture())
++        args[-1]['files']['/owner/Cargo.toml']['sha256'] = digest(args[5])
++        with self.assertRaises(ValueError):
++            workspace.contract(*args)
++
++    def test_noncanonical_source_members_and_missing_bootstrap_rejected(self):
++        for name in ['../Cargo.toml', '/foreign/Cargo.toml', './Cargo.toml']:
++            acquired = copy.deepcopy(self.fixture()[1]); acquired['source_files'][name] = {}
++            with self.subTest(name=name), self.assertRaises(ValueError):
++                workspace.manifest_paths(acquired, self.fixture()[3])
++        args = list(self.fixture()); del args[1]['source_files']['src/bootstrap/Cargo.toml']
++        args[0]['ancestor_manifests'] = {name: None for name in workspace.manifest_paths(args[1], args[3])}
++        with self.assertRaises(ValueError):
++            workspace.contract(*args)
++
++    @staticmethod
++    def stamp(path):
++        s = path.lstat()
++        return [s.st_dev, s.st_ino, s.st_mode, s.st_size, s.st_mtime_ns, s.st_ctime_ns, s.st_nlink]
++
++    @staticmethod
++    def sha(path):
++        return digest(path.read_bytes())
++
++    def test_current_present_and_absent_paths_are_guarded(self):
++        with tempfile.TemporaryDirectory() as name:
++            root = Path(name).resolve(); present = root / 'Cargo.toml'; absent = root / 'nested/Cargo.toml'
++            present.write_bytes(b'[workspace]\n')
++            rows = {str(present): dict(stamp=self.stamp(present), sha256=self.sha(present)), str(absent): None}
++            workspace.guard_manifests(rows, self.stamp, self.sha, True)
++            absent.parent.mkdir(); absent.write_bytes(b'[workspace]\n')
++            with self.assertRaises(ValueError):
++                workspace.guard_manifests(rows, self.stamp, self.sha, False)
++
++    def test_current_route_and_identity_changes_are_rejected(self):
++        with tempfile.TemporaryDirectory() as name:
++            root = Path(name).resolve(); present = root / 'Cargo.toml'
++            present.write_bytes(b'[workspace]\n')
++            expected = dict(stamp=self.stamp(present), sha256=self.sha(present))
++            present.write_bytes(b'[different]\n')
++            with self.assertRaises(ValueError):
++                workspace.guard_manifests({str(present): expected}, self.stamp, self.sha, False)
++            link = root / 'alias'; link.symlink_to(root, target_is_directory=True)
++            with self.assertRaises(ValueError):
++                workspace.guard_manifests({str(link / 'absent.toml'): None}, self.stamp, self.sha, False)
++
++    def test_full_guard_rejects_wrong_hash_even_with_current_stamp(self):
++        with tempfile.TemporaryDirectory() as name:
++            path = Path(name).resolve() / 'Cargo.toml'; path.write_bytes(b'[workspace]\n')
++            with self.assertRaises(ValueError):
++                workspace.guard_manifests({str(path): dict(stamp=self.stamp(path), sha256='0' * 64)}, self.stamp, self.sha, True)
++
++
++if __name__ == '__main__':
++    unittest.main()
+--- draft01/test_producer.py
++++ draft02/test_producer.py
+@@ -1,11 +1,82 @@
+ """Synthetic source controls only; they run no compiler or actual inspection."""
+ import unittest
++import shlex
+ 
+ import producer
+ from compose_sysroot import digest
+ 
+ 
+ class ProducerControls(unittest.TestCase):
++    def contexts(self, changes=None, second_child='child'):
++        source = '/source'; host = 'aarch64-apple-darwin'; d = source + '/build/' + host + '/stage0'
++        shim = source + '/build/bootstrap/debug/rustc'
++        env = dict(RUSTC=shim, RUSTC_WRAPPER=shim, RUSTC_REAL=d + '/bin/rustc', RUSTC_SNAPSHOT=d + '/bin/rustc',
++            RUSTC_LIBDIR=d + '/lib', RUSTC_SNAPSHOT_LIBDIR=d + '/lib', RUSTC_STAGE='0',
++            RUSTC_SYSROOT=source + '/build/' + host + '/stage0-sysroot',
++            CARGO_TARGET_DIR=source + '/build/' + host + '/stage1-rustc',
++            CARGO_BUILD_BUILD_DIR=source + '/build/' + host + '/stage1-rustc')
++        row = dict(argv=[shim, shim, '--crate-name', 'test', '--target', host], environment={})
++        raw = ('  Running `' + shlex.join(row['argv']) + '`\n').encode()
++        coordinate = dict(stream='rustc', line=1, line_sha256=digest(raw))
++        streams = {'rustc': dict(raw=raw, child_receipt='child', environment={})}
++        catalog = []
++        for index, extra in enumerate([{}, changes or {}]):
++            name = 'cargo' + str(index)
++            command = ['cd', source, '&&', 'env', *[key + '=' + value for key, value in (env | extra).items()],
++                       d + '/bin/cargo', 'test', '(failure_mode=Exit)']
++            text = ('running: ' + shlex.join(command) + '\n').encode()
++            coord = dict(stream=name, line=1, line_sha256=digest(text))
++            parsed = producer.bootstrap_line(text, coord, source)
++            child = 'child' if index == 0 else second_child
++            streams[name] = dict(raw=text, child_receipt=child, environment={})
++            catalog.append(dict(command=coord, parsed=parsed, child_receipt=child, stage_index=0))
++        binding = dict(command=coordinate, cargo_command=catalog[0]['command'], parsed=row,
++                       parsed_cargo=catalog[0]['parsed'])
++        return binding, catalog, streams, source
++
++    def test_all_same_child_contexts_are_considered_despite_selected_coordinate(self):
++        for key in ['CFG_RELEASE', 'RUSTC_HOST_FLAGS', 'AR', 'SDKROOT', 'ARBITRARY_ENV_INPUT']:
++            for selected in [0, 1]:
++                with self.subTest(key=key, selected=selected), self.assertRaises(ValueError):
++                    binding, catalog, streams, source = self.contexts({key: 'different'})
++                    binding['cargo_command'] = catalog[selected]['command']
++                    binding['parsed_cargo'] = catalog[selected]['parsed']
++                    producer.actual_command(binding, catalog, streams, source)
++
++    def test_repeated_equivalent_contexts_pass_without_claiming_nesting(self):
++        binding, catalog, streams, source = self.contexts()
++        row, environment = producer.actual_command(binding, catalog, streams, source)
++        self.assertEqual(row, binding['parsed'])
++        self.assertEqual(environment, catalog[0]['parsed']['environment'])
++
++    def test_foreign_provider_in_unchosen_same_child_context_is_rejected(self):
++        with self.assertRaises(ValueError):
++            producer.actual_command(*self.contexts({'RUSTC_REAL': '/foreign/rustc'}))
++
++    def test_other_child_context_is_not_misattributed_to_selected_child(self):
++        binding, catalog, streams, source = self.contexts({'CFG_RELEASE': 'different'}, 'other-child')
++        producer.actual_command(binding, catalog, streams, source)
++        binding['cargo_command'] = catalog[1]['command']; binding['parsed_cargo'] = catalog[1]['parsed']
++        with self.assertRaises(ValueError):
++            producer.actual_command(binding, catalog, streams, source)
++
++    def test_same_child_inherited_environment_records_must_agree(self):
++        binding, catalog, streams, source = self.contexts()
++        streams['cargo1']['environment'] = {'ARBITRARY_ENV_INPUT': 'different'}
++        with self.assertRaises(ValueError):
++            producer.actual_command(binding, catalog, streams, source)
++
++    def test_effective_environment_comparison_retains_unset_semantics(self):
++        binding, catalog, streams, source = self.contexts()
++        row, cargo = binding['parsed'], catalog[0]['parsed']
++        one = dict(cargo=cargo, inherited={})
++        two = dict(cargo=cargo | {'removed': ['EXTRA']}, inherited={'EXTRA': 'x'})
++        self.assertEqual(producer.unambiguous_environment(row, [one, two], source), cargo['environment'])
++        with self.assertRaises(ValueError):
++            producer.unambiguous_environment(row, [one, dict(cargo=cargo, inherited={'EXTRA': 'x'})], source)
++        with self.assertRaises(ValueError):
++            producer.unambiguous_environment(row, [], source)
++
+     def argv(self):
+         return ['/candidate/bootstrap/rustc', '--crate-name', 'rustc_test', 'compiler/test.rs',
+                 '--crate-type', 'lib', '--emit=dep-info,metadata,link',

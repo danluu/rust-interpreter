@@ -1,0 +1,160 @@
+--- historical/compose_sysroot.py
++++ candidate/compose_sysroot.py
+@@ -14,11 +14,13 @@
+ import tarfile
+ 
+ 
+-POLICY = 'beta-private-build-sysroot-v1'
++POLICY = 'candidate-beta-private-build-sysroot-v2'
+ HOST = 'aarch64-apple-darwin'
+-SOURCE = Path('/Users/danluu/dev/rustc-hir-capture-check-20260913')
+-TREE = SOURCE / 'build' / HOST / 'stage1-rustc'
+-STAMP = TREE / HOST / 'release/.librustc-stamp'
++MAX_STAMP_BYTES = 8 * 2**20
++MAX_STAMP_ENTRIES = 16384
++MAX_ARCHIVE_MEMBERS = 20000
++MAX_ARCHIVE_MEMBER_BYTES = 2 * 2**30
++MAX_ARCHIVE_PAYLOAD_BYTES = 2 * 2**30
+ BETA = {
+     'rustc-beta-aarch64-apple-darwin.tar.xz': (
+         '0c20c4730544923b2ba9ab4ccf98cd22db6759d1d6cc2e5b8c99662b953163ac', 'rustc'),
+@@ -103,10 +105,13 @@
+     return dict(path=str(path), sha256=actual, size=size, identity=before)
+ 
+ 
+-def parse_stamp(data, host=HOST, target=HOST):
++def parse_stamp(data, *, tree, host=HOST, target=HOST):
+     """Match bootstrap add_to_sysroot h/t/s destinations without dropping entries."""
+     require(host == HOST and target == HOST, 'this composition requires the pinned native host')
+-    require(data and data.endswith(b'\0'), 'empty or unterminated private stamp')
++    tree = absolute(str(tree))
++    require(isinstance(data, bytes) and 0 < len(data) <= MAX_STAMP_BYTES
++            and data.endswith(b'\0'), 'empty, oversized or unterminated private stamp')
++    require(data.count(b'\0') <= MAX_STAMP_ENTRIES, 'too many private stamp entries')
+     result, paths, destinations = [], set(), set()
+     for raw in data[:-1].split(b'\0'):
+         require(len(raw) > 1 and raw[:1] in (b'h', b't', b's'), 'invalid stamp dependency tag')
+@@ -114,7 +119,7 @@
+         # Both ordinary host proc-macro outputs and target compiler outputs are
+         # admitted. Other roots require a separate source-reviewed recipe.
+         require(any(source.is_relative_to(root) for root in
+-                    (TREE / 'release', TREE / HOST / 'release')), 'stamp input escapes build roots')
++                    (tree / 'release', tree / HOST / 'release')), 'stamp input escapes build roots')
+         tag = raw[:1].decode()
+         triple = host if tag == 'h' else target
+         directory = PurePosixPath('lib/rustlib') / triple / 'lib'
+@@ -168,7 +173,7 @@
+         members.add(key)
+ 
+ 
+-def archive_rows(record, rows):
++def archive_rows(record, rows, budget=None):
+     """Hash the complete archive; select the component's entire lib subtree.
+ 
+     Selected symlinks/hardlinks are rejected, even when an apparent target is
+@@ -179,8 +184,15 @@
+     require(name in BETA and record['sha256'] == BETA[name][0], 'unrecognized beta archive')
+     prefix = name[:-len('.tar.xz')] + '/' + BETA[name][1] + '/'
+     selected, members, seen = 0, [], set()
++    if budget is None:
++        budget = dict(members=0, bytes=0)
+     with tarfile.open(record['path'], 'r:xz') as archive:
+         for member in archive:
++            budget['members'] += 1
++            require(budget['members'] <= MAX_ARCHIVE_MEMBERS, 'archive member limit exceeded')
++            require(0 <= member.size <= MAX_ARCHIVE_MEMBER_BYTES, 'archive member size limit exceeded')
++            budget['bytes'] += member.size
++            require(budget['bytes'] <= MAX_ARCHIVE_PAYLOAD_BYTES, 'archive expansion limit exceeded')
+             path = member.name.rstrip('/') if member.isdir() else member.name
+             relative(path)
+             require(path not in seen, 'duplicate archive member')
+@@ -219,35 +231,45 @@
+         stems[crate] = stem
+ 
+ 
+-def inspect_inputs(*, archives, stamp, approved_private_files, build_compiler,
++def inspect_inputs(*, source, tree, archives, stamp, approved_private_files, build_compiler,
+                    runtime_source_commit, runtime_driver, proofs, archive_copies=()):
+     """Read/hash only explicit inputs; caller supplies separately qualified proofs.
+ 
+     approved_private_files is a path -> {sha256,size} map covering EVERY stamp
+-    path, proved by the outer runner against native005/current source/runtime.
++    path, proved by the outer runner against this actual candidate build/source/runtime.
+     proofs is its exact source/build/archive/qualification metadata file list.
+     Nothing here infers producer ownership from a filename or a favorable glob.
+     """
+     require(re.fullmatch('[0-9a-f]{40}', runtime_source_commit), 'invalid runtime source commit')
+     require(set(Path(x['path']).name for x in archives) == set(BETA) and len(archives) == 2,
+             'require exactly both pinned beta archives')
+-    require(absolute(stamp['path']) == STAMP, 'wrong private build stamp')
++    source, tree = absolute(str(source)), absolute(str(tree))
++    require(tree == source / 'build' / HOST / 'stage1-rustc', 'wrong native producer tree')
++    require(absolute(stamp['path']) == tree / HOST / 'release/.librustc-stamp',
++            'wrong private build stamp')
++    require(absolute(build_compiler['path']) == source / 'build' / HOST / 'stage0/bin/rustc',
++            'wrong candidate build compiler route')
++    require(absolute(runtime_driver['path']).parent == source / 'build' / HOST / 'stage1/lib',
++            'wrong candidate runtime driver route')
+     require(proofs, 'outer producer/source qualification proofs are required')
+     proof_records = [check_file(x) for x in proofs]
+     require(len({x['path'] for x in proof_records}) == len(proof_records), 'duplicate proof')
+     build, driver, stamp_record = check_file(build_compiler), check_file(runtime_driver), check_file(stamp)
++    require(stamp_record['size'] <= MAX_STAMP_BYTES, 'private stamp exceeds read bound')
+     data = Path(stamp['path']).read_bytes()
+     require(digest(data) == stamp_record['sha256'], 'stamp changed before parsing')
+-    entries = parse_stamp(data)
++    entries = parse_stamp(data, tree=tree)
+     require({x['source'] for x in entries} == set(approved_private_files),
+             'approved producer map differs from complete stamp membership')
+     rows = {}
+-    archive_records = [archive_rows(x, rows) for x in archives]
++    archive_budget = dict(members=0, bytes=0)
++    archive_records = [archive_rows(x, rows, archive_budget) for x in archives]
+     add_archive_copies(rows, archive_copies)
+     private = []
+     for entry in entries:
+         original = approved_private_files[entry['source']]
+-        require(set(original) == {'sha256', 'size'}, 'private approval requires exact hash and size')
++        require(set(original) == {'sha256', 'size', 'identity'},
++                'private approval requires exact hash, size and current inode identity')
+         record = check_file(dict(path=entry['source'], **original))
+         require(record['identity']['mode'] & 0o7000 == 0, 'special private file mode')
+         add_row(rows, entry['destination'], dict(kind='private', path=record['path'],
+@@ -265,7 +287,7 @@
+     require(metadata in rows and rows[metadata]['kind'] == 'private', 'driver metadata missing')
+     require(any(re.fullmatch(f'lib/rustlib/{HOST}/lib/libstd-[^.]+[.]rlib', path)
+                 and row['kind'] == 'archive' for path, row in rows.items()), 'beta libstd missing')
+-    result = dict(schema_version=1, policy=POLICY, host=HOST,
++    result = dict(schema_version=2, policy=POLICY, host=HOST, source=str(source), tree=str(tree),
+         build_compiler=build, runtime_source_commit=runtime_source_commit,
+         runtime_driver=driver, archives=archive_records, stamp=stamp_record,
+         stamp_hex=data.hex(), private=private, proofs=proof_records, files=rows,
+@@ -319,7 +341,7 @@
+     Metadata lives outside B, so its exhaustive manifest has no self-reference.
+     """
+     require(digest(encoded(plan)) == sha_string(expected_plan_sha256), 'composition plan hash differs')
+-    require(plan['schema_version'] == 1 and plan['policy'] == POLICY, 'wrong composition policy')
++    require(plan['schema_version'] == 2 and plan['policy'] == POLICY, 'wrong composition policy')
+     check_archive_copies(plan)
+     require(callable(capacity_guard), 'assembly requires a running capacity guard')
+     destination, evidence = absolute(str(destination)), absolute(str(evidence))
+@@ -328,9 +350,19 @@
+     for path in (destination, evidence):
+         require(not path.exists() and not path.is_symlink()
+                 and path.parent.resolve(strict=True) == path.parent, 'output must be fresh under ordinary parent')
++    require(plan['tree'] == str(absolute(plan['source']) / 'build' / HOST / 'stage1-rustc'),
++            'frozen source/tree role mismatch')
++    require(plan['stamp']['path'] == str(absolute(plan['tree']) / HOST / 'release/.librustc-stamp'),
++            'frozen private stamp route mismatch')
++    require(parse_stamp(bytes.fromhex(plan['stamp_hex']), tree=plan['tree'])
++            == [{k: row[k] for k in ('tag', 'source', 'destination')} for row in plan['private']],
++            'frozen stamp membership differs')
+     # No output files or directories precede all frozen input rechecks.
+     recheck_inputs(plan)
+     capacity_guard()
++    for path in (destination, evidence):
++        require(not path.exists() and not path.is_symlink()
++                and path.parent.resolve(strict=True) == path.parent, 'output changed before creation')
+     destination.mkdir()
+     evidence.mkdir()
+     write_new(evidence / 'composition-plan.json', encoded(plan), capacity_guard)
