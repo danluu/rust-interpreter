@@ -27,8 +27,10 @@ before the existing real source-edit primary. Diagnostic01 CLOSED14controls,
 Conservative nominal cost remains favorable including2words perrefundedge.
 This is scope, NOT a measured gain; externalentry and sample-PC bias remain.
 See results/branch-budget-reservation-01/assessment.md and STATE implementation
-review. Preserve old narrow models; new production source has not been edited.
-No active command, Rust build, guest execution or cleanup this turn.
+review. Typed stage1 drafted UNBUILT: feature branch-budget-reservation defaults off;
+jit/budget_reservations.rs with six authored Rust controls. No emitter wiring
+yet. Stage2 needs fast entries, exact refunds and source-aware link thunks.
+No active command, Rust build/test, guest execution or cleanup this turn.
 No Rust build admitted
 until disk reserve recomputed: max(14GiB,8GiB+2*allocated shared target), last23GiB.
 Free~19.9GiB. Shared .work/fixed-frame-clear-combined-build-01/target NEVER CLEAN.

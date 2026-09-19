@@ -342,3 +342,14 @@ Fault/Assertion/SuccessorFallback refundremainingSuffix, BudgetFallback refunds
 NONE (guard/range declines predebit). Newcode-mapkindneededforedgerefundthunks.
 Mainadd1ee72 publishesclosedlinearresults preservingpeer295da6cd; branchresult
 notyetmain. Allsources/resultsrootpushedatnextcommit; no activecommand.
+
+Typedstage1 UNBUILT sourceadded: default-offbytecodefeature branch-budget-
+reservation and jit/budget_reservations.rs. SixRustcontrols authored, notrun.
+Planner mirrorsnativepredicate/starts/1024splits, bounds65kPC/262kedges/16cases,
+rangeanalysiscalled once inoriginalorder onlyaftershapeadmission. Credits<=4096,
+edge/faultrefund<4096, explicitfast/checked/unsupportedtargetmetadata. No emitter
+integrationyet; modulecfgfeature only. Defaultemitter unchanged. Native review
+remaining: fast entryafterdebitbeforeprofile; refundthunks peredgewithsource
+identity; separatefault/VMrefund vs no-refundBudgetFallback; newcodemapkindand
+newreader (nevereditarchivednative_observation). Buildfloor~23GiBfree~18.6GiB.
+No Rustbuild/test/guest/cleanup. Main06cfc1cd pushedclosedbranchdiagnostic.

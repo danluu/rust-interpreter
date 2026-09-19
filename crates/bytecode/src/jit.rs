@@ -48,6 +48,9 @@ mod values;
 mod transfers;
 mod guarded_ranges;
 mod scratch_values;
+#[cfg(feature = "branch-budget-reservation")]
+#[allow(dead_code)] // Typed planner first; native integration is a separate stage.
+mod budget_reservations;
 
 #[cfg(test)]
 mod limit_tests;
