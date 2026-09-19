@@ -227,3 +227,52 @@ absolutequalify.py; freeze throughterminaland--close. ExpectedPython468skip22,
 Rust615pass13ignoreeachdebug/release(618heapfeature minus4heaptests plus1new).
 VMreleasebuildsnapshotfourthcommand. Samefreshownedtargetcap3GiB and14GiBfloor;
 oldsharedtargetuntouched. Code2filesonlyvsfca. Currentdefaultinstalleddf4006.
+
+LATEST 2026-09-19 12:13 Vancouver: root experiment/overlapping-frame-clear-20260919.
+Saved goal stays PAUSED; manual work continues indefinitely, no agents/services/
+process control. Main publication12444046 pushed; adopted runtime unchanged.
+Both general short-tail and bounded scalar-padding candidates are PARKED after
+unmeasurable complete real ES8 screens; do not retry unchanged. Bounded scalar
+screen02 wall ratio1.061625/AA37.4149%, CPU1.032446/AA24.8794%; full closed42rows.
+
+New ordinary-padding-scope02 CLOSED, scope01 first metadata succeeded but boundary
+assertionfailed; preserved and reused, never replayed. Ordinary byte-loop samples
+22/19 ES8,20/8 token; hot216/115->265(seed222->271) caller153/alignment16,
+callee40/alignment16. Root restored adopted code24cd8e99 before new candidate.
+New overlap candidate sourceea4a1143 onlyresumable.rs+resumable_tests.rs: existing
+staticempty pathfirst, forA<=16 andA<=P<=256 clearPbytes fromoldend thenAbytes
+endingatfullnewend. Intervals overlapfor0<=p<A, bothinsidepreadmittedrange.
+No scalar changes. Hot40bytehelper4stores,12fewerwords thanoldhelper.
+
+CLOSED focused01(sourceea4a1143,66442/66445):10testseachdebug/release;122016pure
+modelbytecanaries+526288nativecaseexecutions,live regs/allhostalignment/retained
+history/resourceVMtests. CLOSEDworkspace01(source7d4cc8e2,87208/87211):Python
+446passed22skip;Rust612passed15ignoreeachdebug/release;VMsnapshot
+.work/overlapping-frame-clear-workspace-01/rust-interp-vm SHA
+f0a3abfb97fcb5f2824286f936a451de2c16e5bf66ad0e1294523293a575c345.
+CLOSEDprofile01(source372e5653,74404/74438):10guests/5entropypairs,exactPC/counters/
+memory/code maps,zeroJITdeclines. Ordinaryhelpercounts75/100/1263/1443/100;48bytes
+shrinkeach,allothermapspanlengthssame. 1254patternshapes/21533mutationsqualified.
+CLOSEDinstall01(source64d18689,16295/16298):experimentaltool
+ a401e093d3c8fa0fcd06bf15647ab2797969146e391250c9007b23c2972d43bf
+withbyteidenticaladopteddf4006frontend,121historicalstrict/cachecontrolsreverified.
+
+NEXT commit/push newoverlapping-frame-clear-screen folder+closedinstall results,
+qualify14protocoltests via protocol.py(supervisor run overlapping-frame-clear-
+screen-protocol-01), independent --close, then benchmark.py screen-es8-01,
+independent close.py. Sameprospective40commands+2strict ES85modes/5realvalidedits.
+Gatewall<=.99 ANDwall+AAmax<1,CPU<=1+CPUAA. >8%AAfailedgate=unmeasurable;park
+unchanged no retry/heldoutsunlesspass. Freeze through terminal/closure. Noentropy
+injection/samplingintiming. Sourcesrestoredbycontroller. Ifpassed,needsheldouts
+beforedefault/mainruntimeadoption. RuntimecandidatecodeNOTpublishedtomain.
+
+Ownedboundedruntimebuild .work/short-clear-tail-runtime-build-01/target ~610MiB,
+3GiBcap, admissionmax14GiB/8GiB+2*allocation. Originalowner.jsonretained. Protected
+fixed-frame-clear-combined targetNEVERtouch,26.63GBfloorunchanged. Currentfree~17GiB.
+fre screen16GiB initial/8child,parser24GiB,Nushell66.55GiB. Sharedlock45s/2workers.
+Newclosed-bounded-scalar-es8-cache-retirement01(source45bee816,52936/52939) CLOSED:
+5receiptderivednative/check/custom roots ofclosedboundedscreen02only,2658compiler
+intermediates1,501,450,936logicalbytesremoved;2662protectedhashesverified.
+Free17,431,228,416->18,737,836,032bytesbeforeprofile;noothercache/process touched.
+Earlierclosed-es8-compiler-cache-retirement01alsoCLOSED9roots5256files.
+Suggestions unchangedSHA4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f.
