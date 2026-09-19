@@ -165,3 +165,16 @@ fca687eb. Free22.7GiB; initialfre floor16GiB and childfloor8GiB. No new toolbuil
 Controller qualification adopted-es8-controller-01 CLOSED:6 tests/1 command,
 terminal0, supervisor94422/controller94425, source80e4ae85. Frozen workflow ready
 for single32-command current ES8 history; no project guest yet.
+
+
+## 2026-09-19 ES8 current edited baseline CLOSED
+
+adopted-es8-edit-01:32commands+2strictprobes, terminal0 supervisor97445/
+controller97448 source190e8ee9. Independent close.py finished0. Five valid edits:
+pairedcustom/native1.515615wall1.832604CPU; AAmax0.018799wall0.004641CPU.
+Medianscustom2.077s/native1.353/check0.531; customCargo0.787/buildready0.805/
+execution1.237. Strictdiagnostics rejectedbeforeexport; everyoriginaltestoutcome
+agrees, wrongfailuresincluded, bytecode/catalogbothcustomexact, source restored
+BEFOREfinalcompile. No candidate/adoption. Old2.678xunmatchednotbeforeafter.
+NextcurrentES8 original-tests operationprofiles/ordinarynative samples, no build.
+Restoredrow31RBC3bd95d7a...32d19/catalog76f774c1...e387. Runtimeunchangedfca.
