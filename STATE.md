@@ -113,7 +113,11 @@ All original assertions/counts/memory/entropy match adopted; all layouts/native
 bytes match parked3e53b127 except validated addresses at427/532/21scalar sites.
 The closure verifies98frozen inputs/27artifacts. Primary protocol01 is closed
 at7b6e1d51,3481/3484 with13+3controls and exact reused449Pythonchecks.
-The forty-command primary is admitted next under a fresh14GiB disk gate. See `benchmarks/experiments/selective-narrow-repair/focus.py`
+The forty-command primary is now closed and parked:9299/9303,all outcomes
+pass,wall1.011454947,CPU0.998580341,A/Awall0.017814673;wallmargin1.029269619
+fails.1,674evidencefiles/56artifacts verified; no larger histories started.
+Next audit JIT preparation cost in retained changed-source suite receipts.
+PreparedJit already retains code per suite worker; do not reinvent that reuse. See `benchmarks/experiments/selective-narrow-repair/focus.py`
 and `docs/SELECTIVE-NARROW-REPAIR-20260918.md`. Main ccb3b465 contains only the
 closed conservative-primary outcome; root owns this new experimental branch.
 

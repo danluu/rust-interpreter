@@ -17,13 +17,19 @@ CPU and all correctness outcomes pass; no larger histories started.628tests per
 profile,121strict/cache commands and3exact original profiles remain valid for
 this exact revision, but do not override the performance result.
 
-Next census full-width interpreted read roles. The conservative prototype
-repairs6.54M/8.51M operands even when operations already mask/truncate them.
-Use typed operations and retained current-host profiles to identify safely
-avoidable repairs and actual remaining work. Keep unknown consumers full-width,
-including indirect handles and TLS width checks. No new production change or
-repeat of the parked runtime is admitted by this diagnostic.
-[Decision](docs/IMPLICIT-ZERO-STORAGE-20260918.md).
+The selective repair variant6c26c1c8 is also closed and parked.634tests/profile,
+121strict/cache commands and three original profiles pass. Native words match
+3e53b127 except checked scalar target addresses, but the40-command primary
+observes wall1.011454947, CPU0.998580341 and fails its wall margin1.029269619.
+All outcomes/restoration pass; no larger histories started. Do not repeat it.
+[Decision](results/selective-narrow-repair-screen-token-01/ASSESSMENT.md).
+
+Next audit JIT preparation costs from already closed real changed-source suite
+receipts, across all available projects. PreparedJit already reuses native code
+within each worker. A cross-process template/cache proposal must show material
+remaining preparation cost and account for validation, identity, relocation,
+I/O and cache lookup overhead. Distinguish sums of overlapping worker durations
+from command wall time. No new runtime candidate follows from the audit alone.
 
 The previous indirect/readonly/successor composition is rejected after its
 parser CPU margin failed1.05. The narrower address/budget/spill/scalar variants
