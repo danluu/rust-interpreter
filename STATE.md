@@ -55,7 +55,7 @@ must occur on both parser states before timing; zero hits cancel timing, not
 trigger reruns. All114 original parser assertions/outcomes stay intact. Saved
 original artifacts are bound to prior closed native histories; ordinary entropy.
 
-The primary protocol is CLOSED:82684/82688 (see terminal for exact child)
+The primary protocol is CLOSED:82684/82687
 passes19controls; closer89745/89793 binds492inputs. The primary is prepared in
 `benchmarks/experiments/shared-emission-templates-screen`:32commands,8states ×
 4rotating modes (native/adopted/adopted duplicate/candidate). Five valid edited
@@ -145,6 +145,7 @@ The two runs recover about3.65/5.41GiB free respectively (not their logical
 8.0/17.3GB totals). Do not repeat them. Only the current Nu check cache remains
 for a future exact ownership/protection audit if needed.
 
-Next launch shared-emission-templates-parser-screen-incremental-01 with the
-closed32-command protocol after a fresh24GiB admission. All runtime/suite/
+ACTIVE: shared-emission-templates-parser-screen-incremental-01 launched under
+71290/71293 after a fresh24GiB admission, source82ef7c10. Its initial native
+and baseline commands have validated; recheck terminal before any continuation. All runtime/suite/
 protocol inputs are fixed; no successful command needs repeating.
