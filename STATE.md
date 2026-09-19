@@ -61,3 +61,12 @@ Same adopted exporter/wrapper. Actual parser-client16commands/1,824 tests with
 17,076 exact verified hits passed before primary. No runtime adoption.
 
 [Previous full state](docs/history/STATE-20260918-before-session-request-costs.md).
+
+Request-cost candidate53268501 passes qualification82459/82542:442Python+22skip,
+651Rust/profile+16ignored, default VM build,24 owned sessions/46 client commands
+allreaped. Closure35786 inprogress/check before further stages. Mainf978bac7 pushed
+closed firstprimary+costresults preserving peer56501d24. Branch now
+experiment/session-request-costs-20260918. Optional exact failedprimary-cache
+retirement prepared but UNSTARTED because freeheadroom recovered to~26GiB.
+Next16actualsavedparser suites using new VM/server, everyhitverified; thencompose
+with unchangedadoptedexporter/wrapper and materialcandidate primary02.
