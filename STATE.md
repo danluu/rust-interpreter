@@ -147,3 +147,17 @@ Newbranchadopted-es8-workflow registers current matched32sourceeditcommands
 Onlyprotocol/model/commonwritten sofar; benchmark/closer stillrequired.
 Preflight1670bindingspassed, freoriginalclean; nextcommitthenprotocol6controls
 withsupervisor+independentclose. ReadRUNTIME-NEXT for exactpendingsteps.
+
+
+## 2026-09-19 current ES8 workflow controller
+
+The adopted-es8-protocol-01 six command/artifact/accounting controls passed and
+were independently closed after recovery confirmed terminal 0 (supervisor33455,
+controller33458). No guest ran. New benchmark.py/evidence.py/close.py preserve
+32 commands, strict probes, fresh library+integration native/check units, actual
+prepared worker assignments, immutable snapshots and compiled restoration after
+SourceEdit exits. New six controller controls test restoration, injected failure,
+external-edit preservation, environment/engine identity, stale units and wrong
+edit agreement. Next qualify via adopted-es8-controller-01, independently close,
+then launch adopted-es8-edit-01 once. All runtime crates remain exact adopted
+fca687eb. Free22.7GiB; initialfre floor16GiB and childfloor8GiB. No new toolbuild.
