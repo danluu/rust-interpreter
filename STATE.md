@@ -441,3 +441,10 @@ andcloseexec94465 passed. Exacttool2ce1d2e2fd210103b2eceb47754774f4f19094d544b45
 usesqualifiedVM887b8b13 andunchangedcompiler/wrapper. Defaultunchanged. Newfullpublic
 guards prospectivelyprepared forexactkey; mustnotrununlessprimarypasses. Next
 primaryprotocol17controls then40commands. No timingyet oractiveownedcommand.
+
+Primaryprotocol01 sourcec15e87be supervisor64830/controller64833 passed17controls
+(7accounting/5commands/5controller), closeexec35302 exit0. Launchedfirstprimary
+branch-budget-native-screen-token-01 supervisor71643/controller71694, sourcec15e87be.
+Twoactualstrict E0308/E0499 controls passed; sourcehistory running, no verdictyet.
+Freezeallprimary/runtime/scripts throughterminal+closure. Main249a46d0 publishes
+26closedcorrectness/evidencepaths preservingc2bd2734; no runtimeadoption.
