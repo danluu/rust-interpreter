@@ -1,0 +1,35 @@
+--- /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/execute_hash_driver_packet_review_04.py
++++ /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/execute_hash_driver_packet_review_05.py
+@@ -5,12 +5,16 @@
+ R=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ X=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ P=Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14')
+-AUDITOR=O/'.work/verify_hash_driver_packet_04.py'
+-E=O/'.work/hash-driver-packet-review-execution-04'
+-RESULT=O/'.work/hash-driver-packet-verification-04.json'
++AUDITOR=O/'.work/verify_hash_driver_packet_05.py'
++E=O/'.work/hash-driver-packet-review-execution-05'
++RESULT=O/'.work/hash-driver-packet-verification-05.json'
+ H=R/'experiments/hir-options-hash-driver-stage-02'
+ OWNED=X/'experiments/stable-cgu/owned_stage.py'
+-EXPECTED={AUDITOR:'120d344ed17291327c8b0efa32ac853cb5b9a1ca7c0a7731bf0f725120ca1698',
++CORRECTED=R/'experiments/hir-options-hash-driver-audit-02/verify.py'
++QUALIFICATION=R/'.work/hash-inherited-record-controls-independent-verification-01.json'
++EXPECTED={CORRECTED:'9e3e3291d168f3ac69d4bba4bf047212d53eb2eb485218df4b5f819f1601daf0',
++ QUALIFICATION:'127b8d0845d34927cdad84429c8be4841f5f7c1d61a954722c8acf3cb3951fbc',
++ AUDITOR:'c436790deb177794e17ab7d8c6ab1298d67d86ad1c626c810a5765987c015830',
+  H/'verify.py':'cbff690675b8697855bb87b0e09d9b77495fc0b8968855301e1a88612ec62a3f',
+  OWNED:'7021a15d3b806ab908f03276051d9d9ca9c9e208bbf8933a60229c9fb35bb68e',
+  H/'launch.json':'e315c703101fb5d8e9f732a10db9b07883792057c0f833b71979cf54efcbfc43',
+@@ -27,9 +31,9 @@
+ require(Path.cwd()==O and sys.dont_write_bytecode and not sys.flags.optimize and Path(sys.executable).resolve()==P,'fixed Python/owner')
+ require(not E.exists() and not E.is_symlink() and not RESULT.exists() and not RESULT.is_symlink(),'fresh audit evidence/result')
+ sources();entry=shutil.disk_usage(O).free;require(entry>=16*2**30,'fresh16GiB before audit evidence/child')
+-spec=importlib.util.spec_from_file_location('_packet04_owned',OWNED);owned=importlib.util.module_from_spec(spec);spec.loader.exec_module(owned)
++spec=importlib.util.spec_from_file_location('_packet05_owned',OWNED);owned=importlib.util.module_from_spec(spec);spec.loader.exec_module(owned)
+ E.mkdir(mode=0o700);(E/'source').mkdir(mode=0o700)
+-for source,name in [(AUDITOR,'audit.py'),(H/'verify.py','qualified-verify.py'),(OWNED,'owned_stage.py'),(Path(__file__).resolve(),'execution.py')]:
++for source,name in [(AUDITOR,'audit.py'),(CORRECTED,'corrected-verify.py'),(QUALIFICATION,'inherited22-audit.json'),(H/'verify.py','qualified-verify.py'),(OWNED,'owned_stage.py'),(Path(__file__).resolve(),'execution.py')]:
+  before=sha(source);data=source.read_bytes();require(hashlib.sha256(data).hexdigest()==before,'retained wrapper source differs')
+  with (E/'source'/name).open('xb') as stream:stream.write(data);stream.flush();os.fsync(stream.fileno())
+  require(sha(source)==before==sha(E/'source'/name),'stable exact retained source')

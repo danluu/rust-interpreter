@@ -1,0 +1,28 @@
+--- /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/execute_hash_driver_packet_review_03.py
++++ /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/execute_hash_driver_packet_review_04.py
+@@ -5,12 +5,12 @@
+ R=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ X=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ P=Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14')
+-AUDITOR=O/'.work/verify_hash_driver_packet_03.py'
+-E=O/'.work/hash-driver-packet-review-execution-03'
+-RESULT=O/'.work/hash-driver-packet-verification-03.json'
++AUDITOR=O/'.work/verify_hash_driver_packet_04.py'
++E=O/'.work/hash-driver-packet-review-execution-04'
++RESULT=O/'.work/hash-driver-packet-verification-04.json'
+ H=R/'experiments/hir-options-hash-driver-stage-02'
+ OWNED=X/'experiments/stable-cgu/owned_stage.py'
+-EXPECTED={AUDITOR:'6d6d4914d5b1f309fb1873eb1696a7e4d2b958a0fa221913701adb67871e93fa',
++EXPECTED={AUDITOR:'120d344ed17291327c8b0efa32ac853cb5b9a1ca7c0a7731bf0f725120ca1698',
+  H/'verify.py':'cbff690675b8697855bb87b0e09d9b77495fc0b8968855301e1a88612ec62a3f',
+  OWNED:'7021a15d3b806ab908f03276051d9d9ca9c9e208bbf8933a60229c9fb35bb68e',
+  H/'launch.json':'e315c703101fb5d8e9f732a10db9b07883792057c0f833b71979cf54efcbfc43',
+@@ -27,7 +27,7 @@
+ require(Path.cwd()==O and sys.dont_write_bytecode and not sys.flags.optimize and Path(sys.executable).resolve()==P,'fixed Python/owner')
+ require(not E.exists() and not E.is_symlink() and not RESULT.exists() and not RESULT.is_symlink(),'fresh audit evidence/result')
+ sources();entry=shutil.disk_usage(O).free;require(entry>=16*2**30,'fresh16GiB before audit evidence/child')
+-spec=importlib.util.spec_from_file_location('_packet03_owned',OWNED);owned=importlib.util.module_from_spec(spec);spec.loader.exec_module(owned)
++spec=importlib.util.spec_from_file_location('_packet04_owned',OWNED);owned=importlib.util.module_from_spec(spec);spec.loader.exec_module(owned)
+ E.mkdir(mode=0o700);(E/'source').mkdir(mode=0o700)
+ for source,name in [(AUDITOR,'audit.py'),(H/'verify.py','qualified-verify.py'),(OWNED,'owned_stage.py'),(Path(__file__).resolve(),'execution.py')]:
+  before=sha(source);data=source.read_bytes();require(hashlib.sha256(data).hexdigest()==before,'retained wrapper source differs')

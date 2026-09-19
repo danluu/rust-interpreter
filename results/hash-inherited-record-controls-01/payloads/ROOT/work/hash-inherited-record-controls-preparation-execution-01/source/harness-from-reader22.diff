@@ -1,0 +1,82 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hash-file-table-reader-controls-01/run.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hash-inherited-record-controls-01/run.py
+@@ -10,12 +10,11 @@
+ 
+ HERE = Path(__file__).resolve().parent
+ OWNER = HERE.parents[1]
+-SOURCE = HERE.with_name('hir-options-hash-driver-stage-02')
+-EXTRA_SOURCE = HERE.with_name('frozen-file-table-delta-01')
++SOURCE = HERE.with_name('hir-options-hash-driver-audit-02')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ sys.path.insert(0, str(X / 'experiments/stable-cgu'))
+ import owned_stage as owned
+-WORK = OWNER / '.work/hash-file-table-reader-controls-01'
++WORK = OWNER / '.work/hash-inherited-record-controls-01'
+ 
+ 
+ def read(path):
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hash-file-table-reader-controls-01/prepare.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hash-inherited-record-controls-01/prepare.py
+@@ -11,9 +11,9 @@
+     here, source, owner = control.HERE, control.SOURCE, control.OWNER
+     assert Path.cwd() == owner and sys.dont_write_bytecode
+     assert not any((here / name).exists() for name in ['inputs.json', 'launch.json'])
+-    assert not control.WORK.exists() and not (owner / '.work/experiments/hash-file-table-reader-controls-supervisor-01').exists()
++    assert not control.WORK.exists() and not (owner / '.work/experiments/hash-inherited-record-controls-supervisor-01').exists()
+     names = []
+-    modules = ['test_file_table_audit']
++    modules = ['test_inherited_records']
+     for module in modules:
+         tree = ast.parse((source / (module + '.py')).read_text())
+         for node in tree.body:
+@@ -36,10 +36,8 @@
+     for path in sorted(here.iterdir()):
+         assert path.is_file() and not path.is_symlink()
+         add(path)
+-    for name in ['verify.py', 'test_file_table_audit.py', 'README.md']:
++    for name in ['verify.py', 'test_inherited_records.py', 'README.md']:
+         add(source/name)
+-    for name in ['file_table.py', 'README.md']:
+-        add(control.EXTRA_SOURCE/name)
+     python = Path(sys.executable).resolve(strict=True)
+     for path in [python, '/opt/homebrew/bin/python3', '/bin/ps', '/usr/sbin/lsof',
+                  owner / 'scripts/supervise_experiment.py', control.X / 'experiments/stable-cgu/owned_stage.py']:
+@@ -56,11 +54,11 @@
+                               maximum_writable_names=256, maximum_directory_names=2048,
+                               maximum_cumulative_child_file_payload_bytes=258 * 256 * 1024,
+                               maximum_retained_stage_file_bytes=2 * 2**20),
+-                  source_only_file_table_reader_controls=True, compiler_calls=0, provider_probes=0, B3_compositions=0)
++                  source_only_inherited_record_controls=True, compiler_calls=0, provider_probes=0, B3_compositions=0)
+     control.owned.write(here / 'inputs.json', freeze)
+     launch = dict(status='prepared-unrun-awaiting-review', owner=str(owner), environment=environment,
+                   command=[str(python), '-B', str(owner / 'scripts/supervise_experiment.py'), '--run-id',
+-                           'hash-file-table-reader-controls-supervisor-01', '--', str(python), '-B',
++                           'hash-inherited-record-controls-supervisor-01', '--', str(python), '-B',
+                            str(here / 'run.py'), '--inputs-sha256', control.owned.sha(here / 'inputs.json')],
+                   inputs_sha256=control.owned.sha(here / 'inputs.json'), helper_sha256=control.owned.sha(here / 'run.py'),
+                   expected_children=1, controls=22, capacity=freeze['capacity'], bounds=freeze['bounds'])
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hash-file-table-reader-controls-01/child.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hash-inherited-record-controls-01/child.py
+@@ -8,11 +8,10 @@
+ import unittest
+ 
+ HERE = Path(__file__).resolve().parent
+-SOURCE = HERE.with_name('hir-options-hash-driver-stage-02')
+-EXTRA_SOURCE = HERE.with_name('frozen-file-table-delta-01')
++SOURCE = HERE.with_name('hir-options-hash-driver-audit-02')
+ OWNER = HERE.parents[1]
+-WORK = OWNER / '.work/hash-file-table-reader-controls-01'
+-MODULES = ['test_file_table_audit']
++WORK = OWNER / '.work/hash-inherited-record-controls-01'
++MODULES = ['test_inherited_records']
+ MAX_FILE = 256 * 1024
+ 
+ 
+@@ -52,7 +51,6 @@
+             assert path.resolve(strict=False).is_relative_to(WORK / 'tmp')
+             directories.add(str(path)); assert len(directories) <= 2048, 'fixture directory cap exceeded'
+     sys.addaudithook(audit)
+-    sys.path.insert(0, str(EXTRA_SOURCE))
+     sys.path.insert(0, str(SOURCE))
+     suite = unittest.defaultTestLoader.loadTestsFromNames(MODULES)
+     expected = json.loads((HERE / 'inputs.json').read_bytes())['expected_names']

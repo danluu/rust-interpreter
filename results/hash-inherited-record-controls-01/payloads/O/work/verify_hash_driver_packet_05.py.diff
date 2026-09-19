@@ -1,0 +1,103 @@
+--- /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/verify_hash_driver_packet_04.py
++++ /Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/verify_hash_driver_packet_05.py
+@@ -13,8 +13,8 @@
+ A=Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918')
+ X=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ H=R/'experiments/hir-options-hash-driver-stage-02'
+-E=O/'.work/hash-driver-packet-review-execution-04'
+-OUT=O/'.work/hash-driver-packet-verification-04.json'
++E=O/'.work/hash-driver-packet-review-execution-05'
++OUT=O/'.work/hash-driver-packet-verification-05.json'
+ PREP=R/'.work/hash-driver-preparation-execution-03'
+ EXPECTED={
+  'launch.json':'e315c703101fb5d8e9f732a10db9b07883792057c0f833b71979cf54efcbfc43',
+@@ -23,6 +23,9 @@
+  'snapshot-plan.json':'3082d235c8ff1c700b5a611aef8a488a4f4297f7607f0b8f37e6afbd22d0d7ad',
+  'metadata-preflight.json':'6730faa41b9bbf7f35a328a4bfc16de0a9cf0900a4c0a195fb3325863a59c04f',
+  'verify.py':'cbff690675b8697855bb87b0e09d9b77495fc0b8968855301e1a88612ec62a3f'}
++CORRECTED_VERIFIER=R/'experiments/hir-options-hash-driver-audit-02/verify.py'
++CORRECTED_VERIFIER_SHA='9e3e3291d168f3ac69d4bba4bf047212d53eb2eb485218df4b5f819f1601daf0'
++INHERITED_CONTROLS_AUDIT_SHA=None  # Bind only the separately observed passed actual22 audit.
+ PREP_SHA='d0530245c9edeb84309a27258f65d889679f8c38efcb21e2dae5bf6e50c588e9'
+ AUDITS={
+  'compiler':'033ae3c870cf98ed36d0e17d5b02aaabff6f5bbb03353f2454426be3b9f49fc3',
+@@ -59,8 +62,14 @@
+  data=(json.dumps(value,sort_keys=True,indent=2)+'\n').encode();require(len(data)<=4*2**20,'bounded audit document')
+  with Path(path).open('xb') as stream:stream.write(data);stream.flush();os.fsync(stream.fileno())
+ def load_verifier():
+- require(sha(H/'verify.py')==EXPECTED['verify.py'],'exact actual22-qualified verifier')
+- source=(H/'verify.py').read_bytes();tree=ast.parse(source,filename=str(H/'verify.py'))
++ require(sha(H/'verify.py')==EXPECTED['verify.py'] and sha(CORRECTED_VERIFIER)==CORRECTED_VERIFIER_SHA,'exact original and separately bound corrected verifier')
++ require(type(INHERITED_CONTROLS_AUDIT_SHA) is str and re.fullmatch('[a-f0-9]{64}',INHERITED_CONTROLS_AUDIT_SHA),'actual inherited-record controls audit remains unbound')
++ original=ast.parse((H/'verify.py').read_bytes(),filename=str(H/'verify.py'))
++ source=CORRECTED_VERIFIER.read_bytes();tree=ast.parse(source,filename=str(CORRECTED_VERIFIER))
++ old={n.name:ast.dump(n,include_attributes=False) for n in original.body if isinstance(n,ast.FunctionDef)}
++ new={n.name:ast.dump(n,include_attributes=False) for n in tree.body if isinstance(n,ast.FunctionDef)}
++ require(set(new)-set(old)=={'canonical_inherited_record'} and set(old)<=set(new)
++  and {name for name in old if old[name]!=new[name]}=={'inherited_inputs','main'},'only qualified strict inherited-reader correction; complete expander unchanged')
+  allowed=(ast.Import,ast.ImportFrom,ast.Assign,ast.FunctionDef)
+  body=[]
+  for node in tree.body:
+@@ -70,8 +79,8 @@
+   require(isinstance(node,allowed),'unexpected verifier top-level executable')
+   if isinstance(node,ast.FunctionDef) and node.name in {'main','import_parsers'}:continue
+   body.append(node)
+- value=ModuleType('hash_packet03_readonly_verifier');value.__file__=str(H/'verify.py')
+- exec(compile(ast.Module(body=body,type_ignores=[]),str(H/'verify.py'),'exec'),value.__dict__)
++ value=ModuleType('hash_packet03_readonly_verifier');value.__file__=str(CORRECTED_VERIFIER)
++ exec(compile(ast.Module(body=body,type_ignores=[]),str(CORRECTED_VERIFIER),'exec'),value.__dict__)
+  original_identity=value.identity
+  def checked_identity(path):guard();return original_identity(path)
+  value.identity=checked_identity
+@@ -124,6 +133,24 @@
+  return dict(status='retained-failed-audit',files=refs,record_sha256=refs[str(O/'.work/hash-driver-packet-review-execution-03/record.json')],
+   error='RuntimeError: ordinary SDK root',workload_children=0,
+   correction='Inventory the exact canonical SDK route already pinned in both metadata routes and launch executor routes; preserve the versioned SDKROOT alias.')
++
++
++SECOND_FAILURE_FILES={'/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/verify_hash_driver_packet_04.py': '120d344ed17291327c8b0efa32ac853cb5b9a1ca7c0a7731bf0f725120ca1698', '/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/execute_hash_driver_packet_review_04.py': 'db1d1de735d7f912370a599eda304db2807326cf12c3f07a55c26268db2fbb72', '/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/hash-driver-packet-review-execution-04/record.json': '47f278247f756e3efe55ae84a5d5bf078005d6cc3bfcb5859816e6b6dd25ee94', '/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/hash-driver-packet-review-execution-04/stdout': '7733a5872aa8042f67405a205f7915523d44e2a20b1e0c73637f1b3dc8f07fa6', '/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/hash-driver-packet-review-execution-04/stderr': '64ca20359d6dcac2d45bb97418b0e55facdb9fef32f1b0fd992e1a5246e5e838', '/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/hash-driver-packet-review-execution-04/source/audit.py': '120d344ed17291327c8b0efa32ac853cb5b9a1ca7c0a7731bf0f725120ca1698', '/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/hash-driver-packet-review-execution-04/source/execution.py': 'db1d1de735d7f912370a599eda304db2807326cf12c3f07a55c26268db2fbb72', '/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/hash-driver-packet-review-execution-04/source/owned_stage.py': '7021a15d3b806ab908f03276051d9d9ca9c9e208bbf8933a60229c9fb35bb68e', '/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918/.work/hash-driver-packet-review-execution-04/source/qualified-verify.py': 'cbff690675b8697855bb87b0e09d9b77495fc0b8968855301e1a88612ec62a3f'}
++def previous_audit_failures():
++ first=previous_audit_failure()
++ for name,digest in SECOND_FAILURE_FILES.items():require(V.sha(name)==digest,'second failed audit bytes preserved')
++ prior=V.read(O/'.work/hash-driver-packet-review-execution-04/record.json')
++ raw=V.raw(O/'.work/hash-driver-packet-review-execution-04/stderr').decode('utf-8','strict')
++ require(prior['status']=='finished' and prior['returncode']==1 and prior['pid']==58131 and prior['parent_pid']==57210
++  and prior['execution_error']=="RuntimeError('actual packet audit failed; preserve evidence')"
++  and raw.endswith("KeyError: 'size'\n") and "V.inherited_inputs(source,freeze)" in raw,
++  'honest second historical wire-shape audit rejection')
++ require(not (O/'.work/hash-driver-packet-verification-04.json').exists(),'second failed audit did not publish qualification')
++ second=dict(status='retained-failed-audit',files=SECOND_FAILURE_FILES,
++  record_sha256=SECOND_FAILURE_FILES[str(O/'.work/hash-driver-packet-review-execution-04/record.json')],
++  error="KeyError: 'size'",workload_children=0,
++  correction='Separately qualified strict exact-two-schema normalization with complete typed seven-field identity comparison; original cbff and packet remain unchanged.')
++ return [first,second]
+ 
+ def sdk_inventory(root):
+  root=Path(root);require(root.resolve(strict=True)==root and root.is_dir(),'ordinary SDK root')
+@@ -252,7 +279,7 @@
+   try:fcntl.flock(competing,fcntl.LOCK_EX|fcntl.LOCK_NB)
+   except BlockingIOError:pass
+   else:raise RuntimeError('inherited canonical lock is not held')
+- started=time.time();guard();V=load_verifier();prior_failure=previous_audit_failure()
++ started=time.time();guard();V=load_verifier();prior_failures=previous_audit_failures()
+  for name,digest in EXPECTED.items():require(V.sha(H/name)==digest,'exact prepared '+name)
+  require(V.sha(PREP/'record.json')==PREP_SHA,'exact successful preparation record')
+  record=V.read(PREP/'record.json');launch=V.read(H/'launch.json');compact=V.read(H/'inputs.json');plan=V.read(H/'plan.json');preflight=V.read(H/'metadata-preflight.json');snapshot=V.read(H/'snapshot-plan.json')
+@@ -273,6 +300,8 @@
+  reader=controls('hash-file-table-reader-controls',22,'ea8ba76b848318affd0f2d76f4f5e4b6711731d15250e0eb17ec5d1362408b2b',[(H/name,H/name) for name in ['verify.py','test_file_table_audit.py']])
+  generic=controls('hir-options-hash-prerequisite-controls',66,'7d17277c1551a40faa717ed06056184d156519cee4b2002a83e69f7d3424265a',
+   [(R/'experiments/hir-options-hash-driver-stage'/name,H/name) for name in ['prerequisites.py','snapshot_bindings.py','test_native_wrapper.py','test_snapshot_bindings.py']],number='05')
++ corrected=controls('hash-inherited-record-controls',22,INHERITED_CONTROLS_AUDIT_SHA,
++  [(CORRECTED_VERIFIER,CORRECTED_VERIFIER),(CORRECTED_VERIFIER.with_name('test_inherited_records.py'),CORRECTED_VERIFIER.with_name('test_inherited_records.py'))])
+  freeze=V.complete_file_table(compact,expected_base=dict(path=str(V.NATIVE_SOURCE/'inputs.json'),sha256='8569abb81a61e34b6b5a892116af5218557ceb0436ab8dbf8a31f2aec55b1b1d'))
+  require(len(freeze['files'])==109196 and sum(r['size'] for r in freeze['files'].values())==6770927978 and len(compact['files'])==2764,'exact complete frozen table')
+  for index,name in enumerate(freeze['files']):
+@@ -334,7 +363,7 @@
+  for path in [V.WORK,V.ARTIFACTS,V.OUTER]:require(not path.exists() and not path.is_symlink(),'workload still absent')
+  guard();report=dict(status='verified-prepared-unrun',pid=os.getpid(),parent_pid=os.getppid(),started_at=started,finished_at=time.time(),source_sha256=sha(__file__),
+   launch_sha256=EXPECTED['launch.json'],inputs_sha256=EXPECTED['inputs.json'],plan_sha256=EXPECTED['plan.json'],snapshot_plan_sha256=EXPECTED['snapshot-plan.json'],
+-  preparation_record_sha256=PREP_SHA,prior_failed_audit=prior_failure,sdk_alias=str(sdk_alias),sdk_inventory_root=str(sdk_root),qualified_reader=reader,file_table_qualification=table_proof,snapshot_helper_qualification=snapshot_proof,
++  preparation_record_sha256=PREP_SHA,prior_failed_audits=prior_failures,corrected_verifier=dict(path=str(CORRECTED_VERIFIER),sha256=CORRECTED_VERIFIER_SHA,qualification=corrected),sdk_alias=str(sdk_alias),sdk_inventory_root=str(sdk_root),qualified_reader=reader,file_table_qualification=table_proof,snapshot_helper_qualification=snapshot_proof,
+   files=len(freeze['files']),frozen_bytes=sum(r['size'] for r in freeze['files'].values()),delta_files=len(compact['files']),links=len(freeze['links']),absences=len(freeze['absent_paths']),provider_inventories=inventories,
+   generic_controls=generic,sdk_entries=len(metadata['sdk_inventory']),prerequisites=preflight['prerequisites'],independent_audits=plan['independent_audits'],planned_children=plan['children'],capacity=capacity,
+   projection=proof,allocation_before=before,allocation_after=after,disk_samples=SAMPLES,read_bytes=READ_BYTES,

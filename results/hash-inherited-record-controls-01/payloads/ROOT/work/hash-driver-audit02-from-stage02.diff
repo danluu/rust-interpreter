@@ -1,0 +1,80 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage-02/verify.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-audit-02/verify.py
+@@ -21,8 +21,10 @@
+ import time
+ from types import ModuleType
+ 
+-HERE=Path(__file__).resolve().parent
++HERE=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-driver-stage-02')
+ ROOT=HERE.parents[1]
++ORIGINAL_VERIFIER=dict(path=str(HERE/'verify.py'),
++    sha256='cbff690675b8697855bb87b0e09d9b77495fc0b8968855301e1a88612ec62a3f')
+ A=Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918')
+ X=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ O=Path('/Users/danluu/dev/rust-interp-oxc-native-baseline-20260918')
+@@ -517,6 +519,33 @@
+     path=frozen(ref['path'],freeze);require(sha(path)==ref['sha256'],'referenced proof bytes')
+     return read(path)
+ 
++def canonical_inherited_record(row):
++    """Normalize only the two actual historical file-record encodings.
++
++    Stamp order is dev, ino, mode, size, mtime_ns, ctime_ns, nlink.  Retain
++    every identity field; matching only content SHA and size is insufficient.
++    No filesystem access, coercion, record mutation or aliasing is performed.
++    """
++    require(type(row) is dict and set(row) in ({'sha256','stamp'},{'sha256','size','identity'}),
++        'exact historical file-record schema required')
++    require(type(row['sha256']) is str and re.fullmatch('[a-f0-9]{64}',row['sha256']),
++        'lowercase SHA-256 file-record digest required')
++    if 'stamp' in row:
++        values=row['stamp']
++        require(type(values) is list and len(values)==7 and all(type(value) is int for value in values),
++            'exact seven-integer historical stamp required')
++        info=dict(zip(('dev','ino','mode','size','mtime_ns','ctime_ns','nlink'),values,strict=True))
++        size=info['size']
++    else:
++        require(type(row['size']) is int and type(row['identity']) is dict
++            and set(row['identity'])==set(FIELDS), 'exact canonical size and complete identity required')
++        info=dict(row['identity']);size=row['size']
++    require(all(type(info[key]) is int for key in FIELDS), 'integer file identity fields required')
++    require(info['dev']>=0 and info['ino']>0 and 0<=info['mode']<=0o177777 and stat.S_ISREG(info['mode'])
++        and info['nlink']>=1 and info['mtime_ns']>=0 and info['ctime_ns']>=0
++        and 0<=size<=2**30 and size==info['size'], 'bounded ordinary file identity required')
++    return dict(sha256=row['sha256'],size=size,identity={key:info[key] for key in FIELDS})
++
+ def inherited_inputs(source,freeze):
+     inherited=read(frozen(source/'inputs.json',freeze))
+     require(sha(frozen(source/'plan.json',freeze))==inherited['plan_sha256'],'predecessor plan hash')
+@@ -530,8 +559,11 @@
+         catalogs.append(base)
+     for catalog in catalogs:
+         for path,row in catalog['files'].items():
+-            require(freeze['files'][path]['sha256']==row['sha256'] and freeze['files'][path]['size']==row['size'],
+-                'complete inherited logical input closure')
++            current=freeze['files'].get(path)
++            require(type(current) is dict and set(current)=={'sha256','size','identity'},
++                'current inherited input must retain the canonical complete row')
++            require(encoded(canonical_inherited_record(current))==encoded(canonical_inherited_record(row)),
++                'complete typed inherited SHA/size/identity closure')
+         for path,row in catalog.get('links',{}).items():
+             require(freeze['links'].get(path)==row,'complete inherited provider link closure')
+         require(set(catalog.get('absent_paths',[]))<=set(freeze['absent_paths']),
+@@ -819,7 +851,8 @@
+         'honest launcher/wrapper identity observations')
+     require(len(freeze['files'])<=180000 and sum(r['size'] for r in freeze['files'].values())<=8*2**30,'full frozen closure bound')
+     for name in freeze['files']:frozen(name,freeze)
+-    frozen(Path(__file__).resolve(),freeze)
++    require(sha(frozen(ORIGINAL_VERIFIER['path'],freeze))==ORIGINAL_VERIFIER['sha256'],
++        'exact original frozen verifier retained; successor is separately authenticated')
+     file_table_proof=file_table_helper_qualification(freeze)
+     for name,row in freeze['links'].items():
+         path=Path(name);require(path.is_symlink() and stamp(path)==row['stamp'] and os.readlink(path)==row['target']
+@@ -957,6 +990,7 @@
+         artifacts=artifacts,hash_driver_qualified=True,application_qualified=False,performance_measurement=False,runtime_installation=False,
+         interpretation='Each serial/parallel process is independently checked. Hashes are not compared across modes. Printed linker command is not a separately observed linker PID. System images retain the stated dyld-cache assumption.',
+         started_at=started,finished_at=time.time(),verifier_sha256=sha(Path(__file__).resolve()),
++        original_verifier=ORIGINAL_VERIFIER,
+         execution='Saved evidence and current-file reads only; no process, compiler, provider, controller or driver execution.')
+     with OUT.open('x') as stream:json.dump(report,stream,indent=2,sort_keys=True);stream.write('\n')
+     print(json.dumps(dict(path=str(OUT),sha256=sha(OUT),actual_children=3,contexts_per_process=8)))
