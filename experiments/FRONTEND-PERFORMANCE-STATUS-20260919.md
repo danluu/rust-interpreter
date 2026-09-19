@@ -71,8 +71,9 @@ Exporter preparation passed after restoring five exact saved VM proof files
 missing from the sparse working tree. The initial failed attempt remains saved.
 All 36 subsequent metadata commands completed successfully, but the result
 reader rejected dyld's delayed-load transition messages. That metadata attempt
-is closed and failed; a separate parser correction is being checked before the
-next attempt. No exporter build or application timing ran in that attempt.
+is closed and failed. The lossless parser correction passed all 24 controls,
+including both complete saved streams; a fresh metadata attempt remains pending.
+No exporter build or application timing ran in the failed attempt.
 
 Evidence entry points:
 
@@ -98,6 +99,8 @@ Evidence entry points:
 - [Standard-library adapter source and 12 focused tests](../results/runtime-std07-source-development-01/STATUS.md)
 - [Passed standard-library preparation07 and independent readback](../results/runtime-std07-preparation-01/STATUS.md)
 - [Exporter preparation and preserved missing-proof failure](../results/runtime-exporter07-preparation-01/STATUS.md)
+- [Closed exporter metadata failure and all 36 successful child commands](../results/runtime-exporter07-metadata-failure-01/STATUS.md)
+- [Lossless delayed-load parser and 24 passed controls](../results/runtime-exporter-dyld-parser-test-01/README.md)
 
 Historical plans and source manifests retain their original status text. The
 linked actual-result records establish which work has since run; an old plan's

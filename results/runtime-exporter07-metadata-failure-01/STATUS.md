@@ -1,0 +1,7 @@
+# Exporter07 metadata01 — closed failure
+
+All 36 declared metadata children completed with exit 0. The metadata controller then rejected ordinary dyld loaded-to-delayed telemetry while parsing the saved role-version streams. The phase failed with exit 1; no successful planned metadata result was published. The directly waited supervisor exited 0 after recording its controller's exit 1, and the parent launcher reported the phase failure. These outcomes are retained separately.
+
+Root and an independent reader checked every command, environment, cwd, PID/parent association, ordered closure and raw stdout/stderr SHA. Both role-version logs contain 548 UUID load lines and 157 loaded-to-delayed transitions with matching PIDs and prior unique basenames; the selected drivers remain active. This diagnosis does not turn the failed metadata attempt into qualification.
+
+The capsule retains all 108 command receipt/raw files, phase receipt, outer three files, parent three files, root readback, independent reader source and report: 118 payloads. Exact source and packet associations are referenced through the preparation capsule rather than duplicated. No provider or binary payload, materialized238 source tree, or later parser/control attempt is copied. No compiler, provider probe or workload was rerun by this publication. Exporter/compiler builds, frontend/application qualification and performance claims remain absent.
