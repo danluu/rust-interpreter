@@ -1,0 +1,94 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/original/crates/mir-export/src/wrapper_route.rs
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/crates/mir-export/src/wrapper_route.rs
+@@ -17,6 +17,10 @@
+         r#"{{"schema_version":1,"policy":"host-library-opt-v1","compiler_commit":"{}","opt_level":1,"mir_opt_level":1,"lto":"off","preserve_checks":true}}"#,
+         option_env!("RUST_INTERP_RUSTC_COMMIT").unwrap_or("unknown"),
+     )
++}
++
++pub fn host_codegen_capability() -> &'static str {
++    r#"{"schema_version":1,"policy":"host-codegen-opt-v1","roles":["proc-macro","lib","rlib"],"opt_level":3,"mir_opt_level":1,"lto":"off","preserve_checks":true}"#
+ }
+ 
+ #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+@@ -58,6 +62,7 @@
+     pub frontend_workers: Option<OsString>,
+     pub host_proc_macro_opt: Option<OsString>,
+     pub host_library_opt: Option<OsString>,
++    pub host_codegen_opt: Option<OsString>,
+     pub frontend_compiler: Option<OsString>,
+     pub conflicting_frontend_policy: bool,
+ }
+@@ -81,6 +86,7 @@
+             frontend_workers: std::env::var_os("RUST_INTERP_FRONTEND_WORKERS"),
+             host_proc_macro_opt: std::env::var_os("RUST_INTERP_HOST_PROC_MACRO_OPT"),
+             host_library_opt: std::env::var_os("RUST_INTERP_HOST_LIBRARY_OPT"),
++            host_codegen_opt: std::env::var_os("RUST_INTERP_HOST_CODEGEN_OPT"),
+             frontend_compiler: option_env!("RUST_INTERP_RUNTIME_COMPILER").map(OsString::from)
+                 .or_else(|| option_env!("RUST_INTERP_SYSROOT").map(|root| {
+                     Path::new(root)
+@@ -88,7 +94,7 @@
+                         .into_os_string()
+                 })),
+             conflicting_frontend_policy: std::env::var_os("RUST_INTERP_COMPILER_RUSTC").is_some()
+-                || ["RUST_INTERP_STABLE_CGU_PARTITIONING", "RUST_INTERP_HOST_PROC_MACRO_OPT", "RUST_INTERP_HOST_LIBRARY_OPT"]
++                || ["RUST_INTERP_STABLE_CGU_PARTITIONING", "RUST_INTERP_HOST_PROC_MACRO_OPT", "RUST_INTERP_HOST_LIBRARY_OPT", "RUST_INTERP_HOST_CODEGEN_OPT"]
+                     .iter().any(|name| std::env::var_os(name).is_some_and(|value| value != "off")),
+         }
+     }
+@@ -103,6 +109,7 @@
+     pub custom_compiler: bool,
+     pub host_proc_macro_opt: bool,
+     pub host_library_opt: bool,
++    pub host_codegen_opt: bool,
+ }
+ 
+ impl Route {
+@@ -111,7 +118,7 @@
+     }
+ 
+     pub fn check_compiler(&self, sysroot: &Path) -> Result<(), String> {
+-        if self.wrapper && (self.custom_compiler || self.host_proc_macro_opt || self.host_library_opt || self.requires_exporter()) {
++        if self.wrapper && (self.custom_compiler || self.host_proc_macro_opt || self.host_library_opt || self.host_codegen_opt || self.requires_exporter()) {
+             let expected = sysroot.join("bin/rustc").canonicalize();
+             let supplied = Path::new(&self.args[0]).canonicalize();
+             if !matches!((&expected, &supplied), (Ok(a), Ok(b)) if a == b) {
+@@ -202,6 +209,21 @@
+         env.std_sysroot.as_ref().is_none_or(String::is_empty) || env.std_target.as_ref().is_none_or(String::is_empty)) {
+         return Err("host proc-macro optimization requires public compiler Cargo wrapping with complete std-MIR context and borrowck cache off".into());
+     }
++    let host_codegen_opt = match env.host_codegen_opt.as_deref().map(OsStr::to_str) {
++        None | Some(Some("off")) => false,
++        Some(Some("on")) => true,
++        _ => return Err("RUST_INTERP_HOST_CODEGEN_OPT must be off or on".into()),
++    };
++    if host_codegen_opt && (!wrapper || !custom_compiler || host_proc_macro_opt || host_library_opt
++        || env.compiler_rustc != env.frontend_compiler
++        || env.frontend_workers.is_some() || env.stable_mono_cgu_partitioning.is_some()
++        || env.stable_cgu_partitioning.as_deref() != Some(OsStr::new("off"))
++        || borrowck_cache != BorrowckCacheMode::Off
++        || env.std_sysroot.as_ref().is_none_or(String::is_empty)
++        || env.std_target.as_ref().is_none_or(String::is_empty)) {
++        return Err("combined host codegen requires bound runtime Cargo wrapping, complete std context, stable-CGU off and other compiler policies off".into());
++    }
++    let host_codegen_args = host_codegen_opt.then(|| args.clone());
+     // Policy conflicts concern original Cargo/user flags, not sysroot/MIR
+     // additions that this shared router may make below.
+     let host_proc_macro_args = host_proc_macro_opt.then(|| args.clone());
+@@ -365,6 +387,9 @@
+     if let Some(original) = host_library_args {
+         args.extend(host_proc_macro::library_additions(&original, export)?);
+     }
++    if let Some(original) = host_codegen_args {
++        args.extend(host_proc_macro::combined_additions(&original, export)?);
++    }
+     Ok(Route {
+         args,
+         wrapper,
+@@ -373,5 +398,6 @@
+         custom_compiler,
+         host_proc_macro_opt,
+         host_library_opt,
++        host_codegen_opt,
+     })
+ }

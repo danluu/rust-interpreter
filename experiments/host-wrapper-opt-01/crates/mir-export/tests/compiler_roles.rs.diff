@@ -1,0 +1,11 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/original/crates/mir-export/tests/compiler_roles.rs
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/crates/mir-export/tests/compiler_roles.rs
+@@ -194,7 +194,7 @@
+     let build = temp.file("build/bin/rustc", b"build");
+     let mut route = wrapper_route::Route { args: vec![compiler.to_str().unwrap().into()],
+         wrapper: true, export: true, borrowck_cache: wrapper_route::BorrowckCacheMode::Off,
+-        custom_compiler: false, host_proc_macro_opt: false, host_library_opt: false };
++        custom_compiler: false, host_proc_macro_opt: false, host_library_opt: false, host_codegen_opt: false };
+     route.check_compiler(&temp.0.join("runtime")).unwrap();
+     route.args[0] = build.to_str().unwrap().into();
+     assert!(route.check_compiler(&temp.0.join("runtime")).is_err());

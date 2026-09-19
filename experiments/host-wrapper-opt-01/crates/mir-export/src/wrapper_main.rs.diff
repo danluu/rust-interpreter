@@ -1,0 +1,29 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/original/crates/mir-export/src/wrapper_main.rs
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/crates/mir-export/src/wrapper_main.rs
+@@ -15,6 +15,15 @@
+     let original: Vec<String> = std::env::args().collect();
+     if original.len() == 2 && original[1] == "--rust-interp-compiler-roles" {
+         println!("{}", compiler_roles::BINDING_JSON.unwrap_or("null"));
++        return ExitCode::SUCCESS;
++    }
++    if original.len() == 2 && original[1] == "--rust-interp-host-codegen-capability" {
++        if compiler_roles::RUNTIME.is_none() {
++            eprintln!("combined host codegen requires bound runtime compiler roles");
++            return ExitCode::from(2);
++        }
++        println!("{}\n{}\n{}", wrapper_route::host_codegen_capability(),
++            env!("RUST_INTERP_SYSROOT"), compiler_roles::BINDING_JSON.unwrap_or("null"));
+         return ExitCode::SUCCESS;
+     }
+     if original.len() == 2 && original[1] == "--rust-interp-host-library-capability" {
+@@ -42,6 +51,10 @@
+             return ExitCode::from(2);
+         }
+     };
++    if route.host_codegen_opt && compiler_roles::RUNTIME.is_none() {
++        eprintln!("combined host codegen requires bound runtime compiler roles");
++        return ExitCode::from(2);
++    }
+     if let Err(error) = route.check_compiler(std::path::Path::new(env!("RUST_INTERP_SYSROOT"))) {
+         eprintln!("{error}");
+         return ExitCode::from(2);

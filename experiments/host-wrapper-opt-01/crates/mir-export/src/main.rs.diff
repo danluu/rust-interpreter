@@ -1,0 +1,24 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/original/crates/mir-export/src/main.rs
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/crates/mir-export/src/main.rs
+@@ -288,6 +288,10 @@
+             "host_library_opt":serde_json::from_str::<serde_json::Value>(&wrapper_route::host_library_capability()).expect("host library capability"),
+             "frontend_workers":serde_json::from_str::<serde_json::Value>(&wrapper_route::frontend_worker_capability()).expect("frontend worker capability"),
+             "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","entry-catalog","list-tests","filtered-tests","function-cache-reuse","function-cache-auto","borrowck-cache","stable-cgu-partitioning","host-proc-macro-opt-v1","stable-mono-cgu-partitioning","compiler-argv-record-v1","frontend-workers-v1","host-library-opt-v1"]});
++        if compiler_roles::RUNTIME.is_some() {
++            capabilities["host_codegen_opt"] = serde_json::from_str(wrapper_route::host_codegen_capability()).expect("host codegen capability");
++            capabilities["export_options"].as_array_mut().unwrap().push(serde_json::json!("host-codegen-opt-v1"));
++        }
+         if let Some(binding) = compiler_roles::BINDING_JSON {
+             capabilities["compiler_roles"] = serde_json::from_str(binding).expect("validated compiler roles");
+         }
+@@ -299,6 +303,10 @@
+         eprintln!("{error}");
+         std::process::exit(2);
+     });
++    if route.host_codegen_opt && compiler_roles::RUNTIME.is_none() {
++        eprintln!("combined host codegen requires bound runtime compiler roles");
++        return std::process::ExitCode::from(2);
++    }
+     if let Err(error) = route.check_compiler(Path::new(env!("RUST_INTERP_SYSROOT"))) {
+         eprintln!("{error}");
+         return std::process::ExitCode::from(2);

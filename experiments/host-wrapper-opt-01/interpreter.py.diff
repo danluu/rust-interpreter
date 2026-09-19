@@ -1,0 +1,60 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/original/interpreter.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/interpreter.py
+@@ -23,9 +23,11 @@
+ import subprocess
+ import sys
+ import time
++# Explicit source copy; all provider/installed-tool routes retain their owner.
++sys.path.insert(1, '/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/scripts')
+ from workspace_cache import workspace_cache_base, cache_subdirectory
+ 
+-ROOT=Path(__file__).resolve().parents[1]
++ROOT=Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ TOOLCHAIN='nightly-2026-09-08'
+ LEGACY_TOOL_BINARIES=('rust-interp-vm','rust-interp-mir-export')
+ CURRENT_TOOL_BINARIES=(*LEGACY_TOOL_BINARIES,'rust-interp-rustc-wrapper')
+@@ -261,6 +263,7 @@
+     parser.add_argument('--cargo-key',help='use an owned qualified Cargo executable with the selected compiler')
+     parser.add_argument('--stable-cgu-partitioning',choices=['off','on'],default='off',help='custom compiler CGU grouping policy (default: off)')
+     parser.add_argument('--host-proc-macro-opt',choices=['off','on'],default='off',help='experimental O1 codegen for unoptimized host proc-macro dylibs, retaining checks; requires --std-mir (default: off)')
++    parser.add_argument('--host-codegen-opt',choices=['off','on'],default='off',help='qualified combined O3 host codegen; requires installed runtime and prepared std')
+     parser.add_argument('--host-library-opt',choices=['off','on'],default='off',help='experimental O1 codegen for unoptimized native host libraries, retaining checks; requires --std-mir (default: off)')
+     parser.add_argument('--stable-mono-cgu-partitioning',choices=['off','on'],help='explicit custom compiler per-item CGU policy; requires recorded compiler and wrapper support')
+     parser.add_argument('--cache-namespace',default='',help='use an independent artifact cache, for reproducible cold-build comparisons')
+@@ -279,6 +282,9 @@
+     parser.add_argument('--test-target',help='select a named Cargo integration-test target; requires --test-body')
+     parser.add_argument('arguments',nargs=argparse.REMAINDER)
+     args=parser.parse_args()
++    import host_codegen_opt
++    try:host_codegen_opt.validate_selection(args,os.environ)
++    except RuntimeError as error:parser.error(str(error))
+     custom_key=args.compiler_key or args.runtime_compiler_key
+     if any(not value or '\x00' in value or '\x1f' in value for value in args.rustflag):
+         parser.error('--rustflag requires nonempty arguments without NUL or unit separators')
+@@ -423,6 +429,10 @@
+         timings['frontend_workers']=receipt(args.frontend_workers,capabilities)
+     if args.function_cache!='off':require_export_option(tools,key,'function-cache-'+args.function_cache)
+     if args.borrowck_cache!='off':require_export_option(tools,key,'borrowck-cache')
++    if args.host_codegen_opt!='off':
++        require_export_option(tools,key,host_codegen_opt.POLICY)
++        timings['host_codegen_opt']=host_codegen_opt.require_capability(tools,key,custom,
++            json.loads((tools/'capabilities.json').read_bytes()),json.loads((tools/'ready.json').read_bytes()))
+     if args.host_proc_macro_opt!='off':require_export_option(tools,key,'host-proc-macro-opt-v1')
+     if args.host_library_opt!='off':
+         require_export_option(tools,key,host_library_opt.POLICY)
+@@ -489,6 +499,7 @@
+     if args.host_proc_macro_opt!='off':
+         identity_input='host-proc-macro-opt-v1\0'+args.host_proc_macro_opt+'\0'+identity_input
+     if args.host_library_opt!='off':identity_input=host_library_opt.namespace(identity_input)
++    identity_input=host_codegen_opt.namespace(identity_input,args.host_codegen_opt)
+     if args.frontend_workers is not None:
+         identity_input=namespace(args.frontend_workers,identity_input)
+     identity=hashlib.sha256(identity_input.encode()).hexdigest()[:24]
+@@ -576,6 +587,7 @@
+         if args.borrowck_cache!='off':cargo_env['RUST_INTERP_BORROWCK_CACHE']=args.borrowck_cache
+         if args.host_proc_macro_opt!='off':cargo_env['RUST_INTERP_HOST_PROC_MACRO_OPT']=args.host_proc_macro_opt
+         if args.host_library_opt!='off':cargo_env['RUST_INTERP_HOST_LIBRARY_OPT']=args.host_library_opt
++        if args.host_codegen_opt!='off':cargo_env[host_codegen_opt.ENVIRONMENT]=args.host_codegen_opt
+     if args.rustflag:
+         cargo_env=cargo_env.copy()
+         cargo_env['CARGO_ENCODED_RUSTFLAGS']='\x1f'.join(args.rustflag)

@@ -1,0 +1,43 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/original/crates/mir-export/src/host_proc_macro.rs
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/crates/mir-export/src/host_proc_macro.rs
+@@ -16,11 +16,20 @@
+ /// Return extra arguments only for a definite linked host proc-macro unit.
+ /// Unsupported explicit policies are errors, never silently overridden.
+ pub fn additions(args: &[String], selected: bool) -> Result<Vec<String>, String> {
+-    additions_for(args, selected, HostKind::ProcMacro)
++    additions_for(args, selected, HostKind::ProcMacro, 1)
+ }
+ 
+ pub fn library_additions(args: &[String], selected: bool) -> Result<Vec<String>, String> {
+-    additions_for(args, selected, HostKind::Library)
++    additions_for(args, selected, HostKind::Library, 1)
++}
++
++/// Fixed combined O3 policy. Both passes use the same original Cargo argv;
++/// their disjoint role predicates prevent duplicate additions. The legacy
++/// macro grammar still rejects library-only unstable flags on proc macros.
++pub fn combined_additions(args: &[String], selected: bool) -> Result<Vec<String>, String> {
++    let macro_args = additions_for(args, selected, HostKind::ProcMacro, 3)?;
++    if !macro_args.is_empty() { return Ok(macro_args); }
++    additions_for(args, selected, HostKind::Library, 3)
+ }
+ 
+ #[derive(Clone, Copy)]
+@@ -48,7 +57,7 @@
+     }
+ }
+ 
+-fn additions_for(args: &[String], selected: bool, kind: HostKind) -> Result<Vec<String>, String> {
++fn additions_for(args: &[String], selected: bool, kind: HostKind, opt_level: u8) -> Result<Vec<String>, String> {
+     let fail = |reason: &str| format!("host {} optimization: {reason}", kind.label());
+     if args.iter().skip(1).any(|arg| arg.starts_with('@')) {
+         return Err(fail("response files are unsupported"));
+@@ -168,7 +177,7 @@
+             _ => return Err(fail(&format!("explicit codegen option {name} is unsupported"))),
+         }
+     }
+-    let mut result = vec!["-Copt-level=1".into(), "-Zmir-opt-level=1".into(), "-Clto=off".into()];
++    let mut result = vec![format!("-Copt-level={opt_level}"), "-Zmir-opt-level=1".into(), "-Clto=off".into()];
+     if debug_assertions.is_none() { result.push("-Cdebug-assertions=yes".into()); }
+     if overflow_checks.is_none() {
+         result.push(format!("-Coverflow-checks={}", if debug_assertions.unwrap_or(true) { "yes" } else { "no" }));

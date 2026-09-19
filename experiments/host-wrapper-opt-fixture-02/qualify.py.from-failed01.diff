@@ -1,0 +1,29 @@
+--- experiments/host-wrapper-opt-fixture-01/qualify.py
++++ experiments/host-wrapper-opt-fixture-02/qualify.py
+@@ -15,8 +15,8 @@
+ HERE = Path(__file__).resolve().parent
+ ROOT = HERE.parents[1]
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+-WORK = ROOT / '.work/host-wrapper-opt-fixture-01'
+-OUT = ROOT / 'results/host-wrapper-opt-fixture-01'
++WORK = ROOT / '.work/host-wrapper-opt-fixture-02'
++OUT = ROOT / 'results/host-wrapper-opt-fixture-02'
+ HOST = 'aarch64-apple-darwin'
+ LOCK = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+ 
+@@ -118,8 +118,13 @@
+         for i, arg in enumerate(argv):
+             if arg == '--extern':
+                 name, separator, value = argv[i+1].partition('=')
+-                require(separator and Path(value).is_relative_to(WORK/('target-'+mode)), 'owned actual extern')
+-                externs.append(dict(name=name, artifact=utils.file(value)))
++                if not separator:
++                    require(name == 'proc_macro' and kind == 'proc-macro' and target is None,
++                            'unknown pathless extern in native fixture')
++                    externs.append(dict(name=name, artifact=None, source='bound-runtime-sysroot'))
++                else:
++                    require(Path(value).is_relative_to(WORK/('target-'+mode)), 'owned actual extern')
++                    externs.append(dict(name=name, artifact=utils.file(value)))
+         rows.append(dict(original=utils.file(path), final=utils.file(final_path),
+             argv=original, crate=utils.option(argv, '--crate-name'),
+             package=row['environment'].get('CARGO_PKG_NAME'), host=target is None,

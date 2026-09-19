@@ -1,0 +1,110 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/original/bench_e2e_workflow.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/bench_e2e_workflow.py
+@@ -15,7 +15,7 @@
+ import workflow_placement
+ _EXPECTED_ROOT=workflow_placement.configure(__file__)
+ from interpreter import ROOT, TOOLCHAIN, checked_tools, installed_tools, require_export_option
+-workflow_placement.check_module('interpreter',_EXPECTED_ROOT/'scripts/interpreter.py',root=_EXPECTED_ROOT)
++workflow_placement.check_module('interpreter',Path(__file__).resolve().with_name('interpreter.py'),root=_EXPECTED_ROOT)
+ 
+ 
+ from workflow_cases import WORKFLOWS, WORKFLOW_VARIANTS
+@@ -30,6 +30,7 @@
+ from suite_reports import guest_test_failure, read_report, validate_report
+ import workflow_compiler
+ import workflow_runtime_arms
++import host_codegen_opt
+ workflow_placement.check_module('workflow_runtime_arms',Path(__file__).resolve().with_name('workflow_runtime_arms.py'))
+ 
+ 
+@@ -152,9 +153,11 @@
+     parser.add_argument('--comparison-engine',choices=['interpreter','jit'],help='engine for both tool builds; defaults to jit when comparing')
+     parser.add_argument('--expect-identical-bytecode',action='store_true',help='require matching executed bytecode when isolating a runtime change')
+     workflow_runtime_arms.add_arguments(parser)
++    host_codegen_opt.add_arguments(parser)
+     args=parser.parse_args()
+     try:
+         arm_selection=workflow_runtime_arms.select(args)
++        host_codegen=host_codegen_opt.select(args)
+         compiler_arguments=workflow_compiler.arguments(args.runtime_compiler_key,args.std_mir_key)
+         workflow_compiler.rustflags(args.guest_rustflag)
+         if args.baseline_guest_rustflag is not None:workflow_compiler.rustflags(args.baseline_guest_rustflag)
+@@ -285,7 +288,7 @@
+     mode_tools={mode:dict(engine=mode,tool_key=key,directory=tools) for mode in modes[1:]}
+     if args.baseline_tool_key is not None:
+         baseline,baseline_key=installed_tools(args.baseline_tool_key)
+-        if (not args.aa_control and baseline_key==key and baseline_guest_flags==guest_flags and
++        if (not args.aa_control and (host_codegen is None or host_codegen['modes']['baseline']==host_codegen['modes']['candidate']) and baseline_key==key and baseline_guest_flags==guest_flags and
+             args.baseline_inline_leaves==args.inline_leaves and
+             not args.compare_isolated_batches and
+             resolved_jobs['baseline']==resolved_jobs['candidate'] and
+@@ -362,6 +365,8 @@
+             arm_std_selections[mode]=None if selected is None else dict(key=selected[2],sysroot=str(selected[0]),target=selected[1])
+         arm_receipts=workflow_runtime_arms.receipts(arm_selection,arm_proofs,arm_std_selections,mode_tools)
+     source=ROOT/'.work/sources'/args.project
++    host_codegen=host_codegen_opt.bind_comparison(host_codegen,mode_tools,
++        arm_runtimes if arm_selection is not None else {m:runtime for m in host_codegen_opt.MODES},resolved_jobs)
+     marker=json.loads((source/'.rust-interp-owned.json').read_text())
+     if marker['owner']!=str(ROOT) or marker['revision']!=revision:
+         raise RuntimeError('snapshot ownership or revision mismatch')
+@@ -369,7 +374,7 @@
+         raise RuntimeError('snapshot HEAD mismatch')
+     if subprocess.check_output(['git','diff','--name-only','HEAD'],cwd=source,text=True).strip():
+         raise RuntimeError('snapshot has tracked changes')
+-    script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_case_file.py',ROOT/'scripts/workflow_projects.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/workflow_controls.py',ROOT/'scripts/workflow_io.py',ROOT/'scripts/std_mir.py',ROOT/'scripts/workflow_jobs.py']
++    script_paths=[Path(__file__).resolve(),Path(__file__).resolve().with_name('interpreter.py'),ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_case_file.py',ROOT/'scripts/workflow_projects.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/workflow_controls.py',ROOT/'scripts/workflow_io.py',ROOT/'scripts/std_mir.py',ROOT/'scripts/workflow_jobs.py']
+     script_paths+=[ROOT/'scripts/native_suite.py',ROOT/'scripts/suite_reports.py',ROOT/'scripts/compare_saved_runtime.py',
+                   ROOT/'scripts/workspace_cache.py',ROOT/'scripts/test_discovery.py',ROOT/'scripts/workflow_compiler.py',Path(workflow_runtime_arms.__file__).resolve(),Path(workflow_placement.__file__).resolve()]
+     if runtime is not None or arm_selection is not None:
+@@ -381,7 +386,8 @@
+         with snapshot.open('xb') as output:output.write(payload)
+         case_proof['snapshot']=str(snapshot.relative_to(ROOT))
+         script_paths += [case_path,snapshot]
+-    frozen_scripts={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in script_paths}
++    script_paths += [Path(host_codegen_opt.__file__).resolve()]
++    frozen_scripts={str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in script_paths}
+     file=source_file(source,case)
+     subprocess.run(['git','ls-files','--error-unmatch','--',case['file']],cwd=source,check=True,stdout=subprocess.DEVNULL)
+     original=file.read_bytes();current=original
+@@ -446,12 +452,13 @@
+                     *(['--timings'] if args.cargo_timings else []),*[a for test in selected for a in ['--entry',test]]]]
+         else:
+             config=mode_tools[mode]
+-            base=[sys.executable,str(ROOT/'scripts/interpreter.py'),'--manifest-path',manifest,
++            base=[sys.executable,str(Path(__file__).resolve().with_name('interpreter.py')),'--manifest-path',manifest,
+                   '--package',package,'--jobs',str(resolved_jobs[mode]),'--test-body','--engine',config['engine'],'--instruction-limit',str(args.instruction_limit),
+                   '--cache-namespace',cache_namespaces[mode]]
+             if args.baseline_tool_key is not None:base+=['--tool-key',config['tool_key']]
+             base+=compiler_arguments if arm_selection is None else workflow_runtime_arms.arguments(arm_selection,mode)
+             if runtime is not None or arm_selection is not None:base+=['--rustflag='+flag for flag in config['guest_flags']]
++            if host_codegen is not None:base+=host_codegen_opt.arguments(host_codegen['modes'][mode])
+             if args.allocation_limit is not None:base+=['--allocation-limit',str(args.allocation_limit)]
+             if config['inline_leaves']:base+=['--inline-leaves']
+             if config['jit_resumable_calls']:base+=['--jit-resumable-calls']
+@@ -505,6 +512,7 @@
+                 launches=[json.loads(line.split('rust-interp-launch: ',1)[1]) for line in call['stderr'].splitlines() if line.startswith('rust-interp-launch: ')]
+                 assert len(launches)==1,'missing executed-artifact provenance'
+                 launch=launches[0];call['launch']=launch
++                host_codegen_opt.verify_call(host_codegen,mode,call)
+                 workflow_compiler.verify_flags(call,config['guest_flags'],encoded_guest_flags,runtime is not None or arm_selection is not None)
+                 if runtime is not None:workflow_compiler.verify_runtime_call(call,runtime_proof,std_selection)
+                 if arm_selection is not None:
+@@ -675,6 +683,10 @@
+             validate_tool_runtime(mode_tools[mode]['directory'],mode_tools[mode]['tool_key'],compiler)
+             if arm_standards[mode] is not None and checked_std_mir(TOOLCHAIN,**arm_std_options[mode])!=arm_standards[mode]:
+                 raise RuntimeError('arm prepared standard library changed during workflow')
++    if host_codegen is not None:
++        rebound=host_codegen_opt.bind_comparison(host_codegen,mode_tools,
++            arm_runtimes if arm_selection is not None else {m:runtime for m in host_codegen_opt.MODES},resolved_jobs)
++        assert host_codegen_opt.exact(rebound,host_codegen),'combined host codegen association changed'
+     med={m:statistics.median(r['seconds'] for r in records if r['mode']==m and r['state']>0) for m in modes}
+     result=dict(schema_version=2,project=args.project,workflow=workflow_label,revision=revision,cycles=args.cycles,initial_mode_order=scheduled_modes,
+                 minimum_free_gib=args.minimum_free_gib,
+@@ -707,6 +719,7 @@
+                 exporter_sha256=hashlib.sha256((tools/'rust-interp-mir-export').read_bytes()).hexdigest(),
+                 samples=[{k:v for k,v in r.items() if k!='calls' and not (private and k=='tests')} for r in records])
+     if args.aa_control:result['aa_control']=True
++    if host_codegen is not None:result['host_codegen']=host_codegen
+     if args.workload_lock is not None:result['workload_lock']=str(workload_lock)
+     if runtime is not None or arm_selection is not None:result['guest_rustflag_encoding']='launcher-arguments'
+     elif encoded_guest_flags:result['guest_rustflag_encoding']='cargo-unit-separator'

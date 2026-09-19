@@ -1,0 +1,22 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/before-arm-equality-01/bench_e2e_workflow.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/bench_e2e_workflow.py
+@@ -366,7 +366,7 @@
+         arm_receipts=workflow_runtime_arms.receipts(arm_selection,arm_proofs,arm_std_selections,mode_tools)
+     source=ROOT/'.work/sources'/args.project
+     host_codegen=host_codegen_opt.bind_comparison(host_codegen,mode_tools,
+-        arm_runtimes if arm_selection is not None else {m:runtime for m in host_codegen_opt.MODES})
++        arm_runtimes if arm_selection is not None else {m:runtime for m in host_codegen_opt.MODES},resolved_jobs)
+     marker=json.loads((source/'.rust-interp-owned.json').read_text())
+     if marker['owner']!=str(ROOT) or marker['revision']!=revision:
+         raise RuntimeError('snapshot ownership or revision mismatch')
+@@ -683,6 +683,10 @@
+             validate_tool_runtime(mode_tools[mode]['directory'],mode_tools[mode]['tool_key'],compiler)
+             if arm_standards[mode] is not None and checked_std_mir(TOOLCHAIN,**arm_std_options[mode])!=arm_standards[mode]:
+                 raise RuntimeError('arm prepared standard library changed during workflow')
++    if host_codegen is not None:
++        rebound=host_codegen_opt.bind_comparison(host_codegen,mode_tools,
++            arm_runtimes if arm_selection is not None else {m:runtime for m in host_codegen_opt.MODES},resolved_jobs)
++        assert host_codegen_opt.exact(rebound,host_codegen),'combined host codegen association changed'
+     med={m:statistics.median(r['seconds'] for r in records if r['mode']==m and r['state']>0) for m in modes}
+     result=dict(schema_version=2,project=args.project,workflow=workflow_label,revision=revision,cycles=args.cycles,initial_mode_order=scheduled_modes,
+                 minimum_free_gib=args.minimum_free_gib,

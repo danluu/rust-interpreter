@@ -1,0 +1,31 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/original/workflow_placement.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/workflow_placement.py
+@@ -7,7 +7,7 @@
+ from pathlib import Path
+ import sys
+ 
+-DIRECTORY = 'workflow-runtime-arms-01'
++DIRECTORY = 'host-wrapper-opt-01'
+ ENTRIES = ('bench_e2e_workflow.py', 'verify_repeated_workflow.py')
+ 
+ 
+@@ -22,7 +22,8 @@
+             and entry.name in ENTRIES and entry.parent.name == DIRECTORY
+             and entry.parent.parent.name == 'experiments',
+             'runner must use its declared side-by-side experiment placement')
+-    owner = entry.parents[2]
++    require(entry.parent == Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01'), 'exact draft placement required')
++    owner = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+     require(owner != Path('/'), 'invalid provider owner')
+     return owner, entry.parent, owner/'scripts'
+ 
+@@ -48,7 +49,8 @@
+     own = adjacent/'workflow_placement.py'
+     require(Path(__file__) == own and own.resolve(strict=True) == own,
+             'placement helper is not adjacent to the selected runner')
+-    expected = dict(interpreter=scripts/'interpreter.py',
++    expected = dict(interpreter=adjacent/'interpreter.py',
++        host_codegen_opt=adjacent/'host_codegen_opt.py',
+         bench_e2e_workflow=adjacent/'bench_e2e_workflow.py',
+         workflow_runtime_arms=adjacent/'workflow_runtime_arms.py',
+         workflow_placement=own)

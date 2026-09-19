@@ -1,0 +1,29 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/before-arm-equality-01/host_codegen_opt.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/host_codegen_opt.py
+@@ -133,9 +133,11 @@
+     return dict(policy=POLICY, modes=modes)
+ 
+ 
+-def bind_comparison(selection, tools, compilers):
++def bind_comparison(selection, tools, compilers, jobs):
+     if selection is None:
+         return None
++    require(tools['baseline'] == tools['candidate'] and jobs['baseline'] == jobs['candidate'],
++            'host codegen comparison changed guest/runtime settings or Cargo jobs')
+     records = []
+     for mode in MODES:
+         directory, key = tools[mode]['directory'], tools[mode]['tool_key']
+@@ -155,8 +157,11 @@
+             and set(selection['modes']) == set(MODES)
+             and all(v in ('off', 'on') for v in selection['modes'].values()), 'invalid host codegen selection')
+     require(report['batch'] and report['comparison']['identical_bytecode_required']
+-            and report['tool_builds']['baseline']['tool_key'] == report['tool_builds']['candidate']['tool_key'],
+-            'host codegen comparison changed tools or waived RBC equality')
++            and exact(report['tool_builds']['baseline'], report['tool_builds']['candidate'])
++            and type(report.get('custom_build_jobs', {}).get('baseline')) is int
++            and 1 <= report['custom_build_jobs']['baseline'] <= 256
++            and report['custom_build_jobs']['baseline'] == report['custom_build_jobs']['candidate'],
++            'host codegen comparison changed tools/settings/jobs or waived RBC equality')
+     require(not report.get('aa_control') or selection['modes']['baseline'] == selection['modes']['candidate'],
+             'A/A host codegen modes differ')
+     if report.get('runtime_arms') is not None:

@@ -1,0 +1,34 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/before-arm-equality-01/test_host_codegen_opt.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/test_host_codegen_opt.py
+@@ -120,6 +120,11 @@
+         self.assertEqual(policy.select(self.args(aa_control=True, baseline_host_codegen_opt='on'))['modes'],
+                          dict(baseline='on', candidate='on'))
+ 
++    def test_bind_rejects_guest_or_job_confound_before_reading_tools(self):
++        selected=policy.select(self.args())
++        with self.assertRaises(RuntimeError):policy.bind_comparison(selected,dict(baseline={'engine':'jit'},candidate={'engine':'interpreter'}),{},dict(baseline=2,candidate=2))
++        with self.assertRaises(RuntimeError):policy.bind_comparison(selected,dict(baseline={},candidate={}),{},dict(baseline=2,candidate=1))
++
+     def test_duplicate_mode_option_refuses(self):
+         parser = argparse.ArgumentParser(); policy.add_arguments(parser)
+         with self.assertRaises(SystemExit): parser.parse_args(['--baseline-host-codegen-opt=off', '--baseline-host-codegen-opt=on'])
+@@ -149,14 +154,16 @@
+         receipt = dict(mode='on', policy=policy.POLICY, capability=copy.deepcopy(policy.CAPABILITY),
+             wrapper=dict(capability=copy.deepcopy(policy.CAPABILITY), compiler_roles=roles, compiler_sysroot='/runtime'))
+         report = dict(batch=True, comparison=dict(identical_bytecode_required=True), runtime_compiler=runtime,
+-            tool_builds={m:dict(tool_key='c'*64) for m in policy.MODES},
++            tool_builds={m:dict(tool_key='c'*64) for m in policy.MODES}, custom_build_jobs=dict(baseline=2,candidate=2),
+             host_codegen=dict(policy=policy.POLICY, modes=dict(baseline='off',candidate='on'),receipt=receipt))
+         policy.validate_report(report)
+-        for fault in range(3):
++        for fault in range(5):
+             bad=copy.deepcopy(report)
+             if fault==0:bad['comparison']['identical_bytecode_required']=False
+             elif fault==1:bad['runtime_compiler']['rustc_sha256']='d'*64
+-            else:bad['aa_control']=True
++            elif fault==2:bad['aa_control']=True
++            elif fault==3:bad['custom_build_jobs']['candidate']=1
++            else:bad['tool_builds']['candidate']['guest_rustflags']=['different']
+             with self.assertRaises(RuntimeError):policy.validate_report(bad)
+ 
+ 

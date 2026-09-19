@@ -1,0 +1,30 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/original/verify_repeated_workflow.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-opt-01/verify_repeated_workflow.py
+@@ -14,9 +14,10 @@
+ from workflow_jobs import recorded_build_jobs, verify_command_jobs
+ from bench_e2e_workflow import ROOT, build_metrics, cache_workspace, guest_test_failure
+ workflow_placement.check_module('bench_e2e_workflow',Path(__file__).resolve().with_name('bench_e2e_workflow.py'),root=_EXPECTED_ROOT)
+-workflow_placement.check_module('interpreter',_EXPECTED_ROOT/'scripts/interpreter.py',root=_EXPECTED_ROOT)
++workflow_placement.check_module('interpreter',Path(__file__).resolve().with_name('interpreter.py'),root=_EXPECTED_ROOT)
+ import workflow_compiler
+ import workflow_runtime_arms
++import host_codegen_opt
+ 
+ workflow_placement.check_module('workflow_runtime_arms',Path(__file__).resolve().with_name('workflow_runtime_arms.py'))
+ 
+@@ -67,6 +68,7 @@
+     The ordinary CLI and all runtime callers keep the strict default.
+     """
+     require(report['schema_version'] == 2, 'unsupported workflow schema')
++    host_codegen=host_codegen_opt.validate_report(report)
+     flag_encoding=report.get('guest_rustflag_encoding')
+     require(flag_encoding in (None,'cargo-unit-separator','launcher-arguments'), 'unknown guest flag transport')
+     runtime=report.get('runtime_compiler')
+@@ -300,6 +302,7 @@
+                         call['launch']['suite_report_path'] == str(path), 'launched suite differs')
+         if mode != 'native':
+             settings = report.get('tool_builds', {}).get(mode, {})
++            for call in row['calls']:host_codegen_opt.verify_call(host_codegen,mode,call)
+             if flag_encoding is not None:
+                 for call in row['calls']:
+                     workflow_compiler.verify_flags(call,settings['guest_rustflags'],

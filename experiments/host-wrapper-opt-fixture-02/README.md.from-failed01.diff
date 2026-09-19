@@ -1,0 +1,8 @@
+--- experiments/host-wrapper-opt-fixture-01/README.md
++++ experiments/host-wrapper-opt-fixture-02/README.md
+@@ -5,3 +5,5 @@
+ Each Cargo invocation is recorded before the adapter execs the actual wrapper. Same-PID compiler-boundary records must match the complete original argv plus only the existing routing suffix and the fixed eligible host O3/MIR1/LTO-off/check suffix. Both arms must have identical original Cargo argv after replacing their explicit output-directory prefix; crate metadata, extra filenames and extern names are included in this comparison. Build-script values must match exactly and both actual target tests must pass. Actual extern artifact hashes are retained; native binary equality is not assumed.
+ 
+ The source and physical tool binding is prepared separately after the candidate files are complete. The initial state is unbound and unrun. The driver requires a fresh output namespace and holds the canonical workload lock. It reuses the previous real fixture's observed 30-second command and 256 MiB output thresholds, waits normally on a breach, and retains the failure. It uses no process signals and makes no reservation or hard quota claim.
++
++The first run built the real wrapper and passed the off-arm native test, then its checker rejected Cargo's valid pathless `--extern proc_macro`. Run 01 and every source/receipt are retained. This successor accepts that exact builtin only in the host proc-macro unit; other pathless externs still fail. New work/results namespaces prevent overwriting the failed check.
