@@ -219,3 +219,8 @@ staticbutonly26/7selfsamples(1.35%/0.49%),cyclic19/4. Defer standalone runtimepa
 Next consider independent SIMD payload residency for actual eight-byte local
 Copy loads; measure exactload-PC coverage andreviewclobbers beforetypedchange.
 Currentruntime unchanged; noRustbuild underdiskreserve. Allcommandscomplete.
+
+Registered local-copy-payload-01:10controls,exactnative3wordlocalCopy8
+recognizer,eightreservedpayloadslots,fouraliases/slot,knownbarriers,actualLDR
+selfPCcoverage. No runtime/nativeproof. Main7b92ad16pushed closedloop/copyequality
+evidence;rootf83ace31pushed. New sourcesfreeze throughclosure.

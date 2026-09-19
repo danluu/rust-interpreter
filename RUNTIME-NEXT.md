@@ -37,3 +37,6 @@ Run local-copy-equality-01 controller analyze.py, then --close aftersuccess.
 Copy equality01 COMPLETE/CLOSED75783; low26/7samples, deferstandalonepass.
 Next possibility: reserved SIMD memory payload cache across volatile scratch
 clobbers. First exactsavedload-PC census +clobberreview; no runtimecandidateyet.
+
+Next run local-copy-payload-01 analyze.py, then independent --close.
+Exactnative3wordcopyrecognizer;10controls;nonewguest/build. Main7b92ad16pushed.
