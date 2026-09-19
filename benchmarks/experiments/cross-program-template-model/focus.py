@@ -75,14 +75,18 @@ def close():
                 p=raw/(r['label']+'.'+stream);assert sha(p)==r[stream+'_sha256'];evidence[str(p.relative_to(ROOT))]=sha(p)
         out.mkdir(exist_ok=True);assert not (out/'closure.json').exists()
         if terminal['returncode']==0:
-            summary=read(out/'summary.json');assert summary['status']=='passed' and len(records)==2
+            summary=read(out/'summary.json');assert summary['status']=='passed' and len(records)==plan['expected_commands']
             assert all(r['returncode']==0 for r in records)
             assert summary['plan_sha256']==sha(raw/'plan.json') and summary['records_sha256']==sha(raw/'records.json')
+            for p,h in summary.get('outputs',{}).items():
+                assert sha(ROOT/p)==h;evidence[p]=h
         else:
             assert not (out/'summary.json').exists()
             write(out/'summary.json',dict(status='focused-failed',source_revision=plan['source_revision'],raw=str(raw.relative_to(ROOT)),
                 commands=len(records),returncodes=[r['returncode'] for r in records],plan_sha256=sha(raw/'plan.json'),
                 records_sha256=sha(raw/'records.json'),original_project_guest_commands=0,performance_measurement=False))
+        if 'input_sha256' in plan:
+            assert sha(raw/'input.json')==plan['input_sha256'];evidence[str((raw/'input.json').relative_to(ROOT))]=plan['input_sha256']
         for p in [raw/'plan.json',raw/'records.json',outer/'status.json',outer/'plan.json',outer/'command.log']:evidence[str(p.relative_to(ROOT))]=sha(p)
         write(raw/'source-bindings.json',bindings);write(raw/'closed-evidence.json',evidence)
         (out/'terminal.json').write_bytes((outer/'status.json').read_bytes())

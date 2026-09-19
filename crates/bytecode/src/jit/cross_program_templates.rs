@@ -8,6 +8,9 @@ const MAX_KEY_BYTES:usize=4*1024*1024;
 const MAX_CALL_SITES:usize=16_384;
 const MAX_RETAINED:usize=64*1024*1024;
 
+#[path="cross_program_template_replay.rs"]
+mod replay;
+
 #[derive(Clone,Copy,Debug,PartialEq,Eq)]
 pub(super) enum Kind { Assertion(usize), Scalar{function:usize,pc:usize} }
 #[derive(Clone,Debug,PartialEq,Eq)]
@@ -203,7 +206,7 @@ fn fixture()->Program {
 fn owner(p:&Program)->Jit<'_> {Checked::new(p).unwrap();Jit::new_resumable(p,false,MAX_CODE_BYTES,true).unwrap()}
 fn stage<'p>(j:&Jit<'p>,id:usize)->CompiledFunction<'p> {j.emit_function(&j.program.functions[id],MAX_CODE_BYTES/4).unwrap().unwrap()}
 fn template(c:&Checked<'_>,j:&Jit<'_>,id:usize)->Template {Template::capture(c,j,id,EMITTER,&stage(j,id),MAX_RETAINED).unwrap()}
-fn same(a:&CompiledFunction<'_>,b:&CompiledFunction<'_>) {
+pub(super) fn same(a:&CompiledFunction<'_>,b:&CompiledFunction<'_>) {
     assert_eq!(a.words,b.words);assert_eq!(a.resumes,b.resumes);assert_eq!(a.assertions,b.assertions);
     assert_eq!(a.model_relocations,b.model_relocations);
     assert_eq!((a.operations,a.register_pairs,a.liveness_declined),(b.operations,b.register_pairs,b.liveness_declined));

@@ -78,3 +78,31 @@ body/layout/admission/step changes and exact/insufficient code budgets. Require
 all arenas to stay absent. The two profiles now each expect12 focused tests.
 Close this run before modifying the sources; no production integration, native
 execution, storage, guest commands or timing claim follows from these tests.
+
+## Saved parser replay
+
+Model02 passed12 controls/profile and is closed before this addition. One
+explicit ignored release test now reads the same eight SHA-bound parser artifacts
+and the fully validated original preparation capture. Select only functions with
+published ordinary entries in that original capture, separately by worker; bind
+their original numeric IDs, names, operation counts and full Function hashes.
+Retain original templates under an aggregate64MiB per-worker charge. Compare
+each original template against the other seven checked artifacts, including the
+wrong-result edit and independently lowered restored-source artifact. A key miss
+or width/budget decline is recorded; every successful restore must match fresh
+staging word-for-word and in all relevant metadata. No arena is allocated.
+
+Scalar entries are modeled from current proof/lowering in ascending callee order
+with existing proof/work bounds, using synthetic addresses. This deliberately
+does not reproduce original runtime admission order or code-arena usage, and
+cannot establish a production hit rate. Original trace metadata selects bodies;
+the replay is a correctness/coverage diagnostic for the new model, not a guest
+run or a source-edit benchmark. No warmed history store or file cache is added.
+
+Record single diagnostic key-all, restore-key-match and fresh-exact intervals.
+Restore already includes a key computation; these intervals must not be added
+or subtracted into a predicted command saving. The cfg(test) emitter records
+relocations, and these runs exclude disk-cache loading, publication and misses'
+fresh emission. Associate exact IDs with the existing original ordinary-emission
+intervals only, preserving the earlier trace's nesting/overlap limitations.
+Require the complete input/output/source/terminal closure before further work.
