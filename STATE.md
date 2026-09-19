@@ -353,3 +353,10 @@ remaining: fast entryafterdebitbeforeprofile; refundthunks peredgewithsource
 identity; separatefault/VMrefund vs no-refundBudgetFallback; newcodemapkindand
 newreader (nevereditarchivednative_observation). Buildfloor~23GiBfree~18.6GiB.
 No Rustbuild/test/guest/cleanup. Main06cfc1cd pushedclosedbranchdiagnostic.
+
+September19 resume825fe65b: clean tracked worktree, suggestions unchanged, no
+active owned command; goal paused. Free18.34GiB remains below23.004GiB build
+floor. Registered closed-public-profile-compression01: explicit23closed owned
+public profile runs; read-only preflight176JSONfiles6.109GiB allocation, each
+already hash-bound by originalclosure. Reusequalifiedexactbirthtime helper;
+no deletion, no private/peer/sharedtarget mutation. No Rustbuild admitted.
