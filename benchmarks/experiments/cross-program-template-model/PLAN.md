@@ -184,3 +184,11 @@ exact errors, including the current assertion message after rebinding its base.
 The focused run now expects18 controls/profile and explicitly records native
 fixture execution/publication. Original-project guest commands remain zero;
 this is correctness qualification, not a runtime cache or an end-to-end result.
+
+Model06's debug run passes the16 staging controls but both new native controls
+fail: their fixture reads address0, which both the fresh JIT and interpreter
+memory contract reject as null. The fresh JIT fails before the restored-code
+comparison in the first control. Preserve/close that actual run; release was
+not started. Model07 changes the fixture to read valid readonly address8 and
+updates the corresponding initializer, adding an interpreter value/instruction
+oracle. All18 controls, limits and resource gates are retained.

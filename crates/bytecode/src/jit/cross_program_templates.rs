@@ -539,7 +539,7 @@ fn live_program(value:u128)->Program {
     let mut p=fixture();p.functions[0].result.size=16;p.functions[1].result.size=8;
     p.functions[0].code=vec![Op::Local{dst:0,offset:0},Op::Call{function:1,args:vec![],destination:0},
         Op::Load{dst:1,address:0,size:8},Op::Assert{value:1,expected:true,message:"live current assertion".into()},
-        Op::Imm{dst:2,value:0},Op::Load{dst:3,address:2,size:1},Op::Local{dst:2,offset:8},
+        Op::Imm{dst:2,value:8},Op::Load{dst:3,address:2,size:1},Op::Local{dst:2,offset:8},
         Op::Store{address:2,src:3,size:8},Op::Return];
     p.functions[1].code=vec![Op::Imm{dst:0,value},Op::Local{dst:1,offset:0},Op::Store{address:1,src:0,size:8},Op::Return];
     p
@@ -574,11 +574,13 @@ fn live_limits()->crate::Limits {
 fn cross_program_template_live_rebinding_executes_current_callee_and_fresh_data() {
     let p=live_program(7);let (original,t)=live_source(&p);let mut hits=0;
     for value in 8..12 {
-        let mut q=live_program(value);q.data[0]=11;let (current,hit)=live_restored(&q,&t);hits+=usize::from(hit);
+        let mut q=live_program(value);q.data[8]=11;let (current,hit)=live_restored(&q,&t);hits+=usize::from(hit);
         assert_ne!(original.scalar_entry(1).unwrap().template_model_identity().3,current.scalar_entry(1).unwrap().template_model_identity().3);
         let expected=crate::execute_with_engine(&q,&[],live_limits(),crate::Engine::Jit).unwrap();
+        let interpreted=crate::execute(&q,&[],crate::Limits{memory:4096,..Default::default()}).unwrap();
         let actual=live_execute(&q,&mut Some(current),live_limits()).unwrap();
         assert_eq!(actual.value,(11u128<<64)|value);assert_eq!(actual.value,expected.value);
+        assert_eq!((actual.value,actual.instructions),(interpreted.value,interpreted.instructions));
         assert_eq!(actual.instructions,expected.instructions);assert!(actual.jit_instructions>0 && actual.jit_entries>0);
     }
     assert!(hits>0,"all real target placements changed immediate width; native reuse was not exercised");
@@ -589,7 +591,7 @@ fn cross_program_template_live_budget_frame_memory_and_assertion_outcomes_match_
     let mut hits=0;let mut successes=0;let mut failures=0;
     for value in [0,8] {
         let p=live_program(value);let (_original,t)=live_source(&p);
-        let mut q=p.clone();q.data[0]=13;let (current,hit)=live_restored(&q,&t);hits+=usize::from(hit);let mut jit=Some(current);
+        let mut q=p.clone();q.data[8]=13;let (current,hit)=live_restored(&q,&t);hits+=usize::from(hit);let mut jit=Some(current);
         for memory in [128,4096] {for frames in [1,2,3] {for instructions in 0..=20 {
             let limits=crate::Limits{memory,frames,instructions,..live_limits()};
             let expected=crate::execute_with_engine(&q,&[],limits.clone(),crate::Engine::Jit);
