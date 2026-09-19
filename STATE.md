@@ -110,3 +110,15 @@ from session-request-costs/parser_client.py, use diagnosticqualificationbinaries
 verify-hits OFF for attribution;16savedcommands/1,824originaltests, exactoutcomes,
 fullserverCPU/ownership. Recordobserved_cache_hits (notverified), worker observation
 fields. This isdiagnostic, no acceptance timings. Goalpaused; nootherprocesscontrol.
+
+Observerqualification1c473ada passes31controls/profile, CLOSED78117/78120.
+Actualparserreplay0db84ae1 passes89264/89267, CLOSED94661/94724. Exactcause nowknown:
+large140,615-opfunction1357/1361 exceedsremainingwordbudget~3.61–3.62Mwords after
+emitting~14.4MB atPC104263–105206. Ordinaryfailedemission21–23ms/worker plus
+scalarcallee prep4.6–5.3ms; overlappingdiagnosticelapsed,notCPU/speedup. Noentrytable
+orbranchlimit here. Prior32MiB/conditional-demand campaigns stayfailed.
+Assessmentdocs/SESSION-PREPARATION-OBSERVER-20260918.md. NOACTIVEEXPERIMENT.
+Nexttestexplicitexperimental size-tier policy: functions>65,536ops interpret,
+smallerfunctions keepJIT. Aheuristic (some largefunctions couldcompile), notclaim
+ofprovencapacitydecline. Newfeaturemustcompileoutofdefault; materialcandidate
+composesrequest-cost improvements withoutdiagnosticfeature forperformance.
