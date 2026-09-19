@@ -448,3 +448,12 @@ branch-budget-native-screen-token-01 supervisor71643/controller71694, sourcec15e
 Twoactualstrict E0308/E0499 controls passed; sourcehistory running, no verdictyet.
 Freezeallprimary/runtime/scripts throughterminal+closure. Main249a46d0 publishes
 26closedcorrectness/evidencepaths preservingc2bd2734; no runtimeadoption.
+
+Reservationprimary01 supervisor71643/controller71694 finished0all40commands+2strict,
+independentcloseexec29853 passed2032inputs182evidence. Sourcec15e87be. Wallratio
+0.9917183336322039+AA0.04272315015099093=1.0344414837831948 FAIL; CPUratio
+0.9953012127253555+AA0.03416758833864331=1.0294688010639987 passes. Parkexact
+candidate2ce1d2e2, cancelunstartednativeguardsbefore27controls. No retiming/adoption.
+Free21.40GiB belowsharedbuildfloor23.93; analysisallowed12GiB. No activeownedcommands.
+Nextreviewsavedcosts/priorfailuresfordistinctmechanism; nofurtherbudgetvariant
+justifiedbythisresult. SourcefeaturedefaultoffandinstalledadoptedVMunchanged.

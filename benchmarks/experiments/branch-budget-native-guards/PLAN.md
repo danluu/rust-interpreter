@@ -32,3 +32,9 @@ adopted compiler tools. The closed installation, all three semantic profiles,
 and workspace continuation (622 Rust tests per profile;446 Python plus22 skips)
 are prerequisites. This controller has not run, and may not run if the primary
 fails. The older compact-switch controllers remain canceled and unchanged.
+
+CANCELED BEFORE QUALIFICATION: branch-budget-native-screen-token-01 completed
+all40 commands and independently closed, but failed the original wall gate
+(0.991718334+0.042723150=1.034441484). No controls, compiler probes or full
+project commands from this folder have run. All later guards remain unstarted.
+Do not execute this candidate unchanged.
