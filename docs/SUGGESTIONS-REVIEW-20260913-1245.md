@@ -367,3 +367,37 @@ captures support finer Copy/Call attribution; no new budget-per-region or generi
 address-check variant is justified by the coarse categories alone. All counters,
 failed attempts and ownership/resource limits remain explicit.
 [Fre evidence and next diagnostic](SESSION-FRE-EXECUTION-20260919.md).
+
+September19 resumed continuation: suggestions.txt still has the same hash. The
+new composition of indirect transitions, checked readonly leaves, successor
+spilling and duration-ordered template history passes the complete176-command
+fre token primary (wall ratio0.941451 with A/A0.026874). Full folded, pgrust hashfn
+and private rg-aot regression guards also pass and are independently closed.
+The latter rows do not establish gains beyond their A/A variation. Both parser
+profiles and Nushell remain required; the incremental parser guard is running.
+
+The independently closed saved-history cost analysis preserves all original
+verdicts and uses no new timing samples. Token candidate execution has a2.2007s
+median interval with a2.1334s longest test; pgrust hashfn and rg-aot execution
+medians are0.0179s and0.0055s. This continues to support emitted-code work on fre
+and compiler/Cargo work in the separately owned session, without adding stage
+medians or attributing build differences to guest code. Per-region budget and
+SipHash suggestions remain already implemented. No fresh general-address,
+capacity or worker-count experiment follows from these data.
+
+Disk admission remains material. Exact transparent compression of373 completed
+public bytecode copies saved7.31GiB allocated blocks while preserving plaintext
+hashes and required metadata. All storage attempts are retained, including two
+metadata failures caught before existing evidence was replaced. This admitted
+the parser guard without changing a timing gate, benchmark input or peer cache.
+[Closed costs](SESSION-RUNTIME-COSTS-20260919.md),
+[storage evidence](PUBLIC-EVIDENCE-STORAGE-20260919.md).
+
+The complete parser guard then finished110 commands with114 original tests and
+both strict controls intact, but its wall gate is unmeasurable:8.09% observed
+median improvement versus11.41% A/A. The separate15-pair saved-data audit finds
+most of the largest control difference in build-to-ready (226ms of234ms); it does
+not prove a host cause. Park the composition, cancel the two unstarted guards,
+and retain every timing and gate. Investigate the current emitted guest code
+next; older phase diagnostics show program validation around single-digit
+milliseconds, too small to justify speculative validation-cache complexity.

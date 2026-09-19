@@ -1,5 +1,10 @@
 # Combining session preparation gains with guest execution changes
 
+Current decision: **not adopted; complete parser wall gate unmeasurable**. All four
+project guards passed, followed by a110-command parser correctness pass whose
+8.09% median wall improvement was smaller than11.41% A/A variation. Later parser
+repository-default and Nushell guards are cancelled/unstarted. No timing retry.
+
 This experimental composition passed correctness qualification and its initial
 changed-source fre screen. Main keeps the adopted scratch/scalar runtime while
 the longer project and parser guards remain outstanding.
@@ -100,3 +105,21 @@ inside noise. An initial empty lock-admission failure is retained separately;
 the actual history used a fresh outer supervisor, with no timed retry. Parser
 incremental/repository profiles and Nushell remain outstanding. Their corrected
 protocols are qualified and closed; current disk space does not admit them.
+
+The [closed incremental parser history](../results/session-runtime-composition-parser-incremental-01/summary.json)
+preserves all114 original tests, both strict rejections, matched artifacts, native
+outcomes and source restoration. Wall/adopted0.9191148450 + maximum individual
+A/A0.1141285168 =1.0332433618, above the strict improvement gate. CPU/adopted
+0.8975027572 + A/A0.1086873477 =1.0061901048 passes its CPU guard. Candidate/native
+wall remains1.2528526703. This is an inconclusive speed result, not a demonstrated
+regression, and it does not override the existing adopted runtime.
+
+The [closed A/A audit](../results/session-parser-control-variation-01/summary.json)
+retains every pair and reproduces the unchanged verdict. In the largest wall
+variation, baseline/duplicate command times are2.048287s/1.814519s. Their recorded
+build-to-ready intervals are1.605421s/1.379351s; execution intervals are
+0.389480s/0.388023s. Thus0.226069s of the0.233768s paired difference occurs in the
+build-to-ready interval. The data do not establish the cause of that variation.
+No sample is removed, no limit is relaxed and no compiler or guest is rerun by
+this analysis. Further runtime work should target the current emitted code in
+fre's longest test; small program validation costs do not justify a new cache.
