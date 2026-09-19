@@ -2,8 +2,8 @@
 
 The candidate fails the prospective warm-edit gate. Keep the adopted runtime.
 The closed40-command comparison uses pgrust's114 original parser tests, five
-execution modes and source states[0,-1,1,2,3,4,5,0]. Every command rebuilt changed
-source in its own compiler-cache history. Two additional type/borrow-error
+execution modes and source states[0,-1,1,2,3,4,5,0]. Each mode followed the same source transitions
+in its own compiler-cache history; warm ratios use only the five valid edits. Two additional type/borrow-error
 controls returned101 without submitting a session request. All original test
 outcomes, current artifact/catalog identities and restored source matched.
 
@@ -47,3 +47,19 @@ Program validation, and syncs report/receipt files. These are candidates for
 investigation, not established explanations for the measured difference. Preserve
 strict Rust checking, exact current artifact binding, pre-execution report
 reservation, fresh guest state and no automatic retry in any follow-up.
+
+The closed read-only cost observer4939191e reads20 retained valid-edit reports.
+Cached-session execution median398.4ms versus adopted389.2ms; client time outside
+the server request31.1ms, server time outside its worker interval43.1ms, launcher
+after execution23.4ms versus adopted10.7ms. Cached test-compilation duration sum
+148.95ms versus202.62ms without history. Worker sums overlap and are not CPU.
+Baseline report timing includes catalog checks; session timing begins after
+decode/validation/report reservation. The43.1ms combines input work and report
+serialization/writes; it does not isolate filesystem synchronization. No new
+compiler or guest ran. Results:results/cross-program-template-primary-costs-01.
+
+Next candidate removes repeated artifact hashing and structural validation, and
+matches ordinary report completed-write semantics. It must retain exact current
+server-read bytes, strict frontend checks, immutable validation ownership, output
+reservation and no automatic replay. Only a materially changed, fully qualified
+candidate can enter a new prospective primary with the same gates.
