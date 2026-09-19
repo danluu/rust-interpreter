@@ -1,0 +1,12 @@
+--- /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/read_host_wrapper_exporter_metadata_build_01.before-controller-argv.py
++++ /Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/read_host_wrapper_exporter_metadata_build_01.py
+@@ -57,7 +57,8 @@
+  for k,pid,ppid in [('supervisor_identity',e['pid'],e['parent_pid']),('child_identity',s['child_pid'],s['supervisor_pid'])]:need(re.search(r'(?m)^\s*'+str(pid)+r'\s+'+str(ppid)+r'\s',s[k]) is not None,'saved ps parentage')
+  w=X/f'.work/host-wrapper-exporter-{name}-01';r=doc(w/'receipt.json',rsha)
+  need(r['phase']==name and r['status']=='passed' and r['pid']==s['child_pid'] and r['parent_pid']==s['supervisor_pid'],'controller association')
+- need(r['command']==o['command'] and r['environment']==launch['environment'] and r['cwd']==str(X),'controller transport')
++ need(r['command']==o['command'][2:] and r['cwd']==str(X),'controller argv transport')
++ if name=='build':need(r['environment']==launch['environment'],'build observed environment')
+  need(r['inputs_sha256']==checked[str(P/'inputs.json')]['sha256'] and r['sources_sha256']==checked[str(F/'sources.json')]['sha256'] and r['plan_sha256']==checked[str(P/'plan.json')]['sha256'],'source packet pins')
+  need(r['runtime_key']==plan['runtime_key'] and r['compiler_builds']==r['VM_builds']==r['guest_executions']==r['signals']==r['retries']==0 and r['performance_measurement'] is False,'phase scope')
+  need(s['child_started_at']<=r['started_at']<=r['admitted_at']<=r['finished_at']<=s['finished_at'],'controller chronology')
