@@ -107,3 +107,20 @@ copy limit before a workload started. Composition08 uses the same qualified
 lossless retention helper with all selected proof bytes preserved. Its actual
 passed terminal, complete 19-command history and independent audit remain
 mandatory; updating these references does not qualify that stage.
+
+`launch.py` and `verify.py` now have independent source review, retained in
+`launch-verifier-source-review.json`. Both are selected frozen inputs during
+discovery. The launcher checks fresh 24 GiB capacity before creating its work
+directory. It records the detached wrapper's completion separately, binds the
+supervisor PID to that wrapper's actual handoff, then observes the actual terminal
+status. Its 30-second wrapper wait and 1800-second terminal observation timeout
+never implicitly stop a process. Missing wrapper ps/cwd observations are explicit.
+
+The verifier reads saved evidence without importing a controller or executing a
+provider. It rehashes the complete input closure and all three provider trees,
+reconstructs the three commands and static loader graph, checks both actual
+driver traces and stdout records, and expands every compressed proof through
+EOF. Its fat Mach-O parser enforces declared slice bounds before parsing load
+commands. These additions have source review and AST validation only. A real
+hash-stage qualification still requires the completed native audit, concrete
+discovery, actual three-command execution and a passing independent audit.

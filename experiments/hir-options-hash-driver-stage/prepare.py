@@ -277,6 +277,7 @@ def main():
         snapshots = stage.load_snapshots(dict(files=d.files), d.comp)
         d.imports()
         for path in [Path(__file__).resolve(), HERE/'stage.py', HERE/'controls.py', HERE/'prerequisites.py',
+                     HERE/'launch.py', HERE/'verify.py',
                      stage.ROOT/'scripts/supervise_experiment.py', *core.SOURCE_HASHES]: d.add(path, snapshot=True)
         write(HERE/'plan.json', plan); d.add(HERE/'plan.json', snapshot=True)
         freeze = dict(files=d.files, links=d.links, absent_paths=sorted(d.absent),
