@@ -34,3 +34,10 @@ Root lock45seconds. Build floor max(14GiB,8GiB+2*allocated root target),8GiB
 before children/closure. Freeze exact sources and evidence; close each attempt
 before correction and preserve completed commands. Never clean the root target
 or alter peer/private work. Saved goal stays paused; manual work continues.
+
+Model01 debug: four controls pass; the set-reset test fails because its assertion
+incorrectly requires a surviving member after clear. The captured sparse branch
+also fails that same assertion. Close the attempt before changing it to require
+all members absent. Add explicit callback visitation-order checking to the
+existing filter test. The map/set implementation is unchanged. Model02 reruns
+the failed debug command and the previously unstarted release command.

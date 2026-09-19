@@ -11,8 +11,8 @@ must preserve peer commits. Do not stop at milestones.
 Current root branch experiment/emitter-register-workspace-20260918. Restore of
 Rust/Cargo sources to adoptedfca687eb was verified exactly atc663d59d before the
 new prototype. No production optimization is adopted. Previous diagnostic and
-sharing branches remain preserved/pushed. Main docs/results at a0260bc7 are
-prepared from clean publication worktree; verify its push before claiming remote.
+sharing branches remain preserved/pushed. Main docs/results are pushed at5c4885ad, merging peer7ec18d38 without
+overwriting its work. Publication worktree remains clean.
 
 Preparation observers are CLOSED. First observer4097408c passed nine controls
 per profile (debug retained across count-bookkeeping failure), ordinary no-feature
@@ -41,6 +41,11 @@ sorted flush order and exact emitted code. Stage1 tests five model properties
 per profile with no guest/native publication. Per-map65,536register/4MiB actual
 Vec payload caps are not combined/RSS promises; future integration must bound
 aggregate workspace. Optional allocation/outside-range fallback is sparse.
+Model01 under36347/36352 failed a reversed test assertion after four debug
+controls passed (the sparse set also rejects that incorrect expectation). CLOSED
+45127/45141 before correction. Implementation unchanged; model02 checks all
+members absent after clear, also asserts sorted filter callback visitation, and
+runs debug plus previously unstarted release.
 Current model controller benchmarks/experiments/emitter-register-workspace/model.py
 uses only root target and freezes/ closes before changes. After passing model,
 wire only ordinary regions, qualify exact emission and full runtime checks,
@@ -83,7 +88,7 @@ zero unassigned. Preserve every successful capture without reruns.
   Do not repair/restart/compete with it. Never control any peer process/session.
 - Compiler/Cargo/frontend and application-admission work belongs to peers.
   Preserve their worktrees. Root publication worktree `.work/publication-main`
-  is clean at a0260bc7 on `integration/guarded-local-facts-main-20260913`; fetch
+  is clean at5c4885ad on `integration/guarded-local-facts-main-20260913`; fetch
   before publishing, preserve peer commits and never force push.
 - No AWS activation/purchase/model/billing fallback and no browser.
 - `suggestions.txt` is user-owned/untracked, SHA256

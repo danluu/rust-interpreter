@@ -134,7 +134,9 @@ mod tests {
             let mut map=if dense {Map::dense(128,MAX_DENSE_BYTES)} else {Map::default()};
             for reg in (0..128).rev() {map.insert(reg,reg as u128*17);}
             for reg in (0..128).step_by(3) {map.remove(&reg);map.insert(reg,0);}
-            let rows=map.filter_sorted(|reg,value|reg%2==0 && value!=0);
+            let mut visited=vec![];
+            let rows=map.filter_sorted(|reg,value| {visited.push(reg);reg%2==0 && value!=0});
+            assert_eq!(visited,(0..128).collect::<Vec<_>>());
             let expected:Vec<_>=(0..128).filter(|r|r%2==0 && r%3!=0).map(|r|(r,r as u128*17)).collect();
             assert_eq!(rows,expected);
         }
@@ -146,7 +148,7 @@ mod tests {
             let mut oracle=std::collections::BTreeSet::new();
             for pass in 0..5 {
                 for i in 0..1024 {let r=((i*73+pass*13)%257) as Reg;assert_eq!(set.insert(r),oracle.insert(r));assert_eq!(set.contains(&r),oracle.contains(&r));}
-                set.clear();oracle.clear();assert!((0..257).any(|r|set.contains(&r)));
+                set.clear();oracle.clear();assert!((0..257).all(|r|!set.contains(&r)));
             }
         }
     }
