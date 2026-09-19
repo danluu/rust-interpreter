@@ -136,12 +136,17 @@ fn heap_mode_and_global_initializers_are_explicit_namespace_inputs() {
                 Op::Allocate{dst:2,size:0,align:1,zeroed:false},Op::Return];},
             1=>edited.data=vec![0,1,2,3],
             2=>edited.statics=vec![0;16],
-            _=>{edited.statics=vec![1;16];edited.thread_locals=vec![Slot{offset:0,size:8}];},
+            _=>{edited.statics=vec![1;24];edited.thread_locals=vec![Slot{offset:16,size:8}];},
         }
         let new=identities(&edited).unwrap();assert_ne!(old.namespace_sha256,new.namespace_sha256);
         assert_eq!(old.functions[0].body_sha256,new.functions[0].body_sha256);
         assert_ne!(old.functions[0].necessary_inputs_sha256,new.functions[0].necessary_inputs_sha256);
     }
+    // Isolate the TLS declaration from its unchanged backing initializer.
+    let mut with_tls=p.clone();with_tls.statics=vec![1;24];
+    let without_tls=identities(&with_tls).unwrap();
+    with_tls.thread_locals=vec![Slot{offset:16,size:8}];
+    assert_ne!(without_tls.namespace_sha256,identities(&with_tls).unwrap().namespace_sha256);
 }
 
 #[test]

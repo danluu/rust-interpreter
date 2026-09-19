@@ -52,7 +52,12 @@ namespace, preserves numeric IDs, validates full artifacts, and emits no code.
 Bounds:128artifacts,128MiB/artifact,4GiB total input,2million function records,
 512MiB total output. The controller and chronological analyzer are prepared,
 including4Python controls,7Rust controls/profile and1ignored typed observer.
-Next execute native-reuse-inputs-01 under the shared lock and fresh disk
+Input census01 is closed after4Python controls and a debug fixture failure:
+6pass/1fail/1ignored. TLS offset0 is reserved; the corrected fixture uses16
+and separately checks TLS changes with an identical backing initializer.
+No saved artifact census or guest ran. The controller now records Python's
+original arguments including -B so terminal binding preserves interpreter flags.
+Next execute native-reuse-inputs-02 under the shared lock and fresh disk
 admission. Expected133chronological transitions include95valid edits; all
 original, wrong-edit and revert snapshots remain included. No guest or runtime
 implementation is admitted. The preparation audit closure is complete.

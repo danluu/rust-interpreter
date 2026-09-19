@@ -6,7 +6,7 @@ sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
 from analyze import compare
-RUN='native-reuse-inputs-01'
+RUN='native-reuse-inputs-02'
 SOURCE='fca687ebac0ea9374a1426addd01169fe707f608'
 TEST='crates/bytecode/tests/native_reuse_inputs.rs'
 BASELINE='df4006e03daad7dd008eab34c24a03390d892ec14e55154c43e2d5568c0bba62'
@@ -67,7 +67,7 @@ def main():
         raw=ROOT/'.work'/RUN;raw.mkdir(exist_ok=False)
         write(raw/'artifacts.json',dict(artifacts=[dict(sha256=h,path=p) for h,p in sorted(unique.items())]))
         write(raw/'plan.json',dict(owner=str(ROOT),source_revision=revision,frozen=frozen,histories=histories,
-            controller_command=[sys.executable,*sys.argv],artifacts_sha256=sha(raw/'artifacts.json'),
+            controller_command=[sys.executable,*sys.orig_argv[1:]],artifacts_sha256=sha(raw/'artifacts.json'),
             unique_artifacts=len(unique),total_artifact_bytes=input_bytes,expected_commands=4,
             required_free_bytes=needed,allocated_target_bytes=allocated,minimum_child_gib=8,
             rust_controls_per_profile=7,python_controls=4,guest_commands=0,original_project_build_commands=0,
