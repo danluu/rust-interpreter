@@ -33,6 +33,9 @@ def main():
         assert phases['duration_order'] is replay['duration_order'] is True
         assert phases['shared_literal_keys'] is replay['shared_literal_keys'] is False
         assert phases['parameterized_literals'] is True and phases['test_invocations']==1824
+        ordering=closed('session-duration-order-evidence-01')
+        assert ordering['priority_conformity_reports']==16 and ordering['priority_conformity_invocations']==1824
+        assert ordering['valid_reports']==20 and ordering['performance_measurement'] is False
         assert qualification['diagnostic_feature'] is replay['diagnostic_feature'] is False
         assert qualification['tests']['debug']==qualification['tests']['release']==dict(passed=679,ignored=17)
         assert qualification['tests']['python']==dict(discovered=464,passed=442,skipped=22)
