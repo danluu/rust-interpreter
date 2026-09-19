@@ -61,3 +61,31 @@ checking every restored result against fresh emission. Keep the original-only
 result intact. Any subsequent production implementation must measure complete
 changed-source commands against the adopted engine and ordinary native Rust,
 including lookup/storage/startup costs and all existing correctness guards.
+
+The populated-history model now passes14 controls/profile and the full saved
+history. The first qualification admission timed out before any test; that
+terminal is retained. The successful replacement admission and replay are closed.
+Every hit still equals fresh staging. For valid edits1–5, exact counts are:
+
+| Worker / fixed original function set | Edit1 | Edit2 | Edit3 | Edit4 | Edit5 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 0 /2391 |1512|2389|2389|1221|2000|
+| 1 /1154 |817|1152|1152|601|973|
+
+Worker0 reaches the64MiB charge limit and evicts447,479 and635 entries in edit4,
+edit5 and restored-source state respectively. Worker1 finishes with2,230 variants
+and40,978,712 charged bytes, without eviction. No capture, emission or relocation
+declines occurred in this modeled history. These are fixed original numeric
+function sets visited in ascending order, not later measured guest reachability.
+The changed functions at a numeric ID cannot inherit that ID's original timing.
+
+This materially improves coverage over original-only reuse on edits2,3 and5,
+so the original-anchor counts should not be treated as a populated-cache ceiling.
+It still does not establish a command speedup. The diagnostic currently hashes
+each requested key and hashes it again inside restore; misses also hash during
+capture. A production interface should bind one checked key to the immutable
+current owner/function/options for that operation, then use it for lookup and
+restoration without weakening validation. Persistent storage or IPC must earn
+its loading, serialization and startup cost in real edited-source comparisons.
+[History controls](../results/cross-program-template-model-04/summary.json),
+[populated replay](../results/cross-program-template-history-01/summary.json).
