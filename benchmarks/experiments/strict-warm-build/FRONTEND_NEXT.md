@@ -47,13 +47,19 @@ are not a causal decomposition of total wall time. The reader's total is a sum
 of per-thread elapsed spans, not CPU time. See the
 [Ruff self-profile](../../../results/runtime-ruff-hir-self-profile-01/README.md).
 
-Two independent compiler candidates address repeated work without changing the
+Three independent compiler candidates address repeated work without changing the
 application. A source-only [options-hash candidate](../../../experiments/hir-options-hash/README.md)
 stores the immutable incremental-options hash once per compiler context while
 preserving its wire encoding. It has not been compiled or measured. Separately,
-a packed body-cache representation is being developed to reduce filesystem work
-while preserving record keys, checksums, reconstruction and validation. Neither
-candidate has established a performance gain.
+the [packed body-cache candidate](../../../experiments/hir-packed-sidecars/README.md)
+reduces file count while preserving record keys, checksums, reconstruction and
+validation; its memory cost and successful-session publication need actual
+qualification. A [single-traversal candidate](../../../experiments/hir-input-walk/README.md)
+constructs normalized input and node order together, replacing a repeated walk
+and comparison with a private construction invariant. Its source review accounts
+for symbol interning, allocation bookkeeping and span dependency tracking.
+All three remain uncompiled and unqualified; none has established a performance
+gain. Their source changes and later measurements must remain attributable.
 
 [Target selection](TARGET-SELECTION.md) retains Ruff as the immediate measured
 development target, adds pinned Oxc as another development target, and keeps
