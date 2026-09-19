@@ -93,10 +93,6 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         path = args.next().ok_or("missing program path")?;
     }
-    #[cfg(feature = "preparation-observer")]
-    if !matches!(isolated_batch, Some(suite::Mode::Prepared)) || suite_workers.unwrap_or(1) > 2 {
-        return Err("preparation observer requires a prepared suite with at most two workers".into());
-    }
     if std::fs::metadata(&path)?.len() > 64 * 1024 * 1024 {
         return Err("artifact exceeds 64 MiB".into());
     }

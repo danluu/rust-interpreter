@@ -53,34 +53,17 @@ impl Jit<'_> {
     fn prepare_scalar(&mut self,id:usize)->Result<(),String> {
         let scalar=self.scalar.as_mut().unwrap();
         if scalar.tried[id] {return Ok(());}scalar.tried[id]=true;
-        #[cfg(feature = "preparation-observer")]
-        let _span = self.observation.span(Some(id), crate::preparation_observation::Phase::ScalarFunction);
         let f=&self.program.functions[id];
         // Bound host Call scratch independently of scalar SSA spill storage.
         if f.args.len()>64 || self.bytes>=self.capacity {return Ok(());}
-        let memory={
-            #[cfg(feature = "preparation-observer")]
-            let _span = self.observation.span(Some(id), crate::preparation_observation::Phase::ScalarProof);
-            proof::memory_plan(self.program,id,&mut scalar.proof_work)
-        };
+        let memory=proof::memory_plan(self.program,id,&mut scalar.proof_work);
         let limit=scalar.scalar_work.min(250_000);
-        let plan={
-            #[cfg(feature = "preparation-observer")]
-            let _span = self.observation.span(Some(id), crate::preparation_observation::Phase::ScalarLowering);
-            scalar_ir::lower(f,&memory,limit)
-        };
+        let plan=scalar_ir::lower(f,&memory,limit);
         scalar.scalar_work=scalar.scalar_work.saturating_sub(match &plan {Ok(p)=>p.work,Err("no_memory_plan")=>0,Err(_)=>limit});
         let Ok(plan)=plan else {return Ok(());};
-        let emitted={
-            #[cfg(feature = "preparation-observer")]
-            let _span = self.observation.span(Some(id), crate::preparation_observation::Phase::ScalarEmission);
-            scalar_ir::native_leaf::emit_call(&plan,self.profiled)
-        };
-        let Ok(emitted)=emitted else {return Ok(());};
+        let Ok(emitted)=scalar_ir::native_leaf::emit_call(&plan,self.profiled) else {return Ok(());};
         let bytes=emitted.words.len()*4;
         if bytes>self.capacity-self.bytes {return Ok(());}
-        #[cfg(feature = "preparation-observer")]
-        let _publication = self.observation.span(Some(id), crate::preparation_observation::Phase::ScalarPublication);
         if self.code.is_none() {self.code=Some(platform::Code::reserve(self.capacity)?);}
         let offset=self.code.as_mut().unwrap().append(&emitted.words)?;
         let target=self.code.as_ref().unwrap().published().0+offset;

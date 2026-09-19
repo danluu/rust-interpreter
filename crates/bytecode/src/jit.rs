@@ -347,8 +347,6 @@ pub(crate) struct Jit<'a> {
     // including on platforms whose placeholder Code type contains no pointer.
     _thread_bound: std::marker::PhantomData<std::rc::Rc<()>>,
     program: &'a Program,
-    #[cfg(feature = "preparation-observer")]
-    pub(crate) observation: crate::preparation_observation::Trace,
     profiled: bool,
     uses_heap: bool,
     prepared: Vec<bool>,
@@ -407,8 +405,6 @@ impl<'a> Jit<'a> {
                 | Op::CurrentDirectory { .. })
         });
         Ok(Self { _thread_bound: std::marker::PhantomData, program, profiled, uses_heap, capacity, code: None,
-            #[cfg(feature = "preparation-observer")]
-            observation: crate::preparation_observation::Trace::default(),
             prepared: vec![false; program.functions.len()],
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
@@ -445,8 +441,6 @@ impl<'a> Jit<'a> {
     #[cold]
     #[inline(never)]
     fn compile_function(&mut self, id: usize) -> Result<bool, String> {
-        #[cfg(feature = "preparation-observer")]
-        let _span = self.observation.span(Some(id), crate::preparation_observation::Phase::CompileFunction);
         let start = std::time::Instant::now();
         let previous_nanos = self.compile_nanos;
         let result = self.prepare_function(id);
@@ -457,24 +451,13 @@ impl<'a> Jit<'a> {
     }
     fn prepare_function(&mut self, id: usize) -> Result<bool, String> {
         if self.native_call_stubs { self.prepare_region_calls(id)?; }
-        if self.scalar.is_some() {
-            #[cfg(feature = "preparation-observer")]
-            let _span = self.observation.span(Some(id), crate::preparation_observation::Phase::ScalarCallees);
-            self.prepare_scalar_callees(id)?;
-        }
+        if self.scalar.is_some() { self.prepare_scalar_callees(id)?; }
         let remaining = (self.capacity - self.bytes) / 4;
-        let staged = {
-            #[cfg(feature = "preparation-observer")]
-            let _span = self.observation.span(Some(id), crate::preparation_observation::Phase::OrdinaryEmission);
-            self.emit_function(&self.program.functions[id], remaining)
-        };
+        let staged = self.emit_function(&self.program.functions[id], remaining);
         self.finish_preparation(id, staged)
     }
 
     fn finish_preparation(&mut self, id: usize, staged: Result<Option<CompiledFunction<'a>>, EmitError>) -> Result<bool, String> {
-        // Includes final admission and declines, not just successful publication.
-        #[cfg(feature = "preparation-observer")]
-        let _span = self.observation.span(Some(id), crate::preparation_observation::Phase::OrdinaryPublication);
         let mut staged = match staged {
             Ok(Some(staged)) => staged,
             Ok(None) | Err(EmitError::Limit(_)) => {
@@ -525,49 +508,15 @@ impl<'a> Jit<'a> {
         Ok(true)
     }
 
-    #[cfg(feature = "preparation-observer")]
-    pub(crate) fn preparation_observation(&self) -> Result<serde_json::Value, serde_json::Error> {
-        let snapshot = self.observation.snapshot();
-        let ids: std::collections::BTreeSet<_> = snapshot.rows.iter().filter_map(|r| r.0).collect();
-        let functions: Vec<_> = ids.into_iter().map(|id| serde_json::json!({
-            "function":id,"name":self.program.functions[id].name,
-            "bytecode_operations":self.program.functions[id].code.len(),
-            "ordinary_prepared":self.prepared[id],
-            "ordinary_native_entries":self.blocks[id].iter().flatten().count(),
-            "scalar_native_bytes":self.scalar_entry(id).map_or(0, |e| e.bytes)
-        })).collect();
-        // Serialization failure is diagnostic, and must not discard guest outcomes.
-        let trace = serde_json::to_value(snapshot)?;
-        Ok(serde_json::json!({"trace":trace,"functions":functions,
-            "compiled_functions":self.compiled_functions,"declined_functions":self.declined_functions,
-            "code_bytes":self.bytes,
-            "function_status_scope":"prepared/no-entry is not an exact decline classification; scalar entries are separate",
-            "publication_scope":"ordinary publication includes final admission and decline handling"}))
-    }
-
     fn emit_function(&self, f: &'a Function, word_budget: usize) -> Result<Option<CompiledFunction<'a>>, EmitError> {
         if self.resumable.as_ref().is_some_and(|tables| !tables.fits(f.code.len())) { return Ok(None); }
         self.emit_function_inner(f, word_budget, self.assertions.len(), None)
-    }
-
-    #[cfg(feature = "preparation-observer")]
-    fn observation_function_id(&self, f: &Function) -> Option<usize> {
-        // Constant-time identity within this immutable Program, without pointer
-        // subtraction/dereference or a linear scan of the complete function set.
-        let offset = (std::ptr::from_ref(f) as usize)
-            .checked_sub(self.program.functions.as_ptr() as usize)?;
-        let width = std::mem::size_of::<Function>();
-        if offset % width != 0 { return None; }
-        let id = offset / width;
-        self.program.functions.get(id).filter(|owned| std::ptr::eq(*owned, f)).map(|_| id)
     }
 
     // Diagnostic re-emission is allowed only for an already published function.
     // It reuses admission and original assertion identities without republishing.
     fn emit_function_inner(&self, f: &'a Function, word_budget: usize, assertion_base: usize,
         mut spans: Option<&mut code_spans::Collector>) -> Result<Option<CompiledFunction<'a>>, EmitError> {
-        #[cfg(feature = "preparation-observer")]
-        let observe = |phase| self.observation_function_id(f).map(|id| self.observation.span(Some(id), phase));
         let resumable = self.resumable.is_some();
         let mut words = vec![];
         #[cfg(test)]
@@ -585,32 +534,14 @@ impl<'a> Jit<'a> {
         let mut assertions = vec![];
         let mut operations = 0;
         let mut range_work = 4_000_000;
-        let reads = {
-            #[cfg(feature = "preparation-observer")]
-            let _span = observe(crate::preparation_observation::Phase::OrdinaryReads);
-            read_registers(f)
-        };
-        let values = {
-            #[cfg(feature = "preparation-observer")]
-            let _span = observe(crate::preparation_observation::Phase::OrdinaryLiveness);
-            self.persistent_registers.then(|| values::analyze(f)).flatten()
-        };
-        let fills = {
-            #[cfg(feature = "preparation-observer")]
-            let _span = observe(crate::preparation_observation::Phase::OrdinaryFills);
-            local_fills(f)
-        };
-        let slots = {
-            #[cfg(feature = "preparation-observer")]
-            let _span = observe(crate::preparation_observation::Phase::OrdinaryCallSlots);
-            if resumable { call_slots::collect(f, self.program) } else { std::collections::BTreeMap::new() }
-        };
+        let reads = read_registers(f);
+        let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
+        let fills = local_fills(f);
+        let slots = if resumable { call_slots::collect(f, self.program) } else { std::collections::BTreeMap::new() };
         #[cfg(test)]
         let slots = if self.disable_call_slot_hints { std::collections::BTreeMap::new() } else { slots };
         let native = |pc: usize| supported(&f.code[pc]) || fills.contains_key(&pc)
             || (resumable && transfers::supported(&f.code[pc]));
-        #[cfg(feature = "preparation-observer")]
-        let layout = observe(crate::preparation_observation::Phase::OrdinaryLayout);
         let mut entries = vec![None; f.code.len()];
         let mut internal_entries = vec![None; f.code.len()];
         // The extra null entry handles a caller's one-past-code continuation.
@@ -635,10 +566,6 @@ impl<'a> Jit<'a> {
                 starts[pc + 1] = true;
             }
         }
-        #[cfg(feature = "preparation-observer")]
-        drop(layout);
-        #[cfg(feature = "preparation-observer")]
-        let regions = observe(crate::preparation_observation::Phase::OrdinaryRegions);
         let mut pc = 0;
         while pc < f.code.len() {
             let start = pc;
@@ -853,10 +780,6 @@ impl<'a> Jit<'a> {
                 pc += 1;
             }
         }
-        #[cfg(feature = "preparation-observer")]
-        drop(regions);
-        #[cfg(feature = "preparation-observer")]
-        let _relocations = observe(crate::preparation_observation::Phase::OrdinaryRelocations);
         for (at, successor, fallback) in links {
             let target = internal_entries.get(successor).copied().flatten().unwrap_or(fallback);
             patch_jump(&mut words, at, target)?;
