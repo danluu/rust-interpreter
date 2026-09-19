@@ -171,3 +171,9 @@ Fullcostobserver95844e4c CLOSED24293/24333,60reports:build1265ms/execution300ms,
 prepsum31.5ms/compilesum58.5ms(overlap), outsideworkers29.6ms. Next diagnostic-only
 Context::stage phases keyhash/lookup/restore/missemission/capture/verify underexisting
 jit-preparation-observer; no runtimebufferingchangeuntilcostevidence. Noactiveexperiment.
+
+Branch diagnostic/session-template-phases-20260919 prepared sixfixedphasecounters
+under existingjit-preparation-observer only. Native/key/admission unchanged;
+macro evaluates once+records failures. Qualify22models+33integrations/profile and
+33featureoff;36servers69clients. Replay16savedactualsuites verifyOFF diagnostic.
+No runstarted yet. Fullcostclosed24293/24333,fullguardunmeasurable preserved.

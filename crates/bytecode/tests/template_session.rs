@@ -123,7 +123,17 @@ fn edited_suites_and_request_inputs_match_without_and_with_history() {
                     assert_eq!(setup["total_ns"],row["preparation_ns"]);
                     assert!(setup["before_metadata_ns"].as_u64().unwrap()+setup["execution_metadata_ns"].as_u64().unwrap()
                         <=setup["total_ns"].as_u64().unwrap());
+                    if !row["templates"].is_null() {
+                        let templates=&row["templates"];
+                        let phase_sum=["key_ns","lookup_ns","restore_ns","miss_emit_ns","capture_insert_ns","verify_ns"]
+                            .iter().map(|k|templates[*k].as_u64().unwrap()).sum::<u64>();
+                        assert!(phase_sum<=row["preparation_observer"]["ordinary_ns"].as_u64().unwrap());
+                        if templates["lookups"].as_u64().unwrap()>0 {assert!(templates["key_ns"].as_u64().unwrap()>0);}
+                        if templates["verified_hits"].as_u64().unwrap()>0 {assert!(templates["verify_ns"].as_u64().unwrap()>0);}
+                    }
                 }
+                #[cfg(not(feature = "jit-preparation-observer"))]
+                if !row["templates"].is_null() {assert!(row["templates"].get("key_ns").is_none());}
                 if history==0 {assert!(row["templates"].is_null() && row["storage"].is_null());}
                 else {let n=row["templates"]["hits"].as_u64().unwrap();hits+=n;assert_eq!(row["templates"]["verified_hits"],n);
                     assert!(row["storage"]["charged_bytes"].as_u64().unwrap()<=history as u64);}

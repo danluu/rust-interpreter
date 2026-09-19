@@ -180,6 +180,18 @@ fn verify_staging(a:&CompiledFunction<'_>,b:&CompiledFunction<'_>)->Result<(),Em
 pub struct Counts {
     pub lookups:usize,pub hits:usize,pub verified_hits:usize,pub key_declines:usize,
     pub restore_declines:usize,pub inserted:usize,pub capture_declines:usize,
+    #[cfg(feature = "jit-preparation-observer")]
+    pub key_ns:u128,
+    #[cfg(feature = "jit-preparation-observer")]
+    pub lookup_ns:u128,
+    #[cfg(feature = "jit-preparation-observer")]
+    pub restore_ns:u128,
+    #[cfg(feature = "jit-preparation-observer")]
+    pub miss_emit_ns:u128,
+    #[cfg(feature = "jit-preparation-observer")]
+    pub capture_insert_ns:u128,
+    #[cfg(feature = "jit-preparation-observer")]
+    pub verify_ns:u128,
 }
 pub(crate) struct Context<'p> {
     checked:Checked<'p>,history:std::rc::Rc<std::cell::RefCell<History>>,counts:std::cell::RefCell<Counts>,
@@ -198,24 +210,36 @@ impl<'p> Context<'p> {
     pub(crate) fn statistics(&self)->Counts {*self.counts.borrow()}
     pub(super) fn stage(&self,jit:&Jit<'p>,id:usize,word_budget:usize)->Result<Option<CompiledFunction<'p>>,EmitError> {
         let mut counts=self.counts.borrow_mut();counts.lookups+=1;
-        let Some(request)=Request::new(&self.checked,jit,id,[41;32],true) else {
-            counts.key_declines+=1;return jit.emit_function(&jit.program.functions[id],word_budget);
+        // The expression is evaluated exactly once, including failures; clocks
+        // and additional counters are absent from ordinary feature builds.
+        macro_rules! observed {
+            ($field:ident,$expression:expr) => {{
+                #[cfg(feature = "jit-preparation-observer")]
+                let started=std::time::Instant::now();
+                let result=$expression;
+                #[cfg(feature = "jit-preparation-observer")]
+                {counts.$field+=started.elapsed().as_nanos();}
+                result
+            }};
+        }
+        let Some(request)=observed!(key_ns,Request::new(&self.checked,jit,id,[41;32],true)) else {
+            counts.key_declines+=1;return observed!(miss_emit_ns,jit.emit_function(&jit.program.functions[id],word_budget));
         };
         {
             let mut history=self.history.borrow_mut();
-            if let Some(template)=history.get(&request.key) {
-                if let Some(restored)=template.restore_request(&request,word_budget) {
+            if let Some(template)=observed!(lookup_ns,history.get(&request.key)) {
+                if let Some(restored)=observed!(restore_ns,template.restore_request(&request,word_budget)) {
                     if self.verify_hits {
-                        let fresh=request.emit(word_budget)?.ok_or(EmitError::InvalidRelocation("template restored but fresh emission declined"))?;
-                        verify_staging(&restored,&fresh.compiled)?;counts.verified_hits+=1;
+                        let fresh=observed!(verify_ns,request.emit(word_budget))?.ok_or(EmitError::InvalidRelocation("template restored but fresh emission declined"))?;
+                        observed!(verify_ns,verify_staging(&restored,&fresh.compiled))?;counts.verified_hits+=1;
                     }
                     counts.hits+=1;return Ok(Some(restored));
                 }
                 counts.restore_declines+=1;
             }
         }
-        let Some(emission)=request.emit(word_budget)? else {return Ok(None);};
-        if Template::capture_emission(&emission,MAX_RETAINED).and_then(|t|self.history.borrow_mut().insert(t)).is_some() {
+        let Some(emission)=observed!(miss_emit_ns,request.emit(word_budget))? else {return Ok(None);};
+        if observed!(capture_insert_ns,Template::capture_emission(&emission,MAX_RETAINED).and_then(|t|self.history.borrow_mut().insert(t))).is_some() {
             counts.inserted+=1;
         } else {counts.capture_declines+=1;}
         Ok(Some(emission.compiled))
