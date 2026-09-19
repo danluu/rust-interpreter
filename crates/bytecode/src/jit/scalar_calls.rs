@@ -20,6 +20,12 @@ pub(super) struct Entry {
     success_steps: Option<usize>,
     target: usize,
 }
+#[cfg(test)]
+impl Entry {
+    pub(super) fn template_model_identity(self)->(usize,usize,Option<usize>,usize) {
+        (self.bytes,self.maximum_steps,self.success_steps,self.target)
+    }
+}
 impl Jit<'_> {
     pub(crate) fn enable_scalar_calls(&mut self) {
         assert!(self.resumable.is_some() && self.scalar.is_none());
