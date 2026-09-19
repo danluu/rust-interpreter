@@ -66,3 +66,9 @@ UNMEASURABLE wall.921620065+A/A.088141211=1.009761276;CPU.911340697+.059674881=.
 No unchanged retry/adoption/largercampaign. Closure56465/controllercheckstatus.
 Next read-only retained20report cost inspection; choose newmaterialcandidate.
 Main2a5c1464 published qualification/replay/install proof preserving acb5dcf0.
+
+Primary03 CLOSED56465/56469. Costobserver4b47db4c completed66303/66306,
+CLOSED74820/74866;20retainedreports,no guest/compiler. Candidate execution332.9ms,
+serveroutsideworkers39.6ms,prepsum34.2ms,compile sum98.9ms. Edit4largest extra
+delaybuild1451vs1250ms;execution371.6vsfresh372.8ms. No causal subtraction/acceptance.
+Next diagnostic-only requestinput/workerconstructor phases; branch separately.

@@ -56,3 +56,17 @@ adoption follows. Inspect retained stage intervals before a materially new choic
 Source20c3d614 ran10426/10429. The two earlier session primaries remain failed under
 their original gates. Correctness proofs remain valid; the experimental runtime
 stays on its branch and the adopted runtime is unchanged.
+
+The closed retained-cost inspection reads20valid-edit reports without rerunning any
+compiler or guest. Candidate execution median332.9ms; server work outside the worker
+interval39.6ms; summed worker setup34.2ms and test compilation98.9ms. The latter sums
+overlap across workers and are not CPU or predicted savings. On edit4, candidate
+build-to-ready1451.0ms versus baseline1250.4ms accounts for the largest observed
+excess; candidate execution371.6ms versus session-fresh372.8ms is similar. Late
+edits evict templates, but the median cumulative eviction count is zero; do not
+infer absence of eviction from that median. These intervals do not alter the gate.
+
+[Retained-cost inspection](../results/session-size-tier-primary-costs-01/summary.json).
+Next add diagnostic-only input and constructor phases to separate reading/hashing,
+decoding, catalog validation, structural validation and worker metadata before
+choosing a new runtime change. Keep the performance binaries and earlier results.
