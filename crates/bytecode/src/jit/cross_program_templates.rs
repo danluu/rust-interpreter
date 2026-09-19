@@ -655,10 +655,14 @@ fn parameterized_literal_live_current_data_addresses_and_faults_match() {
         let context=Context::new_verified(&p,history.clone(),true).unwrap();let mut j=owner(&p);j.template_model_context=Some(context.clone());
         let limits=crate::Limits{memory:1024*1024,..live_limits()};
         let reference=crate::Limits{jit_resumable_calls:false,jit_persistent_registers:false,jit_scalar_calls:false,..limits.clone()};
+        let fresh=crate::execute_with_engine(&p,&[],limits.clone(),crate::Engine::Jit);
         let actual=live_execute(&p,&mut Some(j),limits);let expected=crate::execute(&p,&[],reference);
-        match (actual,expected) {
-            (Ok(a),Ok(b))=>assert_eq!((a.value,a.instructions),(b.value,b.instructions)),
-            (Err(a),Err(b))=>assert_eq!(a,b),_=>panic!("literal current address/fault mismatch"),
+        match (actual,fresh,expected) {
+            (Ok(a),Ok(b),Ok(c))=>{assert_eq!((a.value,a.instructions),(b.value,b.instructions));
+                assert_eq!((a.value,a.instructions),(c.value,c.instructions));},
+            (Err(a),Err(b),Err(c))=>{assert_eq!(address,0x40000);assert_eq!(a,b);
+                assert_eq!(a,"JIT guest memory access failed");assert_eq!(c,"invalid guest memory access");},
+            _=>panic!("literal current address/fault mismatch"),
         }
         let counts=context.counts.borrow();assert_eq!(counts.hits,counts.verified_hits);hits+=counts.hits;
     }

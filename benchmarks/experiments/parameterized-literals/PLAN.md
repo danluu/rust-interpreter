@@ -46,3 +46,9 @@ Focused01:27template controls passed; two new reference comparisons rejected
 JIT-only options passed to Engine::Interpreter. Preserve failedrecord. Focused02
 clears only the reference engine options, keeping memory/instruction/frame limits
 identical; no runtime implementation change follows from that fixture error.
+
+Focused02:28template controls passed; the known invalid-address case expected
+identical interpreter/JIT text. Existing engine contracts differ (scalar_calls/
+scratch_values tests already cover this). Focused03 adds exact cached-versus-fresh
+JIT comparison and requires the exact existing error from each engine at the known
+invalid address; successful values/instruction counts must match allthree.
