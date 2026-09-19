@@ -1,4 +1,4 @@
-//! Whole-function upper-half proof for diagnostics; code emission is unchanged.
+//! Bounded whole-function proof for implicit-zero upper words in private storage.
 use crate::{Binary, Function, Op, Reg, Unary};
 
 const MAX_REGISTERS: usize = 65_536;
@@ -59,6 +59,14 @@ pub(super) fn prove(function: &Function) -> Option<Vec<bool>> {
         if invalid_read || invalid_write { return None; }
     }
     Some(narrow.into_iter().zip(seen).map(|(narrow, seen)| narrow && seen).collect())
+}
+
+/// The proof belongs to this validated function. Repair reads before writes:
+/// an aliased output cannot change what its input logically contained.
+pub(super) fn repair_reads(narrow: &[bool], op: &Op, registers: &mut [u128]) {
+    crate::registers::visit_registers(op, |r| {
+        if narrow[r as usize] { registers[r as usize] &= u128::from(u64::MAX); }
+    }, |_| {});
 }
 
 #[cfg(test)]

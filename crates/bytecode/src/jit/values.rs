@@ -173,8 +173,12 @@ impl Assembler<'_> {
         let Some(values) = self.values else { return; };
         for (index, &reg) in values.registers.iter().enumerate() {
             for high in [false, true] {
-                let (base, offset) = self.reg_address(reg, high);
                 let physical = 23 + index as u32 * 2 + u32::from(high);
+                if high && self.narrow_register(reg) {
+                    self.mov(physical, 31);
+                    continue;
+                }
+                let (base, offset) = self.reg_address(reg, high);
                 self.emit(0xf9400000 | (offset << 10) | (base << 5) | physical);
             }
         }

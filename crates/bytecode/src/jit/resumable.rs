@@ -295,11 +295,13 @@ impl<'a> Jit<'a> {
         reads: &'b [Option<(usize, usize)>],
         values: Option<&'b values::Allocation>,
         slots: Option<&[Option<usize>]>,
+        narrow_registers: Option<&'b [bool]>,
     ) -> Result<(Assembler<'b>, usize, usize), EmitError> {
         let mut a = Assembler {
             heap: self.uses_heap,
             reads,
             values,
+            narrow_registers,
             resumable: true,
             frame_size: f.frame_size,
             current_pc: pc,

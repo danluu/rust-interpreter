@@ -317,6 +317,7 @@ struct Assertion<'a> {
 enum FaultKind { Assertion, Trap }
 
 pub(crate) const MAX_CODE_BYTES: usize = 16 * 1024 * 1024;
+const MAX_NARROW_REGISTER_BYTES: usize = 8 * 1024 * 1024;
 
 struct CompiledFunction<'a> {
     #[cfg(test)]
@@ -333,6 +334,7 @@ struct CompiledFunction<'a> {
     memory_spans: Vec<memory_parts::Span>,
     #[cfg(test)]
     retained_local_writes: Vec<(usize, Reg, usize, usize)>,
+    narrow_registers: Option<Vec<bool>>,
     words: Vec<u32>,
     entries: Vec<Option<Block>>,
     resumes: Vec<Option<usize>>,
@@ -364,6 +366,11 @@ pub(crate) struct Jit<'a> {
     pub region_plans: Vec<native_regions::RegionPlan>,
     pub call_stubs: usize,
     persistent_registers: bool,
+    // Published only with native code; declined functions retain full backing.
+    narrow_registers: Vec<Option<Vec<bool>>>,
+    narrow_register_bytes: usize,
+    #[cfg(test)]
+    disable_narrow_registers: bool,
     resumable: Option<resumable::Entries>,
     scalar: Option<scalar_calls::State>,
     #[cfg(test)]
@@ -387,6 +394,14 @@ pub(crate) struct Jit<'a> {
     pub liveness_declines: usize,
 }
 impl<'a> Jit<'a> {
+    /// Reused storage can retain a previous callee's wide upper words. Restore
+    /// the current logical value before every interpreted read, including
+    /// aliases and unsupported operations. Ordinary interpreter writes stay full.
+    pub(crate) fn repair_register_reads(&self, id: usize, op: &Op, registers: &mut [u128]) {
+        if let Some(narrow) = &self.narrow_registers[id] {
+            register_widths::repair_reads(narrow, op, registers);
+        }
+    }
     pub fn new(program: &'a Program, profiled: bool, capacity: usize) -> Result<Self, String> {
         Self::new_with_call_stubs(program, profiled, capacity, false)
     }
@@ -425,6 +440,9 @@ impl<'a> Jit<'a> {
             observe_flush: false,
             #[cfg(test)]
             observe_memory_parts: false,
+            narrow_registers: vec![None; program.functions.len()], narrow_register_bytes: 0,
+            #[cfg(test)]
+            disable_narrow_registers: false,
             persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
             region_plans: if native_call_stubs { vec![native_regions::RegionPlan::default(); program.functions.len()] } else { vec![] } })
     }
@@ -491,6 +509,10 @@ impl<'a> Jit<'a> {
                 tables.publish(id, resumes);
             }
             for entry in staged.entries.iter_mut().flatten() { entry.offset += offset; }
+            if let Some(proof) = staged.narrow_registers.take() {
+                self.narrow_register_bytes += proof.len();
+                self.narrow_registers[id] = Some(proof);
+            }
             self.bytes += staged.words.len() * 4;
             self.compiled_functions += 1;
             self.register_functions += usize::from(staged.register_pairs != 0);
@@ -516,7 +538,19 @@ impl<'a> Jit<'a> {
     // Diagnostic re-emission is allowed only for an already published function.
     // It reuses admission and original assertion identities without republishing.
     fn emit_function_inner(&self, f: &'a Function, word_budget: usize, assertion_base: usize,
-        mut spans: Option<&mut code_spans::Collector>) -> Result<Option<CompiledFunction<'a>>, EmitError> {
+        spans: Option<&mut code_spans::Collector>) -> Result<Option<CompiledFunction<'a>>, EmitError> {
+        let enabled = self.resumable.is_some();
+        #[cfg(test)]
+        let enabled = enabled && !self.disable_narrow_registers;
+        let narrow = if enabled && f.registers <= MAX_NARROW_REGISTER_BYTES.saturating_sub(self.narrow_register_bytes) {
+            register_widths::prove(f).filter(|v| v.iter().any(|&n| n))
+        } else { None };
+        self.emit_function_with_widths(f, word_budget, assertion_base, narrow, spans)
+    }
+
+    fn emit_function_with_widths(&self, f: &'a Function, word_budget: usize, assertion_base: usize,
+        narrow_registers: Option<Vec<bool>>, mut spans: Option<&mut code_spans::Collector>)
+        -> Result<Option<CompiledFunction<'a>>, EmitError> {
         let resumable = self.resumable.is_some();
         let mut words = vec![];
         #[cfg(test)]
@@ -602,6 +636,7 @@ impl<'a> Jit<'a> {
                     region_start: start,
                     region_end: pc,
                     values: values.as_ref(),
+                    narrow_registers: narrow_registers.as_deref(),
                     resumable,
                     ..Assembler::default()
                 };
@@ -745,7 +780,7 @@ impl<'a> Jit<'a> {
             if pc == start {
                 if resumable && matches!(f.code[pc], Op::Call { .. } | Op::Return) {
                     let offset = words.len() * 4;
-                    let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), slots.get(&pc).map(Vec::as_slice))?;
+                    let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), slots.get(&pc).map(Vec::as_slice), narrow_registers.as_deref())?;
                     code_spans::record(&mut spans, words.len(), pc, Some(pc),
                         code_spans::Kind::Transition, 0, a.words.len())?;
                     if a.words.len() > word_budget.saturating_sub(words.len()) { return Ok(None); }
@@ -784,7 +819,7 @@ impl<'a> Jit<'a> {
             let target = internal_entries.get(successor).copied().flatten().unwrap_or(fallback);
             patch_jump(&mut words, at, target)?;
         }
-        Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
+        Ok(Some(CompiledFunction { narrow_registers, words, entries, resumes, operations, assertions,
             #[cfg(test)] memory_spans,
             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
             liveness_declined: self.persistent_registers && values.is_none(),
@@ -1103,6 +1138,7 @@ struct Assembler<'a> {
     heap: bool,
     frame_size: usize,
     reads: &'a [Option<(usize, usize)>],
+    narrow_registers: Option<&'a [bool]>,
     facts: BTreeMap<Reg, Fact>,
     defined: BTreeSet<Reg>,
     live_in: BTreeSet<Reg>,
@@ -1146,6 +1182,7 @@ impl Default for Assembler<'_> {
             heap: Default::default(),
             frame_size: Default::default(),
             reads: Default::default(),
+            narrow_registers: None,
             facts: Default::default(),
             defined: Default::default(),
             live_in: Default::default(),
@@ -1463,8 +1500,15 @@ impl Assembler<'_> {
             (16, 0)
         }
     }
+    fn narrow_register(&self, reg: Reg) -> bool {
+        self.narrow_registers.is_some_and(|v| v[reg as usize])
+    }
     fn get(&mut self, rd: u32, reg: Reg, high: bool) {
         if !self.defined.contains(&reg) { self.live_in.insert(reg); }
+        if high && self.narrow_register(reg) {
+            self.mov(rd, 31);
+            return;
+        }
         if let Some(fact) = self.facts.get(&reg).copied() {
             self.materialize(rd, fact, high);
             return;
@@ -1543,6 +1587,7 @@ impl Assembler<'_> {
     }
     fn raw_spill(&mut self, reg: Reg, lo: u32, hi: u32) {
         for (high, rs) in [(false, lo), (true, hi)] {
+            if high && self.narrow_register(reg) { continue; }
             let (base, offset) = self.reg_address(reg, high);
             self.emit(0xf9000000 | (offset << 10) | (base << 5) | rs);
         }
@@ -2403,3 +2448,7 @@ pub fn address_reuse_census(program: &Program, profile: &[u8]) -> Result<serde_j
 pub fn constant_call_argument_census(program: &Program, profile: Option<&[u8]>) -> Result<serde_json::Value, String> {
     constant_arguments::census(program, profile)
 }
+
+#[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+#[path = "jit/narrow_storage_tests.rs"]
+mod narrow_storage_tests;

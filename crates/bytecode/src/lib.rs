@@ -994,6 +994,9 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
             if PROFILE {
                 profile.as_deref_mut().unwrap().functions[frame.function].interpreted[frame.pc] += 1;
             }
+            if RESUMABLE {
+                jit.as_ref().unwrap().repair_register_reads(frame.function, instruction, r);
+            }
             frame.pc += 1;
             // The entry validation also covers callers using in-memory programs.
             match instruction {
