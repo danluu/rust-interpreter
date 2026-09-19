@@ -4,16 +4,16 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+from padding_model import alignment, widths, controls
 
 ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / 'benchmarks/experiments/scalar-entry-empty-work'))
 import run as previous_scope
-from model import alignment, widths, controls
 
 focus = previous_scope.focus
 read, sha, write = previous_scope.read, previous_scope.sha, previous_scope.write
-RUN = 'bounded-scalar-padding-scope-01'
+RUN = 'bounded-scalar-padding-scope-02'
 
 
 def derive(case, path):
