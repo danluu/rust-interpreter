@@ -51,3 +51,12 @@ dynamic scheduling, two Cargo workers and all prospective primary/noise gates.
 The session is worthwhile only if changed-source end-to-end results clear those
 gates after these costs. Current in-memory correctness evidence is not a timing
 result and does not justify excluding transport or setup.
+
+The socket adapter is qualified at7ce2f250 by endpoint01 (closed). Its25 controls
+in each profile include18 owned processes across both profiles, all reaped. Four
+expected nonzero exits cover malformed pipe framing and occupied socket directory.
+Socket controls cover current callee/data/environment, verified history reuse,
+authentication/server identity, schema/sequence/unknown fields, cwd/report errors,
+lost response without replay and ownerEOF while waiting in accept. Private token
+files remain0600 in0700 directories; published receipts contain only public
+identity or file hashes. No independent-command client or performance claim yet.

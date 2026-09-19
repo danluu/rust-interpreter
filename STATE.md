@@ -249,3 +249,11 @@ cover current inputs/reuse, malformed/auth/schema/sequence rejection, existing
 reports/cwd, lost response, ownerEOF and occupied directory preservation.
 Controller benchmarks/experiments/cross-program-template-session/endpoint.py will
 run25controls/profile under the existing build/lock gate. No client route yet.
+
+Endpoint01 source7ce2f250 passes55235/55238, CLOSED58256/58260. All25focused
+controls/profile pass. Eighteen owned fixture processes exit/reap, including four
+expected protocol/startup rejections. The real socket fixture changed inputs and
+verified reuse match historyoff; rejected connections preserve request sequence;
+lost response leaves one reserved report; ownerEOF closes while accept is idle.
+Retainedrelease SHA c17f9eeb1b022f62ba5149cc425a2bbc9a67d0edca1f7e2bbc7aa8cfe6b8110b.
+No client route or end-to-end timing yet. No active experiment after closure.
