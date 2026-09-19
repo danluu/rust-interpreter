@@ -47,6 +47,37 @@ def validate_runtime_limits(report, instruction_limit=None, allocation_limit=Non
         raise RuntimeError('suite effective runtime limits differ from the expected command')
 
 
+def validate_shared_templates(report, requested):
+    """Bind the explicit option to bounded store and per-invocation counters."""
+    def integer(value):return type(value) is int and value>=0
+    def require(condition):
+        if not condition:raise RuntimeError('suite shared-template receipt differs from the requested configuration')
+    require(isinstance(report,dict) and isinstance(report.get('tests',[]),list)
+            and all(isinstance(r,dict) for r in report.get('tests',[])))
+    header=report.get('shared_templates')
+    if not requested:
+        require(header is None and all('shared_templates' not in r for r in report.get('tests',[])))
+        return
+    workers=report.get('workers');rows=report.get('tests')
+    require(report.get('mode')=='prepared' and type(workers) is int and 1<=workers<=64 and isinstance(rows,list))
+    require(isinstance(header,dict) and header.get('requested') is True
+            and type(header.get('active')) is bool and header['active']==(workers>1)
+            and integer(header.get('preparation_ns')))
+    if workers==1:
+        require(header.get('storage') is None and all('shared_templates' not in r for r in rows))
+        return
+    storage=header.get('storage')
+    require(isinstance(storage,dict) and integer(storage.get('functions')) and integer(storage.get('charged_bytes'))
+            and type(storage.get('limit_bytes')) is int and storage['limit_bytes']==64*1024*1024
+            and 0<storage['charged_bytes']<=storage['limit_bytes'])
+    for row in rows:
+        counters=row.get('shared_templates')
+        require(isinstance(counters,dict) and all(integer(counters.get(k)) for k in ['hits','misses','restored_code_bytes']))
+        require(type(row.get('worker')) is int and 0<=row['worker']<workers)
+        require((counters['hits']==0)==(counters['restored_code_bytes']==0)
+                and counters['restored_code_bytes']>=4*counters['hits'])
+
+
 def validate_report(report, names, mode, success):
     def require(condition, message):
         if not condition:

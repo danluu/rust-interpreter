@@ -20,6 +20,28 @@ class IsolatedLauncherValidation(unittest.TestCase):
         self.assertEqual(error.exception.code, 2)
         tools.assert_not_called()
 
+    def test_shared_templates_require_a_prepared_jit_suite_before_tools(self):
+        self.rejected(['--entry','first','--jit-shared-templates'])
+        with tempfile.TemporaryDirectory() as directory:
+            base=['--entry','first','--entry','second','--test-body','--jit-shared-templates',
+                  '--suite-report',str(Path(directory)/'report.json')]
+            for flags in [['--isolated-batch','fresh','--engine','jit','--jit-resumable-calls'],
+                          ['--isolated-batch','prepared','--engine','interpreter'],
+                          ['--isolated-batch','prepared','--engine','jit'],
+                          ['--isolated-batch','prepared','--engine','jit','--jit-resumable-calls','--audit-entries']]:
+                with self.subTest(flags=flags):self.rejected(base+flags)
+
+    def test_shared_templates_accept_one_or_two_requested_workers_without_early_work(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for workers in ['1','2']:
+                flags=['--entry','first','--entry','second','--test-body','--engine','jit','--jit-resumable-calls',
+                       '--isolated-batch','prepared','--suite-report',str(Path(directory)/'report.json'),
+                       '--jit-shared-templates','--suite-workers',workers]
+                with patch.object(sys,'argv',['interpreter.py','--package','fixture',*flags]), \
+                        patch.object(interpreter,'checked_tools',side_effect=RuntimeError('selection reached tools')), \
+                        self.assertRaisesRegex(RuntimeError,'selection reached tools'):
+                    interpreter.main()
+
     def test_incompatible_suite_selection_is_rejected_before_tools_or_cargo(self):
         base = ['--entry', 'first', '--entry', 'second', '--test-body', '--engine', 'jit', '--jit-resumable-calls']
         with tempfile.TemporaryDirectory() as directory:

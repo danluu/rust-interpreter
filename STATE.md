@@ -135,7 +135,16 @@ One effective worker uses no store. Added two public API/concurrent native tests
 focused04 expects19controls/profile and a non-test release VM build retained in
 its raw directory. No original workload/benchmark has run. Check/close this
 stage before correction; then full workspace+Python, strict/CLI and actual
-sharing coverage must precede timing.
+sharing coverage must precede timing. Focused04 under83420/83423 timed out on
+the shared lock before creating any stage directory or build/test child. Peer
+96769 (compiler-build-continuation-01) owns that workload; never control it.
+The prepared preserve_admission.py binds this failure to archivedf26ae422;
+run it when the lock is free before changing focus.py to a new run ID.
+While waiting,7new Python tests and launcher receipt validation are prepared:
+prepared-only option/one-worker compatibility, explicit mode/store/counter bounds,
+failed-test deltas and rejection of unrequested/inconsistent reuse claims.
+These changes have not been tested, and the new production Rust integration
+has not been compiled yet (the19-control run never admitted).
 
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally

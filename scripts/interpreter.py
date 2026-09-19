@@ -691,10 +691,12 @@ def _main(resources):
         if args.suite_report.stat().st_size>16*1024*1024:
             raise RuntimeError('suite report exceeds 16 MiB')
         timings['suite_report_sha256']=hashlib.sha256(args.suite_report.read_bytes()).hexdigest()
-        from suite_reports import validate_runtime_limits
+        from suite_reports import validate_runtime_limits,validate_shared_templates
         suite=json.loads(args.suite_report.read_bytes())
         validate_runtime_limits(suite,args.instruction_limit,args.allocation_limit)
+        validate_shared_templates(suite,args.jit_shared_templates)
         timings['suite_workers']=suite.get('workers',1)
+        if args.jit_shared_templates:timings['shared_templates']=suite['shared_templates']
         if 'runtime_limits' in suite:timings['runtime_limits']=suite['runtime_limits']
     timings['launcher_seconds']=time.perf_counter()-started
     if stats:print('rust-interp-launch: '+json.dumps(timings),file=sys.stderr)
