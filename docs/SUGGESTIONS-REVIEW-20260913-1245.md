@@ -401,3 +401,13 @@ not prove a host cause. Park the composition, cancel the two unstarted guards,
 and retain every timing and gate. Investigate the current emitted guest code
 next; older phase diagnostics show program validation around single-digit
 milliseconds, too small to justify speculative validation-cache complexity.
+
+September19, pointer-slot follow-up: suggestions.txt still has the same hash.
+The bounded initialization extension passes18 controls/profile and adds only two
+eligible functions. Exact joins on the adopted runtime show no new clearing
+samples: both old and new proofs cover1/89 and1/62. Park it without a runtime
+change or timing screen. Historical16/110 and20/100 coverage belongs to an older
+runtime. Continue the suggested focus on actual remaining Copy costs by first
+checking overwritten local writes with read/fault/exit barriers; no optimization
+is authorized by coarse Copy shares alone.
+[Closed slot proof and coverage](FRAME-SLOT-INITIALIZATION-20260919.md).
