@@ -568,6 +568,30 @@ impl Assembler<'_> {
     fn clear_call_frame(&mut self, caller: &Function, callee: &Function) -> Result<(), EmitError> {
         if let Some(size) = fixed_frame_clear_size(caller, callee) {
             self.zero_fixed(size);
+        } else if callee.frame_align <= 16
+            && callee.frame_size.max(1) >= callee.frame_align
+            && callee.frame_size.max(1) <= 256
+        {
+            // Let P be payload, A alignment, and p actual padding (0 <= p < A).
+            // [old_end, old_end+P) and [new_end-A, new_end) overlap because
+            // new_end = old_end+P+p. P >= A keeps the tail inside the checked
+            // range even when p is zero. This initializes every padding byte
+            // without a loop or branch and never touches spare backing.
+            // x12 is still the complete host end; all live call state survives.
+            self.zero_fixed(callee.frame_size.max(1));
+            if callee.frame_align == 16 {
+                self.emit(0xa93f7d9f); // stp xzr,xzr,[x12,#-16]
+            } else {
+                let opcode = match callee.frame_align {
+                    1 => 0x38000000,
+                    2 => 0x78000000,
+                    4 => 0xb8000000,
+                    8 => 0xf8000000,
+                    _ => unreachable!("validated power-of-two alignment"),
+                };
+                let displacement = (512 - callee.frame_align as u32) << 12;
+                self.emit(opcode | displacement | (12 << 5) | 31);
+            }
         } else if callee.frame_size.max(1) <= 256 {
             self.three(0x8b000000, 12, 2, 21);
             self.cmp(11, 12);
