@@ -10,6 +10,7 @@ import re
 import stat
 import sys
 import time
+import tomllib
 import bounded_command_v2 as bounded
 
 OWNER=Path(__file__).resolve().parents[3]
@@ -111,10 +112,11 @@ def support_inventory():
  assert outdirs and all(Path(p).resolve(strict=True)==Path(p) for p in outdirs)
  return dict(root=str(root),selected=selected,files=files,build_out_directories=outdirs,recipe_compiled=False,recipe_executed=False)
 
-def extracted(plan,full=True):
+def extracted(plan,full=True,only=None):
  records={}
  for archive,seed in plan['metadata_plan']['seeds'].items():
   if not seed['active']:continue
+  if only is not None and seed['output_root'] not in only:continue
   root=S/'build'/m.HOST/seed['output_root']
   for name,row in seed['members'].items():
    p=root/name
@@ -126,8 +128,66 @@ def extracted(plan,full=True):
     assert p.is_symlink() and os.readlink(p)==row['target'],p
     records[str(p)]=dict(target=row['target'],stamp=m.stamp(p))
  assert not (S/'build'/m.HOST/'rustfmt').exists(),'unadmitted optional nightly provider was extracted'
- assert (S/'build'/m.HOST/'ci-llvm/.llvm-stamp').read_text()==m.LLVM+'false'
+ if only is None or 'ci-llvm' in only:
+  assert (S/'build'/m.HOST/'ci-llvm/.llvm-stamp').read_text()==m.LLVM+'false'
  return records
+
+def prior_build_guard(plan):
+ """Retain the failed bootstrap attempt without claiming it compiled code."""
+ prior=OWNER/'.work/hir-options-hash-compiler-build-01'
+ outer=OWNER/'.work/experiments/hir-options-hash-compiler-build-supervisor-01'
+ terminal=read(prior/'receipt.json');status=read(outer/'status.json')
+ assert sha(prior/'receipt.json')==plan['prior_build']['receipt_sha256']
+ assert terminal['status']=='failed' and terminal['compiler_stages_completed']==0 and len(terminal['commands'])==3
+ assert terminal['error']=="AssertionError('unexpected compiler-stage return code')"
+ assert status['status']=='finished' and status['returncode']==1
+ assert status['child_pid']==terminal['pid'] and status['supervisor_pid']==terminal['parent_pid']
+ assert sha(outer/'plan.json')==status['plan_sha256'] and sha(outer/'command.log')==status['log_sha256']
+ assert status['started_at']<=terminal['started_at']<=terminal['admitted_at']<=terminal['finished_at']<=status['finished_at']
+ previous=terminal['admitted_at']
+ for index,(ref,row) in enumerate(zip(terminal['commands'],plan['children'][:3],strict=True)):
+  directory=prior/'commands'/f'{index:03}';child=read(directory/'receipt.json')
+  assert ref==dict(path=str(directory/'receipt.json'),sha256=sha(directory/'receipt.json'),pid=child['pid'],command=row['argv'])
+  assert child['command']==row['argv'] and child['cwd']==row['cwd'] and child['environment']==row['environment']
+  assert child['returncode']==(1 if index==2 else 0) and child['status']==('failed' if index==2 else 'finished')
+  assert child['supervisor_pid']==terminal['pid'] and child['parent_pid']==terminal['parent_pid']
+  assert previous<=child['started_at']<=child['finished_at']<=terminal['finished_at'];previous=child['finished_at']
+  for stream in ['stdout','stderr']:assert sha(directory/stream)==child[stream+'_sha256']
+ raw=(prior/'commands/002/stderr').read_text()
+ assert 'error: current package believes it\'s in a workspace when it\'s not:' in raw
+ assert 'workspace: '+str(OWNER/'Cargo.toml') in raw and 'current:   '+str(S/'src/bootstrap/Cargo.toml') in raw
+ for name,members in plan['prior_build']['membership'].items():
+  root=Path(name);assert sorted(str(p.relative_to(root)) for p in root.rglob('*') if p.is_file())==members
+ assert not (prior/'compiled.json').exists()
+
+def workspace_controls_guard(plan):
+ """Bind actual six-control semantics and raw history, retaining old inputs."""
+ here=OWNER/'experiments/hir-options-hash/workspace-controls-01'
+ work=OWNER/'.work/hir-options-hash-workspace-controls-01'
+ outer=OWNER/'.work/experiments/hir-options-hash-workspace-controls-supervisor-01'
+ proof=plan['workspace_controls'];terminal=read(work/'receipt.json');status=read(outer/'status.json')
+ assert sha(work/'receipt.json')==proof['receipt_sha256'] and sha(here/'inputs.json')==proof['inputs_sha256']
+ control_plan=read(here/'plan.json');freeze=read(here/'inputs.json')
+ assert sha(here/'plan.json')==freeze['plan_sha256']
+ assert terminal['status']=='passed' and terminal['controls_passed']==6 and terminal['compiler_builds']==0 and len(terminal['commands'])==6
+ assert status['status']=='finished' and status['returncode']==0 and status['child_pid']==terminal['pid'] and status['supervisor_pid']==terminal['parent_pid']
+ assert sha(outer/'plan.json')==status['plan_sha256'] and sha(outer/'command.log')==status['log_sha256']
+ assert status['started_at']<=terminal['started_at']<=terminal['admitted_at']<=terminal['finished_at']<=status['finished_at']
+ result=read(work/'controls.json');assert sha(work/'controls.json')==terminal['controls_sha256']
+ assert result['status']=='passed' and result['metadata_commands']==6 and result['compiler_builds']==0
+ assert result['candidate_workspace']['exclude']==['.work']
+ assert freeze['files'][str(OWNER/'Cargo.toml')]['sha256']==sha(HERE/'ancestor-Cargo.before.toml')
+ previous=terminal['admitted_at']
+ for index,(ref,row,observed) in enumerate(zip(terminal['commands'],control_plan['children'],result['rows'],strict=True)):
+  directory=work/'commands'/f'{index:03}';child=read(directory/'receipt.json')
+  assert ref==dict(label=row['label'],path=str(directory/'receipt.json'),sha256=sha(directory/'receipt.json'),pid=child['pid'])
+  assert child['command']==row['argv'] and child['cwd']==row['cwd'] and child['environment']==row['environment']
+  assert child['status']=='finished' and child['returncode']==row['expected_returncode']==observed['expected_returncode']
+  assert observed['label']==row['label'] and child['supervisor_pid']==terminal['pid'] and child['parent_pid']==terminal['parent_pid']
+  assert previous<=child['started_at']<=child['finished_at']<=terminal['finished_at'];previous=child['finished_at']
+  for stream in ['stdout','stderr']:assert sha(directory/stream)==child[stream+'_sha256']==observed[stream+'_sha256']
+ for name,members in proof['membership'].items():
+  root=Path(name);assert sorted(str(p.relative_to(root)) for p in root.rglob('*') if p.is_file())==members
 
 class Stage:
  def __init__(self,digest):
@@ -138,7 +198,8 @@ class Stage:
   assert str(Path(sys.executable).resolve(strict=True))==self.frozen['python']
   assert not W.exists();W.mkdir();(W/'commands').mkdir()
   self.record=dict(status='waiting',pid=os.getpid(),parent_pid=os.getppid(),started_at=time.time(),commands=[],compiler_stages_completed=0,
-   source=str(S),candidate_revision=self.plan['candidate_revision'],source_identity=self.plan['source_identity'],native_recipe_qualified=False,hash_driver_qualified=False,application_qualified=False)
+   source=str(S),candidate_revision=self.plan['candidate_revision'],source_identity=self.plan['source_identity'],native_recipe_qualified=False,hash_driver_qualified=False,application_qualified=False,
+   prior_failed_build_sha256=self.plan['prior_build']['receipt_sha256'])
   self.provider_closures={}
   self.environment=dict(os.environ)
   expected=self.frozen['launch_environment'];extra=set(self.environment)-set(expected)
@@ -151,6 +212,18 @@ class Stage:
  def save(self):owned.write(W/'receipt.json',self.record)
  def guard(self,full=True):
   assert dict(os.environ)==self.environment
+  prior_build_guard(self.plan)
+  workspace_controls_guard(self.plan)
+  for name,expected in self.plan['ancestor_manifests'].items():
+   path=Path(name);assert not path.is_symlink(),name
+   if expected is None:assert not path.exists(),name
+   else:
+    assert path.resolve(strict=True)==path and path.is_file() and m.stamp(path)==expected['stamp'],name
+    if full:assert sha(path)==expected['sha256'],name
+  assert sha(OWNER/'Cargo.toml')==self.plan['ancestor_workspace']['after_sha256']
+  before=tomllib.loads((HERE/'ancestor-Cargo.before.toml').read_text())
+  after=tomllib.loads((OWNER/'Cargo.toml').read_text())
+  before['workspace']['exclude']=['.work'];assert before==after
   for name,closure in self.provider_closures.items():
    observation=owned_closure_guard(closure)
    if observation['owned_alias_ctime_deltas']:
@@ -187,6 +260,7 @@ class Stage:
     self.record.update(status='running',admitted_at=time.time(),free_bytes_before=owned.disk(OWNER,24));self.save()
     self.guard();assert output_files(S/'build')==self.plan['initial_build_files']
     assert not (N/'cargo-home/registry/src').exists() and not (N/'beta-sysroot').exists()
+    owned.write(W/'continued-stage0-files.json',extracted(self.plan,only={'stage0'}))
     assert bounded.rejection(bounded.sample()) is None
     for row in self.plan['prefix_children']:self.command(row)
     for number,row in enumerate(self.plan['stages']):
