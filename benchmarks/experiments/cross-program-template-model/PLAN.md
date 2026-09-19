@@ -106,3 +106,89 @@ relocations, and these runs exclude disk-cache loading, publication and misses'
 fresh emission. Associate exact IDs with the existing original ordinary-emission
 intervals only, preserving the earlier trace's nesting/overlap limitations.
 Require the complete input/output/source/terminal closure before further work.
+
+## Model03: bounded populated history
+
+The original-only replay is closed before this change. Add a private64MiB
+history keyed by the already-qualified identity, with one ordered recency record
+per template and at most16,384 entries. Charge each template plus256 bytes of
+map-node slack and512 bytes base bookkeeping. This is declared retained payload,
+not allocator RSS. Oversized entries and timestamp exhaustion decline without
+eviction; replacement removes the prior entry's charge. Evict the least recently
+used entry only when a new bounded entry needs space. No disk/IPC API is added.
+
+Two additional controls bring focused qualification to14/profile: bounded
+recency/replacement/eviction and exact reuse of two checked caller-body variants
+across four distinct owners with different assertion bases/scalar addresses.
+Repeated hits must not grow metadata. Close these controls before running the
+saved-artifact replay that populates the history after misses.
+
+The first history-model admission (Model03 at153e3057) timed out on the shared
+lock before creating a stage directory or starting any build/test. Its exact
+terminal/controller bindings are preserved in results/cross-program-template-model-03.
+Model04 retries only that unstarted14-control qualification under unchanged
+source semantics, worker count and disk/lock gates. Do not repeat any earlier
+completed model or saved-artifact replay.
+
+While the peer lock remains held, the history replay driver is implemented but
+not run. Model04 compiles that ignored diagnostic alongside the14 controls;
+history.py requires its completed passing closure before admission. This adjusts
+implementation order only; qualification still precedes the actual replay.
+
+The populated replay retains the exact same eight input artifacts and fixed
+original numeric function sets as Replay01. Visit each function once in ascending
+ID order per state, including original seeding and the wrong edit. On each miss,
+freshly stage and capture the current variant; charge and evict under the same
+64MiB cap. Every hit must equal fresh staging. Record missing function IDs,
+key/restore misses, insertion/emission/capture declines, evictions and current
+entry count/charge. No later execution reachability or admission order is claimed.
+Do not associate a newer cached variant with the old function's preparation
+interval: names/bodies at a numeric ID may have changed. Report diagnostic
+lookup/restore, fresh and capture/insert intervals separately, with no command
+speedup calculation. Native file/IPC storage and publication remain absent.
+
+## Model05 and History02: bind identity once per operation
+
+Model04 and History01 are closed before this change. History01 restores every
+hit exactly, but computes identity both before lookup and inside restore/capture.
+Introduce a private Request containing the computed key, exact immutable JIT
+borrow, function ID, emitter and mode. Restore accepts that request directly;
+callers cannot pair a standalone digest with another owner. Request emission
+produces an Emission tied to the same request, so the new capture path obtains
+both metadata and code from that exact operation. Immutable borrows prevent
+intervening owner mutation. Legacy wrappers remain for the prior negative tests.
+
+Two new controls bring qualification to16/profile: exact cross-owner emission/
+restoration/recapture, and foreign checks/functions/modes/emitters plus code and
+storage bounds. After closure, History02 uses the bound request through lookup,
+restore and capture on the same saved input. Prior History01 proved these input
+keys fit unchanged limits; the new replay explicitly requires that property.
+Preserve the older diagnostic rather than treating either single interval run
+as a statistical timing comparison. No production cache or native publication.
+
+## Model06: explicit native publication fixtures
+
+Model05 and History02 are closed before this extension. The first16 controls
+still allocate no code. Add two macOS/AArch64 controls that deliberately prepare
+real scalar callees, restore ordinary staging, and publish through the existing
+finish_preparation path. Keep the source owner alive so its scalar address is
+distinct from the current owner's. Require actual reuse to occur, compare with
+fresh staging before publication, then compare execution with fresh JIT output.
+
+One control changes the callee result and current data initializer independently;
+both appear in the128-bit returned value. The other covers passing/failing
+assertions, instruction budgets0–20, frame limits1–3 and memory limits128/4096,
+including repeated executions with fresh guest state. Width/key declines retain
+ordinary fresh emission. Compare success values/logical instruction counts and
+exact errors, including the current assertion message after rebinding its base.
+The focused run now expects18 controls/profile and explicitly records native
+fixture execution/publication. Original-project guest commands remain zero;
+this is correctness qualification, not a runtime cache or an end-to-end result.
+
+Model06's debug run passes the16 staging controls but both new native controls
+fail: their fixture reads address0, which both the fresh JIT and interpreter
+memory contract reject as null. The fresh JIT fails before the restored-code
+comparison in the first control. Preserve/close that actual run; release was
+not started. Model07 changes the fixture to read valid readonly address8 and
+updates the corresponding initializer, adding an interpreter value/instruction
+oracle. All18 controls, limits and resource gates are retained.

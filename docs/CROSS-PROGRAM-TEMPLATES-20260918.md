@@ -61,3 +61,58 @@ checking every restored result against fresh emission. Keep the original-only
 result intact. Any subsequent production implementation must measure complete
 changed-source commands against the adopted engine and ordinary native Rust,
 including lookup/storage/startup costs and all existing correctness guards.
+
+The populated-history model now passes14 controls/profile and the full saved
+history. The first qualification admission timed out before any test; that
+terminal is retained. The successful replacement admission and replay are closed.
+Every hit still equals fresh staging. For valid edits1–5, exact counts are:
+
+| Worker / fixed original function set | Edit1 | Edit2 | Edit3 | Edit4 | Edit5 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 0 /2391 |1512|2389|2389|1221|2000|
+| 1 /1154 |817|1152|1152|601|973|
+
+Worker0 reaches the64MiB charge limit and evicts447,479 and635 entries in edit4,
+edit5 and restored-source state respectively. Worker1 finishes with2,230 variants
+and40,978,712 charged bytes, without eviction. No capture, emission or relocation
+declines occurred in this modeled history. These are fixed original numeric
+function sets visited in ascending order, not later measured guest reachability.
+The changed functions at a numeric ID cannot inherit that ID's original timing.
+
+This materially improves coverage over original-only reuse on edits2,3 and5,
+so the original-anchor counts should not be treated as a populated-cache ceiling.
+It still does not establish a command speedup. The diagnostic currently hashes
+each requested key and hashes it again inside restore; misses also hash during
+capture. A production interface should bind one checked key to the immutable
+current owner/function/options for that operation, then use it for lookup and
+restoration without weakening validation. Persistent storage or IPC must earn
+its loading, serialization and startup cost in real edited-source comparisons.
+[History controls](../results/cross-program-template-model-04/summary.json),
+[populated replay](../results/cross-program-template-history-01/summary.json).
+
+The bound-request implementation passes16 controls/profile. Its populated replay
+matches all16 worker/state rows from the previous history in outcomes, inserted
+and evicted entries, native word counts and retained charge. One private request
+holds the computed identity and an immutable borrow of the exact current owner;
+the capture path receives emission tied to that request. The replay's separate
+lookup/restore intervals are now roughly1.1–2.9ms for worker0 and0.6–1.6ms for
+worker1 on valid edits. These single diagnostic runs still establish no end-to-end
+speedup. [Bound-request replay](../results/cross-program-template-history-02/summary.json).
+
+Real native publication is also qualified by18 controls/profile. Two additional
+fixtures keep the source code owner alive, rebind to distinct current scalar
+addresses, publish through the existing JIT path and execute the current callee
+and current data initializer. Results match both fresh JIT and interpreter
+values/instruction counts. Other cases compare exact fresh-JIT outcomes over
+instruction budgets0–20, frame limits1–3, memory limits128/4096 and passing/failing
+assertions, including repeated fresh guest states and current assertion text.
+The initial native fixture mistakenly read null address0; the fresh control also
+failed. That debug failure is closed, release remained unstarted, and the corrected
+fixture uses valid address8. [Native qualification](../results/cross-program-template-model-07/summary.json),
+[preserved fixture failure](../results/cross-program-template-model-06/summary.json).
+
+Next connect this primitive to normal lazy function preparation under an explicit
+test-only cache context. Preserve fresh scalar proof/admission, per-owner native
+code/table budgets and ordinary publication/fallback. Then use actual project
+suites across the saved artifacts to exercise real reachability and preparation
+order before selecting a persistent cache design. No production cache is enabled.
