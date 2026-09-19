@@ -231,6 +231,7 @@ fn executable_identity()->Result<String,String> {
 fn readiness(bytes:usize,verify:bool,startup:Cpu)->Result<Value,String> {
     Ok(json!({"kind":"ready","schema":1,"pid":std::process::id(),"workers":WORKERS,
         "history_bytes_per_worker":bytes,"verify_hits":verify,"executable_sha256":executable_identity()?,
+        "large_function_interpreter_threshold":if cfg!(feature="jit-large-function-interpreter") {Some(65_536usize)} else {None},
         "cpu_at_entry":startup,"cpu_at_ready":cpu()?}))
 }
 fn serve_stdio(bytes:usize,verify:bool)->Result<(),String> {

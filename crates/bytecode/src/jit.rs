@@ -479,6 +479,13 @@ impl<'a> Jit<'a> {
         result
     }
     fn prepare_function(&mut self, id: usize) -> Result<bool, String> {
+        #[cfg(feature = "jit-large-function-interpreter")]
+        if self.resumable.is_some() && self.program.functions[id].code.len() > 65_536 {
+            // Development tiering heuristic, not a claim of inevitable emission
+            // failure. Avoid scalar-callee staging and discarded whole-function
+            // emission; callees still prepare independently when reached.
+            return self.finish_preparation(id, Ok(None));
+        }
         if self.native_call_stubs { self.prepare_region_calls(id)?; }
         #[cfg(feature = "jit-preparation-observer")]
         let scalar_started = std::time::Instant::now();

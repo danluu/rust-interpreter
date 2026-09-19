@@ -212,3 +212,31 @@ fn preparation_observer_reports_actual_budget_declines_without_changing_executio
         assert!(row["site"]["next_words"].as_u64().unwrap()>0);
     }
 }
+
+#[test]
+#[cfg(feature = "jit-large-function-interpreter")]
+fn size_tier_preserves_current_results_budgets_and_independently_compiled_callees() {
+    for count in [65_536,65_537] {
+        let mut p=program(7,1);
+        // Reached small callee compiles even when its caller stays interpreted.
+        // This large caller could fit native code: the policy is a size tier,
+        // not a proof that every oversized function exceeds code capacity.
+        p.functions[0].code=vec![Op::Imm{dst:1,value:19};count-6];
+        p.functions[0].code.extend([Op::Local{dst:0,offset:0},Op::Call{function:1,args:vec![],destination:0},
+            Op::Load{dst:1,address:0,size:8},Op::Assert{value:1,expected:true,message:"current callee".into()},
+            Op::Imm{dst:1,value:0},Op::Return]);
+        assert_eq!(p.functions[0].code.len(),count);
+        let checked=ValidatedProgram::new(p).unwrap();let history=TemplateHistory::new(1024*1024,true).unwrap();
+        for retained in [None,Some(&history)] {
+            let mut owner=PreparedJit::with_validated_session_inputs(&checked,&limits(),retained,&[]).unwrap();
+            for instructions in [0,4,100_000,65_539,100_000] {
+                let current=Limits{instructions,..limits()};
+                equal(owner.execute(&[],current.clone()),execute_with_engine(checked.program(),&[],current,Engine::Interpreter));
+            }
+            let run=owner.execute(&[],limits()).unwrap();
+            if count>65_536 {
+                assert_eq!(run.jit_declined_functions,1);assert_eq!(run.jit_compiled_functions,1);
+            } else {assert_eq!(run.jit_declined_functions,0);assert_eq!(run.jit_compiled_functions,2);}
+        }
+    }
+}
