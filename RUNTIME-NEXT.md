@@ -1,28 +1,28 @@
-# Continue the unbuilt exact heap-layout table candidate
+# Continue the exact heap-layout table qualification
 
-Manual indefinite task; goalPAUSED, no subagents/peercontrol. Root branch
-experiment/heap-layout-table-20260919. Read STATE.md and heap-layout-table/PLAN.
-Featureheap-layout-hash usesstdHashMap onlyforexactliveallocationlayouts. Ordered
-free-rangeBTreeMap andallallocationlogicunchanged; defaultoff. Exactfca heap.rs
-reference+4newcontrols are UNRUN. Focus01 expects16heap+6Callocator controls each
-profile. No VM/build/guest/timing yet. Installedadopteddf4006 remainsunchanged.
+Manual indefinite task; goalPAUSED, no subagents or peer process control. Root
+experiment/heap-layout-table-20260919; installed adopted df4006 unchanged. Feature
+heap-layout-hash changes only live allocation lookup metadata; free-range ordering
+and allocation logic unchanged. Test-only exact fca reference and128000operation
+controls passed16heap tests/profile. No guest or timing yet.
 
-Next: commit/push, supervise closed-remaining-public-artifact-compression01
-(compress_profiles.py); independentclose.py afterfinished0. Freshinventoryseven
-completedpublicbytecodesnapshotsets, ~1.8GiBuncompressed. No private/peer/cache/
-binary/source/sharedtargetselected; qualifiedhelpersbyte-identical. NEVER replay
-oldinventory. Thenfreshbuildfloor=max(14GiB,8GiB+2*allocatedsharedtarget); last
-free23.61GiB belowfloor23.94GiB. Onlyifadmittedlaunchheap-layout-table-focused01
-qualify.py; --close independentafterterminal. Freezecontrollers/inputsuntilclosed.
+Focused01 source1f89038b supervisor57836/controller57839 CLOSED:3commands all0,
+then incorrect count assertion (c_allocator::tests:: matches3, other3 in separate
+budget module). Preserve terminal1 and all logs. Registered focused02 in
+heap-layout-table-continuation executes only missing debugbudget3 and release6,
+verifying retained prefix. Next commit/push then supervise02 and independent
+--close. Freeze inputs through closure. Workspace01 now requires closed02;
+expects618Rust pass13ignored/profile, Python446pass22skip, retainedfeatureVM.
 
-Twojust-closednegative directions: pointer-slotsadds2functions but0clear samples;
-overwrittenwrites0current1933/1429samples. PARKboth. Older typedoverwrite and
-broad/conditionaldemandJIT alreadynegative; do not recreate/retime. Main968b1472
-publishedslotproofpreservingpeer608da6ba. Overwrittenpublication exec26569 needs
-verification. No activeownedcommands atcheckpoint; sharedlock45s/2workers.
-Compression01failed beforeinventory/mutation ontypedfile-hashschema; retained
-verifiedfailure, actualownershipSHAunchanged. New02correctsreader andbindsfailure.
-Launch02next; focusstillUNRUN. Main4be97e5e pushednegativeevidencepreservingpeers.
-Remainingcompression02 now CLOSED64files,1.34GiBreclaimed. Free24.96GiB>floor23.94.
-Nextlaunch heap-layout-table-focused01, qualify.py, independent --close. Heap
-workspace01 registeredbutmustwaitforclosedfocus. BothdefaultVM/benchmarksunchanged.
+Sharedlock45s,2workers. Build floor=max(14GiB,8GiB+2*allocated sharedtarget),
+recomputed EVERY child. Sharedtarget NEVER clean. Currentfree~24.9GiB,floor~24.0.
+Storagecompression02 CLOSED64files/1.34GiB, main9e214d49 pushed preserving peers;
+NEVER replay compression. Source/checkpoint publication via explicit paths only.
+No AWS/browser/process control. Suggestions unchangedSHA4d74b3dc8b79...c2f.
+
+After workspace: exact current-host fre semantic controls from closed
+compact-switch-current-host01 adopted profiles (logical totals15849531264,
+13363262210,4291122869), same entropy tapes/maps/currenthost. Full strict/cache
+checks before installation or original40changedsource primary. No gate changes.
+Both frame slot proof and local overwritten stores PARKED for zero added samples;
+broad/conditionaldemandJIT and earlier runtime attempts already failed, no repeats.

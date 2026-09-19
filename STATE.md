@@ -116,3 +116,9 @@ Free26795442176 vsbuildfloor25700851712 (allocatedtarget8555458560) admitsfocus.
 Heapworkspace01 registeredUNRUN expects618Rust/profile13ignored,446Python22skip,
 retainedfeatureVM; requiresclosedfocus16heap+6C/profile first. No guest/timing.
 Nextlaunchfocus afterthiscommit; sourcesfreeze throughitsindependentclosure.
+
+2026-09-19 resumed: main9e214d49 confirmed remote. Focus01 CLOSEDterminal1 after
+all3children0:heap16debug+16release,Callocator3debug. Count expectation erroneous
+because separate budget module excluded. New focused02 continuation runs missing
+budget3debug+all6release, no repeat completedprefix. Workspace01 dependsclosed02.
+No candidate guest/install/timing. See updatedRUNTIME-NEXT and continuationPLAN.
