@@ -97,3 +97,16 @@ workerprepsum35.62ms/testcompilesum146.88ms (overlap;notCPU). Noactiveexperiment
 Nextboundeddiagnosticonlypreparationphases/exactdeclinereasons onactualsaved
 suites; oldgiantreducerordinarydecline23.9ms/worker stillunexplained, do notassume
 16MiB. Newmaterialcandidate follows measuredcause. OptionalcleanupUNSTARTED.
+
+Main88b070bf PUSHED closed request-cost qualifications, primary02failure and
+retainedcostobserver; runtimecandidate unadopted. Request-cost branchf349c1ba pushed.
+Nowbranch experiment/session-preparation-observer-20260918, source1c473ada.
+ACTIVEdiagnosticqualification supervisor60896/controller60932; debug31focused
+controls passed, releasepending. Newjit-preparation-observer feature only reports
+scalar/ordinary/publication intervals and bounded exactdeclines; noadmission or
+nativeword changes. New71-declinefixture checksactualfallback and64rowbound.
+Freezecrates/newobserverfolder throughclosure. Afterwardscreateactualparser replay
+from session-request-costs/parser_client.py, use diagnosticqualificationbinaries,
+verify-hits OFF for attribution;16savedcommands/1,824originaltests, exactoutcomes,
+fullserverCPU/ownership. Recordobserved_cache_hits (notverified), worker observation
+fields. This isdiagnostic, no acceptance timings. Goalpaused; nootherprocesscontrol.
