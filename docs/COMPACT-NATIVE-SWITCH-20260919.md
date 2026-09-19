@@ -73,8 +73,25 @@ control, and validates the actual produced summary through the benchmark
 admission function. Neither qualification executes a project guest or times an
 edited command.
 
-Next complete176-command token, folded and
-pgrust histories in order, with history-off, native line-table and Cargo-check
-controls added to the existing arms. Carry forward the already fixed portable
-core borrow probe and JSON configuration comparison before pgrust. Private rg,
-both parser guards and Nushell remain required before current-main integration.
+The full token history (`compact-native-switch-edit-token-01`, source`4abcd34d`,
+independent closure97579) also passes. All176 commands and both strict controls
+preserve the12 original test outcomes, expected wrong-source failures, final
+restoration and current custom artifact identity. The closure verifies2,065
+frozen inputs and654 retained evidence files.
+
+| Full token metric | Candidate / adopted | A/A envelope | Ratio + envelope |
+| --- | ---: | ---: | ---: |
+| Wall | 0.956804 | 0.026161 | 0.982965 |
+| CPU, including full server overhead | 0.945226 | 0.021166 | 0.966392 |
+
+The complete composition reduces median paired edited-command wall time4.3%
+and CPU5.5% against adopted. It still takes1.643992 times native wall time.
+The history-enabled/history-off wall ratio is1.003058 and CPU ratio0.992346;
+these close values do not establish a separate history-cache latency benefit.
+The primary and full-history results remain distinct measurements, with no
+isolated switch-versus-parent claim.
+
+Next complete176-command folded and pgrust histories in order, with history-off,
+native line-table and Cargo-check controls. Private rg, both parser guards and
+Nushell remain required before current-main integration. The runtime is still
+experimental; no default change follows from the passing token guard alone.

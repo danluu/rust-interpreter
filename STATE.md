@@ -81,15 +81,21 @@ Protocol02 PASSED27/CLOSED78117; results committed4abcd34d and pushed.
 Both proofs retain4actual std/no_std type/borrow compilerrejections. No timed
 workload failed or repeated. Fullbenchmark uses protocol02; samegates/options.
 
-ACTIVE compact-native-switch-edit-token-01, source4abcd34d,
-supervisor80729/controller80732, started2026-09-19 05:36:53 local.176+2strict,
-12originaltests. Freeze inputs until independentlyclosed. Read terminal; on
-success run compact-native-switch-guards/close.py RUN under uniquesupervisor.
-Onlyfulltokenpass admitsfoldedthenpgrust (suffix01). Portablecorestrictprobes and
-JSON-normalizedcasecomparison already fixed. Preserveallwrong/restoredoutcomes.
+Fulltoken compact-native-switch-edit-token-01 source4abcd34d,80729/80732,
+PASSED/CLOSED97579:176+2strict,12tests;2065frozeninputs654evidence.
+Wall/adopted.9568037569+AA.0261608460=.9829646028;
+CPU.9452257516+AA.0211662276=.9663919791;nativewall1.6439918812.
+History-enabled/fresh wall1.0030578433,CPU.9923463181; noseparatecacheclaim.
+Resultcommitted242ad5d3. Allsource/artifacts/wrongoutcomes/restorationpass.
 
-Mainbf5bddad afterpublicationworktreefetch/ff preservespeer; lastownpublication
-59db6951 containsclosedprimary. Preparedlarge/parseradapters199894c0 nowbind
+ACTIVE compact-native-switch-edit-folded-01,source242ad5d3,
+supervisor26570,started2026-09-19 05:48:40 local.176+2strict,18originaltests.
+Read terminal; keepallinputs frozenuntilclose.py RUN independentclosure.
+Onlyfoldedpass admits pgrust01. Portablecorestrictprobes/JSONcasecomparison
+alreadyfixed. Tokenmustnotrerun. Currentfreeabout17.7GiB,fre16GiBadmission.
+
+Main07fb646f publishes27-controlproof and preservespeerbf5bddad;
+fulltokenpublicationpending. Preparedlarge/parseradapters199894c0 nowbind
 protocol02/27 at59c151db (NOT qualified/launched). Preparedexactprimaryretirement
 0654b553 (NOT launched; onlyiflateradmissionneedsit). Currentfreeabout21.9GiB.
 Sampledswitch duplicate/default-target removal hasnoeligiblesites; old

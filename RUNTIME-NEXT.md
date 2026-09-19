@@ -16,13 +16,15 @@ AA.0265191676; CPU.9141699125,AA.0335071229. Nativewall1.5899161254.
 This is complete-composition evidence, not isolated switch causality. Main
 runtime stays adopteddf4006e0 until every remaining guard and integration pass.
 
-ACTIVE: compact-native-switch-edit-token-01, source4abcd34d,
-supervisor80729/controller80732, started2026-09-19 05:36:53 local.176commands
-plus2strict,12originaltests. Freeze all experiment inputs through closure.
-Read terminal before any next action; never assume completion or rerun timings.
-If successful terminal, independently close with compact-native-switch-guards/
-close.py RUN. Only a full passing gate admits folded then pgrust (samefolder,
-run compact-native-switch-edit-CASE-01), each followed by independentclosure.
+Fulltoken176+2strict PASSED and independentlyCLOSED97579: source4abcd34d,
+12tests,2065frozeninputs654evidence. Wall/adopted.9568037569+AA.0261608460
+=.9829646028;CPU.9452257516+AA.0211662276=.9663919791. Nativewall1.6439918812.
+Result242ad5d3; no timingrerun. Alloutcomes/artifacts/source restorationpass.
+
+ACTIVE compact-native-switch-edit-folded-01,source242ad5d3,
+supervisor26570,started2026-09-19 05:48:40 local.176commands+2strict,18tests.
+Read terminal first; successful completion then independentclose.py RUN under
+uniquesupervisor. Onlyfullfoldedpass admits pgrust01. Freezeexperimentinputs.
 
 Publicprotocol01 passed26 and CLOSED59714. Before any timing, review caught
 stale benchmark expectedcount22. Corrected source59c151db adds one admission
@@ -38,6 +40,6 @@ Parser24GiB; Nushell66.54872655GiB. Prepared exact closed-primarycache retiremen
 foldercompact-switch-primary-cache-retirement is unstarted and only ifneeded.
 Completed compression/retirements in STATE.md MUST NOT be repeated.
 
-Mainbf5bddad after fetching/fastforwarding publicationworktree preservespeerwork;
-our lastpublication59db6951 contains closedprimary. Root4abcd34d pushed.
+Main07fb646f publishes27-controlproof preservingpeerbf5bddad;
+fulltokenpublicationpending. Root242ad5d3 containsclosedfulltoken.
 suggestions.txt unchangedSHA4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f.
