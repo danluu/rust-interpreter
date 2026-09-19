@@ -88,3 +88,16 @@ repeat. Main968b1472 publishesclosedslotproof preservingpeer608da6ba.
 Nextreviewheapownershipmetadata: latestsavedcapturehas73/155heap-contextsamples;
 exactlayoutget/insert/remove usesBTreeMap despite noordering requirement. Free-
 range addressordering MUST remain unchanged. No allocatorimplementationyet.
+
+New branch experiment/heap-layout-table-20260919. UNBUILT featureheap-layout-hash
+changesonlyexactliveallocationlayouts tostdHashMap; orderedfreeBTreeMap andall
+allocationbodylogic unchanged. Defaultfeatureoff. Exactfca heap.rs snapshot is
+retainedtest-onlyreference.4newcontrols incl16freshmapinstances,128000seededops,
+allpointers/errors/guestbytes/live layouts; focuscontroller expects16heapcontrols
+and6Callocatorcontrols perdebug/release (4commands). No build/test/profileyet.
+Buildfloor25700851712bytes, free25352810496: NOT admitted. Newregistered
+closed-remaining-public-artifact-compression01 selectssevenclosedpublicartifact
+snapshotsets (~1.8GiB); originalplaintextsha=filename=closed-evidencesha. Existing
+qualifiedcompression/birthtimehelpersunchanged. No mutationlaunchedyet. Next
+commit/push, supervisecompression, independentclose, freshfloor, thenheapfocus.
+No activeownedcommands; negativeoverwrittenpublication mayneedpushverification.
