@@ -21,15 +21,13 @@ CLOSED47849: actual removable LDR samples2/2; specific narrow design parked.
 Isolated compact switch failed full primary, archived old branch38c51f5d.
 No unchanged retiming or cancelled guards. All raw failures retained.
 
-Next: execute/close registered linear-budget-reservation-02 model and scope.
-Fixed-path debit reservation across forward single-successor
-native chains, with exact suffix refunds at faults/VM exits. This is distinct
-from check-only region-budget-credit02, now CLOSED with12controls/53bindings
-but only1/2 potential CMP/B.LO samples. Guard-only proposal PARKED, no build.
-Readmission02 succeeded after preserving01 occupied-lock zero-work failure.
-No active command. Linear01 alsoexpired45s waiting forpeerlock, zero work;
-CLOSED receipt-only. Use linear-budget-reservation-readmission/launch.py when
-lockavailable. Model sources459468b5 unchanged; freeze through closure.
+Next: consider branch-aware reservation only with explicit per-edge refunds,
+extra branch costs and entry-path uncertainty. Linear-reservation02 CLOSED12
+controls/56bindings, potential39/23 samples (2.02/1.61%); standalone version
+deferred. Native budget samples are mainly first MOV174/77, not SUB7/0. Do not
+infer instruction latency or subtraction dependency from sampled PC buckets.
+Both occupied-lock first attempts preserved/closed with zero work. No active
+command; runtime and installed tool unchanged. New model would precede code.
 No Rust build admitted
 until disk reserve recomputed: max(14GiB,8GiB+2*allocated shared target), last23GiB.
 Free~19.9GiB. Shared .work/fixed-frame-clear-combined-build-01/target NEVER CLEAN.

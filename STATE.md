@@ -311,3 +311,13 @@ model459468b5. Read-only preliminary99uncompressedJSONfiles across21closed
 publicprofile runs total3.448GiB; safecompressionmayhelpfuturebuildreserve, but
 noinventory/metadataadmission/mutationperformed. Sharedtarget7.502GiB floor
 23.004GiB, currentfree~18.6GiBafterpeerbuildallocation. Private/peerdatauntouched.
+
+Linear-reservation02 source5143f9c3 supervisor56735/controller56738 passed12
+controls andbothcases; independentclosure56bindings. Potentialwholebudget39/23
+of1933/1429 (2.02/1.61%), mixedentrypathunknown. BudgetpartitionfirstMOV174/77,
+CMP1/0,B.lo2/3,SUB7/0. DO NOT infer subtractiondependencybottleneck frombucket;
+PCskid/pipeline/entryfrequency notseparated. Standalonefixedchain deferred.
+Single-successor fastlogicalvisits32,436,817/42,031,915 versuseligible targetall
+75,673,712/98,510,491; scopewindows/entropyremainseparate. Nextconsiderbroader
+branchreservationonlywithexplicit edge-refundcosts andstrongerentryambiguity
+accounting. No activecommand/Rustbuild/guest/cleanup.
