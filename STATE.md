@@ -2,7 +2,7 @@
 
 Manual optimization continues indefinitely; the saved goal stays PAUSED.
 No goal tools, subagents or independent model calls. Root owns
-`/Users/danluu/dev/rust-interp` on `experiment/jit-preparation-costs-20260918`.
+`/Users/danluu/dev/rust-interp` on `experiment/shared-emission-templates-20260918`.
 Private repository: `danluu/rust-interpreter`; push qualified work regularly.
 
 ## Current direction
@@ -86,6 +86,12 @@ arena, scalar/assertion relocation, admission and guest state. Begin with
 template correctness before production wiring/timing. This is distinct from
 the existing per-worker PreparedJit cache; persistent cross-edit caching remains
 deferred pending a complete validity/I/O contract.
+The Stage1 prototype is now prepared entirely under cfg(test), with precise
+assertion/scalar immediate relocation records and6staging controls. Nothing
+is connected to guest execution or CLI options. Source module
+`jit/emission_templates.rs`; controller/plan
+`benchmarks/experiments/shared-emission-templates`. Next run focused01 in
+debug/release, preserving failures and source before correction.
 
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally

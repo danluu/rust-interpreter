@@ -50,6 +50,9 @@ mod guarded_ranges;
 mod scratch_values;
 
 #[cfg(test)]
+mod emission_templates;
+
+#[cfg(test)]
 mod limit_tests;
 #[cfg(test)]
 mod scratch_locals;
@@ -320,6 +323,10 @@ pub(crate) const MAX_CODE_BYTES: usize = 16 * 1024 * 1024;
 
 struct CompiledFunction<'a> {
     #[cfg(test)]
+    template_relocations: Vec<emission_templates::Relocation>,
+    #[cfg(test)]
+    template_assertion_pcs: Vec<usize>,
+    #[cfg(test)]
     local_forwarding: Vec<(usize, &'static str)>,
     #[cfg(test)]
     local_fact_events: Vec<(usize, &'static str, &'static str)>,
@@ -532,6 +539,10 @@ impl<'a> Jit<'a> {
         #[cfg(test)]
         let mut memory_spans = vec![];
         let mut assertions = vec![];
+        #[cfg(test)]
+        let mut template_relocations = vec![];
+        #[cfg(test)]
+        let mut template_assertion_pcs = vec![];
         let mut operations = 0;
         let mut range_work = 4_000_000;
         let reads = read_registers(f);
@@ -658,6 +669,8 @@ impl<'a> Jit<'a> {
                     if let Op::Assert { value, expected, message } = op {
                         let code = assertion_code(assertion_base, assertions.len())?;
                         assertions.push(Assertion { message, function: &f.name, kind: FaultKind::Assertion });
+                        #[cfg(test)]
+                        template_assertion_pcs.push(start + index);
                         a.assertion(*value, *expected, code);
                     } else if let Some(fill) = fills.get(&(start + index)) {
                         memory_part!(a, "fused_fill", a.local_fill(*fill));
@@ -698,6 +711,11 @@ impl<'a> Jit<'a> {
                 for (at, code) in std::mem::take(&mut a.assertions) {
                     let target = a.words.len();
                     a.imm(0, code);
+                    #[cfg(test)]
+                    a.template_relocations.push(emission_templates::Relocation {
+                        word: target, words: a.words.len() - target, value: code,
+                        kind: emission_templates::Kind::Assertion((ASSERTION_FAILURE_BASE - code) as usize - assertion_base),
+                    });
                     a.return_to_vm();
                     span!(AssertionTail, None);
                     a.patch_conditional(at, target)?;
@@ -737,6 +755,7 @@ impl<'a> Jit<'a> {
                         memory_spans.push(span);
                     }
                     retained_local_writes.extend(a.retained_local_writes);
+                    emission_templates::append(&mut template_relocations, a.template_relocations, words.len());
                 }
                 words.extend(a.words);
                 entries[start] = Some(Block { offset, end: pc });
@@ -757,6 +776,8 @@ impl<'a> Jit<'a> {
                         let fallback = *a.scalar_fallbacks.get(&at).ok_or(EmitError::InvalidRelocation("missing scalar successor fallback"))?;
                         links.push((words.len() + at, successor, words.len() + fallback));
                     }
+                    #[cfg(test)]
+                    emission_templates::append(&mut template_relocations, a.template_relocations, words.len());
                     words.extend(a.words);
                 }
                 if self.native_call_stubs {
@@ -785,6 +806,8 @@ impl<'a> Jit<'a> {
             patch_jump(&mut words, at, target)?;
         }
         Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
+            #[cfg(test)] template_relocations,
+            #[cfg(test)] template_assertion_pcs,
             #[cfg(test)] memory_spans,
             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
             liveness_declined: self.persistent_registers && values.is_none(),
@@ -1065,6 +1088,8 @@ enum Fact {
 
 #[cfg_attr(not(test), derive(Default))]
 struct Assembler<'a> {
+    #[cfg(test)]
+    template_relocations: Vec<emission_templates::Relocation>,
     scalar_fallbacks: BTreeMap<usize, usize>,
     #[cfg(test)]
     observe_guarded_local_retention: bool,
@@ -1120,6 +1145,7 @@ struct Assembler<'a> {
 impl Default for Assembler<'_> {
     fn default() -> Self {
         Self {
+            template_relocations: vec![],
             observe_guarded_local_retention: true,
             observe_static_local_facts: true,
             observe_scalar_copy: true,
