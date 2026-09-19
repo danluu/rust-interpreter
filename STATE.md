@@ -241,3 +241,5 @@ Literal installedtool734fa9b5945951d42c37caa2c3906ba9a6825bd147e9f85c018afb81055
 Primary05 sourcee21ad564 ACTIVE71416/controller71419;20/40completed01:36;2strict101/nextrequest1. Freeze source/screenfolder throughclosure, no restart. Mainf0444533 pushed full literal proofs (no runtimeadoption), branchpushed e21ad564.
 
 Primary05 e21ad564 complete71416/71419 CLOSED27791:40+2strictallcorrect/restored. Wall.9696848094+.0320016632=1.0016864726FAIL; CPU.9157322051+.0271723127=.9429045178PASS. Nativewall1.296276; noadoption/unchangedretry/fullguard. Next read-only recordedcost analysis prepared.
+
+Literal primarycosts0d65af6f complete34071/34074 CLOSED47059:20validcustomreports, candidate mediansms build1278.096/execution301.122/request296.680/outsideworkers29.062/prepsum31.998/compilesum61.513. No new workload. Next hypothesis shared immutable normalized Function digest across2workers percurrentValidatedProgram, retainingcurrentcallee/context keys and4MiB logicalbound; sourceprototype notwrittenyet.
