@@ -67,18 +67,22 @@ fault/replay and private memory; call/branch/resource controls retained.
   Wall/adopted.9414513615 + A/A.0268743944 = .9683257559 PASS;
   CPU/adopted.9390737150 + A/A.0239171867 = .9629909017 PASS.
   Native wall1.5806520070, CPU1.9441990829. All12 outcomes and restoration pass.
-- Exact closed-primary cache retirement is ACTIVE:42462/42465, started03:41:57,
-  source73b34df0 (script97de6f71). Only six previously closed primary namespaces.
-  Wait for terminal, then close.py with source73b34df0. Do not repeat or broaden.
+- Exact closed-primary cache retirement source73b34df0:42462/42465, CLOSED60900.
+  Six completed primary namespaces,3191 compiler files/2047542482 logical bytes,
+  2792 protected hashes unchanged; about1.59GiB actual headroom. NEVER REPEAT.
+- Parser protocol01 source3d0acbd8:62584,14 controls (6 fresh/8 exact reused),
+  CLOSED68461. Controllers session-runtime-composition-parser-guards qualified.
+- Large protocol01 source97ddb268:73784,all23 fresh controls pass. Independent
+  CLOSED84235; controller session-runtime-composition-large-guards.
 
 ## Next actions
 
-Finish/close the active exact cache retirement, then qualify the prepared parser
-and large adapters under lock and close both protocol receipts. The closed full
-fre pass admits folded, then pgrust public guards. The private/Nushell adapters and both parser guards
-remain required before integration. Their controllers are now PREPARED ONLY in
+Run folded followed by pgrust
+under the closed fre gate and existing public protocol. The private/Nushell adapters and both parser guards
+remain required before integration. Their controllers are prepared in
 session-runtime-composition-large-guards and session-runtime-composition-parser-guards;
-no protocol tests or timing commands have run. Order: public three, private rg-aot,
+parser and large protocols are independently closed; timing is
+unstarted. Order: public three, private rg-aot,
 parser incremental, parser repository defaults, Nushell last. Full parser retains
 its existing stronger session wall/CPU/noise gates. Private uses two persistent
 slots even for one test, with all idle-worker costs charged. Nushell requires
@@ -93,7 +97,7 @@ Shared .work/benchmark.lock,45s admission; two Cargo/test workers. Shared target
 .work/fixed-frame-clear-combined-build-01/target MUST NEVER be cleaned. Builds
 require max(14GiB,8GiB+2*current allocated target), re-evaluated before each child.
 Replay/analysis12GiB, closure/children8GiB; fre16GiB, parser24GiB plus namespace
-allowance, pgrust12GiB, Nushell>=47GiB. Last free~22.2GiB; recheck continuously.
+allowance, pgrust12GiB, Nushell>=47GiB. Last free~19.5GiB; recheck continuously.
 Cleaner read-only: /usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status.
 Never compete with it, repair it, signal peers or use broad cleanup.
 
@@ -108,12 +112,9 @@ suggestions.txt remains user-owned/untracked, SHA256
 4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f;
 reread this turn. Detailed dispositions docs/SUGGESTIONS-REVIEW-20260913-1245.md.
 
-Main publicationda279a9a pushed closed fre/install/primary/full-protocol evidence,
-preserving peerd8da0b18. Experimental branch pushed through97de6f71. Prepared
-closed-primary cache retirement (session-runtime-primary-cache-retirement) selects
-only six completed primary namespaces, ACTIVE42462/42465. Its fresh admission
-check requires free below max(24GiB,8GiB+2*shared target allocation); close after.
-Never touch the active full-history caches. Publish qualified evidence regularly.
+Main publication44b2494e pushed the closed full fre comparison and primary cache
+retirement, preserving peer60fa9f5c. Experimental branch pushed through97de6f71. The six-namespace primary cache retirement is CLOSED60900 and must never repeat.
+Publish qualified evidence regularly.
 Publish exact proof/docs paths on main, fetch/ff first; do not copy experimental
 runtime or overwrite compiler work. Prior detail archived at
  docs/history/STATE-20260919-before-session-runtime-composition.md.
