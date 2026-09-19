@@ -23,7 +23,7 @@ PID loader trace and nine stdout records must pass the independent parsers.
 Every failure stops the sequence; the parallel process never follows a failed
 serial run. The two process hashes are not compared across modes.
 
-Artifacts are confined to the new `N/native-controls/hash-driver-01` directory.
+Artifacts are confined to the new `N/hash-driver-01` directory.
 The caller supplies a fresh `hir-options-hash-driver-*` evidence directory and
 the already-held canonical descriptor. The shared monitor must account for the
 whole candidate namespace and every prior/current stage evidence directory.
@@ -124,3 +124,18 @@ EOF. Its fat Mach-O parser enforces declared slice bounds before parsing load
 commands. These additions have source review and AST validation only. A real
 hash-stage qualification still requires the completed native audit, concrete
 discovery, actual three-command execution and a passing independent audit.
+
+The native references now select the fresh native02 proposal. Native01 remains
+an independently audited failed attempt with five successful child return codes
+followed by a strict diagnostic rejection; none of those five children qualifies
+native02. The prerequisite reader and independent verifier bind the exact private
+stock-wrapper bytes to the immutable Cargo source, allowing only removal of its
+Cargo-specific unused-crate lint expectation. A successful native02 must contain
+twenty fresh children and retain the twenty-five-child combined history. The hash
+driver uses a sibling artifact directory so the failed native01 directory remains
+unchanged. Seventeen pure controls passed once: the previous nine command-history
+controls and eight new synthetic wrapper/history association controls. Their
+complete inputs, raw output, actual supervisor completion and independent audit
+are retained in `results/hir-options-hash-prerequisite-controls-02`. The enclosing
+native02/hash execution remains unrun; these tests do not qualify a compiler or
+establish an application timing.

@@ -1,0 +1,1 @@
+Seventeen bounded pure prerequisite controls: nine existing command-history controls plus eight private-wrapper/history association controls. Source-only successor; no native or compiler execution. The eight controls use synthetic native02 result fields and preserve the actual native01 failure as failed.

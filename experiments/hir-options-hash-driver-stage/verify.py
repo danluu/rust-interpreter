@@ -29,7 +29,7 @@ HOST='aarch64-apple-darwin'
 D2=S/'build'/HOST/'stage0'
 E2=S/'build'/HOST/'stage1'
 B3=N/'beta-sysroot'
-ARTIFACTS=N/'native-controls/hash-driver-01'
+ARTIFACTS=N/'hash-driver-01'
 WORK=ROOT/'.work/hir-options-hash-driver-01'
 OUTER=ROOT/'.work/experiments/hir-options-hash-driver-supervisor-01'
 OUT=ROOT/'.work/hir-options-hash-driver-independent-verification-01.json'
@@ -334,7 +334,7 @@ def main():
     for name,catalog in plan['immutable_trees'].items():require(inventory(name)==read(frozen(catalog,freeze)),'full provider tree membership/bytes')
     prior={'compiler':(X/'experiments/hir-options-hash/compiler-build-continuation-03',X/'.work/hir-options-hash-compiler-build-continuation-03'),
         'beta':(A/'experiments/hir-options-hash-beta-composition-08',A/'.work/hir-options-hash-beta-composition-08'),
-        'native':(A/'experiments/hir-options-hash-native-controls-01',A/'.work/hir-options-hash-native-controls-01'),
+        'native':(A/'experiments/hir-options-hash-native-controls-02',A/'.work/hir-options-hash-native-controls-02'),
         'run_make':(O/'experiments/hir-options-hash-run-make-stage-02',O/'.work/hir-options-hash-run-make-01')}
     require(set(plan['independent_audits'])==set(prior),'all four prerequisite audits')
     for name,(source,evidence) in prior.items():
@@ -343,6 +343,38 @@ def main():
             and audit['receipt_sha256']==sha(evidence/'receipt.json'),'passed exact prerequisite audit')
         inherited=read(frozen(source/'inputs.json',freeze));require(sha(frozen(source/'plan.json',freeze))==inherited['plan_sha256'],'predecessor plan hash')
         for path,row in inherited['files'].items():require(freeze['files'][path]['sha256']==row['sha256'],'complete inherited proof closure')
+    native_source,native_work=prior['native']
+    native_plan=read(frozen(native_source/'plan.json',freeze))
+    native=read(frozen(native_work/'receipt.json',freeze))
+    native_result=read(frozen(native_work/'native-controls.json',freeze))
+    original_path=S/'compiler/rustc/src/main.rs';private_path=N/'native-controls-02/stock-main.rs'
+    original=raw(frozen(original_path,freeze));private=raw(frozen(private_path,freeze))
+    removed=b'#![expect(unused_crate_dependencies)]\n'
+    require(len(original)==2128 and hashlib.sha256(original).hexdigest()=='bfa21d3eced1a7ae4de80cb17e7f8840be640bfdfa96bff32fd6c63282d2c2ab'
+        and original.splitlines(keepends=True)[3]==removed and original.count(removed)==1
+        and private==b''.join(original.splitlines(keepends=True)[:3]+original.splitlines(keepends=True)[4:])
+        and hashlib.sha256(private).hexdigest()=='2830149bab94db375ec164229320f060096bd5c1ba2576045148bfc090fdcd68',
+        'independent exact private stock source derivation')
+    derivation=dict(source=str(original_path),original_sha256=hashlib.sha256(original).hexdigest(),original_size=len(original),
+        destination=str(private_path),derived_sha256=hashlib.sha256(private).hexdigest(),derived_size=len(private),
+        removed_line=4,removed_bytes=removed.decode(),policy='remove-exact-cargo-unused-crate-expectation-v1')
+    require(native_plan['stock_source_derivation']==native['stock_source_derivation']==native_result['stock_source_derivation']==derivation
+        and native_result['stock_source']==native['stock_source'] and native['stock_source']['path']==str(private_path)
+        and native['stock_source']['sha256']==derivation['derived_sha256'] and native['stock_source']['size']==len(private),
+        'actual private wrapper association')
+    failed_audit_path=A/'.work/native-controls-failure-verification-01.json'
+    failed_audit=read(frozen(failed_audit_path,freeze));failed_work=A/'.work/hir-options-hash-native-controls-01'
+    failed=read(frozen(failed_work/'receipt.json',freeze));failed_proof=native_result['prior_failed_attempt']
+    require(sha(failed_audit_path)=='af25ceeda3cf32cf63d73b3fd2cee05726267166e0babd58587b884815256f3e'
+        and failed_audit['status']=='verified-retained-failure' and failed_audit['children']==5
+        and failed['status']=='failed' and failed['error']=="ValueError('stock build emitted diagnostics')" and len(failed['commands'])==5
+        and failed_audit['receipt_sha256']==sha(failed_work/'receipt.json')==failed_proof['receipt_sha256']
+        and failed_proof==native_plan['prior_failed_attempt'] and failed_proof['evidence']==str(failed_work)
+        and failed_proof['audit']==dict(path=str(failed_audit_path),sha256=sha(failed_audit_path))
+        and failed_proof['actual_children']==5 and failed_proof['qualified_children']==0
+        and failed_proof['fixture_never_created'] is True and failed_audit['native_roles_and_behavior_qualified'] is False
+        and native_result['qualified_native_children']==len(native['commands'])==20
+        and native_result['total_actual_native_children']==25,'honest separate failed-five and successful-twenty histories')
     preflight=read(HERE/'metadata-preflight.json')
     require(preflight['status']=='passed' and preflight['inputs_sha256']==sha(HERE/'inputs.json')
         and preflight['snapshot_plan_sha256']==launch['snapshot_plan_sha256']
