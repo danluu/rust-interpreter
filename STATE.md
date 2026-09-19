@@ -26,6 +26,14 @@ It invokes one release ignored diagnostic, using the
 existing root target; no guest or executable publication. Freeze inputs until
 closure. Do not rerun a successful command for later bookkeeping failures.
 
+Census02 at1f64c07f completed under70063/70105, CLOSED76725/76829. All eight
+artifacts and seven comparisons verify. No guest/code publication. Across the
+five valid edits exact bodies cover~30–100% of all ops, closed direct-call graphs
+~13–53%; global context differs on three of five edits. Cold functions included.
+Next classify exact global/function/op differences and relate overlap to measured
+preparation before choosing a cache mechanism. Do not enable reuse from these
+counts. [Assessment](docs/CROSS-EDIT-EMISSION-CENSUS-20260918.md).
+
 The census hashes complete functions at identical numeric IDs, then checks direct
 callees and an iteratively propagated closed direct-call graph. It excludes
 unknown indirect callees. Global metadata, initializer bytes, function count and
