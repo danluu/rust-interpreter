@@ -59,10 +59,15 @@ candidate VM sources. Normal VM784aef73f3bac42d3eec002008318932ececc4ef95a677070
 One fresh block and one exhaustive guest with same original artifact, ordinary
 entropy and original limits/assertions. Existing qualified profiles are STATIC
 identity only; same-process dumps must independently reconstruct every native word.
-First sampler session-fre-sample-block-01 launched; inspect its supervisor status
-before next. Separate sampler/summary/analysis phases preserve completed guests
-across lock admission failures. No builds/performance claim or adoption. Freeze
-qualified runtime/scripts and this controller folder through diagnostic closure.
+Both captures completed64185/72317 (guest64190/72324); analysis76632 passed and
+closure86007 verified all evidence. Generated self samples1716block/1294exhaustive,
+Copy434/228,Call351/314,Load202/83. Full attribution is closed; no timing claim.
+Memory subparts01 ACTIVE32466/controller32469, Cargo child32475: two offline
+reconstruction tests plus retained-PC attribution; zero guest/code publications.
+Sourceed5bbeb2; controller benchmarks/experiments/session-fre-memory-parts/run.py.
+First build admitted23.178GiB vs22.971GiB required. Freeze all qualified Rust,
+scripts and memory-parts folder until closure. Preserve completed prefix if a
+later admission check fails. Existing six partition/ambiguity controls reused.
 
 ## Resources and source safety
 
@@ -79,7 +84,12 @@ Completed exact cache retirements MUST NOT be repeated: session primary01/02,
 primary03 plus strict01/02/03, primary04, primary05, primary06, fullparser01,
 recenttoken02, frecustom01, and old failed runtime-token01 setup namespaces.
 Keep all executables, artifacts, source snapshots, proofs, shared target and peers.
-Fullparser03 caches are closed but have not been audited for retirement.
+New retirements closed: fullparser03 6398 CLOSED32218,16734files/3112062462bytes,
+11672 protected; fre sessiontoken01 33662 CLOSED53143,13399files/3949807971bytes,
+3755 protected; guarded-indirect token01 incomplete52-command prefix19216
+CLOSED25862,5880files/2607338516bytes,2827 protected. All exact namespaces;
+NEVER REPEAT. Old runtime-composition token02 audit66663 found ZERO eligible
+files, removednothing and is closed11825. Do not retry that audit either.
 
 Suggestions.txt unchanged, SHA256
 4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f;
