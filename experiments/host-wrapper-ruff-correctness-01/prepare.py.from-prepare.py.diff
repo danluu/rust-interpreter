@@ -1,0 +1,468 @@
+--- original/prepare.py
++++ prepare.py
+@@ -1,5 +1,5 @@
+ #!/usr/bin/env python3
+-"""Bind the fixed two-history Ruff screen; never run a workload or retire a cache."""
++"""Prepare one correctness-only history from actual publication and five-test RBC proofs."""
+ import argparse
+ import hashlib
+ import importlib.util
+@@ -7,43 +7,37 @@
+ import os
+ from pathlib import Path
+ import re
+-import shutil
+ import stat
+ import sys
+ import time
++from types import SimpleNamespace
+ 
+-HERE = Path(__file__).resolve().parent
+-ROOT = HERE.parents[2]
+-R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+-A = Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918')
+-X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-PROTOCOL = HERE.parent / 'ruff-screen-03'
+-MAP = HERE / 'runner-source-map-03.json'
+-ARMS = R / 'experiments/workflow-runtime-arms-01'
+-OWNED = A / 'experiments/stable-cgu/owned_stage.py'
+-SUPERVISOR = R / 'scripts/supervise_experiment.py'
+-LOCK = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+-PACKET = HERE / 'packet-01'
+-STRICT = A / 'experiments/runtime-application-admission/ruff-options-hash-strict-01/plan'
+-STRICT_WORK = A / '.work/ruff-options-hash-strict-01'
+-STRICT_OUTER = A / '.work/experiments/ruff-options-hash-strict-supervisor-01'
+-STRICT_PARENT = ROOT / '.work/ruff-options-hash-strict-execution-01/record.json'
+-HIR_DIAGNOSTIC = A / 'experiments/runtime-application-admission/run_ruff_diagnostic.py'
+-RUNTIME = 'f031d981666f450f760ccf303dccba986053ec6b9a143a60f3d26680f9ac7c70'
+-STD = 'f6366b5873636f47cdc3e9941a9b24ef612f94432baecb5d75ed5c4c54911928'
+-GIB = 2**30
+-MIB = 2**20
++HERE=Path(__file__).resolve().parent
++ROOT=HERE.parents[1]
++R=Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
++X=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
++A=Path('/Users/danluu/dev/rust-interp-runtime-application-admission-20260918')
++H=ROOT/'experiments/host-wrapper-opt-01'
++F=ROOT/'experiments/host-wrapper-exporter-01'
++RBC=ROOT/'experiments/host-wrapper-rbc-driver-03'
++OWNED=A/'experiments/stable-cgu/owned_stage.py'
++SUPERVISOR=R/'scripts/supervise_experiment.py'
++LOCK=Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
++PACKET=HERE/'packet-01'
++NAME='host-wrapper-ruff-correctness-01'
++RUNTIME='f031d981666f450f760ccf303dccba986053ec6b9a143a60f3d26680f9ac7c70'
++STD='f6366b5873636f47cdc3e9941a9b24ef612f94432baecb5d75ed5c4c54911928'
++GIB=2**30
++MIB=2**20
+ 
+ 
+ def require(ok, message):
+     if not ok:
+         raise RuntimeError(message)
+ 
+-
+ def stamp(path):
+     s = Path(path).lstat()
+     return [s.st_dev, s.st_ino, s.st_mode, s.st_size, s.st_mtime_ns, s.st_ctime_ns, s.st_nlink]
+-
+ 
+ def data(path):
+     path = Path(path)
+@@ -54,14 +48,11 @@
+     require(len(raw) == before[3] and stamp(path) == before, 'input changed')
+     return raw
+ 
+-
+ def sha(path):
+     return hashlib.sha256(data(path)).hexdigest()
+ 
+-
+ def ref(path):
+     return dict(path=str(path), sha256=sha(path))
+-
+ 
+ def pinned(reference, checked=None, *, raw=False):
+     require(type(reference) is dict and set(reference) == {'path', 'sha256'}
+@@ -73,10 +64,9 @@
+         row = dict(sha256=reference['sha256'], size=len(payload), stamp=stamp(reference['path']))
+         require(reference['path'] not in checked or checked[reference['path']] == row, 'input overlap changed')
+         checked[reference['path']] = row
+-        require(len(checked) <= 256 and sum(r['size'] for r in checked.values()) <= 96*MIB,
++        require(len(checked) <= 1024 and sum(r['size'] for r in checked.values()) <= 96*MIB,
+                 'finite metadata closure exceeded')
+     return payload if raw else json.loads(payload)
+-
+ 
+ def write(path, value):
+     payload = (json.dumps(value, indent=2, sort_keys=True) + '\n').encode()
+@@ -84,268 +74,122 @@
+     with Path(path).open('xb') as output:
+         output.write(payload)
+ 
+-
+ def load(path, name):
+     spec = importlib.util.spec_from_file_location(name, path)
+     module = importlib.util.module_from_spec(spec)
+     spec.loader.exec_module(module)
+     return module
+ 
+-
+-def source_paths():
+-    return sorted([*R.joinpath('scripts').glob('*.py'),
+-        *(ARMS/name for name in ['bench_e2e_workflow.py', 'verify_repeated_workflow.py',
+-                                'workflow_runtime_arms.py', 'workflow_placement.py']),
+-        OWNED, HIR_DIAGNOSTIC, HERE/'prepare.py', HERE/'observe.py', HERE/'allocation-estimate.json',
+-        MAP, PROTOCOL/'PROTOCOL.md', PROTOCOL/'binding-template.json'])
+-
+-
+-def authenticate(source_ref, checked):
+-    sources = pinned(source_ref, checked)
+-    paths = source_paths()
+-    require(set(sources) == {'policy', 'files'} and sources['policy'] == 'ruff-screen-launch-sources-v1'
+-            and len(list(R.joinpath('scripts').glob('*.py'))) == 112
+-            and set(sources['files']) == set(map(str, paths)), 'source closure differs')
+-    for name, digest in sources['files'].items():
+-        pinned(dict(path=name, sha256=digest), checked, raw=True)
+-    return sources
+-
+-
+-def routes(history):
+-    require(history in ['ab', 'aa'], 'unknown history')
+-    run_id = 'hir-options-hash-ruff-screen-' + history + '-03'
+-    observer = R / '.work' / (run_id + '-observer')
+-    return dict(run_id=run_id, work=str(R/'.work/runs'/run_id),
+-        results=str(R/'results'/run_id), observer=str(observer),
+-        outer=str(R/'.work/experiments'/(run_id+'-supervisor')),
+-        native_cache=str(R/'.work/runs'/run_id/'native'),
+-        summary=str(R/'results'/run_id/'summary.json'),
+-        records=str(R/'.work/runs'/run_id/'records.json'),
+-        verification=str(R/'results'/run_id/'verification.json'))
+-
+-
+-def cache_path(tool, runtime, std, namespace):
+-    text = ('custom-compiler-v1\0' + runtime + '\0off\0shared-entries-v1\0'
+-            + str(R/'.work/sources/ruff/Cargo.toml') + '\0ruff_linter\0True\0std-mir:' + std
+-            + '\0' + namespace)
+-    return str(R/'.work/interpreter-workspaces'/tool/hashlib.sha256(text.encode()).hexdigest()[:24])
+-
+-
+-def closed_outer(reference, inner, checked):
+-    row = pinned(reference, checked)
+-    require(row['status'] == 'finished' and row['returncode'] == 0
+-            and row['child_pid'] == inner['pid'] and row['supervisor_pid'] == inner['parent_pid']
+-            and row['child_started_at'] <= inner['started_at'] <= inner['finished_at'] <= row['finished_at'],
+-            'ordinary outer did not wait for this successful controller')
+-    pinned(dict(path=str(Path(reference['path']).parent/'command.log'), sha256=row['log_sha256']), checked, raw=True)
+-    return row
+-
+-
+-def prerequisites(binding, checked):
+-    p = binding['proofs']
+-    require(set(p) == {'publication', 'published_tools', 'publication_outer', 'strict_plan',
+-                      'strict_inputs', 'strict_result', 'strict_supervision', 'strict_outer',
+-                      'strict_parent', 'strict_mechanism'}, 'proof fields differ')
+-    rows = {k: pinned(v, checked) for k, v in p.items() if not k.endswith('_outer')}
+-    publication, published = rows['publication'], rows['published_tools']
+-    key = binding['candidate_tool_key']
+-    require(type(key) is str and re.fullmatch('[0-9a-f]{64}', key)
+-            and publication['status'] == 'passed' and publication['frontend_qualified'] is True
+-            and publication['tool_key'] == published['tool_key'] == key
+-            and publication['runtime_key'] == RUNTIME
+-            and publication['published_tools_sha256'] == p['published_tools']['sha256']
+-            and published['directory'] == str(R/'.work/interpreter-tools'/key), 'actual qualified exporter required')
+-    closed_outer(p['publication_outer'], publication, checked)
+-    plan, frozen, result, supervision = [rows[k] for k in ['strict_plan', 'strict_inputs', 'strict_result', 'strict_supervision']]
+-    expected_paths = dict(strict_plan=STRICT/'plan.json', strict_inputs=STRICT/'inputs.json',
+-                          strict_result=STRICT_WORK/'result.json', strict_supervision=STRICT_WORK/'supervision.json',
+-                          strict_outer=STRICT_OUTER/'status.json', strict_parent=STRICT_PARENT)
+-    require(all(p[k]['path'] == str(path) for k, path in expected_paths.items()), 'wrong fresh strict history')
+-    require(plan['tool_key'] == key and plan['runtime_key'] == RUNTIME and plan['std_key'] == STD
+-            and plan['tool_publication'] == p['publication'] and plan['published_tools'] == p['published_tools']
+-            and supervision['plan_sha256'] == p['strict_plan']['sha256']
+-            and supervision['freeze_sha256'] == p['strict_inputs']['sha256']
+-            and frozen['files'][p['strict_plan']['path']] == p['strict_plan']['sha256']
+-            and supervision['result'] == p['strict_result'] and supervision['status'] == result['status'] == 'passed'
+-            and result['strict_compatibility'] is True and result['cross_mode_bytecode_equal'] is True
+-            and result['trap_unsupported_calls'] is False and result['run_try_callbacks'] is False
+-            and result['unchanged_six_test_bodies'] is True
+-            and result['commands'] == supervision['commands'] == len(supervision['children']) == len(result['records']) == 16,
+-            'complete new strict sixteen-call qualification required')
+-    hir_rows = []
+-    for child, declared, record in zip(supervision['children'], plan['commands'], result['records'], strict=True):
+-        receipt = child['receipt']
+-        path = Path(child['path'])
+-        require(path.is_relative_to(STRICT_WORK/'raw') and child['label'] == declared['label']
+-                and receipt == pinned(ref(path/'receipt.json'), checked)
+-                and receipt['status'] == 'finished' and receipt['returncode'] == declared['expected_returncode']
+-                and receipt['command'] == declared['command'] and receipt['cwd'] == declared['cwd']
+-                and receipt['supervisor_pid'] == supervision['pid']
+-                and supervision['started_at'] <= receipt['started_at'] <= receipt['finished_at'] <= supervision['finished_at'],
+-                'strict command receipt or closure differs')
+-        raw = {}
+-        for channel in ['stdout', 'stderr']:
+-            raw[channel] = pinned(dict(path=str(path/channel), sha256=receipt[channel+'_sha256']), checked, raw=True)
+-        require(record['receipt'] == str(path/'receipt.json') and record['label'] == declared['label'],
+-                'strict result/raw association differs')
+-        hir_rows.append(dict(mode=record['mode'], state=record['state'], phase=record['phase'],
+-            cycle=1 if record['state'] == -2 else 0, calls=[dict(stderr=raw['stderr'].decode('utf-8'))]))
+-    outer = closed_outer(p['strict_outer'], supervision, checked)
+-    parent = rows['strict_parent']
+-    require(parent['status'] == 'finished' and parent['returncode'] == parent['controller_returncode'] == 0
+-            and parent['supervisor_may_be_live'] is parent['controller_may_be_live'] is False
+-            and parent['pid'] == outer['supervisor_pid']
+-            and parent['parent_pid'] == outer['supervisor_parent_pid']
+-            and parent['outer_status_sha256'] == p['strict_outer']['sha256']
+-            and parent['started_at'] <= parent['child_started_at'] <= outer['started_at']
+-            <= outer['finished_at'] <= parent['finished_at'], 'strict normal-parent closure differs')
+-    for channel in ['stdout', 'stderr']:
+-        pinned(dict(path=str(STRICT_PARENT.parent/channel), sha256=parent[channel+'_sha256']), checked, raw=True)
+-    # Reuse the existing lossless pure parser on authenticated closed diagnostics.
+-    # This imports no provider/controller and launches no instrumented timing run.
+-    parsed = load(HIR_DIAGNOSTIC, '_ruff_screen_hir_diagnostics').observed_hir(hir_rows)
+-    accepted = {'cold-tree-and-journal-after-stock-lowering', 'same-tree-and-journal-after-stock-lowering',
+-                'changed-tree-or-journal-after-stock-lowering'}
+-    captures = sum(n for kind, n in parsed['event_counts'].items() if kind in accepted)
+-    mechanism = rows['strict_mechanism']
+-    require(mechanism['policy'] == 'ruff-options-hash-mechanism-eligibility-v1'
+-            and mechanism['status'] == 'passed' and mechanism['performance_qualified'] is False
+-            and captures > 0 and parsed['observed_hits'] > 0
+-            and mechanism['successful_captures'] == captures
+-            and mechanism['verified_hits'] == parsed['observed_hits']
+-            and mechanism['off_arm_events'] == 0
+-            and mechanism['event_counts'] == parsed['event_counts'], 'actual HIR mechanism eligibility required')
+-    for name in ['result', 'supervision', 'parent']:
+-        require({k:mechanism[name][k] for k in ['path','sha256']} == p['strict_'+name],
+-                'mechanism proof belongs to a different strict history')
+-    require({k:mechanism['parser_source'][k] for k in ['path','sha256']} == ref(HIR_DIAGNOSTIC),
+-            'mechanism parser source differs')
+-    compiler = X/'.work/hir-options-hash-compiler-01/source/compiler/rustc_ast_lowering/src/body_cache/mod.rs'
+-    require({k:mechanism['compiler_source'][k] for k in ['path','sha256']} ==
+-            dict(path=str(compiler), sha256='cb91d3a723616866b5eebe650f28c6c7c894735f26decf7eeef37727d15b1481'),
+-            'mechanism compiler source differs')
+-    # Original successful strict source/configuration guards remain prerequisites.
+-    for name, digest in plan['producer_sources'].items():
+-        require(sha(name) == digest, 'strict producer source changed')
+-    return plan
+-
+-
+ def absent(path):
+     path = Path(path)
+     require(not path.exists() and not path.is_symlink(), 'namespace must be fresh/absent: ' + str(path))
+ 
+ 
+-def launch_plan(history, plan_sha, inputs_sha, sources_sha, previous=None):
+-    row = routes(history)
+-    command = ['/opt/homebrew/bin/python3', '-B', str(HERE/'observe.py'),
+-               '--history', history, '--plan-sha256', plan_sha,
+-               '--inputs-sha256', inputs_sha, '--sources-sha256', sources_sha]
+-    if history == 'aa':
+-        require(previous is not None, 'AA requires a separately reviewed predecessor binding')
+-        command += ['--previous', previous['path'], '--previous-sha256', previous['sha256']]
+-    outer = Path(row['outer'])
+-    absent(outer)
+-    outer.mkdir()
+-    write(outer/'plan.json', dict(owner=str(R), supervisor_sha256=sha(SUPERVISOR), command=command))
+-    return dict(argv=['/opt/homebrew/bin/python3', '-B', str(SUPERVISOR), '--supervise', str(outer/'plan.json')],
+-                cwd=str(R), plan=ref(outer/'plan.json'),
+-                instruction='Launch with the exact history environment and normally wait for this direct supervisor.')
++def source_paths():
++    return sorted({*R.joinpath('scripts').glob('*.py'),
++        *(H/n for n in ('bench_e2e_workflow.py','verify_repeated_workflow.py','interpreter.py',
++                        'host_codegen_opt.py','workflow_runtime_arms.py','workflow_placement.py')),
++        OWNED,*(HERE/n for n in ('prepare.py','observe.py','proofs.py','command-template.json','workload.json'))})
++
++
++def authenticate(reference, checked):
++    sources=pinned(reference,checked)
++    require(set(sources)=={'policy','files'} and sources['policy']=='host-wrapper-ruff-correctness-sources-v1'
++        and len(list(R.joinpath('scripts').glob('*.py')))==112
++        and set(sources['files'])==set(map(str,source_paths())), 'complete held source closure differs')
++    for name,digest in sources['files'].items():pinned(dict(path=name,sha256=digest),checked,raw=True)
++    return sources
++
++
++def routes():
++    return dict(run_id=NAME,work=str(R/'.work/runs'/NAME),results=str(R/'results'/NAME),
++        observer=str(R/'.work'/(NAME+'-observer')),outer=str(R/'.work/experiments'/(NAME+'-supervisor')),
++        parent=str(R/'.work'/(NAME+'-execution')),native_cache=str(R/'.work/runs'/NAME/'native'),
++        summary=str(R/'results'/NAME/'summary.json'),records=str(R/'.work/runs'/NAME/'records.json'),
++        verification=str(R/'results'/NAME/'verification.json'))
++
++
++def cache_path(tool, mode):
++    require(mode in ('baseline','candidate'),'exact custom mode required')
++    text=('custom-compiler-v1\0'+RUNTIME+'\0off\0shared-entries-v1\0'
++          +str(R/'.work/sources/ruff/Cargo.toml')+'\0ruff_linter\0True\0std-mir:'+STD+'\0'+NAME+':'+mode)
++    if mode=='candidate':text='host-codegen-opt-v1\0on\0'+text
++    return str(R/'.work/interpreter-workspaces'/tool/hashlib.sha256(text.encode()).hexdigest()[:24])
++
++
++def prerequisites(binding, checked):
++    return load(HERE/'proofs.py','_host_correctness_proofs').validate(SimpleNamespace(**globals()),binding,checked)
+ 
+ 
+ def main():
+-    parser = argparse.ArgumentParser(description=__doc__)
+-    parser.add_argument('--binding', type=Path)
+-    parser.add_argument('--binding-sha256')
+-    parser.add_argument('--aa-previous', type=Path)
+-    parser.add_argument('--aa-previous-sha256')
+-    parser.add_argument('--plan-sha256')
+-    parser.add_argument('--inputs-sha256')
+-    parser.add_argument('--sources-sha256')
+-    args = parser.parse_args()
+-    require(Path.cwd() == R and sys.dont_write_bytecode and not sys.flags.optimize, 'R cwd and Python -B required')
+-    checked = {}
+-    if args.aa_previous is not None:
+-        require(args.binding is None and args.binding_sha256 is None, 'choose initial preparation or AA launch binding')
+-        authenticate(dict(path=str(HERE/'sources.json'), sha256=args.sources_sha256), checked)
+-        plan = pinned(dict(path=str(PACKET/'plan.json'), sha256=args.plan_sha256), checked)
+-        frozen = pinned(dict(path=str(PACKET/'inputs.json'), sha256=args.inputs_sha256))
+-        for name, row in frozen['files'].items():
+-            require(sha(name) == row['sha256'] and stamp(name) == row['stamp'], 'prepared input changed')
+-        previous = dict(path=str(args.aa_previous), sha256=args.aa_previous_sha256)
+-        pinned(previous)
+-        require(plan['policy'] == 'ruff-fixed-screen-plan-v1' and plan['order'] == ['ab', 'aa']
+-                and plan['sources'] == dict(path=str(HERE/'sources.json'), sha256=args.sources_sha256), 'wrong prepared packet')
+-        # The observer checks the full actual AB closure, retirement and absences
+-        # before any workload. This step only serializes the reviewed exact CLI.
+-        launch = launch_plan('aa', args.plan_sha256, args.inputs_sha256, args.sources_sha256, previous)
+-        write(PACKET/'launch-aa.json', dict(launch, environment=plan['histories']['aa']['environment']))
+-        print(json.dumps(ref(PACKET/'launch-aa.json')))
+-        return
+-    require(args.binding is not None and args.binding_sha256 is not None
+-            and all(x is None for x in [args.aa_previous_sha256, args.plan_sha256, args.inputs_sha256, args.sources_sha256]),
+-            'initial preparation requires only the actual binding')
+-    binding_ref = dict(path=str(args.binding), sha256=args.binding_sha256)
+-    binding = pinned(binding_ref, checked)
+-    require(set(binding) == {'policy', 'source_manifest', 'preparation_environment', 'candidate_tool_key', 'proofs'}
+-            and binding['policy'] == 'ruff-fixed-screen-preparation-v1'
+-            and binding['preparation_environment'] == dict(os.environ), 'binding/environment differs')
+-    sources = authenticate(binding['source_manifest'], checked)
+-    source_map = pinned(ref(MAP), checked)
+-    for row in source_map['sources']:
+-        pinned(dict(path=row['path'], sha256=row['sha256']), checked, raw=True)
+-    estimate = pinned(ref(HERE/'allocation-estimate.json'), checked)
+-    require(estimate['per_history_allocated_byte_limit'] == 7*GIB and estimate['entry_free_bytes'] == 21*GIB
+-            and estimate['command_floor_bytes'] == 16*GIB, 'reviewed per-history capacity differs')
+-    for reference in estimate['saved_inputs']:
+-        pinned(reference, checked)
+-    owned = load(OWNED, '_ruff_screen_owned')
+-    with owned.workload_lock(LOCK, 600):
+-        strict = prerequisites(binding, checked)
++    parser=argparse.ArgumentParser(__doc__)
++    for name in ('sources-sha256','tool-key','publication-receipt-sha256','published-tools-sha256',
++                 'publication-execution-sha256','rbc-binding-sha256','rbc-record-sha256',
++                 'rbc-result-sha256','rbc-execution-sha256'):
++        parser.add_argument('--'+name,required=True)
++    args=parser.parse_args()
++    require(Path.cwd()==R and sys.dont_write_bytecode and not sys.flags.optimize,'exact R cwd/Python -B required')
++    require(all(re.fullmatch('[0-9a-f]{64}',v) for v in vars(args).values()),'actual SHA/key arguments required')
++    checked={};sources_ref=dict(path=str(HERE/'sources.json'),sha256=args.sources_sha256)
++    authenticate(sources_ref,checked)
++    binding=dict(policy='host-wrapper-ruff-correctness-binding-v1',tool_key=args.tool_key,
++        runtime_key=RUNTIME,std_key=STD,sources=sources_ref,preparation_environment=dict(os.environ),
++        proofs={
++          'publication':dict(path=str(X/'.work/host-wrapper-exporter-publication-01/receipt.json'),sha256=args.publication_receipt_sha256),
++          'published_tools':dict(path=str(X/'.work/host-wrapper-exporter-publication-01/published-tools.json'),sha256=args.published_tools_sha256),
++          'publication_execution':dict(path=str(ROOT/'.work/host-wrapper-exporter-publication-execution-01/record.json'),sha256=args.publication_execution_sha256),
++          'rbc_binding':dict(path=str(RBC/'binding.json'),sha256=args.rbc_binding_sha256),
++          'rbc_record':dict(path=str(ROOT/'results/host-wrapper-rbc-fixture-03/record.json'),sha256=args.rbc_record_sha256),
++          'rbc_result':dict(path=str(ROOT/'results/host-wrapper-rbc-fixture-03/suite-result.json'),sha256=args.rbc_result_sha256),
++          'rbc_execution':dict(path=str(ROOT/'.work/host-wrapper-rbc-execution-03/record.json'),sha256=args.rbc_execution_sha256)})
++    owned=load(OWNED,'_host_correctness_owned')
++    with owned.workload_lock(LOCK,600):
++        prerequisite=prerequisites(binding,checked)
++        h=routes();template=pinned(ref(HERE/'command-template.json'),checked)
++        require(template['status']=='unbound' and template['tool_key_slots']==2
++            and template['command'].count(None)==2,'fixed same-tool command template differs')
++        command=[args.tool_key if item is None else item for item in template['command']]
++        environment=dict(prerequisite['environment'],CARGO_NET_OFFLINE='true',CARGO_TERM_COLOR='never',
++            CARGO_TERM_VERBOSE='true',PYTHONDONTWRITEBYTECODE='1',PYTHONNOUSERSITE='1',
++            RUSTUP_TOOLCHAIN='nightly-2026-09-08',RUSTUP_DIST_SERVER='file:///dev/null',
++            RUST_INTERP_LAUNCH_STATS='1',TMPDIR=h['observer']+'/tmp/')
++        require(not any(k.startswith(('LD_','DYLD_','CARGO_PROFILE_')) or k in
++            ('RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER',
++             'CARGO_TARGET_DIR','CARGO_INCREMENTAL') or k.startswith('RUST_INTERP_') and k!='RUST_INTERP_LAUNCH_STATS'
++            for k in environment),'unexpected compiler/profile/loader policy environment')
++        require(environment['__CF_USER_TEXT_ENCODING'].split(':')[0].lower()==hex(os.getuid()),
++                'actual Darwin user environment required')
++        h.update(command=command,environment=environment,
++            custom_caches={mode:cache_path(args.tool_key,mode) for mode in ('baseline','candidate')},
++            verifier=['/opt/homebrew/bin/python3','-B',str(H/'verify_repeated_workflow.py'),h['summary'],'--wait-for-lock','600'])
++        require(len(set(h['custom_caches'].values()))==2,'custom cache collision')
+         absent(PACKET)
+-        histories = {}
+-        for history in ['ab', 'aa']:
+-            row = routes(history)
+-            command = list(source_map['proposed_commands_in_fixed_order'][history]['argv'])
+-            require(command.count(None) == (1 if history == 'ab' else 0), 'source map future-key count differs')
+-            command = [binding['candidate_tool_key'] if x is None else x for x in command]
+-            caches = {}
+-            for arm in ['baseline', 'candidate']:
+-                def flag(name):
+-                    return command[command.index('--'+arm+'-'+name)+1]
+-                caches[arm] = cache_path(flag('tool-key'), flag('runtime-compiler-key'), flag('std-mir-key'), row['run_id']+':'+arm)
+-            row.update(command=command, custom_caches=caches,
+-                verifier=source_map['proposed_output_routes'][history]['ordinary_verifier_argv'],
+-                environment=dict(strict['child_environment'], TMPDIR=row['observer']+'/tmp/'))
+-            require(row['environment']['PYTHONDONTWRITEBYTECODE'] == '1'
+-                    and row['environment']['CARGO_NET_OFFLINE'] == 'true', 'ordinary offline/no-pyc environment required')
+-            for path in [row[k] for k in ['work', 'results', 'observer', 'outer']] + list(caches.values()):
+-                absent(path)
+-            histories[history] = row
+-        require(len({p for h in histories.values() for p in h['custom_caches'].values()}) == 4, 'custom caches overlap')
+-        # The preparation is metadata-only; actual history admission requires21GiB.
+-        free = owned.disk(R, 9)
+-        for name, row in checked.items():
+-            require(sha(name) == row['sha256'] and stamp(name) == row['stamp'], 'input changed during preparation')
+-        plan = dict(policy='ruff-fixed-screen-plan-v1', status='prepared-unexecuted', prepared_at=time.time(),
+-            preparation_pid=os.getpid(), preparation_parent_pid=os.getppid(), binding=binding_ref,
+-            sources=binding['source_manifest'], histories=histories, order=['ab', 'aa'],
+-            strict_proofs=binding['proofs'], mechanism_eligibility=binding['proofs']['strict_mechanism'],
+-            mechanism_only=True, fastest_configuration_followup_required=True,
+-            allocation=estimate, preparation_free_bytes=free,
+-            canonical_lock=str(LOCK), canonical_wait_seconds=600,
+-            active_child_stop_gib=9, running_floor_gib=8,
+-            retirement='Separate reviewed task-owned cache retirement after closed verification; never performed by observer.',
+-            performance_qualified=False)
+-        PACKET.mkdir()
+-        write(PACKET/'plan.json', plan)
+-        write(PACKET/'inputs.json', dict(files=checked))
+-        launch = launch_plan('ab', sha(PACKET/'plan.json'), sha(PACKET/'inputs.json'), binding['source_manifest']['sha256'])
+-        write(PACKET/'launch-ab.json', dict(launch, environment=histories['ab']['environment']))
+-        write(PACKET/'preparation.json', dict(status='passed', pid=os.getpid(), parent_pid=os.getppid(),
+-            finished_at=time.time(), plan=ref(PACKET/'plan.json'), inputs=ref(PACKET/'inputs.json'),
+-            launch=ref(PACKET/'launch-ab.json')))
++        for path in [h[k] for k in ('work','results','observer','outer','parent')]+list(h['custom_caches'].values()):absent(path)
++        workload=pinned(ref(HERE/'workload.json'),checked)
++        # Metadata-only preparation; history admission separately requires21GiB.
++        free=owned.disk(R,9)
++        for name,row in checked.items():
++            require(sha(name)==row['sha256'] and stamp(name)==row['stamp'],'prerequisite changed during preparation')
++        plan=dict(policy='host-wrapper-ruff-correctness-plan-v1',status='prepared-unexecuted',
++            prepared_at=time.time(),preparation_pid=os.getpid(),preparation_parent_pid=os.getppid(),
++            binding=binding,sources=sources_ref,history=h,workload=workload,
++            allocation=dict(entry_free_bytes=21*GIB,command_floor_bytes=16*GIB,
++                per_history_allocated_byte_limit=7*GIB,retained_evidence_byte_limit=512*MIB,
++                scope='Boundary observations; no hard continuous allocation/CPU/wall/memory cap.'),
++            preparation_free_bytes=free,canonical_lock=str(LOCK),canonical_wait_seconds=600,
++            active_child_stop_gib=9,running_floor_gib=8,application_correctness_qualified=False,
++            timing_used=False,performance_qualified=False,retirement='Separate review after normal closure; no cleanup here.')
++        PACKET.mkdir();write(PACKET/'plan.json',plan);write(PACKET/'inputs.json',dict(files=checked))
++        outer=Path(h['outer']);outer.mkdir()
++        command=['/opt/homebrew/bin/python3','-B',str(HERE/'observe.py'),
++            '--plan-sha256',sha(PACKET/'plan.json'),'--inputs-sha256',sha(PACKET/'inputs.json'),
++            '--sources-sha256',args.sources_sha256]
++        write(outer/'plan.json',dict(owner=str(R),supervisor_sha256=sha(SUPERVISOR),command=command))
++        write(PACKET/'launch.json',dict(argv=['/opt/homebrew/bin/python3','-B',str(SUPERVISOR),'--supervise',str(outer/'plan.json')],
++            cwd=str(R),plan=ref(outer/'plan.json'),environment=environment))
++        write(PACKET/'preparation.json',dict(status='passed',pid=os.getpid(),parent_pid=os.getppid(),
++            finished_at=time.time(),plan=ref(PACKET/'plan.json'),inputs=ref(PACKET/'inputs.json'),launch=ref(PACKET/'launch.json')))
+         print(json.dumps(ref(PACKET/'preparation.json')))
+ 
+ 
+-if __name__ == '__main__':
+-    main()
++if __name__=='__main__':main()

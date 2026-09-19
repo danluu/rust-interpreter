@@ -1,0 +1,7 @@
+This is unrun correctness-fixture source. A bounded driver and actual newly published tool binding are still required before execution.
+
+The subclass reuses the existing real host-library and proc-macro histories: uncalled type/borrow/const errors, restoration, debug/overflow/UB checks, generics and drop effects, macro-body edits, a library shared by host and target, declared file inputs, source positions, generated errors and final source restoration. Stock, wrapper-off and wrapper-on use one runtime compiler. The explicit Cargo executable is separately bound because the installed compiler sysroot contains no Cargo binary.
+
+Only the combined wrapper route and capability checks change. Actual compiler-boundary arguments retain their existing checks and use the fixed combined O3 suffix for both eligible host roles. Complete diagnostic JSON objects are compared, including rendered text. Each successful selected bytecode artifact executes in both the interpreter and JIT. Off/on RBC bytes must match exactly at every successful state, changed states must differ from the original, and restoration must recover the original bytes. Failed checking never executes an old artifact.
+
+Ordinary inherited calls are captured with normal child waits and individual receipts. The eventual external driver must hold the canonical lock, bind sources and the actual tool/runtime/std identities, sanitize its environment, and enforce bounded observed resource limits. This source does not qualify performance or authorize a holdout run.

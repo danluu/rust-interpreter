@@ -1,0 +1,33 @@
+--- history/driver02-prerequisite/proofs.py
++++ proofs.py
+@@ -4,7 +4,7 @@
+ TESTS=('test_cargo_shared_library_macro_input_spans_error_and_restoration',
+  'test_macro_cfg_debug_and_overflow_checks','test_native_debug_overflow_ub_cfg_generics_inline_and_drop_effects',
+  'test_uncalled_macro_errors_and_restoration','test_uncalled_type_borrow_const_and_position_changes_reject_then_restore')
+-RBC_SOURCES_SHA='c9b9b99d615b3582f8f320cc27d7b25a0c3d38b277970f6e88936e20bc5c3c17'
++RBC_SOURCES_SHA='28d76e71027f08ecf0a27af6eb6a9c1ac4345ba12db0b3e8fd2e4ed7526cde7b'
+ 
+ 
+ def validate(p,binding,checked):
+@@ -64,10 +64,10 @@
+                        ('ready.json',tools['composition']['binaries'])]:
+         require(get(p.ref(Path(tools['directory'])/name))==value,'published metadata differs')
+     rb=values['rbc_binding'];record=values['rbc_record'];result=values['rbc_result'];parent=values['rbc_execution']
+-    out=p.ROOT/'results/host-wrapper-rbc-fixture-02'
++    out=p.ROOT/'results/host-wrapper-rbc-fixture-03'
+     require(proof['rbc_binding']['path']==str(p.RBC/'binding.json')
+         and proof['rbc_record']['path']==str(out/'record.json') and proof['rbc_result']['path']==str(out/'suite-result.json')
+-        and proof['rbc_execution']['path']==str(p.ROOT/'.work/host-wrapper-rbc-execution-02/record.json'),
++        and proof['rbc_execution']['path']==str(p.ROOT/'.work/host-wrapper-rbc-execution-03/record.json'),
+         'fixed RBC proof routes required')
+     require(rb['policy']=='host-wrapper-rbc-binding-v1' and rb['tool_key']==key
+         and rb['runtime_key']==p.RUNTIME and rb['std_key']==p.STD and rb['tests']==list(TESTS),
+@@ -99,7 +99,7 @@
+         and all(result[n]==0 for n in ('skipped','expected_failures','unexpected_successes','failures','errors'))
+         and result['benchmark'] is False and 0<len(result['commands'])<=256,'all exact five RBC tests must pass')
+     seen=set();previous=record['child_started_at']
+-    artifact_root=p.ROOT/'.work/host-wrapper-rbc-fixture-02/artifacts'
++    artifact_root=p.ROOT/'.work/host-wrapper-rbc-fixture-03/artifacts'
+     for row in result['commands']:
+         require(row['passed'] is True and row['limit_seconds']==30 and row['seconds']<=30,'RBC command observation failed')
+         child=get(row['receipt'])

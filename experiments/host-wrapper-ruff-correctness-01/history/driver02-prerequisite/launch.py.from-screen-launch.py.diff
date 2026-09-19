@@ -1,0 +1,90 @@
+--- original/screen-launch.py
++++ launch.py
+@@ -1,5 +1,5 @@
+ #!/usr/bin/env python3
+-"""Normally wait one prepared screen supervisor; acquire no workload lock."""
++"""Normally wait the prepared correctness supervisor; acquire no workload lock."""
+ import argparse
+ import hashlib
+ import json
+@@ -49,21 +49,20 @@
+ 
+ def main():
+     require(Path.cwd() == R and sys.dont_write_bytecode and not sys.flags.optimize,
+-            'screen parent requires Python -B and R cwd')
++            'correctness parent requires Python -B and R cwd')
+     parser = argparse.ArgumentParser(__doc__)
+-    parser.add_argument('--history', choices=['ab', 'aa'], required=True)
+     parser.add_argument('--launch-sha256', required=True)
+     parser.add_argument('--sources-sha256', required=True)
+     args = parser.parse_args()
+     source_ref = dict(path=str(HERE/'sources.json'), sha256=args.sources_sha256)
+     sources = read(source_ref)
+-    launch_ref = dict(path=str(HERE/'packet-01'/('launch-'+args.history+'.json')), sha256=args.launch_sha256)
++    launch_ref = dict(path=str(HERE/'packet-01/launch.json'), sha256=args.launch_sha256)
+     launch = read(launch_ref)
+-    name = 'hir-options-hash-ruff-screen-'+args.history+'-03'
++    name = 'host-wrapper-ruff-correctness-01'
+     outer = R/'.work/experiments'/(name+'-supervisor')
+     work = R/'.work'/(name+'-observer')
+     execution = R/'.work'/(name+'-execution')
+-    require(not os.path.lexists(execution), 'fresh screen parent execution required')
++    require(not os.path.lexists(execution), 'fresh correctness parent execution required')
+     require(launch['cwd'] == str(R) and launch['plan']['path'] == str(outer/'plan.json'),
+             'prepared launch route differs')
+     outer_plan = read(launch['plan'])
+@@ -76,26 +75,24 @@
+             and len(command[3:]) % 2 == 0, 'fixed observer command required')
+     pairs = list(zip(command[3::2], command[4::2], strict=True))
+     flags = dict(pairs)
+-    expected = {'--history', '--plan-sha256', '--inputs-sha256', '--sources-sha256'}
+-    if args.history == 'aa':
+-        expected |= {'--previous', '--previous-sha256'}
+-    require(len(flags) == len(pairs) and set(flags) == expected and flags['--history'] == args.history
++    expected = {'--plan-sha256', '--inputs-sha256', '--sources-sha256'}
++    require(len(flags) == len(pairs) and set(flags) == expected
+             and flags['--sources-sha256'] == args.sources_sha256, 'observer argument binding differs')
+     plan_ref = dict(path=str(HERE/'packet-01/plan.json'), sha256=flags['--plan-sha256'])
+     plan = read(plan_ref)
+     read(dict(path=str(HERE/'packet-01/inputs.json'), sha256=flags['--inputs-sha256']))
+-    h = plan['histories'][args.history]
+-    require(plan['order'] == ['ab', 'aa'] and plan['sources'] == source_ref
+-            and h['observer'] == str(work) and h['outer'] == str(outer)
++    h = plan['history']
++    require(plan['policy'] == 'host-wrapper-ruff-correctness-plan-v1' and plan['sources'] == source_ref
++            and h['observer'] == str(work) and h['outer'] == str(outer) and h['parent'] == str(execution)
+             and launch['environment'] == h['environment'], 'exact prepared history/environment differs')
+     argv = [PYTHON, '-B', str(SUPERVISOR), '--supervise', str(outer/'plan.json')]
+     require(launch['argv'] == argv, 'direct supervisor invocation differs')
+     require(not os.path.lexists(outer/'status.json') and not os.path.lexists(work),
+             'history already started')
+-    # Observer authenticates all124 sources before running either ordinary child.
++    # Observer authenticates its complete sources before either ordinary child.
+     # The separate parent is externally source-pinned and records its own bytes.
+     execution.mkdir()
+-    record = dict(status='starting', history=args.history, parent_pid=os.getpid(),
++    record = dict(status='starting', history='correctness', parent_pid=os.getpid(),
+         parent_parent_pid=os.getppid(), started_at=time.time(), source_sha256=sha(__file__),
+         command=argv, cwd=str(R), environment=launch['environment'], launch=launch_ref,
+         sources=source_ref, plan=plan_ref, outer_plan=launch['plan'], signals=0, retries=0,
+@@ -132,15 +129,18 @@
+         raise SystemExit(1)
+     receipt_ref = ref(work/'receipt.json')
+     receipt = read(receipt_ref)
+-    require(receipt['status'] == 'passed' and receipt['history'] == args.history and receipt['plan'] == plan_ref
++    require(receipt['status'] == 'passed' and receipt['history'] == 'correctness' and receipt['plan'] == plan_ref
+             and receipt['pid'] == status['child_pid'] and receipt['parent_pid'] == child.pid
+             and record['started_at'] <= status['started_at'] <= receipt['started_at']
+             <= receipt['finished_at'] <= status['finished_at'] <= record['finished_at']
+             and 'error' not in receipt, 'observer did not pass inside this normal parent wait')
+     require(receipt['result']['path'] == str(work/'result.json'), 'observer result route differs')
+     result = read(receipt['result'])
+-    require(result['status'] == 'passed' and result['history'] == args.history and result['plan'] == plan_ref,
++    require(result['status'] == 'passed' and result['history'] == 'correctness' and result['plan'] == plan_ref,
+             'observer result differs')
++    require(result['application_correctness_qualified'] is True and result['timing_used'] is False
++            and result['performance_qualified'] is False and result['observer_os_closure_observed'] is False,
++            'correctness-only qualification scope differs')
+     record.update(observer=receipt_ref, result=receipt['result'], observer_verified=True)
+     write(execution/'record.json', record)
+     print(json.dumps(ref(execution/'record.json'), sort_keys=True))

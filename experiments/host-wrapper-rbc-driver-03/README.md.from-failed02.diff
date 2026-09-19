@@ -1,0 +1,29 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-driver-02/README.md
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-driver-03/README.md
+@@ -58,8 +58,8 @@
+ the owned work tree; the suite receives explicit tool/runtime/std/VM/Cargo paths.
+ Ambient `CARGO_PROFILE_*`, loader variables, and `RUST_INTERP_*` are not inherited.
+ 
+-The result namespace is `ROOT/results/host-wrapper-rbc-fixture-02` and the normal
+-parent namespace is `ROOT/.work/host-wrapper-rbc-execution-02`. Parent status
++The result namespace is `ROOT/results/host-wrapper-rbc-fixture-03` and the normal
++parent namespace is `ROOT/.work/host-wrapper-rbc-execution-03`. Parent status
+ `closed` is saved immediately after OS wait, before terminal decoding; `passed`
+ requires the complete successful driver association. The suite result retains
+ the actual test IDs, all command receipts/raw hashes/observation rows, and actual
+@@ -67,8 +67,10 @@
+ stamps because the held fixture rewrites identical raw streams after capture.
+ Future Ruff correctness and performance remain separate qualifications.
+ 
+-Successor02 preserves the failed01 source, binding, and evidence. Its only driver
+-change is the fresh fixture/output/parent namespace. Root-owned fixture02 changes
+-Cargo diagnostic presentation to full JSON so the unchanged complete-diagnostic
+-collector can compare the generated-error history. All five tests and resource
+-predicates remain required. No successor execution is implied by these sources.
++Successor03 preserves both failed drivers, bindings, and results. It reuses
++root-owned fixture02 unchanged. Only the live parent footprint observation
++accepts disappearing ENOENT entries in the mutable owned output trees. Suite
++boundary and final snapshots remain strict. Unexpected lstat/traversal errors
++retain their operation and path, and all existing resource caps and complete
++immutable-input checks remain required. Pure deterministic regression tests
++exercise this distinction without compiler calls or provider reads.

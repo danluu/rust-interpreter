@@ -1,0 +1,121 @@
+test_cargo_shared_library_macro_input_spans_error_and_restoration (_host_codegen_rbc_fixture.HostCodegenNativeTests.test_cargo_shared_library_macro_input_spans_error_and_restoration) ... ERROR
+test_macro_cfg_debug_and_overflow_checks (_host_codegen_rbc_fixture.HostCodegenNativeTests.test_macro_cfg_debug_and_overflow_checks) ... ERROR
+test_native_debug_overflow_ub_cfg_generics_inline_and_drop_effects (_host_codegen_rbc_fixture.HostCodegenNativeTests.test_native_debug_overflow_ub_cfg_generics_inline_and_drop_effects) ... ERROR
+test_uncalled_macro_errors_and_restoration (_host_codegen_rbc_fixture.HostCodegenNativeTests.test_uncalled_macro_errors_and_restoration) ... ERROR
+test_uncalled_type_borrow_const_and_position_changes_reject_then_restore (_host_codegen_rbc_fixture.HostCodegenNativeTests.test_uncalled_type_borrow_const_and_position_changes_reject_then_restore) ... ERROR
+
+======================================================================
+ERROR: test_cargo_shared_library_macro_input_spans_error_and_restoration (_host_codegen_rbc_fixture.HostCodegenNativeTests.test_cargo_shared_library_macro_input_spans_error_and_restoration)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/tests/test_host_library_native.py", line 275, in test_cargo_shared_library_macro_input_spans_error_and_restoration
+    results = {m: self.cargo_run(m, state, std, expect_failure=invalid) for m in ['stock', 'off', 'on']}
+                  ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-fixture-02/test_host_codegen_native.py", line 170, in cargo_run
+    bytecode = macro_fixture.HostProcMacroNativeTests.cargo_run(
+        self,mode,state,std,expect_failure=expect_failure)
+  File "/Users/danluu/dev/rust-interp-runtime-installation-r-20260918/tests/test_host_proc_macro_native.py", line 203, in cargo_run
+    result = self.invoke(command, env)
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-fixture-02/test_host_codegen_native.py", line 73, in invoke
+    child,stdout,stderr = workflow_io.capture(command,cwd=self.work,
+                          ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+        env=actual,receipt_path=directory/'record.json',
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        receipt=dict(environment=actual,benchmark=False,scope='real host-policy correctness'))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-driver-02/suite.py", line 43, in observed_capture
+    gate();s.require(len(commands)<256,'direct command limit256 reached');before=time.monotonic()
+    ~~~~^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-driver-02/suite.py", line 37, in gate
+    if (s.OUT/'STOP.json').exists():raise RuntimeError('parent observation requires no further child')
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: parent observation requires no further child
+
+======================================================================
+ERROR: test_macro_cfg_debug_and_overflow_checks (_host_codegen_rbc_fixture.HostCodegenNativeTests.test_macro_cfg_debug_and_overflow_checks)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-fixture-02/test_host_codegen_native.py", line 41, in setUp
+    version = self.invoke([self.rustc,'-vV']); self.assert_success(version)
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-fixture-02/test_host_codegen_native.py", line 73, in invoke
+    child,stdout,stderr = workflow_io.capture(command,cwd=self.work,
+                          ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+        env=actual,receipt_path=directory/'record.json',
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        receipt=dict(environment=actual,benchmark=False,scope='real host-policy correctness'))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-driver-02/suite.py", line 43, in observed_capture
+    gate();s.require(len(commands)<256,'direct command limit256 reached');before=time.monotonic()
+    ~~~~^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-driver-02/suite.py", line 37, in gate
+    if (s.OUT/'STOP.json').exists():raise RuntimeError('parent observation requires no further child')
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: parent observation requires no further child
+
+======================================================================
+ERROR: test_native_debug_overflow_ub_cfg_generics_inline_and_drop_effects (_host_codegen_rbc_fixture.HostCodegenNativeTests.test_native_debug_overflow_ub_cfg_generics_inline_and_drop_effects)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-fixture-02/test_host_codegen_native.py", line 41, in setUp
+    version = self.invoke([self.rustc,'-vV']); self.assert_success(version)
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-fixture-02/test_host_codegen_native.py", line 73, in invoke
+    child,stdout,stderr = workflow_io.capture(command,cwd=self.work,
+                          ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+        env=actual,receipt_path=directory/'record.json',
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        receipt=dict(environment=actual,benchmark=False,scope='real host-policy correctness'))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-driver-02/suite.py", line 43, in observed_capture
+    gate();s.require(len(commands)<256,'direct command limit256 reached');before=time.monotonic()
+    ~~~~^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-driver-02/suite.py", line 37, in gate
+    if (s.OUT/'STOP.json').exists():raise RuntimeError('parent observation requires no further child')
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: parent observation requires no further child
+
+======================================================================
+ERROR: test_uncalled_macro_errors_and_restoration (_host_codegen_rbc_fixture.HostCodegenNativeTests.test_uncalled_macro_errors_and_restoration)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-fixture-02/test_host_codegen_native.py", line 41, in setUp
+    version = self.invoke([self.rustc,'-vV']); self.assert_success(version)
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-fixture-02/test_host_codegen_native.py", line 73, in invoke
+    child,stdout,stderr = workflow_io.capture(command,cwd=self.work,
+                          ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+        env=actual,receipt_path=directory/'record.json',
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        receipt=dict(environment=actual,benchmark=False,scope='real host-policy correctness'))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-driver-02/suite.py", line 43, in observed_capture
+    gate();s.require(len(commands)<256,'direct command limit256 reached');before=time.monotonic()
+    ~~~~^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-driver-02/suite.py", line 37, in gate
+    if (s.OUT/'STOP.json').exists():raise RuntimeError('parent observation requires no further child')
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: parent observation requires no further child
+
+======================================================================
+ERROR: test_uncalled_type_borrow_const_and_position_changes_reject_then_restore (_host_codegen_rbc_fixture.HostCodegenNativeTests.test_uncalled_type_borrow_const_and_position_changes_reject_then_restore)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-fixture-02/test_host_codegen_native.py", line 41, in setUp
+    version = self.invoke([self.rustc,'-vV']); self.assert_success(version)
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-fixture-02/test_host_codegen_native.py", line 73, in invoke
+    child,stdout,stderr = workflow_io.capture(command,cwd=self.work,
+                          ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+        env=actual,receipt_path=directory/'record.json',
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        receipt=dict(environment=actual,benchmark=False,scope='real host-policy correctness'))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-driver-02/suite.py", line 43, in observed_capture
+    gate();s.require(len(commands)<256,'direct command limit256 reached');before=time.monotonic()
+    ~~~~^^
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-driver-02/suite.py", line 37, in gate
+    if (s.OUT/'STOP.json').exists():raise RuntimeError('parent observation requires no further child')
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: parent observation requires no further child
+
+----------------------------------------------------------------------
+Ran 5 tests in 3.798s
+
+FAILED (errors=5)

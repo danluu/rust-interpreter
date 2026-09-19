@@ -1,0 +1,58 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-driver-02/support.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-driver-03/support.py
+@@ -1,5 +1,6 @@
+ """Finite saved binding and ordinary runtime/tool/std readers for this fixture."""
+ from contextlib import contextmanager
++import errno
+ import hashlib
+ import importlib.util
+ import json
+@@ -16,9 +17,9 @@
+ H=ROOT/'experiments/host-wrapper-opt-01'
+ F=ROOT/'experiments/host-wrapper-exporter-01'
+ FIXTURE=ROOT/'experiments/host-wrapper-rbc-fixture-02/test_host_codegen_native.py'
+-WORK=ROOT/'.work/host-wrapper-rbc-fixture-02'
+-OUT=ROOT/'results/host-wrapper-rbc-fixture-02'
+-EXECUTION=ROOT/'.work/host-wrapper-rbc-execution-02'
++WORK=ROOT/'.work/host-wrapper-rbc-fixture-03'
++OUT=ROOT/'results/host-wrapper-rbc-fixture-03'
++EXECUTION=ROOT/'.work/host-wrapper-rbc-execution-03'
+ LOCK=Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+ RUNTIME_KEY='f031d981666f450f760ccf303dccba986053ec6b9a143a60f3d26680f9ac7c70'
+ STD_KEY='f6366b5873636f47cdc3e9941a9b24ef612f94432baecb5d75ed5c4c54911928'
+@@ -135,15 +136,30 @@
+     return dict(sources=sources,evidence=evidence,payloads=payloads,capability=receipt),compiler,sysroot
+ 
+ 
+-def footprint():
++def footprint(*,active=False):
++    """Sample only owned outputs; ENOENT is transient only during live work."""
+     logical=allocated=entries=0
++    def failed(operation,path,error):
++        raise RuntimeError(f'owned footprint {operation} failed at {path}: {type(error).__name__}: {error}') from error
++    def walk_error(error):
++        missing=Path(error.filename) if isinstance(error.filename,str) else None
++        if (active and error.errno==errno.ENOENT and missing is not None
++            and missing.is_absolute() and '..' not in missing.parts
++            and missing!=root and missing.is_relative_to(root)):return
++        failed('traversal',error.filename,error)
+     for root in (WORK,OUT,EXECUTION):
+-        if not root.exists():continue
+-        for parent,dirs,files in os.walk(root,followlinks=False):
++        try:root_stat=root.lstat()
++        except OSError as error:failed('root lstat',root,error)
++        require(stat.S_ISDIR(root_stat.st_mode),'owned footprint root is not an ordinary directory: '+str(root))
++        for parent,dirs,files in os.walk(root,followlinks=False,onerror=walk_error):
+             for name in dirs+files:
+-                p=Path(parent)/name;s=p.lstat();entries+=1
++                p=Path(parent)/name;entries+=1
+                 require(entries<=65536,'owned entry bound65536 exceeded')
+-                require(stat.S_ISREG(s.st_mode) or stat.S_ISDIR(s.st_mode),'unexpected owned file kind')
++                try:s=p.lstat()
++                except OSError as error:
++                    if active and error.errno==errno.ENOENT:continue
++                    failed('entry lstat',p,error)
++                require(stat.S_ISREG(s.st_mode) or stat.S_ISDIR(s.st_mode),'unexpected owned file kind: '+str(p))
+                 if stat.S_ISREG(s.st_mode):logical+=s.st_size;allocated+=s.st_blocks*512
+     return dict(logical_bytes=logical,allocated_bytes=allocated,entries=entries)
+ 

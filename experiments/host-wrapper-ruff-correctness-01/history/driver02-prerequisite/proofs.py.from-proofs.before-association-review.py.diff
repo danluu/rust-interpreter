@@ -1,0 +1,32 @@
+--- original/proofs.before-association-review.py
++++ proofs.py
+@@ -98,14 +98,26 @@
+         and result['test_ids']==result['expected_test_ids']==expected and result['violations']==[]
+         and all(result[n]==0 for n in ('skipped','expected_failures','unexpected_successes','failures','errors'))
+         and result['benchmark'] is False and 0<len(result['commands'])<=256,'all exact five RBC tests must pass')
++    seen=set();previous=record['child_started_at']
++    artifact_root=p.ROOT/'.work/host-wrapper-rbc-fixture-02/artifacts'
+     for row in result['commands']:
+         require(row['passed'] is True and row['limit_seconds']==30 and row['seconds']<=30,'RBC command observation failed')
+         child=get(row['receipt'])
+-        require(child['status']=='finished' and child['finished_at']>=child['started_at'],'RBC command unclosed')
+-        for stream in ('stdout','stderr'):get(row[stream],raw=True)
++        receipt_path=Path(row['receipt']['path']);directory=receipt_path.parent
++        require(receipt_path.name=='record.json' and directory.parent.name=='commands'
++            and receipt_path.is_relative_to(artifact_root) and str(receipt_path) not in seen
++            and child['status']=='finished' and child['parent_pid']==record['child_pid']
++            and previous<=child['started_at']<=child['finished_at']<=record['child_finished_at'],
++            'RBC command route, owner or normal closure differs')
++        seen.add(str(receipt_path));previous=child['finished_at']
++        for stream in ('stdout','stderr'):
++            require(row[stream]['path']==str(directory/stream),'RBC raw stream belongs to another command')
++            get(row[stream],raw=True)
+     before=get(p.ref(out/'inputs-before.json'));after=get(p.ref(out/'inputs-after.json'))
+-    require(before==after and set(before['sources'])==set(rb['sources']) and set(before['payloads'])==set(rb['payloads']),
++    require(before==after and set(before['sources'])==set(rb['sources']) and set(before['payloads'])==set(rb['payloads'])
++        and set(before['evidence'])==set(rb['evidence']),
+         'RBC source/provider before-after association differs')
+     for name,digest in rb['sources'].items():require(before['sources'][name]['sha256']==digest,'RBC source map differs')
+     for name,digest in rb['payloads'].items():require(before['payloads'][name]['sha256']==digest,'RBC provider declaration differs')
++    for name,digest in rb['evidence'].items():require(before['evidence'][name]['sha256']==digest,'RBC evidence map differs')
+     return dict(environment=rb['environment'],tool_key=key)

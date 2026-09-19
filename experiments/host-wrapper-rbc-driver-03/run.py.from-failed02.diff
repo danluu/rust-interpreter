@@ -1,0 +1,21 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-driver-02/run.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/host-wrapper-rbc-driver-03/run.py
+@@ -67,7 +67,7 @@
+                         s.write(s.OUT/'record.json',record)
+                         while child.poll() is None:
+                             try:
+-                                elapsed=time.monotonic()-started;free=shutil.disk_usage(s.ROOT).free;fp=s.footprint()
++                                elapsed=time.monotonic()-started;free=shutil.disk_usage(s.ROOT).free;fp=s.footprint(active=True)
+                                 peak={k:max(peak[k],fp[k]) for k in peak}
+                                 s.require(elapsed<=600,'suite600s observed threshold exceeded')
+                                 s.require(free>=9*2**30,'stop9GiB free threshold exceeded')
+@@ -79,7 +79,8 @@
+                                     r=json.loads(raw)
+                                     s.require(r['status']!='running' or time.time()-r['started_at']<=30,'child30s observed threshold exceeded: '+str(p))
+                             except BaseException as error:
+-                                if repr(error) not in errors:errors.append(repr(error));s.write(s.OUT/'STOP.json',dict(errors=errors,at=time.time()))
++                                detail=f'{type(error).__name__}: {error}'
++                                if detail not in errors:errors.append(detail);s.write(s.OUT/'STOP.json',dict(errors=errors,at=time.time()))
+                             time.sleep(.25)
+                     finally:
+                         code=child.wait()
