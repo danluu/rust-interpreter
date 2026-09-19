@@ -41,3 +41,8 @@ Two workers; benchmark.lock45s; dedicatedbuildtarget neverclean; existingbuild,
 replay/parser/Nushell admission floors; no goals/subagents/peerprocess changes.
 The digest full guard stays unmeasurable, buffered keys and narrow relocation stay
 parked, and the adopted runtime remains the control.
+
+Focused01:27template controls passed; two new reference comparisons rejected
+JIT-only options passed to Engine::Interpreter. Preserve failedrecord. Focused02
+clears only the reference engine options, keeping memory/instruction/frame limits
+identical; no runtime implementation change follows from that fixture error.

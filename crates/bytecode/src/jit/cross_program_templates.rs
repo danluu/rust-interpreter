@@ -634,7 +634,8 @@ fn parameterized_literal_live_forwarding_arithmetic_branch_and_budgets_match() {
             Op::Imm{dst:2,value:22},Op::Jump{target:11},Op::Store{address:1,src:2,size:8},Op::Return];
         let context=Context::new_verified(&p,history.clone(),true).unwrap();let mut j=owner(&p);j.template_model_context=Some(context.clone());
         let limits=crate::Limits{instructions:budget,..live_limits()};
-        let actual=live_execute(&p,&mut Some(j),limits.clone());let expected=crate::execute(&p,&[],limits);
+        let reference=crate::Limits{jit_resumable_calls:false,jit_persistent_registers:false,jit_scalar_calls:false,..limits.clone()};
+        let actual=live_execute(&p,&mut Some(j),limits);let expected=crate::execute(&p,&[],reference);
         match (actual,expected) {
             (Ok(a),Ok(b))=>assert_eq!((a.value,a.instructions),(b.value,b.instructions)),
             (Err(a),Err(b))=>assert_eq!(a,b),_=>panic!("literal budget/outcome mismatch"),
@@ -653,7 +654,8 @@ fn parameterized_literal_live_current_data_addresses_and_faults_match() {
             Op::Local{dst:2,offset:0},Op::Store{address:2,src:1,size:8},Op::Return];
         let context=Context::new_verified(&p,history.clone(),true).unwrap();let mut j=owner(&p);j.template_model_context=Some(context.clone());
         let limits=crate::Limits{memory:1024*1024,..live_limits()};
-        let actual=live_execute(&p,&mut Some(j),limits.clone());let expected=crate::execute(&p,&[],limits);
+        let reference=crate::Limits{jit_resumable_calls:false,jit_persistent_registers:false,jit_scalar_calls:false,..limits.clone()};
+        let actual=live_execute(&p,&mut Some(j),limits);let expected=crate::execute(&p,&[],reference);
         match (actual,expected) {
             (Ok(a),Ok(b))=>assert_eq!((a.value,a.instructions),(b.value,b.instructions)),
             (Err(a),Err(b))=>assert_eq!(a,b),_=>panic!("literal current address/fault mismatch"),
