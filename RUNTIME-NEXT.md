@@ -20,8 +20,9 @@ wall.9311698739+A/A.0308233457=.9619932196;CPU.9104683898+.0308595313=.941327921
 PASS. Nativewall1.2718753876, noadoption. Main21f57dbe pushedpreservingpeer48a8dda0.
 Full02 sourcec91666c7 NOTADMITTED33669/33713: oldprotocol01 boundprevious
 candidateprerequisites; zero stage/build/guest/timing, terminalproofpreserved.
-Protocol02 source126020d8 COMPLETE63564,8unchangedaccountingcontrols;closure
-underway. Freeze full-parserfolder until protocol/fullclosure. Nextfreshfull03,
+Protocol02 source126020d8 COMPLETE63564 CLOSED67895,8unchangedaccountingcontrols.
+Full03 sourceb2adc45f ACTIVE70158/controller70161, admitted24.2GiB. Freeze
+crates/scripts/tests, screenqualifiedsources and full-parserfolder throughclosure.
 110commands15pairs22requestsper session, samequalifiedtool andgates.
 Primary06cachecleanup CLOSED2706 after93584 source2838da6e:15152files/2991235289bytes,
 11413protectedhashesunchanged. Failedsetupcachecleanup bc52545f COMPLETE20731
