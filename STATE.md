@@ -74,27 +74,27 @@ CPU/adopted.9141699125123719 +AA.03350712293126368=.9476770354436356.
 Nativewall1.5899161253916982,anchorwall.684761463627307. No switch-only gain
 inference against separately timed parent, no runtime adoption yet.
 
-Prepared compact-native-switch-guards atcb37c236: new portablecorestrict_probes
-from qualifiedpgrustfix; close JSON-normalizes case tuplesbeforecomparison.
-Fresh26control protocol (12accounting6command4controller+4std/no_std compiler
-rejections), run compact-native-switch-guard-protocol-01, NOT LAUNCHED because
-peer40573 owns sharedlock atlastcheck. No owncommandsactive. Onceavailable:
-qualify.py then qualify.py --close; then benchmark.py --case token --run-id
-compact-native-switch-edit-token-01 (176+2strict), close.py RUN. Tokenpassadmits
-folded thenpgrust using samegenericfolder andsuffix01. Newcandidatecc1ebf5e.
-All fullrun sources freeze throughclosure. Other large/parser/Nushell adapters
-are still to be prepared/qualified with newcandidate proofs after precedinggates.
-Never repeat parenttimings or any completedcapture/controlstage.
+Publicprotocol01 passed26controls/CLOSED59714,source6ad658d9. Before timing,
+review caught benchmark's staleexpected22. Corrected source59c151db adds an
+admission regression and validates the actual summary through benchmarkadmission.
+Protocol02 PASSED27/CLOSED78117; results committed4abcd34d and pushed.
+Both proofs retain4actual std/no_std type/borrow compilerrejections. No timed
+workload failed or repeated. Fullbenchmark uses protocol02; samegates/options.
 
-Main59db6951 publishes the closed passing primary and preservespeer1b9f458b.
-Prepared large/parser adapters199894c0 (NOT qualified/launched); they bind new
-public26control portableproof and pgrust01. Prepared exactprimarycache retirement
-0654b553 (NOT launched, only if later admission needs it). Currentroot0654b553,
-lastpushed72acf8d1. No ownactivecommands; peer40573/86617 hold/waitsharedlock.
-Sampled switchsite duplicate/default-target removal has no eligible sites; old
-implicit-zero/selective-narrow-register variants alreadyfailed, do not repeat.
-Freeabout22.0GiB;
-recheckadmission. Runtimequalified/installedidentitiesabove remainunchanged.
+ACTIVE compact-native-switch-edit-token-01, source4abcd34d,
+supervisor80729/controller80732, started2026-09-19 05:36:53 local.176+2strict,
+12originaltests. Freeze inputs until independentlyclosed. Read terminal; on
+success run compact-native-switch-guards/close.py RUN under uniquesupervisor.
+Onlyfulltokenpass admitsfoldedthenpgrust (suffix01). Portablecorestrictprobes and
+JSON-normalizedcasecomparison already fixed. Preserveallwrong/restoredoutcomes.
+
+Mainbf5bddad afterpublicationworktreefetch/ff preservespeer; lastownpublication
+59db6951 containsclosedprimary. Preparedlarge/parseradapters199894c0 nowbind
+protocol02/27 at59c151db (NOT qualified/launched). Preparedexactprimaryretirement
+0654b553 (NOT launched; onlyiflateradmissionneedsit). Currentfreeabout21.9GiB.
+Sampledswitch duplicate/default-target removal hasnoeligiblesites; old
+implicit-zero/selective-narrow-registervariantsalreadyfailed,donotrepeat.
+Runtimequalified/installedidentitiesabove remainunchanged.
 
 ## Qualified candidate identities
 
