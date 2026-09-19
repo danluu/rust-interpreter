@@ -2,7 +2,7 @@
 
 Manual optimization continues indefinitely; the saved goal remains paused.
 Root owns `/Users/danluu/dev/rust-interp` on
-`experiment/shared-cold-tails-20260918`. No subagents or independent model calls.
+`experiment/native-frame-access-20260918`. No subagents or independent model calls.
 Private repository: `danluu/rust-interpreter`. Push qualified work regularly;
 never merge an entire experimental branch over concurrent main changes.
 
