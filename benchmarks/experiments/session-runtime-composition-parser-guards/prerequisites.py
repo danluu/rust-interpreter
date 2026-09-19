@@ -4,7 +4,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[3]
 from compare_saved_runtime import sha
 PUBLIC=ROOT/'benchmarks/experiments/session-runtime-composition-guards/admission.py'
-PROTOCOL='session-runtime-composition-parser-protocol-01'
+PROTOCOL='session-runtime-composition-parser-protocol-02'
 PROFILES=['incremental','repository']
 def read(p):return json.loads(p.read_text())
 def components():
@@ -38,7 +38,7 @@ def validate_prior(proofs,candidate,profile):
 
 def load(profile):
     base,candidate,paths=components()
-    proofs=[closed('session-runtime-composition-edit-'+case+'-01',paths) for case in ['token','folded','pgrust','rg-aot']]
+    proofs=[closed('session-runtime-composition-edit-'+case+('-02' if case=='pgrust' else '-01'),paths) for case in ['token','folded','pgrust','rg-aot']]
     if profile=='repository':proofs.append(closed('session-runtime-composition-parser-incremental-01',paths))
     assert validate_prior(proofs,candidate['tool_key'],profile)
     protocol=closed(PROTOCOL,paths);assert protocol['tests']==14 and protocol['new_tests']==6 and protocol['reused_tests']==8

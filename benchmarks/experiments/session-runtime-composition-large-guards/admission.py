@@ -36,7 +36,7 @@ def load(case):
         assert t['owner']==str(ROOT) and t['status']=='finished' and t['returncode']==0
         paths.extend(folder/n for n in ['closure.json','summary.json','terminal.json'])
         return s
-    names=['session-runtime-composition-edit-'+c+'-01' for c in ['token','folded','pgrust']]
+    names=['session-runtime-composition-edit-'+c+('-02' if c=='pgrust' else '-01') for c in ['token','folded','pgrust']]
     if case=='nushell':names+=['session-runtime-composition-edit-rg-aot-01']+['session-runtime-composition-parser-'+p+'-01' for p in ['incremental','repository']]
     assert validate_previous(case,[closed(name) for name in names])
     return builds,paths

@@ -9,11 +9,12 @@ from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
 from admission import components
 from context import context
-RUN='session-runtime-composition-large-protocol-01'
+from strict_probe_evidence import verified_paths
+RUN='session-runtime-composition-large-protocol-02'
 def main():
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45);require_space(ROOT,12)
-        builds,paths=components()
+        builds,paths=components();paths+=verified_paths()
         for project in ['rg-aot','nushell']:
             _,_,_,bound,_=context(project);paths+=bound
         paths += [p for p in Path(__file__).parent.iterdir() if p.suffix in ['.py','.md']]
@@ -40,7 +41,7 @@ def main():
         out=ROOT/'results'/RUN;out.mkdir(exist_ok=False)
         write(out/'summary.json',dict(status='passed',source_revision=revision,raw=str(raw.relative_to(ROOT)),
             plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),tests=23,commands=3,
-            original_project_guest_commands=0,candidate_key=builds['candidate']['tool_key'],performance_measurement=False,default_runtime_adoption=False))
+            original_project_guest_commands=0,candidate_key=builds['candidate']['tool_key'],performance_measurement=False,default_runtime_adoption=False,portable_probe_source_verified=True,portable_probe_proof='session-runtime-composition-pgrust-protocol-01'))
 if __name__=='__main__':
     if sys.argv[1:]==['--close']:focus.RUN=RUN;focus.close()
     else:assert len(sys.argv)==1;main()

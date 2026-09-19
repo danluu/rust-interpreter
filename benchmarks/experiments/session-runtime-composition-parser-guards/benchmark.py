@@ -110,7 +110,7 @@ def main():
                     assert ready['parameterized_literals'] is True
                 session_paths={mode:owner.endpoint/'ready.json' for mode,owner in session_objects.items()}
                 for label,code,diagnostic in [('type',b'\nfn rust_interp_strict_type_probe() { let _: u32 = "invalid"; }\n','E0308'),
-                        ('borrow',b'\nfn rust_interp_strict_borrow_probe() { let mut value=0; let a=&mut value; let b=&mut value; std::hint::black_box((a,b)); }\n','E0499')]:
+                        ('borrow',b'\nfn rust_interp_strict_borrow_probe() { let mut x=0; let a=&mut x; let b=&mut x; core::hint::black_box((a,b)); }\n','E0499')]:
                     require_space(ROOT,8);assert b'rust_interp_strict_' not in original
                     edit.replace(original+code)
                     command=custom_command(custom,keys['candidate'],'candidate',raw,'strict-'+label,session_paths,raw.name+':strict')

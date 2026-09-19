@@ -1,24 +1,38 @@
 # Next runtime work
 
-See STATE.md for exact process identities, evidence and resource constraints.
-The duration-order/template-history composition passed both parser gates but failed
-its held-out fre token guard. All176 changed-source commands and strict controls
-were correct. Median wall improvement2.94% is below the5.57% project A/A allowance;
-no runtime adoption, later project guards or unchanged timing retry.
+New session/indirect/readonly/spill composition has passed full qualification:
+720 Rust tests per profile,446 Python passes/22 skips,52 owned servers/108 clients.
+Parser replay passed1824 original invocations and19815 verified template hits;
+fre replay passed192 invocations/14548 verified hits; both are closed. Installed
+tool3ebea1cd. The fresh40-command fre primary passed and is independently closed:
+wall/adopted.9537077504 + A/A.0373937777 = .9911015281; CPU margin.9588016423.
+Candidate/native wall1.5416394568. Full176-command fre history also passed and
+is closed35515: wall/adopted.9414513615 + A/A.0268743944 = .9683257559;
+CPU margin.9629909017, nativewall1.5806520070. Exact closed-primary compiler-cache
+retirement is CLOSED60900. Parser14 controls and large/private23 controls are
+closed. Folded176-command regression guard passed and CLOSED95676 (wall change
+within A/A). Full-token cache retirement CLOSED33463 preserves3759hashes.
+Pgrust01 failed before timings: its borrow fixture used std in a no_std crate.
+Two compiler errors,zero server requests; source restored and failure CLOSED97727.
+Dedicated pgrust02 uses core and fresh namespaces. Its26-control protocol passed
+and CLOSED40059, including four real std/no_std compiler probes. Pgrust02 is
+complete53869/53872 with176 commands+2strict, independently CLOSED4260. Initial
+audit90875 failed only on tuple-vs-JSON-list metadata; preserved without rerunning
+any timing. Regression margins wall1.0152011429/CPU1.0136701561 pass; four tests.
+Parser protocol02 passed14 controls and CLOSED23181; large protocol02 passed23
+and CLOSED43657. First rg admission and first large audit timed out on the shared
+lock before work; both preserved. Actual rg-aot176 commands+2strict passed and
+CLOSED94315 under outer suffix-admitted-02. Wall margin1.0308613865 and CPU
+margin1.0375064256 pass; nativewall.5910980861. No clear gain versus adopted.
 
-Preparation diagnostic02 is closed:192 original invocations,14878 observed hits,
-no JIT declines. Ordinary emission falls from summed250ms to73ms; hot execution
-still dominates. Both current normal-VM native-PC captures are closed and every
-generated self PC is attributed. Copy/Call/Load dominate; scalar bodies are a
-small category. See docs/SESSION-FRE-EXECUTION-20260919.md.
+Next: parser incremental, parser repository defaults, Nushell last. Current free
+17.6GiB is below parser24GiB and Nushell66.54872655GiB. Disposable transparent
+compression probe02 CLOSED4233; no existing evidence changed. Read-only exact
+public evidence inventory is prepared. Only separate verified exact-path storage
+work can reclaim space; no broad cleanup, shared target or peer/private changes.
 
-Memory subparts01 is now running: two offline saved-code reconstructions and
-read-only sample attribution, no new guest executions. Reused six qualified
-partition/ambiguity controls and exact current candidate source. Admission passed
-after three bounded owned-cache retirements; one older audit found no eligible
-files and removed nothing. Do not repeat any retirement. Freeze Rust/scripts/
-controller until closure, then use typed results to choose a concrete candidate.
-Main484d2483 has the failed gate; publish these newer diagnostics regularly.
-
-No subagents or goal tools. Two workers, shared lock, dynamic disk checks, no
-shared-target/peer cleanup. Continue indefinitely from measured evidence.
+Both parents failed. Main runtime stays scratch/scalar df4006e0 until every guard
+and current-main integration passes. No unchanged timing retries. No subagents
+or goal tools; two workers, shared lock, dynamic admission. Primary/token and old
+parser/Nushell retirements are complete and MUST NOT repeat. See STATE.md.
+Continue indefinitely and publish qualified evidence regularly.

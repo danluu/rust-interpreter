@@ -3,6 +3,7 @@ import hashlib,json,subprocess,sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
+sys.path.insert(0,str(ROOT/'benchmarks/experiments/session-runtime-composition-large-guards'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import require_space,write_json as write
 from benchmark import case_states,native_outcomes
@@ -17,8 +18,8 @@ from screen import native_executable
 
 def read(p):return json.loads(p.read_text())
 def main():
-    name=sys.argv[1];assert name in ['session-runtime-composition-edit-'+case+'-01' for case in CASES]
-    raw=ROOT/'.work'/name;out=ROOT/'results'/name;outer=ROOT/'.work/experiments'/name
+    name=sys.argv[1];assert name=='session-runtime-composition-edit-rg-aot-01'
+    raw=ROOT/'.work'/name;out=ROOT/'results'/name;outer=ROOT/'.work/experiments'/(name+'-admitted-02')
     summary=read(out/'summary.json');plan=read(raw/'plan.json');records=read(raw/'records.json');terminal=read(outer/'status.json')
     assert summary['status']=='passed' and summary['commands']==len(records)==176
     assert summary['source_restored'] and summary['original_assertions_unchanged'] and summary['exact_native_test_outcomes'] and summary['candidate_control_artifacts_match']
@@ -41,6 +42,14 @@ def main():
     assert plan['native_threads']==plan['prepared_workers']==plan['cargo_jobs']==2
     assert plan['required_free_bytes']==needed and plan['admitted_free_bytes']>=needed and plan['minimum_child_gib']==8
     bindings={};evidence={}
+    admission=ROOT/'results/session-runtime-composition-rg-aot-admission-01'
+    c=read(admission/'closure.json');prior=read(admission/'summary.json')
+    assert c['status']=='closed' and c['all_hashes_verified'] and c['no_stage_directory'] and c['no_session_endpoints']
+    assert sha(admission/'summary.json')==c['summary_sha256'] and sha(admission/'terminal.json')==c['terminal_sha256']
+    assert prior['attempted_run']==name and prior['commands']==0 and prior['original_project_guest_commands']==0
+    assert read(admission/'terminal.json')['finished_at']<terminal['started_at']
+    for p in admission.iterdir():
+        if p.is_file():evidence[str(p.relative_to(ROOT))]=sha(p)
     for path,h in plan['frozen'].items():
         assert sha(ROOT/path)==h,path
         if path.startswith(('.work/','results/')):bindings[path]=dict(kind='retained',sha256=h)
@@ -118,6 +127,8 @@ def main():
     (out/'terminal.json').write_bytes((outer/'status.json').read_bytes())
     write(out/'closure.json',dict(status='closed',source_revision=plan['source_revision'],all_hashes_verified=True,
         performance_gate_passed=summary['measurement']['gate_passed'],verdict=summary['measurement']['verdict'],adoption=False,
+        auditor_sha256=sha(Path(__file__)),auditor_revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
+        supervisor_attempt=outer.name,prior_admission_had_no_workload=True,
         frozen_inputs=len(bindings),evidence_files=len(evidence),bindings=str((raw/'closed-bindings.json').relative_to(ROOT)),
         bindings_sha256=sha(raw/'closed-bindings.json'),evidence=str((raw/'closed-evidence.json').relative_to(ROOT)),
         evidence_sha256=sha(raw/'closed-evidence.json'),summary_sha256=sha(out/'summary.json'),terminal_sha256=sha(out/'terminal.json')))

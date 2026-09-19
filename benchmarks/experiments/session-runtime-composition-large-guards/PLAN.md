@@ -35,3 +35,11 @@ reservation and must not be silently reduced. Every child still requires8GiB.
 Use benchmark.lock/45s acquisition and the independent disk sampler. Retire only
 exact closed owned compiler intermediates with preserved proof and open-file/
 inode checks; never shared targets, source, executables, private evidence or peers.
+
+Protocol02 supersedes only the prepared controller/admission bindings before any
+history here ran. Pgrust01 is preserved as a strict-fixture failure with zero
+timed commands and zero guest requests; require corrected closed pgrust02.
+Use core::hint::black_box, and bind both actual probe bodies byte-for-byte to the
+four closed std/no_std compiler rejections in the portable pgrust protocol.
+No performance threshold, arm, original assertion or accounting rule changes.
+Keep protocol01 evidence; protocol02 must qualify and close before execution.
