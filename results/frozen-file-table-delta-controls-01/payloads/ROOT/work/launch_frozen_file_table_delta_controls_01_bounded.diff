@@ -1,0 +1,25 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/launch_hash_prerequisite_controls_05_bounded.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/launch_frozen_file_table_delta_controls_01_bounded.py
+@@ -9,17 +9,17 @@
+ import time
+ 
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+-HERE = ROOT/'experiments/hir-options-hash-prerequisite-controls-05'
++HERE = ROOT/'experiments/frozen-file-table-delta-controls-01'
+ LAUNCH = HERE/'launch.json'
+-EXPECTED = 'c450da32ef1ed96fb8d26ade3bbb24a1cf5f11ed9b5edfc041c0ebe31596836d'
+-WORK = ROOT/'.work/hir-options-hash-prerequisite-controls-launch-execution-05'
+-OUTER = ROOT/'.work/experiments/hir-options-hash-prerequisite-controls-supervisor-05'
++EXPECTED = 'b54ffd72637cb16ca86ac7f6b1af10f48f053722c7c3a8ccb97d03dc4be0ece3'
++WORK = ROOT/'.work/frozen-file-table-delta-controls-launch-execution-01'
++OUTER = ROOT/'.work/experiments/frozen-file-table-delta-controls-supervisor-01'
+ sha = lambda p: hashlib.sha256(Path(p).read_bytes()).hexdigest()
+ assert Path.cwd() == ROOT and sys.dont_write_bytecode and not sys.flags.optimize
+ assert sha(LAUNCH) == EXPECTED
+ plan = json.loads(LAUNCH.read_bytes())
+ assert sha(HERE/'inputs.json') == plan['inputs_sha256'] and sha(HERE/'run.py') == plan['helper_sha256']
+-assert plan['owner'] == str(ROOT) and plan['controls'] == 66 and plan['expected_children'] == 1
++assert plan['owner'] == str(ROOT) and plan['controls'] == 29 and plan['expected_children'] == 1
+ assert shutil.disk_usage(ROOT).free >= 16*2**30
+ assert not WORK.exists() and not WORK.is_symlink() and not OUTER.exists() and not OUTER.is_symlink()
+ WORK.mkdir()
