@@ -1,0 +1,58 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-02/run_once.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-n-client-03/run_once.py
+@@ -12,12 +12,12 @@
+ import time
+ 
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+-SOURCE = ROOT/'experiments/proc-macro-arena-n-client-02'
+-WORK = ROOT/'.work/proc-macro-arena-n-client-02'
+-OUT = ROOT/'results/proc-macro-arena-n-client-02'
++SOURCE = ROOT/'experiments/proc-macro-arena-n-client-03'
++WORK = ROOT/'.work/proc-macro-arena-n-client-03'
++OUT = ROOT/'results/proc-macro-arena-n-client-03'
+ TC = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/.work/hir-options-hash-compiler-01/source/build/aarch64-apple-darwin/stage1')
+ LOCK = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+-PLAN_SHA = '5885fb34400b0277f0839c5fddc98d7a25eef6644697df77f9f0c5c019d56c78'
++PLAN_SHA = '360a6d21eb3520880a6cbf491219139c77767858e9c48ce0ab138fa98d3a6306'
+ FIELDS = ('dev', 'ino', 'mode', 'nlink', 'size', 'mtime_ns', 'ctime_ns')
+ START = time.monotonic()
+ 
+@@ -295,10 +295,25 @@
+             require(arg in text, 'actual Rust source missing from dep-info')
+     if spec['role'] != 'caller':
+         require('/libproc_macro-452900db9815e688.' not in text, 'old N client silently selected')
++    literal_dependency = None
+     if spec['role'] in ['build-stock-client','build-candidate-client','build-whole-crate-tests','build-macro-dylib']:
++        metadata_only = spec['role'] in ['build-stock-client','build-candidate-client']
++        supplied = {}
+         for suffix in ['rlib','rmeta']:
+             name = str(WORK/'dependency'/('librustc_literal_escaper-arena04_n_dep01.'+suffix))
+-            require(name in text and file_record(name) == built[name], 'matched normal literal pair not linked')
++            require(file_record(name) == built[name], 'matched normal literal artifact changed')
++            require(any(spec['argv'][i:i+2] == ['--extern','rustc_literal_escaper='+name]
++                        for i in range(len(spec['argv'])-1)), 'explicit literal metadata/code argument missing')
++            if suffix == 'rmeta' or not metadata_only:
++                require(name in text, 'required literal crate source missing from dep-info')
++            supplied[suffix] = dict(path=name, **built[name])
++        # locator.rs::extract_one intentionally does not discover the unused
++        # rlib when producing an rlib after loading its rmeta. Record the
++        # supplied code archive without mislabeling it as selected or linked.
++        literal_dependency = dict(metadata_only_rlib_build=metadata_only, supplied=supplied,
++            required_depinfo_flavors=['rmeta'] if metadata_only else ['rlib','rmeta'],
++            code_archive_linkage_required=not metadata_only,
++            code_archive_present_in_depinfo=supplied['rlib']['path'] in text)
+         require('/librustc_literal_escaper-f4f532eb55f87a02.' not in text, 'old private literal selected')
+     if spec['role'] == 'build-macro-dylib':
+         for suffix in ['rlib','rmeta']:
+@@ -310,7 +325,10 @@
+         name = str(WORK/'macro-tests'/spec['arm']/'libarena04_macros.dylib')
+         other = str(WORK/'macro-tests'/('stock' if spec['arm']=='candidate' else 'candidate')/'libarena04_macros.dylib')
+         require(name in text and other not in text and file_record(name) == built[name], 'caller selected wrong macro dylib')
+-    return dict(outputs=rows,depinfo=dict(path=str(dep),**dep_row))
++    proof = dict(outputs=rows,depinfo=dict(path=str(dep),**dep_row))
++    if literal_dependency is not None:
++        proof['normal_literal_dependency'] = literal_dependency
++    return proof
+ 
+ 
+ def main():

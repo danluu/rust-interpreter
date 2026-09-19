@@ -1,0 +1,278 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-06/prepare_manifest.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-08/prepare_manifest.py
+@@ -20,13 +20,18 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-HERE = ROOT/'experiments/hir-options-hash-runtime-audit-06'
++HERE = ROOT/'experiments/hir-options-hash-runtime-audit-08'
+ QUALIFIED_AUDIT = ROOT/'experiments/hir-options-hash-runtime-audit-05'
+ ATTEMPT = ROOT/'experiments/runtime-preflight-retry-05'
+ ROUTES_PATH = ATTEMPT/'routes.json'
+ ROUTES_SHA = '893d6102741b5206a829e2f5e130614667140b1eacc09d0c55616f7311f82e6a'
+ ADAPTER = ATTEMPT
+ STARTUP_SOURCE = ROOT/'experiments/runtime04-environment-adapter-01'
++LINK_SOURCE = ROOT/'experiments/runtime-frozen-link-reader-01'
++LINK_CONTROL = ROOT/'experiments/runtime-frozen-link-controls-01'
++LINK_RESULT = ROOT/'results/runtime-frozen-link-controls-01/result.json'
++FAILED_AUDIT = dict(path=str(ROOT/'.work/runtime06-saved-audit-preflight-execution-01/record.json'),
++    sha256='4b7e57aa4a1aa0bf09a6725dd47056497cd7a5ef56b0f3a36f2a77fce60fdb2b')
+ RUNTIME = X/'experiments/hir-options-hash/runtime-installation-04'
+ PREPARATION_LAUNCHER = ATTEMPT/'prepare_once.py'
+ RUNTIME_LAUNCHER = ATTEMPT/'launch.py'
+@@ -36,7 +41,7 @@
+ OWNED_SHA = '7021a15d3b806ab908f03276051d9d9ca9c9e208bbf8933a60229c9fb35bb68e'
+ FIELDS = ('dev', 'ino', 'mode', 'nlink', 'size', 'mtime_ns', 'ctime_ns')
+ STAMP_FIELDS = ('dev', 'ino', 'mode', 'size', 'mtime_ns', 'ctime_ns', 'nlink')
+-POLICY = 'runtime05-retry-saved-audit-source-manifest-v1'
++POLICY = 'runtime05-frozen-links-saved-audit-source-manifest-v1'
+ # Source routes only. Reviewed source digests and the future retry-control
+ # proof chain must be bound independently before this draft can run.
+ INTEGRATION_SOURCE_PATHS = [
+@@ -49,6 +54,11 @@
+     '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/launch.py',
+     '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05/test_retry.py',
+     '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01/environment.py',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-frozen-link-reader-01/links.py',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-frozen-link-reader-01/test_links.py',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-frozen-link-controls-01/run_once.py',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-frozen-link-controls-01/child.py',
++    '/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-frozen-link-controls-01/plan.json',
+ ]
+ CORE_PATHS = tuple(HERE/name for name in ['bootstrap.py','audit.py','prepare_manifest.py','execute.py']) + tuple(
+     QUALIFIED_AUDIT/name for name in ['audit_io.py','reader.py','test_reader.py','test_audit_io.py'])
+@@ -129,9 +139,13 @@
+ }
+ 
+ 
++LINK_COUNT = 24  # Source-derived; actual result/record/manifest must be independently bound.
++LINK_PROOF = {'result_sha256': 'cfb7577f2345147a9c5f4d44b7c562d7e92e61bdcc91e7b95fbba48c8ac22497', 'record_sha256': 'a2acb45bb98cb6c3b44bddbb7b2f43331281f38aa219a14aa56ac7bddf06441c', 'manifest_sha256': 'a4380c58427d256f7e7c450752e6d724d20d528f45a6d9766f876cc6d1ebab80'}
++
++
+ def output_root(phase):
+     require(phase in ['preflight'], 'exact runtime phase')
+-    return ROOT/('.work/runtime06-saved-audit-'+phase+'-manifest-01')
++    return ROOT/('.work/runtime08-saved-audit-'+phase+'-manifest-01')
+ 
+ 
+ def require(value, message):
+@@ -344,6 +358,172 @@
+                 receipt_sha256=sha(work/'receipt.json'), result_sha256=sha(work/'result.json'))
+ 
+ 
++def frozen_link_controls(reference, *, read_json, read_bytes, sha, identity):
++    """Authenticate the direct real-filesystem controls, not reader.controls."""
++    require(type(LINK_COUNT) is int and LINK_COUNT == 24
++        and all(type(value) is str and re.fullmatch('[a-f0-9]{64}', value)
++                for value in LINK_PROOF.values()), 'actual frozen-link controls remain unbound')
++    output = LINK_RESULT.parent
++    require(same(reference, dict(path=str(LINK_RESULT), sha256=LINK_PROOF['result_sha256']))
++        and sha(LINK_RESULT) == reference['sha256'], 'exact actual frozen-link result required')
++    result = read_json(LINK_RESULT)
++    require(result['status'] == 'verified-frozen-link-controls' and type(result['tests']) is int
++        and result['tests'] == LINK_COUNT and result['source_unchanged'] is True
++        and type(result['compiler_calls']) is int and result['compiler_calls'] == 0
++        and all(result[key] is False for key in ['network','provider_writes','canonical_lock_access','runtime_audit_qualified'])
++        and type(result['owned_bytes']) is int and 0 <= result['owned_bytes'] <= 8*2**20,
++        'complete successful direct control result required')
++    def check_row(path, row):
++        require(type(row) is dict and set(row) == {'bytes','sha256','identity'}
++            and type(row['bytes']) is int and 0 <= row['bytes'] <= 64*2**20
++            and type(row['identity']) is dict and set(row['identity']) ==
++                {'dev','ino','mode','nlink','size','mtime_ns','ctime_ns'}
++            and all(type(v) is int for v in row['identity'].values())
++            and sha(path) == row['sha256'] and same(identity(path), row['identity'])
++            and row['bytes'] == row['identity']['size'], 'actual control byte/identity row differs')
++    refs = dict(record=output/'record.json',source_before=output/'source-before.json',
++        source_after=output/'source-after.json',stdout=output/'stdout',stderr=output/'stderr',plan=LINK_CONTROL/'plan.json')
++    for key,path in refs.items():
++        require(type(result[key]) is dict and set(result[key]) == {'path','sha256'}
++            and result[key]['path'] == str(path) and sha(path) == result[key]['sha256'],
++            'exact direct control closure reference differs')
++    require(result['record']['sha256'] == LINK_PROOF['record_sha256']
++        and sha(output/'manifest.json') == LINK_PROOF['manifest_sha256'], 'actual direct control closure anchors differ')
++    manifest = read_json(output/'manifest.json')
++    members = {'run_once.py','child.py','plan.json','started.json','record.json','source-before.json',
++               'source-after.json','stdout','stderr','result.json'}
++    require(set(manifest) == members and {p.name for p in output.iterdir()} == members|{'manifest.json','tmp'}
++        and stat.S_ISDIR((output/'tmp').lstat().st_mode) and not list((output/'tmp').iterdir()),
++        'complete direct control output membership differs')
++    for name,row in manifest.items(): check_row(output/name,row)
++    record = read_json(output/'record.json'); started = read_json(output/'started.json')
++    plan = read_json(LINK_CONTROL/'plan.json')
++    before = read_json(output/'source-before.json'); after = read_json(output/'source-after.json')
++    require(same(before,after) and same(before,result['sources']), 'control sources changed before/after')
++    python = str(Path('/opt/homebrew/bin/python3').resolve(strict=True))
++    expected_sources = {str(LINK_SOURCE/'links.py'),str(LINK_SOURCE/'test_links.py'),
++        str(LINK_CONTROL/'run_once.py'),str(LINK_CONTROL/'child.py'),str(LINK_CONTROL/'plan.json'),python}
++    require(set(before) == expected_sources and plan['python_resolved'] == python,
++        'complete direct-control implementation/test/runner/interpreter source set differs')
++    for name,row in before.items(): check_row(name,row)
++    for name in ['run_once.py','child.py','plan.json']:
++        require(sha(output/name) == sha(LINK_CONTROL/name), 'retained direct-control source differs')
++    require(plan['policy'] == 'owned-temp-frozen-link-controls-v1' and plan['actual_result'] is None
++        and plan['source_root'] == str(LINK_SOURCE) and plan['control_source'] == str(LINK_CONTROL)
++        and plan['future_output'] == str(output) and plan['cwd'] == str(LINK_SOURCE)
++        and plan['command'] == ['/opt/homebrew/bin/python3','-B',str(LINK_CONTROL/'child.py')]
++        and plan['canonical_lock_access'] is False and plan['provider_writes'] is False
++        and plan['network'] is False and type(plan['compiler_calls']) is int and plan['compiler_calls'] == 0
++        and same(plan['bounds'],dict(cpu_seconds=30,entry_free_bytes=256*2**20,file_bytes=256*1024,
++            observer_seconds=60,owned_bytes=8*2**20,stop_free_bytes=128*2**20)), 'direct-control plan/bounds differ')
++    for key,names in [('sources',[LINK_CONTROL/'child.py',LINK_SOURCE/'links.py',LINK_SOURCE/'test_links.py']),
++                      ('test_sources',[LINK_SOURCE/'links.py',LINK_SOURCE/'test_links.py'])]:
++        require(same(plan[key],{str(name):before[str(name)] for name in names}), 'source-bound direct control plan differs')
++    names = sorted('test_links.'+cls.name+'.'+method.name
++        for cls in ast.parse(read_bytes(LINK_SOURCE/'test_links.py')).body if isinstance(cls,ast.ClassDef)
++        for method in cls.body if isinstance(method,ast.FunctionDef) and method.name.startswith('test_'))
++    require(len(names) == len(set(names)) == LINK_COUNT and type(plan['tests']) is int and plan['tests'] == LINK_COUNT
++        and same(names,plan['test_names']) and same(names,result['test_names']), 'source-derived actual link test names differ')
++    environment = dict(PATH='/usr/bin:/bin:/opt/homebrew/bin',LANG='C',LC_ALL='C',TMPDIR=str(output/'tmp'),
++        PYTHONDONTWRITEBYTECODE='1',PYTHONNOUSERSITE='1',PYTHONHASHSEED='0')
++    require(record['status'] == 'closed' and type(record['returncode']) is int and record['returncode'] == 0
++        and record['may_be_live'] is False and record['observation_errors'] == []
++        and record['command'] == plan['command'] and record['cwd'] == str(LINK_SOURCE)
++        and same(record['environment'],environment) and record['plan_sha256'] == result['plan']['sha256']
++        and all(type(record[key]) is int and record[key] > 0 for key in ['pid','parent_pid','parent_parent_pid'])
++        and record['started_at'] <= record['spawned_at'] <= record['observation_finished_at'] <= record['finished_at']
++        and record['finished_at']-record['spawned_at'] <= 60
++        and record['cpu_seconds'] == 30 and record['observer_seconds'] == 60
++        and record['file_bytes'] == 256*1024 and record['namespace_bytes'] == 8*2**20
++        and record['canonical_lock_access'] is False and type(record['compiler_calls']) is int and record['compiler_calls'] == 0
++        and type(record['retries']) is int and record['retries'] == 0 and record['signals'] == []
++        and not any(key in record for key in ['execution_error','publication_error']),
++        'actual direct-control child closure/identity/limits differ')
++    require(started['status'] == 'running' and started['may_be_live'] is True
++        and all(same(started[key],record[key]) for key in ['command','cwd','environment','pid','parent_pid',
++            'parent_parent_pid','started_at','spawned_at','plan_sha256']), 'retained started child association differs')
++    for key in ['stdout','stderr']: check_row(output/key,record[key])
++    raw = read_bytes(output/'stdout').decode(); require(read_bytes(output/'stderr') == b'', 'direct controls emitted stderr')
++    lines = raw.splitlines(); footer = [line for line in lines if line.startswith('FROZEN_LINK_CONTROL_RESULT ')]
++    require(len(footer) == 1 and [line for line in lines if line.startswith('test_')] ==
++        [name.rsplit('.',1)[1]+' ('+name+') ... ok' for name in names], 'complete actual24 raw names differ')
++    proof = json.loads(footer[0].split(' ',1)[1])
++    require(same(proof,result['child_proof']) and proof['status'] == 'passed'
++        and type(proof['tests']) is int and proof['tests'] == LINK_COUNT and same(proof['test_names'],names)
++        and proof['child_pid'] == record['pid'] and proof['parent_pid'] == record['parent_pid']
++        and proof['cwd'] == str(LINK_SOURCE) and same(proof['test_sources'],plan['test_sources'])
++        and all(type(proof[key]) is int and proof[key] == 0 for key in ['skipped','failures','errors']),
++        'actual direct-control child result differs')
++    observed = proof['observed_environment']
++    require(same(observed,environment) or same(observed,dict(environment,__CF_USER_TEXT_ENCODING='0x1F5:0x0:0x52')),
++        'passed/observed startup environments differ beyond explicit validated CF addition')
++    policy = proof['io_policy']
++    require(policy['owned_tmp'] == str(output/'tmp') and policy['temporary_members_after'] == []
++        and policy['denied_events'] == [] and type(policy['mutation_events']) is int and 0 <= policy['mutation_events'] <= 1024
++        and all(policy[key] is False for key in ['provider_writes','subprocess_calls','network_calls','signal_calls']),
++        'actual temporary-filesystem controls escaped their policy')
++    return dict(status='verified-frozen-link-controls',tests=LINK_COUNT,test_names=names,result=dict(reference),
++        record=dict(result['record']),manifest=dict(path=str(output/'manifest.json'),sha256=LINK_PROOF['manifest_sha256']),
++        source_before=dict(result['source_before']),source_after=dict(result['source_after']),
++        stdout=dict(result['stdout']),stderr=dict(result['stderr']),sources=before,
++        passed_environment=environment,observed_environment=observed,
++        controls_are_separate_from_actual53=True,compiler_calls=0)
++
++
++def failed_audit_history():
++    """Retain exact failed06 sources/raw and its successful manifest preparation."""
++    directory = Path(FAILED_AUDIT['path']).parent
++    record = read(FAILED_AUDIT['path'], FAILED_AUDIT['sha256'])
++    require(record['status'] == 'finished' and type(record['returncode']) is int and record['returncode'] == 1
++        and record['may_be_live'] is False and record['observation_errors'] == []
++        and record['mode'] == 'audit' and record['phase'] == 'preflight'
++        and record['execution_error'] == "RuntimeError('saved evidence child or observation failed; preserve all raw evidence')",
++        'original failed06 must remain an observed closed failure')
++    names = {'record.json','stdout','stderr','source.py','execution.py','owned_stage.py','invocation.json','source-inventory.json'}
++    require({p.name for p in directory.iterdir()} == names, 'complete failed06 execution membership differs')
++    for name in sorted(names): sha(directory/name)
++    streams(directory, record)
++    require(raw(directory/'stdout') == b'' and raw(directory/'stderr').endswith(
++        b'RuntimeError: symlink or non-directory ancestor\n'), 'exact original frozen-link failure history differs')
++    require(sha(directory/'source.py') == record['source_sha256']
++        and sha(directory/'execution.py') == record['execution_source_sha256']
++        and sha(directory/'owned_stage.py') == record['owned_source_sha256'] == OWNED_SHA,
++        'failed06 retained executed sources differ')
++    ref = record['source_inventory']; inventory = read(ref['path'], ref['sha256'])
++    require(same(inventory, read(directory/'source-inventory.json'))
++        and inventory['policy'] == 'runtime06-reviewed-sources-v1', 'failed06 source inventory differs')
++    for name, digest in inventory['sources'].items(): sha(name, digest)
++    invocation = read(directory/'invocation.json')
++    pins = record['actual_closure_pins']; old_output = ROOT/'.work/runtime06-saved-audit-preflight-manifest-01'
++    manifest = read(old_output/'manifest.json', pins['manifest_sha256'])
++    preparation = read(old_output/'preparation.json', pins['preparation_sha256'])
++    require(manifest['policy'] == 'runtime05-retry-saved-audit-source-manifest-v1'
++        and preparation['status'] == 'prepared-audit-source-manifest'
++        and same(preparation['manifest'], dict(path=str(old_output/'manifest.json'),sha256=pins['manifest_sha256'])), 'failed06 manifest publication differs')
++    for name,row in manifest['files'].items():
++        sha(name,row['sha256']);require(same(OBSERVED[name],row),'failed06 source manifest row changed')
++    old_preparation = ROOT/'.work/runtime06-saved-audit-preflight-manifest-preparation-execution-01'
++    closed = read(old_preparation/'record.json', pins['preparation_record_sha256']); finished(closed); streams(old_preparation, closed)
++    require({p.name for p in old_preparation.iterdir()} == names, 'complete failed06 manifest preparation membership differs')
++    for name in sorted(names): sha(old_preparation/name)
++    require(closed['mode'] == 'prepare' and closed['phase'] == 'preflight'
++        and closed['manifest_sha256'] == pins['manifest_sha256']
++        and closed['result_sha256'] == pins['preparation_sha256']
++        and closed['canonical_released_at'] <= record['child_started_at']
++        and closed['pid'] == preparation['pid'] and closed['parent_pid'] == preparation['parent_pid']
++        and sha(old_preparation/'source.py') == closed['source_sha256']
++        and sha(old_preparation/'execution.py') == closed['execution_source_sha256']
++        and sha(old_preparation/'owned_stage.py') == OWNED_SHA,
++        'failed06 original successful manifest preparation association differs')
++    require(invocation['mode'] == 'audit' and invocation['phase'] == 'preflight'
++        and invocation['manifest_sha256'] == pins['manifest_sha256']
++        and invocation['preparation_sha256'] == pins['preparation_sha256']
++        and invocation['preparation_record_sha256'] == pins['preparation_record_sha256'],
++        'failed06 exact invocation proof differs')
++    # The failure has no recorded release timestamp: preserve that fact, never invent one.
++    return dict(FAILED_AUDIT)
++
++
+ def runtime_preparation(phase, record_sha, launcher_sha, startup, retry):
+     """Bind a completed producer preparation, never its own future record.
+ 
+@@ -441,7 +621,9 @@
+     require(type(INTEGRATION_SOURCE_PATHS) is list and len(INTEGRATION_SOURCE_PATHS) <= 16
+             and all(type(name) is str for name in INTEGRATION_SOURCE_PATHS)
+             and len(set(INTEGRATION_SOURCE_PATHS)) == len(INTEGRATION_SOURCE_PATHS)
+-            and all((Path(name).parent in [HERE, ADAPTER] or name == str(STARTUP_SOURCE/'environment.py'))
++            and all((Path(name).parent in [HERE, ADAPTER] or name == str(STARTUP_SOURCE/'environment.py')
++                         or name in {str(LINK_SOURCE/'links.py'),str(LINK_SOURCE/'test_links.py'),
++                                     str(LINK_CONTROL/'run_once.py'),str(LINK_CONTROL/'child.py'),str(LINK_CONTROL/'plan.json')})
+                     and str(Path(name)) == name
+                     and name not in {str(path) for path in CORE_PATHS} for name in INTEGRATION_SOURCE_PATHS),
+             'final reviewed integration source list remains unbound')
+@@ -458,7 +640,7 @@
+     resource.setrlimit(resource.RLIMIT_CPU, (900, 900)); resource.setrlimit(resource.RLIMIT_FSIZE, (4*2**20, 4*2**20))
+     require(not os.path.lexists(output), 'fresh phase-specific manifest output required')
+     inventory = read(args.source_inventory, sha_value(args.source_inventory_sha256))
+-    require(set(inventory) == {'policy', 'sources'} and inventory['policy'] == 'runtime06-reviewed-sources-v1'
++    require(set(inventory) == {'policy', 'sources'} and inventory['policy'] == 'runtime08-reviewed-sources-v1'
+             and type(inventory['sources']) is dict
+             and set(inventory['sources']) == ({str(path) for path in CORE_PATHS} | set(INTEGRATION_SOURCE_PATHS)),
+             'exact separately reviewed enclosing source inventory required')
+@@ -468,12 +650,16 @@
+     proofs = [control_chain(spec) for spec in CHAINS]
+     startup = control_chain(STARTUP_CHAIN)
+     retry = control_chain(RETRY_CHAIN)
++    frozen_links = frozen_link_controls(dict(path=str(LINK_RESULT),sha256=LINK_PROOF['result_sha256']),
++        read_json=read,read_bytes=raw,sha=sha,identity=lambda name:OBSERVED[str(name)]['identity'])
++    failed_audit = failed_audit_history()
+     preparation = runtime_preparation(args.phase, args.runtime_preparation_sha256,
+                                       args.runtime_preparation_launcher_sha256, startup, retry)
+     rows = dict(sorted(OBSERVED.items()))
+     manifest = dict(policy=POLICY, files=rows, actual53=proofs[0]['audit'], phase45=proofs[1]['audit'],
+                     preparation=preparation['preparation'], preparation_launcher=preparation['preparation_launcher'],
+-                    startup_controls=startup['audit'], retry_controls=retry['audit'])
++                    startup_controls=startup['audit'], retry_controls=retry['audit'],
++                    frozen_links_controls=frozen_links['result'], failed_audit=failed_audit)
+     for name, row in rows.items():
+         sha(name, row['sha256']); require(same(OBSERVED[name], row), 'source changed before manifest publication')
+     guard(); output.mkdir(mode=0o700)
+@@ -482,7 +668,7 @@
+         sha(name, row['sha256']); require(same(OBSERVED[name], row), 'source changed after manifest publication')
+     summary = dict(status='prepared-audit-source-manifest', phase=args.phase, pid=os.getpid(), parent_pid=os.getppid(),
+                    source_inventory=dict(path=str(args.source_inventory), sha256=args.source_inventory_sha256),
+-                   manifest=dict(path=str(output/'manifest.json'), sha256=digest), controls=[*proofs, startup, retry],
++                   manifest=dict(path=str(output/'manifest.json'), sha256=digest), controls=[*proofs, startup, retry, frozen_links], failed_saved_audit=failed_audit,
+                    runtime_preparation=preparation,
+                    files=len(rows), logical_bytes=sum(row['size'] for row in rows.values()),
+                    compiler_calls=0, provider_probes=0, process_signals=0, network_calls=0,

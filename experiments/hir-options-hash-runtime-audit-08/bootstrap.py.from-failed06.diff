@@ -1,0 +1,89 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-06/bootstrap.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-08/bootstrap.py
+@@ -21,7 +21,7 @@
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ R = Path('/Users/danluu/dev/rust-interp-runtime-installation-r-20260918')
+ X = Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+-HERE = ROOT/'experiments/hir-options-hash-runtime-audit-06'
++HERE = ROOT/'experiments/hir-options-hash-runtime-audit-08'
+ QUALIFIED_AUDIT = ROOT/'experiments/hir-options-hash-runtime-audit-05'
+ ATTEMPT = ROOT/'experiments/runtime-preflight-retry-05'
+ ROUTES_PATH = ATTEMPT/'routes.json'
+@@ -42,6 +42,12 @@
+ RETRY_AUDIT = ROOT/'.work/runtime-preflight-retry-controls-independent-verification-05.json'
+ RETRY_COUNT = 33  # Source-derived count; no future qualification digest is invented.
+ RETRY_FILES = ('entry.py','controller.py','audit_owner.py','routes.json','prepare.py','prepare_once.py','launch.py')
++LINK_SOURCE = ROOT/'experiments/runtime-frozen-link-reader-01'
++LINK_CONTROL = ROOT/'experiments/runtime-frozen-link-controls-01'
++LINK_RESULT = ROOT/'results/runtime-frozen-link-controls-01/result.json'
++LINK_COUNT = 24  # Separate direct control proof; no actual53 relabeling.
++FAILED_AUDIT = dict(path=str(ROOT/'.work/runtime06-saved-audit-preflight-execution-01/record.json'),
++    sha256='4b7e57aa4a1aa0bf09a6725dd47056497cd7a5ef56b0f3a36f2a77fce60fdb2b')
+ BASE = dict(path='/Users/danluu/dev/rust-interp-runtime-application-admission-20260918/experiments/hir-options-hash-native-controls-03/inputs.json',
+             sha256='8569abb81a61e34b6b5a892116af5218557ceb0436ab8dbf8a31f2aec55b1b1d')
+ CANONICAL = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+@@ -177,6 +183,7 @@
+         parser.add_argument('--'+name+'-sha256',required=True)
+     args=parser.parse_args()
+     require(type(RETRY_COUNT) is int and RETRY_COUNT > 0, 'retry control count remains unbound')
++    require(type(LINK_COUNT) is int and LINK_COUNT > 0, 'frozen-link control count remains unbound')
+     require(Path.cwd()==R and sys.dont_write_bytecode and not sys.flags.optimize,'fixed owner/unoptimized Python-B')
+     require(shutil.disk_usage(R).free>=16*2**30,'fresh16GiB independent readback admission')
+     held=os.fstat(args.canonical_fd);named=CANONICAL.lstat()
+@@ -185,8 +192,8 @@
+     for key,value in vars(args).items():
+         if key.endswith('_sha256'):require(re.fullmatch('[a-f0-9]{64}',value),'concrete reviewed SHA required')
+     manifest=read(args.source_manifest,args.source_manifest_sha256)
+-    require(set(manifest)=={'policy','files','actual53','phase45','preparation','preparation_launcher','startup_controls','retry_controls'}
+-        and manifest['policy']=='runtime05-retry-saved-audit-source-manifest-v1'
++    require(set(manifest)=={'policy','files','actual53','phase45','preparation','preparation_launcher','startup_controls','retry_controls','frozen_links_controls','failed_audit'}
++        and manifest['policy']=='runtime05-frozen-links-saved-audit-source-manifest-v1'
+         and type(manifest['files']) is dict and len(manifest['files'])<=256
+         and sum(row['size'] for row in manifest['files'].values())<=8*2**20,
+         'bounded separately reviewed audit source manifest required')
+@@ -196,14 +203,16 @@
+     require(routes['phase']==args.phase and routes['qualified_source']==str(SOURCE)
+         and routes['attempt_source']==str(ATTEMPT), 'attempt and qualified source routes differ')
+     preparation_root=Path(routes['preparation_execution'])
+-    for key in ['preparation','preparation_launcher','startup_controls','retry_controls']:
++    for key in ['preparation','preparation_launcher','startup_controls','retry_controls','frozen_links_controls','failed_audit']:
+         ref=manifest[key]
+         require(type(ref) is dict and set(ref)=={'path','sha256'} and str(ref['path']) in rows
+             and rows[ref['path']]['sha256']==ref['sha256'], 'complete explicit actual preparation/startup reference required')
+     require(manifest['preparation']['path']==str(preparation_root/'record.json')
+         and manifest['preparation_launcher']['path']==str(ATTEMPT/'prepare_once.py')
+         and manifest['startup_controls']['path']==str(STARTUP_AUDIT)
+-        and manifest['retry_controls']['path']==str(RETRY_AUDIT), 'exact phase-specific preparation/startup routes')
++        and manifest['retry_controls']['path']==str(RETRY_AUDIT)
++        and manifest['frozen_links_controls']['path']==str(LINK_RESULT)
++        and same(manifest['failed_audit'],FAILED_AUDIT), 'exact phase-specific preparation/startup/link/failure routes')
+     require(manifest['actual53']['path']==str(CONTROL_AUDIT)
+         and same(manifest['phase45'],dict(path=str(PHASE_AUDIT),sha256=PHASE_SHA)), 'exact qualification routes')
+     own=[HERE/name for name in ['bootstrap.py','audit.py']] + [QUALIFIED_AUDIT/name for name in ['audit_io.py','reader.py']]
+@@ -280,9 +289,14 @@
+         read_json=io.read_json,read_bytes=io.read_bytes,sha=io.sha,identity=io.identity)
+     require(type(retry_proof['controls']) is int and retry_proof['controls']==RETRY_COUNT
+         and same(retry_proof['audit'],manifest['retry_controls']), 'actual separate retry controls differ before import')
++    audit=load('orchestration',HERE/'audit.py',io.files)
++    link_proof=audit.frozen_link_controls(manifest['frozen_links_controls'],read_json=io.read_json,
++        read_bytes=io.read_bytes,sha=io.sha,identity=io.identity)
++    require(type(link_proof['tests']) is int and link_proof['tests']==LINK_COUNT,
++        'actual separate frozen-link controls differ before import')
++    link_reader=load('frozen_links',LINK_SOURCE/'links.py',io.files)
+     environment=load('startup_environment',STARTUP/'environment.py',io.files)
+     startup_owner=load('startup_owner',ATTEMPT/'audit_owner.py',io.files,{'environment':environment})
+-    audit=load('orchestration',HERE/'audit.py',io.files)
+     phase_modules={name:load(name,OLD/(name+'.py'),io.files) for name in ['recipe','preflight','final_runtime']}
+     factory=load('factory',SOURCE/'imports.py',io.files);entry=load('entry',ATTEMPT/'entry.py',io.files)
+     expected=dict(launch=args.launch_sha256,inputs=args.inputs_sha256,snapshot_plan=args.snapshot_plan_sha256,
+@@ -292,7 +306,9 @@
+     report_path=Path(routes['report']);require(not os.path.lexists(report_path),'fresh independent report')
+     result=audit.verify(phase=args.phase,expected=expected,prepared=prepared,inspection=inspection,io=io,
+         reader=reader,factory=factory,entry=entry,actual53=manifest['actual53'],
+-        startup_owner=startup_owner,actual39=manifest['startup_controls'],actual_retry=manifest['retry_controls'],guard=guard,**phase_modules)
++        startup_owner=startup_owner,actual39=manifest['startup_controls'],actual_retry=manifest['retry_controls'],
++        link_reader=link_reader,actual_links=manifest['frozen_links_controls'],failed_audit=manifest['failed_audit'],
++        guard=guard,**phase_modules)
+     result.update(pid=os.getpid(),parent_pid=os.getppid(),source_manifest=dict(path=str(args.source_manifest),
+         sha256=args.source_manifest_sha256),source_rows=rows,samples=SAMPLES)
+     # Every initial source/packet observation is checked once more; no current
