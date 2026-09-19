@@ -79,8 +79,12 @@ original profiles match adopted controls at every PC, memory peak and entropy
 zero declines. Native bytes11,952,720→11,687,140;14,508,196→14,198,260;
 1,978,352→1,916,484. These are correctness/code-size results, not timing.
 The primary protocol passes13+3controls (30396/30399) and reuses exact449Python
-build checks. Next start `implicit-zero-storage-screen-token-01` with all four
-closed build/strict/profile/protocol summaries. Primary gates remain unchanged. Controllers are in
+build checks. The40-command primary is now closed and fails the wall gate: ratio0.978171695,
+A/A0.043579437, margin1.021751132. CPU0.986097055/margin1.026384095 passes.
+All outcomes/restoration/artifact identities pass.36363/36366 finished normally;
+1,674evidencefiles/56artifacts verified. Park3e53b127 unchanged; no larger
+histories started. Next census selective full-width interpreter repair costs
+from retained typed/current profiles, before any different runtime variant. Controllers are in
 `benchmarks/experiments/implicit-zero-storage-workflows` and
 `benchmarks/experiments/implicit-zero-storage-screen`.
 [Contract](docs/IMPLICIT-ZERO-REGISTER-DESIGN-20260918.md),

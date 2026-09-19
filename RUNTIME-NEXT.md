@@ -11,19 +11,19 @@ The private host-frame pairing census is closed and deferred: its two potential
 memory instructions together cover only9/1,933 and9/1,429 generated samples.
 No runtime prototype or timing follows. [Census](results/native-frame-access-census-01/ASSESSMENT.md).
 
-The consumer-only upper-store proof is closed and deferred (33/13samples).
-The broader logical-width census covers126/1,933 and119/1,429 generated samples,
-with conservative6.54M/8.51M interpreter read repairs. Its7commands,7Rustcontrols
-per profile and6trafficcontrols pass; both current profiles and retained captures
-reconcile exactly. The implicit-zero prototype now passes9focused controls/profile and628full
-Rusttests/profile (15ignored),427Pythonpasses/22skips. Tool3e53b127 /VM8e369c0f
-is installed experimentally. The existing build evidence is now closed after peer-lock
-admission. Run121strict/cache commands and3current-host exact profiles.
-Only then admit the unchanged40-command primary. Do not rerun the completed
-build merely because its evidence closure waits. Preserve stale-storage safety, initial-zero
-semantics, all budgets/faults and strict checking. Main remains unchanged.
-[Contract](docs/IMPLICIT-ZERO-REGISTER-DESIGN-20260918.md),
-[census](results/narrow-register-storage-census-01/ASSESSMENT.md).
+The implicit-zero storage prototype3e53b127 is closed and parked after its
+40-command primary fails the wall gate: observed2.18% gain versus4.36% A/A.
+CPU and all correctness outcomes pass; no larger histories started.628tests per
+profile,121strict/cache commands and3exact original profiles remain valid for
+this exact revision, but do not override the performance result.
+
+Next census full-width interpreted read roles. The conservative prototype
+repairs6.54M/8.51M operands even when operations already mask/truncate them.
+Use typed operations and retained current-host profiles to identify safely
+avoidable repairs and actual remaining work. Keep unknown consumers full-width,
+including indirect handles and TLS width checks. No new production change or
+repeat of the parked runtime is admitted by this diagnostic.
+[Decision](docs/IMPLICIT-ZERO-STORAGE-20260918.md).
 
 The previous indirect/readonly/successor composition is rejected after its
 parser CPU margin failed1.05. The narrower address/budget/spill/scalar variants
