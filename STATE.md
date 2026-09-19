@@ -82,3 +82,13 @@ Profile01 sourced471f5ca supervisor94446 FAILED preflight, no raw or guest: copi
 import still pointed to branch-budget-native-observer. Independently closed.
 Profile02 fixes exactobserverpath, bindsfailure, allgatesunchanged. Install/screen
 require02. VM/sourcequalification unchanged. Main3bea799d confirmedpushed.
+
+Profile02 source520dd4e6 supervisor12779/controller12920: guest0 returned0 with
+exactPC/memory/entropy/maps; raw-byte gate FAILED because427scalarCalls embedASLR
+addresses (854words). FailureCLOSED withallgeneratedevidence via c9f47fc3 closer.
+Newnativecomparison01 source9cd906dc supervisor76716 passed9adversarialcontrols,
+verifiedall427targets exactlyarena+recordedcallee, allothernativebitsexact. Saved
+blockreused, no guest. Independentclose68632passed. Profile03 continuationregistered
+heap-layout-profile-resume/qualify.py: retainblock, executeONLYmissing2guests.
+Install/screenrequire03, explicitrelocationequalityflag; performancegatesunchanged.
+No runtime/buildchanges. Nextcommit/push thenlaunch03andindependentclose.

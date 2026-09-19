@@ -2,8 +2,8 @@
 
 UNRUN. Require independently closed focused03 (16heap+6C allocator controls/profile),
 workspace02 (618Rust pass13ignored/profile,Python446pass22skip,retainedfeatureVM),
-and profile01 (three original guest assertions; exact logical counts, guest memory,
-entropy and generated native code/maps). Check all current source hashes against
+and profile03 (three original guest assertions; exact logical counts, guest memory,
+entropy and generated native code/maps modulo proven scalar-entry relocations). Check all current source hashes against
 those qualifications. No other experimental runtime feature is enabled.
 
 Revalidate the retained121-command strict/cache frontend qualification and compose
