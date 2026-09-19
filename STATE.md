@@ -180,3 +180,10 @@ full-token namespaces, no folded/later cache. Completed after independently clos
 Never repeat it. Older
 Nushell/custom/native/native-lines/check retirement receipts already exist; do
 not revisit those caches blindly or repeat them for a hoped-for larger result.
+
+Active parser incremental01: sourceb77d3754, supervisor87651/controller87654,
+started04:37:26. Both strict controls passed; through73/110 at last observation.
+Two owned sessions,114 original tests. Wait for terminal and independently close
+before any repository-default guard. Prepared folded-cache retirement controller
+is committed7783feaf, UNSTARTED; only use after lock release if admission needs it.
+Latest main proof publicationf8253368; root remote lastb77d3754.
