@@ -427,15 +427,21 @@ impl Assembler<'_> {
         self.emit(0x14000000);
         patch_jump(&mut self.words, repeat, chunks)?;
         self.patch_conditional(tail, self.words.len())?;
-        let bytes = self.words.len();
-        self.cmp(11, 12);
-        let done = self.words.len();
-        self.emit(0x54000000);
-        self.emit(0x3800157f); // strb wzr,[x11],#1
-        let repeat = self.words.len();
-        self.emit(0x14000000);
-        patch_jump(&mut self.words, repeat, bytes)?;
-        self.patch_conditional(done, self.words.len())?;
+        // The chunk exit leaves the exact remaining length (0..15) in x9.
+        // Each set bit selects one exact-width store. This also handles an
+        // unaligned start, and never reads or writes outside [x11,x12).
+        // These local displacements are fixed: CBZ skips all four pairs;
+        // each TBZ skips only its store. No live register beyond x11 changes.
+        self.emit(0xb4000129); // cbz x9, done (+9 words)
+        for (bit, store) in [
+            (3, 0xf800857f), // str xzr,[x11],#8
+            (2, 0xb800457f), // str wzr,[x11],#4
+            (1, 0x7800257f), // strh wzr,[x11],#2
+            (0, 0x3800157f), // strb wzr,[x11],#1
+        ] {
+            self.emit(0x36000049 | (bit << 19)); // tbz w9,#bit,+2 words
+            self.emit(store);
+        }
         Ok(())
     }
 

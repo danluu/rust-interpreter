@@ -215,3 +215,20 @@ ES8primaryselectedprospectively1%gainandAA-envelopewallguard;alllarge-project
 guardsremainrequiredbeforeadoption. Source/readmeplanstatesnewboundedruntime
 onlytargetmusthavefrozenresourceplanbeforenativebuild; protectedsharedtarget
 26.63GBadmissionunchanged. Free21.8GiB.
+
+
+## 2026-09-19 short-clear-tail scope CLOSED; native candidate prepared
+
+Scope01 supervisor95871/controller95874 sourcebcbc009d completed0 and independent
+closurepassed0. Fourexactcapturesscope39/52/66/39byte-tail samples;10pattern
+mutations1024canarymodelcases+empty/overwide controls;9wordsindependentassembler
+exact. Runtimepatch nowonlynative_calls.rs byte-tail(CBZ+4TBZ/stores) andone
+resumable_tests.rs machinecontracttest. No tests/build/timing yet.
+BUILD.md freezesownedfresh .work/short-clear-tail-runtime-build-01/target, max3GiB
+allocatedbetweencommands, max14GiB/8GiB+2*itsallocation admission. Protectedold
+sharedtargetfloorunchanged26.63GB. Newtargetplannedforruntime-onlycold build and
+7nativeclear/padding/limits/livecursor/registertests perdebug/release,2jobs.
+Nextcommit/push then supervise short-clear-tail-focused-01 qualify.py; freeze
+allruntime/controllerfiles through terminalandqualify.py --close. Defaultdf4006
+unmodified. Wholeworkspace/frontend/guestprofilequalification andES8primary
+thenallprojectguards stillrequired.

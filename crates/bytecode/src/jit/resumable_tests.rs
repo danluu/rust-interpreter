@@ -265,6 +265,53 @@ fn bulk_zeroing_matches_exact_dirty_ranges_and_preserves_spare_bytes() {
     assert_eq!(byte, [0xa5]);
 }
 
+#[test]
+fn short_clear_tails_preserve_exact_cursor_and_live_registers() {
+    let mut code = platform::Code::reserve(4096).unwrap();
+    let mut a = Assembler::default();
+    a.resumable_save_host(false);
+    a.mov(11, 2);
+    a.three(0x8b000000, 12, 2, 3);
+    let live = [3, 15, 16, 17, 21, 22, 23, 24, 25, 26, 27, 28];
+    for (index, &register) in live.iter().enumerate() {
+        a.imm(register, 0x1000 + index as u64);
+    }
+    a.zero_range().unwrap();
+    a.three(0xcb000000, 9, 11, 2); // final cursor minus original start
+    a.store64(9, 0, 0);
+    for (index, &register) in live.iter().enumerate() {
+        a.store64(register, 0, (index + 1) * 8);
+    }
+    a.mov(0, 31);
+    a.resumable_save_host(true);
+    a.emit(0xd65f03c0);
+    let entry = code.append(&a.words).unwrap();
+    for size in (0..=512).chain([1023, 1024, 1025, 4095, 4096, 4097]) {
+        for alignment in 0..64 {
+            let start = 64 + alignment;
+            let mut actual = vec![0xa5; start + size + 64];
+            let mut expected = actual.clone();
+            expected[start..start + size].fill(0);
+            let mut registers = [0u128; 7];
+            // SAFETY: the owned helper receives a stable initialized range;
+            // its complete prefix/suffix canaries, final cursor and every
+            // live Call/Return scratch register are checked afterward.
+            let result = unsafe { code.call(entry, registers.as_mut_ptr(), 0,
+                actual.as_mut_ptr().add(start), size, 0,
+                std::ptr::null_mut(), 0, std::ptr::null_mut()) };
+            assert_eq!(result, 0);
+            assert_eq!(actual, expected, "size {size}, alignment {alignment}");
+            let mut expected_registers = [0u128; 7];
+            expected_registers[0] = size as u128;
+            for index in 0..live.len() {
+                let lane = index + 1;
+                expected_registers[lane / 2] |= (0x1000 + index as u128) << (64 * (lane % 2));
+            }
+            assert_eq!(registers, expected_registers, "size {size}, alignment {alignment}");
+        }
+    }
+}
+
 fn function(code: Vec<Op>) -> Function {
     Function {
         name: "resumable fixture".into(),

@@ -81,3 +81,13 @@ Existingbulkzero/padding/canarynativeRusttests extensive; auditliveflags fornew
 helper thenaddfocusedmachinecontract. Need boundedruntime-onlytarget resource
 plan ifsharedtargetfloor26.63GBstillunavailable; do NOT lowersharedfloor/cleanit.
 Noactiveownedprocesses now. Publicationmain2114a430 confirmed.
+
+LATEST: scope01 CLOSED success (95871/95874), nineassemblerwordsmatch/1024model
+cases. RuntimecandidateUNBUILT now2files(native_calls.rs zero_range tail and
+resumable_tests.rs new short_clear_tails_preserve_exact_cursor_and_live_registers).
+Newqualify.py/BUILD.md ready; nextcommit/pushthen supervise short-clear-tail-
+focused-01 absolutequalify.py, independentqualify.py --close. Sevenexactlibtest
+names perdebug/release. Freshownedruntime-onlytarget .work/short-clear-tail-
+runtime-build-01/target withowner.json, cap3GiBbetweencommands andadmission
+max14GiB,8GiB+2*allocated. Coldsetupwall/CPUrecorded. Sharedoldtargetneverclean
+andits26.63GBfloorunchanged. currentfree~21.8GiB. No originalguesttimingyet.
