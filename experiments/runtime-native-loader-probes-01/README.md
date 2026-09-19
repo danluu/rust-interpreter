@@ -1,0 +1,27 @@
+# Explicit native loader probes — source proposal
+
+Installation06 failed after ten successful `otool -l` children because four universal sanitizer libraries produced x86_64, x86_64h and arm64 sections. Qualified discovery deliberately selects exactly one ARM64 slice. Every saved section individually matches its declaration; concatenating all sections does not. This proposal uses `otool -arch arm64 -l` for the qualified aarch64 Darwin host. It preserves ordered edges, multiplicity, full-file hashes, all ten images and the fifteen-child recipe.
+
+The three copied sources and adjacent diffs leave R/scripts, qualified producer/auditor files, all prepared packets and the failed prefix untouched. No provider, compiler, loader command, copy, preparation or installation has run from these sources.
+
+A new final specification adds exactly:
+
+```json
+{"loader_probe":{"policy":"darwin-native-loader-probe-v1","host":"aarch64-apple-darwin","architecture":"arm64"}}
+```
+
+The mapping follows the existing discovery contract, not the machine currently running Python. Its exact host must match exactly one `host:` line in the qualified compiler version. Unknown hosts, duplicate host lines, extra/missing declaration fields and differing field types/values are rejected. The source keeps the existing loader closure policy and global identity envelope unchanged. `identity_for` accepts historical absence without inserting any default. Full admission is already included in identity, so this semantic declaration changes the key. New installation requires the declaration before inspecting the owner or any provider.
+
+Against the saved installation06 specification, the old identity remains `ac216a6a0962f84ba7a4c4d02f271e531d34e0810e0f537d5b1a5af7857e79b6`; adding only this declaration yields prospective key `f031d981666f450f760ccf303dccba986053ec6b9a143a60f3d26680f9ac7c70`. This is pure metadata reconstruction, not a prepared or installed new runtime. Every payload mapping remains identical. The old failed prefix is retained.
+
+The ordinary development suite passed all 18 methods once. Its raw output and actual parent/child closure are in `results/runtime-native-loader-development-01`. It executes exact selected runtime/custom-compiler AST bodies with standard-library dependencies and an explicit in-memory recipe adapter. The saved admission is read as JSON; none of its inventory paths are inspected. The child denies processes, network, writes and unrelated workspace reads; CPU60, wall120 and per-file256KiB limits apply. This is focused development evidence, not an actual controlled phase qualification or native loader run.
+
+## Remaining concrete integration seams
+
+1. Derive a fresh factory from X `runtime-installation-04/imports.py`. Its `definitions` currently loads `R/scripts/runtime_compiler.py` at public-loop lines68–71 and old `runtime-installation-01/recipe.py` at lines77–78. Select these two proposed copies instead, authenticate each before import, and use a fresh private module prefix. Load the new runtime into `public['runtime_compiler']` before loading the unchanged `source_qualification.py`; it captures `runtime` at module import. Preserve `modules.public_aliases` so later dynamic imports use the same runtime. Do not replace `q.runtime` after import or reuse the old cached factory module under a new route.
+2. A fresh production preparer and entry must select that factory at their currently explicit `imports.py` route assertions and `factory.definitions` calls. Retain historical discovery and complete preflight05 audit10 reconstruction. Candidate identity/preflight SHA stays historical; only successor `final_specification` adds the probe declaration after the old preflight/policy checks. Existing copy-budget calculation must run against that new complete identity, as metadata size changes slightly.
+3. In a fresh saved auditor, keep the old actual45 proof attached to its old three modules; select this `audit_recipe.py` as the separately authenticated current recipe. `bootstrap` currently loads all phase modules from audit04; split only the recipe route. Update `audit.verify`'s explicit recipe source check accordingly. The unchanged final-runtime validator accepts an injected recipe and runtime, derives the complete key/commands and re-parses every raw loader output. Its `POLICY` compatibility check remains valid.
+4. Qualify the fresh source selection plus these current functions separately; do not relabel historical52/45/39/33/25 proofs. Include the new copies, factory, changed entry/preparer source and exact test dependencies in the finite current preimport/packet source inventory. Existing source-equality and historical frozen rows continue to refer to their original paths/bytes. Current pure18 evidence is retained independently; a future controlled proof and any phase pins remain absent.
+5. Use a new production route descriptor/work/supervisor/preparation/audit namespace and a fresh reviewed packet. The new meaningful identity derives a different prefix naturally; no random key, cleanup or retry into the failed prefix. Existing sixteen/nine/eight GiB checks, one-GiB copy budget, evidence cap and fifteen commands remain phase policy. This proposal does not alter them.
+
+No new orchestration or provider-root framework is included. Future import/phase wiring is explicitly pending review; these three sources cannot silently replace any old qualification.

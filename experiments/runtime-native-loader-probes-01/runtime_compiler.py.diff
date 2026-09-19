@@ -1,0 +1,68 @@
+--- /Users/danluu/dev/rust-interp-runtime-installation-r-20260918/scripts/runtime_compiler.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-native-loader-probes-01/runtime_compiler.py
+@@ -93,11 +93,41 @@
+     return declaration['policy']
+ 
+ 
++def native_loader_probe(spec):
++    """Derive the only architecture admitted by the qualified discovery policy."""
++    host, version = spec.get('host'), spec.get('compiler')
++    require(type(host) is str and host == 'aarch64-apple-darwin',
++            'unsupported native loader probe host')
++    require(type(version) is str and [line[6:] for line in version.splitlines()
++            if line.startswith('host: ')] == [host],
++            'missing, ambiguous or mismatched native compiler host')
++    return dict(policy='darwin-native-loader-probe-v1', host=host, architecture='arm64')
++
++
++def loader_probe_policy(spec):
++    # Absence means historical schema: never insert a default into its identity.
++    if 'loader_probe' not in spec:
++        return None
++    declaration = spec['loader_probe']
++    expected = native_loader_probe(spec)
++    require(type(declaration) is dict and set(declaration) == set(expected)
++            and all(type(declaration[k]) is str and declaration[k] == value
++                    for k, value in expected.items()), 'invalid native loader probe declaration')
++    return expected
++
++
++def loader_command(spec, image):
++    declaration = loader_probe_policy(spec)
++    options = [] if declaration is None else ['-arch', declaration['architecture']]
++    return ['/usr/bin/otool', *options, '-l', str(image)]
++
++
+ def identity_for(spec):
+     """Validate a closed admitted specification without accessing its input paths."""
+     require(spec.get('schema_version') == 1 and spec.get('loader_policy') == LOADER_POLICY,
+             'unknown runtime specification or loader policy')
+     qualification_policy(spec)
++    loader_probe_policy(spec)
+     provenance = spec['provenance']
+     require(re.fullmatch('[0-9a-f]{40}', provenance.get('source_commit', '')) is not None,
+             'missing actual runtime source commit')
+@@ -439,10 +469,12 @@
+     """
+     require(callable(run) and callable(guard), 'supervised run and capacity guard are required')
+     require(sys.platform == 'darwin', 'actual runtime installation requires Darwin')
++    spec = json.loads(json.dumps(specification))  # Caller mutation cannot change the admitted plan.
++    identity = identity_for(spec)
++    require(loader_probe_policy(spec) is not None,
++            'new installation requires an explicit native loader probe declaration')
+     root = Path(root)
+     require(root.resolve(strict=True) == root and root.is_dir(), 'runtime owner must be ordinary')
+-    spec = json.loads(json.dumps(specification))  # Caller mutation cannot change the admitted plan.
+-    identity = identity_for(spec)
+     declared = qualification_policy(spec)
+     require((declared is None and validate_before_publication is None)
+             or (declared is not None and callable(validate_before_publication)),
+@@ -501,7 +533,7 @@
+                     and isinstance(row['stderr'], str), 'runtime probe failed')
+             guard()
+             return row['stdout']
+-        loader = {name: macho_commands(probe(['/usr/bin/otool', '-l', str(sysroot / name)]))
++        loader = {name: macho_commands(probe(loader_command(spec, sysroot / name)))
+                   for name in sorted(spec['loader'])}
+         require(loader == spec['loader'], 'actual runtime loader declaration differs')
+         probes = dict(loader=loader, compiler=probe([str(compiler.rustc), '-vV']),
