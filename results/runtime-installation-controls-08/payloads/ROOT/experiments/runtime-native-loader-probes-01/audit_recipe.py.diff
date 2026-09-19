@@ -1,0 +1,36 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hir-options-hash-runtime-audit-04/recipe.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-native-loader-probes-01/audit_recipe.py
+@@ -57,6 +57,24 @@
+                  output=str(work/'commands'/str(index))) for index, argv in enumerate(commands)]
+ 
+ 
++def loader_command(spec, image):
++    """Independently reconstruct the historical or explicit native probe."""
++    if 'loader_probe' not in spec:
++        return ['/usr/bin/otool', '-l', str(image)]
++    host, version = spec.get('host'), spec.get('compiler')
++    require(type(host) is str and host == 'aarch64-apple-darwin',
++            'unsupported native loader probe host')
++    require(type(version) is str and [line[6:] for line in version.splitlines()
++            if line.startswith('host: ')] == [host],
++            'missing, ambiguous or mismatched native compiler host')
++    declaration = spec['loader_probe']
++    expected = dict(policy='darwin-native-loader-probe-v1', host=host, architecture='arm64')
++    require(type(declaration) is dict and set(declaration) == set(expected)
++            and all(type(declaration[k]) is str and declaration[k] == value
++                    for k, value in expected.items()), 'invalid native loader probe declaration')
++    return ['/usr/bin/otool', '-arch', 'arm64', '-l', str(image)]
++
++
+ def installation_commands(q, spec, owner, work, original_environment):
+     runtime = q.runtime
+     identity = runtime.identity_for(spec)
+@@ -71,7 +89,7 @@
+     names = sorted(spec['loader'])
+     require(all(type(name) is str and runtime.relative(name) == name for name in names),
+             'exact admitted relative loader paths required')
+-    commands = [['/usr/bin/otool', '-l', str(sysroot/name)] for name in names]
++    commands = [loader_command(spec, sysroot/name) for name in names]
+     commands += [[str(sysroot/'bin/rustc'), '-vV'],
+                  [str(sysroot/'bin/rustc'), '--print', 'sysroot'],
+                  [str(sysroot/'bin/rustc'), '-Zhelp']]

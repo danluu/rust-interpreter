@@ -1,0 +1,27 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/audit_owner.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03/audit_owner.py
+@@ -8,13 +8,13 @@
+ from pathlib import Path
+ import environment
+ 
+-ADAPTER = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02')
++ADAPTER = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03')
+ STARTUP_SOURCE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime04-environment-adapter-01')
+ PREFLIGHT_SOURCE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05')
+ PREFLIGHT_ROUTES = PREFLIGHT_SOURCE/'routes.json'
+ PREFLIGHT_ROUTES_SHA256 = '893d6102741b5206a829e2f5e130614667140b1eacc09d0c55616f7311f82e6a'
+ ROUTES = ADAPTER/'routes.json'
+-ROUTES_SHA256 = 'ef75ddf2057ebd395a159623d387b01051ee1479363bf9c878f7641b99ec0dd2'
++ROUTES_SHA256 = 'd339e74a11edb948f3cf4bcc0afbbba76887cc61aed125c8bb8bf62b1633723a'
+ 
+ 
+ def attempt_routes(plan, *, phase, sha, read_json, original, validate_retry_qualification, validate_installation_qualification):
+@@ -154,7 +154,7 @@
+     require(set(manifest)=={'path','sha256'} and sha(manifest['path'])==manifest['sha256'],
+             'startup source manifest differs')
+     source_rows=read_json(manifest['path'])
+-    require(set(source_rows)=={'status','files'} and source_rows['status']=='reviewed-runtime-installation06-startup-source-closure',
++    require(set(source_rows)=={'status','files'} and source_rows['status']=='reviewed-runtime-installation07-startup-source-closure',
+             'startup source manifest schema differs')
+     for role in ['policy','preparer']:
+         require(source_rows['files'][proof[role]['path']]['sha256']==proof[role]['sha256'],

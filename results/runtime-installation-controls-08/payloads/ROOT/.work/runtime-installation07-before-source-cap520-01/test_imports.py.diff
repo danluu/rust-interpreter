@@ -1,0 +1,31 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/runtime-installation07-before-source-cap520-01/test_imports.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03/test_imports.py
+@@ -3,6 +3,7 @@
+ No provider or compiler module is imported. The actual factory functions run
+ with definition loading replaced by a recorder, or refuse before construction.
+ """
++import ast
+ import importlib.util
+ from pathlib import Path
+ import sys
+@@ -59,6 +60,20 @@
+                 factory.load('refused',Path('/fixture/untrusted.py'),checked)
+             construct.assert_not_called()
+         checked.assert_called_once_with(Path('/fixture/untrusted.py'))
++        # Execute the exact new pure source-limit body, without importing its
++        # preparation/launcher module or opening any declared fixture row.
++        path=Path(__file__).with_name('prepare_once.py')
++        tree=ast.parse(path.read_text())
++        body=[node for node in tree.body if isinstance(node,ast.FunctionDef)
++              and node.name in {'require','source_admission'}]
++        self.assertEqual(len(body),2)
++        namespace={};exec(compile(ast.Module(body=body,type_ignores=[]),str(path),'exec'),namespace)
++        admit=namespace['source_admission']
++        admit({str(i):{'size':0} for i in range(520)})
++        admit({'maximum':{'size':8*2**20}})
++        for rows in [{}, {str(i):{'size':0} for i in range(521)}, {'over':{'size':8*2**20+1}},
++                     {'boolean':{'size':True}}, {'negative':{'size':-1}}]:
++            with self.subTest(rows=len(rows)),self.assertRaises(RuntimeError):admit(rows)
+ 
+     def test_private_cache_cannot_reuse_old_or_wrong_source_route(self):
+         name='_runtime_options_installation07_cached'

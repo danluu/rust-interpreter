@@ -1,0 +1,85 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02/launch.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03/launch.py
+@@ -61,15 +61,22 @@
+     sha256='24faa0611eacda26748727e443bef844c695c3ed362cda75b5aa60223e4d6055')
+ PREPARATION_LAUNCHER = HERE/'prepare_once.py'
+ PREFLIGHT_SOURCE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-preflight-retry-05')
+-INSTALLATION_CONTROL = PROOF_ROOT/'experiments/runtime-installation-controls-07'
+-INSTALLATION_WORK = PROOF_ROOT/'.work/runtime-installation-controls-07'
+-INSTALLATION_AUDIT = PROOF_ROOT/'.work/runtime-installation-controls-independent-verification-07.json'
++NATIVE = PROOF_ROOT/'experiments/runtime-native-loader-probes-01'
++INSTALLATION_SOURCES = ['entry.py','controller.py','audit_owner.py','routes.json','prepare.py','prepare_once.py','launch.py','imports.py']
++HISTORICAL_SOURCE = PROOF_ROOT/'experiments/runtime-installation-after-preflight05-02'
++HISTORICAL_CONTROL = PROOF_ROOT/'experiments/runtime-installation-controls-07'
++HISTORICAL_WORK = PROOF_ROOT/'.work/runtime-installation-controls-07'
++HISTORICAL_AUDIT = PROOF_ROOT/'.work/runtime-installation-controls-independent-verification-07.json'
++HISTORICAL_AUDIT_SHA = 'f644dc4252351654dcbfea4237ab3b42e7d1df7f94555f13d6c9f8b6998b845c'
++INSTALLATION_CONTROL = PROOF_ROOT/'experiments/runtime-installation-controls-08'
++INSTALLATION_WORK = PROOF_ROOT/'.work/runtime-installation-controls-08'
++INSTALLATION_AUDIT = PROOF_ROOT/'.work/runtime-installation-controls-independent-verification-08.json'
+ RETRY_CONTROL = PROOF_ROOT/'experiments/runtime-preflight-retry-controls-05'
+ RETRY_WORK = PROOF_ROOT/'.work/runtime-preflight-retry-controls-05'
+ RETRY_AUDIT = PROOF_ROOT/'.work/runtime-preflight-retry-controls-independent-verification-05.json'
+ RETRY_SOURCES = ['entry.py', 'controller.py', 'audit_owner.py', 'routes.json',
+                  'prepare.py', 'prepare_once.py', 'launch.py']
+-ROUTES_SHA = 'ef75ddf2057ebd395a159623d387b01051ee1479363bf9c878f7641b99ec0dd2'
++ROUTES_SHA = 'd339e74a11edb948f3cf4bcc0afbbba76887cc61aed125c8bb8bf62b1633723a'
+ POLICY_SHA = 'fbc563accfeebe2650902263ed9972031d37c84bc8c21986a3545ae4020d314d'
+ OWNER_SHA = 'f93dd25d4d58e3133d2737c718f6b4e41d1f37ad788f914f9ed2adf268fca595'
+ 
+@@ -99,7 +106,7 @@
+     require(row['sha256']==expected and row['size']==path.stat().st_size
+         and same(identity(path),row['identity']),'current selected qualified source differs')
+     data=read_bytes(path);require(hashlib.sha256(data).hexdigest()==expected,'qualified source bytes differ')
+-    module=ModuleType('_runtime_installation06_launch_'+name);module.__file__=str(path)
++    module=ModuleType('_runtime_installation07_launch_'+name);module.__file__=str(path)
+     missing=object();before={key:sys.modules.get(key,missing) for key in dependencies or {}}
+     sys.modules.update(dependencies or {})
+     try:
+@@ -206,21 +213,29 @@
+     retry_qualification=dict(retry_proof,source=str(RETRY_CONTROL),evidence=str(RETRY_WORK))
+     require(sha(INSTALLATION_AUDIT)==args.installation_audit_sha256,'exact completed installation controls required')
+     installation_proof=controls(source=INSTALLATION_CONTROL,work=INSTALLATION_WORK,audit_path=INSTALLATION_AUDIT,
+-        source_paths=[HERE/name for name in RETRY_SOURCES],test_paths=[HERE/'test_installation.py'],
++        source_paths=[HERE/name for name in INSTALLATION_SOURCES]+[NATIVE/name for name in ['runtime_compiler.py','producer_recipe.py','audit_recipe.py']],
++        test_paths=[HERE/'test_installation.py',NATIVE/'test_native_loader.py',HERE/'test_imports.py'],
+         read_json=read,read_bytes=read_bytes,sha=sha,identity=identity)
+     installation_tested=read(INSTALLATION_CONTROL/'inputs.json')
+-    for name in RETRY_SOURCES:
+-        path=HERE/name;row=frozen['files'][str(path)];old=installation_tested['files'][str(path)]
++    for path in [HERE/name for name in INSTALLATION_SOURCES]+[NATIVE/name for name in ['runtime_compiler.py','producer_recipe.py','audit_recipe.py']]:
++        row=frozen['files'][str(path)];old=installation_tested['files'][str(path)]
+         require(row['sha256']==old['sha256']
+             and same([row['identity'][key] for key in ['dev','ino','mode','size','mtime_ns','ctime_ns','nlink']],old['stamp']),
+             'installation source must match separately qualified controls')
+     installation_qualification=dict(installation_proof,source=str(INSTALLATION_CONTROL),evidence=str(INSTALLATION_WORK))
++    require(installation_proof['controls']==48,'exact current installation/native-loader controls required')
++    historical=controls(source=HISTORICAL_CONTROL,work=HISTORICAL_WORK,audit_path=HISTORICAL_AUDIT,
++        source_paths=[HISTORICAL_SOURCE/name for name in RETRY_SOURCES],test_paths=[HISTORICAL_SOURCE/'test_installation.py'],
++        read_json=read,read_bytes=read_bytes,sha=sha,identity=identity)
++    require(sha(HISTORICAL_AUDIT)==HISTORICAL_AUDIT_SHA and historical['controls']==25
++        and same(plan['historical_installation_qualification'],dict(historical,source=str(HISTORICAL_CONTROL),evidence=str(HISTORICAL_WORK))),
++        'exact historical installation25 qualification required')
+     routes=read(HERE/'routes.json')
+     preflight_audit=dict(path=routes['preflight']['report'],sha256=args.source_preflight_audit_sha256)
+     require(same(plan['source_preflight_readback']['audit'],preflight_audit),'externally pinned preflight05 audit differs')
+     owner=qualified_module('owner',HERE/'audit_owner.py',frozen['files'][str(HERE/'audit_owner.py')]['sha256'],
+         frozen['files'],dependencies={'environment':policy})
+-    preparation=dict(path=str(ROOT/('.work/hir-options-hash-runtime-'+args.phase+'-preparation-execution-06/record.json')),
++    preparation=dict(path=str(ROOT/('.work/hir-options-hash-runtime-'+args.phase+'-preparation-execution-07/record.json')),
+         sha256=args.preparation_sha256)
+     preparation_launcher=dict(path=str(PREPARATION_LAUNCHER),sha256=args.preparation_launcher_sha256)
+     context=SimpleNamespace(require=require,same=same,R=ROOT,
+@@ -256,9 +271,9 @@
+             and sha(Path(__file__))==args.launcher_sha256,'exact independently reviewed launcher source required')
+     packet=HERE/(phase+'-plan-01')
+     LAUNCH=packet/'launch.json'
+-    WORK=ROOT/('.work/hir-options-hash-runtime-'+phase+'-launch-execution-06')
+-    OUTER=ROOT/('.work/experiments/hir-options-hash-runtime-'+phase+'-supervisor-06')
+-    CONTROLLER=ROOT/('.work/hir-options-hash-runtime-'+phase+'-06')
++    WORK=ROOT/('.work/hir-options-hash-runtime-'+phase+'-launch-execution-07')
++    OUTER=ROOT/('.work/experiments/hir-options-hash-runtime-'+phase+'-supervisor-07')
++    CONTROLLER=ROOT/('.work/hir-options-hash-runtime-'+phase+'-07')
+     require(Path.cwd() == ROOT and sys.dont_write_bytecode and not sys.flags.optimize,
+             'fixed owner and unoptimized Python -B required')
+     require(re.fullmatch('[a-f0-9]{64}', expected) and sha(LAUNCH) == expected,

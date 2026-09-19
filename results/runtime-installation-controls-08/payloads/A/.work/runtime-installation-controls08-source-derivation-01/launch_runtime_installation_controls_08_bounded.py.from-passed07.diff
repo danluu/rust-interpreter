@@ -1,0 +1,26 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/launch_runtime_installation_controls_07_bounded.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/launch_runtime_installation_controls_08_bounded.py
+@@ -9,18 +9,18 @@
+ import time
+ 
+ ROOT = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+-HERE = ROOT/'experiments/runtime-installation-controls-07'
++HERE = ROOT/'experiments/runtime-installation-controls-08'
+ LAUNCH = HERE/'launch.json'
+-EXPECTED = 'f31d041aeea5da3198bbd961363438500bacf1e405fb5912672bb898b25072c9'
+-WORK = ROOT/'.work/runtime-installation-controls-launcher-07'
+-OUTER = ROOT/'.work/experiments/runtime-installation-controls-supervisor-07'
++EXPECTED = None
++WORK = ROOT/'.work/runtime-installation-controls-launcher-08'
++OUTER = ROOT/'.work/experiments/runtime-installation-controls-supervisor-08'
+ sha = lambda p: hashlib.sha256(Path(p).read_bytes()).hexdigest()
+ assert Path.cwd() == ROOT and sys.dont_write_bytecode and not sys.flags.optimize
+ assert type(EXPECTED) is str and len(EXPECTED) == 64, 'actual prepared launch pin required'
+ assert sha(LAUNCH) == EXPECTED
+ plan = json.loads(LAUNCH.read_bytes())
+ assert sha(HERE/'inputs.json') == plan['inputs_sha256'] and sha(HERE/'run.py') == plan['helper_sha256']
+-assert plan['owner'] == str(ROOT) and plan['controls'] == 25 and plan['expected_children'] == 1
++assert plan['owner'] == str(ROOT) and plan['controls'] == 48 and plan['expected_children'] == 1
+ assert shutil.disk_usage(ROOT).free >= 10*2**30
+ assert not WORK.exists() and not WORK.is_symlink() and not OUTER.exists() and not OUTER.is_symlink()
+ WORK.mkdir()

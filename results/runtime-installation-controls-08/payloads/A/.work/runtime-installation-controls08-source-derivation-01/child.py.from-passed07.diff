@@ -1,0 +1,43 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-controls-07/child.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-controls-08/child.py
+@@ -8,10 +8,11 @@
+ import unittest
+ 
+ HERE = Path(__file__).resolve().parent
+-SOURCE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-02')
++SOURCE = Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/runtime-installation-after-preflight05-03')
+ OWNER = HERE.parents[1]
+-WORK = OWNER / '.work/runtime-installation-controls-07'
+-MODULES = ['test_installation']
++WORK = OWNER / '.work/runtime-installation-controls-08'
++NATIVE = OWNER / 'experiments/runtime-native-loader-probes-01'
++MODULES = ['test_installation', 'test_native_loader', 'test_imports']
+ MAX_FILE = 256 * 1024
+ 
+ 
+@@ -52,6 +53,7 @@
+             directories.add(str(path)); assert len(directories) <= 2048, 'fixture directory cap exceeded'
+     sys.addaudithook(audit)
+     sys.path.insert(0, str(OWNER / 'experiments/runtime04-environment-adapter-01'))
++    sys.path.insert(0, str(NATIVE))
+     sys.path.insert(0, str(SOURCE))
+     suite = unittest.defaultTestLoader.loadTestsFromNames(MODULES)
+     expected = json.loads((HERE / 'inputs.json').read_bytes())['expected_names']
+@@ -59,7 +61,7 @@
+         if isinstance(item, unittest.TestSuite):
+             return [name for test in item for name in names(test)]
+         return [item.id()]
+-    assert sorted(names(suite)) == expected and len(expected) == 25
++    assert sorted(names(suite)) == expected and len(expected) == 48
+     result = unittest.TextTestRunner(verbosity=2).run(suite)
+     freeze = json.loads((HERE / 'inputs.json').read_bytes())
+     for module in list(sys.modules.values()):
+@@ -73,7 +75,7 @@
+                   maximum_file_bytes=MAX_FILE, maximum_writable_names=256,
+                   maximum_directory_names=2048, child_processes=0, compiler_calls=0)
+     (WORK / 'result.json').write_text(json.dumps(report, sort_keys=True, indent=2) + '\n')
+-    assert result.wasSuccessful() and result.testsRun == 25 and not result.skipped
++    assert result.wasSuccessful() and result.testsRun == 48 and not result.skipped
+     assert not result.expectedFailures and not result.unexpectedSuccesses
+     signal.alarm(0)
+ 

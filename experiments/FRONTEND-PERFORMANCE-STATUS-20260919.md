@@ -7,7 +7,7 @@ installation work are separate from application build timings.
 | Candidate | Completed checks | Remaining performance evidence |
 | --- | --- | --- |
 | Cache the immutable incremental option hash once per compiler context | Compiler build; serial and parallel hash controls; compiler behavior controls; runtime preflight and its independent saved-result audit | Complete runtime installation and composition, then real edited Ruff builds with HIR caching off/on and independent holdouts |
-| Retain the first ordinary procedural-macro arena page across reset | Corrected native and Miri checks; real macro callers against both N client libraries; default sysroot discovery; all 36 native frontend timings and restoration checks completed | Parked: median improvement 0.5894% did not exceed 3.4410% stock/stock variation; independent saved-result review pending |
+| Retain the first ordinary procedural-macro arena page across reset | Corrected native and Miri checks; real macro callers against both N client libraries; default sysroot discovery; all 36 native frontend timings and restoration checks independently verified | Parked: median improvement 0.5894% did not exceed 3.4410% stock/stock variation |
 
 The hash candidate retains the complete original hash and its wire encoding.
 The arena candidate retains only an ordinary first page after clearing interned
@@ -46,9 +46,9 @@ The failed prefix remains intact. The correction explicitly selects the admitted
 host architecture and binds that policy into a distinct runtime identity.
 Eighteen focused policy, identity and recipe checks passed, followed by two
 ordinary runs of 30 installation and factory checks. Integration source and both
-development runs passed independent review. Controlled qualification and
-production installation remain pending. All libraries and ordered loader
-commands remain checked.
+development runs passed independent review. All 48 controlled checks and their
+independent audit also passed. Production installation remains pending. All
+libraries and ordered loader commands remain checked.
 
 Evidence entry points:
 
@@ -62,9 +62,11 @@ Evidence entry points:
 - [Third screen's frozen source and protocol](proc-macro-arena-ruff-screen-03/README.md)
 - [Third screen's closed failure evidence](../results/proc-macro-arena-ruff-screen-03-publication/README.md)
 - [Corrected JSON parser development checks](../results/proc-macro-arena-ruff-screen04-parser-development-01/STATUS.md)
+- [Completed native frontend screen: allocator path parked](../results/proc-macro-arena-ruff-screen-04-publication/README.md)
 - [Failed runtime installation](../results/runtime-installation06-failure-01/STATUS.md)
 - [Native loader correction development checks](../results/runtime-native-loader-development-01/STATUS.md)
 - [Installation integration and both development runs](../results/runtime-installation07-source-development-review-01/STATUS.md)
+- [Passed current integration controls and independent audit](../results/runtime-installation-controls-08/STATUS.md)
 
 Historical plans and source manifests retain their original status text. The
 linked actual-result records establish which work has since run; an old plan's
