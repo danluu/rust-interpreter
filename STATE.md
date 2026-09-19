@@ -7,10 +7,10 @@ Push qualified work regularly; do not stop at milestones.
 
 ## Current model
 
-Branch experiment/cross-program-template-model-20260918, HEADdecd0732 before this
-state update. Adopted Rust/Cargo restored exactly atcc4e767a. Current changes are
-cfg(test) only: jit/cross_program_templates.rs and one scalar-entry snapshot
-accessor. No runtime option/store/persistence/guest execution/native publication.
+Branch experiment/cross-program-template-model-20260918. Adopted Rust/Cargo
+restored exactly atcc4e767a. Current runtime changes are cfg(test) only: the
+template/relocation model and saved-artifact replay plus scalar-entry accessors.
+No production runtime option/store/persistence/guest execution/native publication.
 
 Model01 atf624e5e7 passes8controls/profile under73219/73339, CLOSED87399/87403.
 Source/controllers frozen through completed closure. Controller:
@@ -28,14 +28,35 @@ programs, changed initializers/callee bodies, options/layout/identity mismatches
 bounds, scalar targets/step shape, invalid metadata and branches/loops. Arenas
 remain absent. No production integration or timing claim.
 
-Next: extend only the test model to record explicit scalar-target and assertion
-immediate relocation sites in the emitter (cfg(test)). Rebind only those sites
-across owners/programs, checking completeness, original instruction sequences,
-new shape/target, same instruction width, budgets and exact fresh staging.
-Changed caller immediates still invalidate identity. Width mismatch declines;
-no shifting branches or unproved guest-address normalization. Preserve the
-strict model controls. Further runtime/storage work requires separate proof,
-qualification and genuine-edit timing. No new candidate is adopted.
+Model02 ated624307 passes12controls/profile under15329/15332, CLOSED21816/21858.
+Commitfe4dc9e3 pushed. Explicit scalar/assertion relocation ledger records exact
+callee/caller PC or assertion index. Complete ordered sites, encodings, targets,
+BLR, same widths, budgets and fresh assertion strings are checked. Every restored
+word/metadata matches fresh staging. Other changed immediates remain key misses.
+
+Replay01 at053c7425 passes one explicit ignored release diagnostic under82090/
+82093, CLOSED97242/97246. Pushed1f8c1829. Seven actual parser artifacts compared
+with original selected2391/1154 active functions. All original templates captured
+within32632316/16974468bytes. Valid edits restore1221–1512/601–817 exact templates;
+remaining keys miss, no matching key fails restoration. Current scalar proof
+tables use synthetic addresses/ascending callee order, not actual runtime arena
+or admission order; no execution or production hit-rate claim. Matching IDs
+associate with27.4–38.8/18.6–31.1ms original ordinary emission. Single test-mode
+key intervals about9.2–9.6/5.4–5.6ms; not end-to-end savings. Docs:
+docs/CROSS-PROGRAM-TEMPLATES-20260918.md. All input/output/source hashes closed.
+
+Next: test bounded populated history before choosing production storage.
+History added at153e3057:64MiB charged limit, at most16384 entries, two ordered
+maps with one recency entry/template, replacement/eviction and checked timestamp.
+Two new focused controls should bring count to14/profile. Model03 admission
+33104/33146 FAILED shared lock timeout BEFORE any plan/build/test. Exact terminal
+and source bindings preserved/closed at6a9a82d8 by a small metadata-only audit.
+No successful command was repeated. Controller now targets Model04, not yet
+started at this update; wait for peer lock, then run unchanged14-control test
+qualification, close it, and extend replay to retain new variants after misses.
+No current owned stage is running. Read status before any retry after recovery.
+Further runtime/storage work requires proof, qualification and genuine-edit
+timing; no new candidate is adopted. Saved goal stays paused.
 
 ## Completed cross-edit investigation
 
@@ -60,8 +81,9 @@ candidates associate with26.9–38.3ms original ordinary emission in worker0 and
 CPU, edited-run measurements or predicted savings, nor a populated-cache bound.
 [Assessment](docs/CROSS-EDIT-EMISSION-CENSUS-20260918.md).
 
-Main publication worktree .work/publication-main is clean at7e225ae1, confirmed
-PUSHEDmain, preserving peer9e63e174. Census docs/results only, no runtimecandidate.
+Main publication worktree .work/publication-main is clean ata0027d13, confirmed
+PUSHEDmain, preserving peer296a927d/bd7e74a7. Published closed template/replay
+docs/results/plan only, no runtime candidate; earlier census also published.
 Fetch before future publication and preserve peer commits; never force push.
 
 ## Adopted runtime and parked changes
@@ -91,7 +113,7 @@ previous-state chain. Do not retime unchanged candidates or reinterpret gates.
   two Cargo/test workers. Build target ONLY .work/fixed-frame-clear-combined-build-01/target;
   NEVER clean it. Build floor max(14GiB,8GiB+2*allocated target),analysis12GiB,
   children/closures8GiB unless higher declared. Recheck each stage.
-- Last free about24.8GiB, fluctuating. Parser primary24GiB reservation completed;
+- Last free about24.1GiB, fluctuating. Parser primary24GiB reservation completed;
   future Nushell full comparison needs its recorded~47GiB, not a reduced gate.
 - Cleaner read-only: /usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status
   Do not repair/restart/compete with it or signal/control any peer/session.

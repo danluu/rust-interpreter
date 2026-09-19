@@ -122,3 +122,10 @@ recency/replacement/eviction and exact reuse of two checked caller-body variants
 across four distinct owners with different assertion bases/scalar addresses.
 Repeated hits must not grow metadata. Close these controls before extending the
 saved-artifact replay to populate the history after misses.
+
+The first history-model admission (Model03 at153e3057) timed out on the shared
+lock before creating a stage directory or starting any build/test. Its exact
+terminal/controller bindings are preserved in results/cross-program-template-model-03.
+Model04 retries only that unstarted14-control qualification under unchanged
+source semantics, worker count and disk/lock gates. Do not repeat any earlier
+completed model or saved-artifact replay.
