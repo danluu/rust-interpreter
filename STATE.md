@@ -83,3 +83,10 @@ Primary02 reuses unchangedaccounting/schedule/controller/gates with only new
 closedcandidate prerequisites. Need24GiB initial and8GiB perchild. Optional
 cache-retirement remainsUNSTARTED; currentfree~26GiB. Freeze candidate source,
 controllers and plans through complete primary closure.
+
+Primary02 source4533aa53 completed60442/60445, all40sourcecommands and2strict
+controls pass; PERFORMANCEFAIL wall.982134251+A/A.036901385=1.019035636;
+CPU.961514387+.021485469=.983000. Cached/offwall.999367745,CPU.974262244;
+cached/nativewall1.306254340. Do notadopt/retimeunchanged orstartlargercomparisons.
+Closure11132 running/checkterminal. Allsource restored, sessionsreaped; NOACTIVE
+PRIMARY. Nextread-onlyretainedcostobserver. Assessmentdocs/SESSION-REQUEST-COSTS-20260918.md.
