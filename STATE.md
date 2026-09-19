@@ -66,9 +66,13 @@ Do not interpret this as proof all native code is invalid: initializer contents
 may be execution-state inputs rather than emitter inputs. Local-body stability
 is65.14%token,68.70%folded,94.19%pgrust,4.95%private,7.39%types,99.95%parser,
 61.56%recent token. Some stable callers also invalidate on direct-callee edits.
-Next audit actual emitter global dependencies and compare existing body/callee
-identities across namespace changes; join exact original-artifact native maps
-only with explicit original-to-edited scope. No production cache yet.
+The next prepared observer is `benchmarks/experiments/native-reuse-scope`:
+5controls,133chronological comparisons and two exact original token code pools.
+It preserves IDs/heap mode/function count while separating whole-global churn.
+The weighted comparisons are original-to-edited, never edited-execution hit
+rates. No new artifact census, guest, build or production cache is needed.
+Its PLAN records the adopted emitter dependency review and unresolved native
+relocations/assertion/admission contract. Run01 is ready for fresh admission.
 
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally
