@@ -114,3 +114,10 @@ catalogvalidation8.60,Programvalidation5.70;output.144ms. Workerconstructor15.7m
 each(6.8beforemetadata+8.9metadata). Exactcode:catalogre-hashes same29.46MB bytes.
 Next typed ownedactualbytes digest reuse, no client/catalog digest trust.
 Evidence docs/SESSION-INPUT-PHASES-20260918.md. No activeexperiment.
+
+Artifactdigest candidate prepared onexperiment/session-artifact-digest-20260919:
+immutableownedbytes computesactualSHAonce; serverrequest/catalogshareit, all
+structural/Programchecksremain. Featureexplicit, keyv3+size-tiercomposition.
+Qualification656/profile+16ignored,33diagnostic,10featureoff/defaultVM and
+exact442Pythonrecord planned. No runstarted. Main56b77d06 nowpushed preserving
+peer753ef81e, correctedkeyproof andfinalphaseattribution published; noadoption.

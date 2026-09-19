@@ -1,6 +1,8 @@
 //! Explicit inherited-pipe session. Native templates never enter the protocol.
 use bincode::Options;
 use rust_interp_bytecode::{EntryCatalog,Limits,PreparedJit,Program,TemplateHistory,ValidatedProgram};
+#[cfg(feature = "jit-artifact-digest-reuse")]
+use rust_interp_bytecode::HashedArtifactBytes;
 use serde::{Deserialize,Serialize};
 use serde_json::{Value,json};
 use sha2::{Digest,Sha256};
@@ -63,15 +65,26 @@ fn absolute(path:&str)->Result<&Path,String> {
     if !path.is_absolute() || path.as_os_str().len()>4096 {return Err("session paths must be bounded and absolute".into());}
     Ok(path)
 }
-fn read_bound(binding:&Binding,limit:usize)->Result<Vec<u8>,String> {
+fn read_bounded_bytes(binding:&Binding,limit:usize)->Result<Vec<u8>,String> {
     let file=std::fs::File::open(absolute(&binding.path)?).map_err(|e|e.to_string())?;
     let metadata=file.metadata().map_err(|e|e.to_string())?;
     if !metadata.is_file() || metadata.len()>limit as u64 {return Err("session input file exceeds bound or is not regular".into());}
     let mut bytes=vec![];file.take(limit as u64+1).read_to_end(&mut bytes).map_err(|e|e.to_string())?;
-    if bytes.len()>limit || format!("{:x}",Sha256::digest(&bytes))!=binding.sha256 {
+    if bytes.len()>limit {return Err("session input digest or size differs".into());}
+    Ok(bytes)
+}
+fn read_bound(binding:&Binding,limit:usize)->Result<Vec<u8>,String> {
+    let bytes=read_bounded_bytes(binding,limit)?;
+    if format!("{:x}",Sha256::digest(&bytes))!=binding.sha256 {
         return Err("session input digest or size differs".into());
     }
     Ok(bytes)
+}
+#[cfg(feature = "jit-artifact-digest-reuse")]
+fn read_hashed_artifact(binding:&Binding,limit:usize)->Result<HashedArtifactBytes,String> {
+    let artifact=HashedArtifactBytes::new(read_bounded_bytes(binding,limit)?);
+    if artifact.sha256()!=binding.sha256 {return Err("session input digest or size differs".into());}
+    Ok(artifact)
 }
 fn environment_bound(pairs:&Environment)->Result<(),String> {
     if pairs.len()>4096 {return Err("session environment exceeds binding count".into());}
@@ -189,11 +202,18 @@ fn run_request(pool:&mut Pool,id:u64,body:Body)->Result<Value,String> {
     let limits=budget.limits()?;environment_bound(&environment)?;
     #[cfg(feature = "jit-preparation-observer")]
     let input_started=Instant::now();
-    let bytes=read_bound(&artifact,64*1024*1024)?;
+    #[cfg(not(feature = "jit-artifact-digest-reuse"))]
+    let artifact_bytes=read_bound(&artifact,64*1024*1024)?;
+    #[cfg(feature = "jit-artifact-digest-reuse")]
+    let artifact_bytes=read_hashed_artifact(&artifact,64*1024*1024)?;
+    #[cfg(not(feature = "jit-artifact-digest-reuse"))]
+    let bytes=artifact_bytes.as_slice();
+    #[cfg(feature = "jit-artifact-digest-reuse")]
+    let bytes=artifact_bytes.bytes();
     #[cfg(feature = "jit-preparation-observer")]
     let artifact_read=Instant::now();
     let program:Program=bincode::DefaultOptions::new().with_fixint_encoding().with_limit(64*1024*1024)
-        .reject_trailing_bytes().deserialize(&bytes).map_err(|e|e.to_string())?;
+        .reject_trailing_bytes().deserialize(bytes).map_err(|e|e.to_string())?;
     #[cfg(feature = "jit-preparation-observer")]
     let artifact_decoded=Instant::now();
     let catalog_bytes=read_bound(&catalog,4*1024*1024)?;
@@ -202,7 +222,11 @@ fn run_request(pool:&mut Pool,id:u64,body:Body)->Result<Value,String> {
     let catalog_value:EntryCatalog=serde_json::from_slice(&catalog_bytes).map_err(|e|e.to_string())?;
     #[cfg(feature = "jit-preparation-observer")]
     let catalog_decoded=Instant::now();
-    let entries=catalog_value.validated_entries(&program,&bytes)?.into_iter().map(|(n,id)|(n.to_owned(),id)).collect::<Vec<_>>();
+    #[cfg(not(feature = "jit-artifact-digest-reuse"))]
+    let entries=catalog_value.validated_entries(&program,bytes)?;
+    #[cfg(feature = "jit-artifact-digest-reuse")]
+    let entries=catalog_value.validated_entries_hashed(&program,&artifact_bytes)?;
+    let entries=entries.into_iter().map(|(n,id)|(n.to_owned(),id)).collect::<Vec<_>>();
     #[cfg(feature = "jit-preparation-observer")]
     let catalog_validated=Instant::now();
     let total=entries.len();let program=ValidatedProgram::new(program)?;
@@ -274,6 +298,7 @@ fn readiness(bytes:usize,verify:bool,startup:Cpu)->Result<Value,String> {
     Ok(json!({"kind":"ready","schema":1,"pid":std::process::id(),"workers":WORKERS,
         "history_bytes_per_worker":bytes,"verify_hits":verify,"executable_sha256":executable_identity()?,
         "large_function_interpreter_threshold":if cfg!(feature="jit-large-function-interpreter") {Some(65_536usize)} else {None},
+        "artifact_digest_reuse":cfg!(feature="jit-artifact-digest-reuse"),
         "cpu_at_entry":startup,"cpu_at_ready":cpu()?}))
 }
 fn serve_stdio(bytes:usize,verify:bool)->Result<(),String> {

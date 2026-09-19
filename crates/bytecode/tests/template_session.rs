@@ -30,6 +30,7 @@ impl Session {
         self.ready=self.read();let session=self;let executable=env!("CARGO_BIN_EXE_rust-interp-template-session");
         assert_eq!(session.ready["kind"],"ready");assert_eq!(session.ready["pid"],session.child.id());
         assert_eq!(session.ready["executable_sha256"],digest(&std::fs::read(executable).unwrap()));
+        assert_eq!(session.ready["artifact_digest_reuse"],cfg!(feature="jit-artifact-digest-reuse"));
         std::fs::write(session.folder.join("ready.json"),serde_json::to_vec(&session.ready).unwrap()).unwrap();
     }
     fn read(&mut self)->Value {
@@ -135,15 +136,24 @@ fn edited_suites_and_request_inputs_match_without_and_with_history() {
 #[test]
 fn rejected_inputs_and_existing_reports_do_not_poison_the_next_request() {
     let mut session=Session::start("rejections",1024*1024);
-    for case in 0..4 {
+    for case in 0..5 {
         let mut body=request(&session,&format!("bad{case}"),7,1,b"ok");let path=PathBuf::from(body["report"].as_str().unwrap());
         match case {
             0=>body["artifact"]["sha256"]="0".repeat(64).into(),
             1=>body["cwd"]="/different-session-directory".into(),
             2=>{std::fs::write(&path,b"preserve existing report").unwrap();},
-            _=>body["budget"]["allocations"]=1_000_001.into(),
+            3=>body["budget"]["allocations"]=1_000_001.into(),
+            _=>{
+                // The request digest matches the new actual bytes; the catalog
+                // still names the previous bytes with identical entry layout.
+                let (changed,_)=inputs(&session.folder,"new-artifact",8,1);
+                let bytes=std::fs::read(changed["path"].as_str().unwrap()).unwrap();
+                std::fs::write(body["artifact"]["path"].as_str().unwrap(),&bytes).unwrap();
+                body["artifact"]["sha256"]=digest(&bytes).into();
+            },
         }
         let response=session.send(body);assert_eq!(response["kind"],"error");assert_eq!(response["poisoned"],false);
+        if case==4 {assert_eq!(response["error"],"entry catalog does not match the bytecode digest");}
         if case==2 {assert_eq!(std::fs::read(&path).unwrap(),b"preserve existing report");} else {assert!(!path.exists());}
     }
     let body=request(&session,"valid",7,1,b"ok");assert_eq!(session.send(body)["status"],"passed");session.close();
