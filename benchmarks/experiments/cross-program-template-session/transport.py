@@ -6,7 +6,7 @@ import focus
 ROOT=focus.ROOT
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='cross-program-template-session-transport-01'
+RUN='cross-program-template-session-transport-02'
 def read(p):return json.loads(p.read_text())
 
 def main():
@@ -23,13 +23,26 @@ def main():
         paths += [p for p in Path(__file__).parent.iterdir() if p.suffix in ['.py','.md']]
         paths += [prior/'closure.json',prior/'summary.json',Path(focus.__file__),ROOT/'scripts/compare_saved_runtime.py',ROOT/'scripts/workflow_io.py']
         frozen={str(p.relative_to(ROOT)):sha(p) for p in paths}
+        previous=ROOT/'results/cross-program-template-session-transport-01'
+        c=read(previous/'closure.json');assert c['status']=='closed' and c['all_hashes_verified']
+        assert sha(previous/'summary.json')==c['summary_sha256'];old=read(previous/'summary.json');old_raw=ROOT/old['raw']
+        assert sha(old_raw/'plan.json')==old['plan_sha256'] and sha(old_raw/'records.json')==old['records_sha256']
+        old_plan=read(old_raw/'plan.json');old_records=read(old_raw/'records.json');old_record=old_records[0]
+        assert [(r['label'],r['returncode']) for r in old_records]==[('debug-environment',0),('debug-wire',101)]
+        for p,h in old_plan['frozen'].items():
+            if (p.startswith('crates/') or p in ['Cargo.toml','Cargo.lock','rust-toolchain.toml']) and p!='crates/bytecode/src/template_session.rs':
+                assert frozen[p]==h
+        for p in [previous/'closure.json',previous/'summary.json',old_raw/'plan.json',old_raw/'records.json']:
+            frozen[str(p.relative_to(ROOT))]=sha(p)
+        for stream in ['stdout','stderr']:
+            p=old_raw/('debug-environment.'+stream);assert sha(p)==old_record[stream+'_sha256'];frozen[str(p.relative_to(ROOT))]=sha(p)
         assert not subprocess.check_output(['git','diff','--name-only','HEAD'],cwd=ROOT).strip()
         revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
         raw=ROOT/'.work'/RUN;raw.mkdir(exist_ok=False)
         write(raw/'plan.json',dict(owner=str(ROOT),source_revision=revision,frozen=frozen,
             controller_command=[sys.executable,*sys.orig_argv[1:]],target=str(target.relative_to(ROOT)),
             required_free_bytes=needed,allocated_target_bytes=allocated,minimum_child_gib=8,expected_commands=8,
-            tests_per_profile=30,original_project_guest_commands=0,native_fixture_execution=True,
+            tests_per_profile=30,new_commands=7,reused_commands=1,original_project_guest_commands=0,native_fixture_execution=True,
             executable_code_publication=True,experimental_feature=True,default_runtime_adoption=False,performance_measurement=False))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_','CARGO_'))
             and k not in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER','RUST_TEST_THREADS','PYTHONPATH']}
@@ -49,11 +62,17 @@ def main():
                     '--manifest-path',str(ROOT/'Cargo.toml'),'--target-dir',str(target),'-p','rust-interp-bytecode']
                 if feature:command+=['--features','jit-template-session']
                 command+=select
-                start=time.time();child,out,err=capture(command,cwd=ROOT,env=child_env,receipt_path=raw/'active.json',receipt=dict(label=label))
-                for stream,value in [('stdout',out),('stderr',err)]:(raw/(label+'.'+stream)).write_text(value)
-                records.append(dict(label=label,command=command,pid=child.pid,returncode=child.returncode,seconds=time.time()-start,
-                    stdout_sha256=sha(raw/(label+'.stdout')),stderr_sha256=sha(raw/(label+'.stderr'))))
-                write(raw/'records.json',records);assert child.returncode==0,(out+err)[-6000:]
+                if label=='debug-environment':
+                    assert command==old_record['command']
+                    out=(old_raw/(label+'.stdout')).read_text();err=(old_raw/(label+'.stderr')).read_text()
+                    for stream in ['stdout','stderr']:shutil.copyfile(old_raw/(label+'.'+stream),raw/(label+'.'+stream))
+                    record=dict(old_record,reused_from=str((old_raw/'records.json').relative_to(ROOT)))
+                else:
+                    start=time.time();child,out,err=capture(command,cwd=ROOT,env=child_env,receipt_path=raw/'active.json',receipt=dict(label=label))
+                    for stream,value in [('stdout',out),('stderr',err)]:(raw/(label+'.'+stream)).write_text(value)
+                    record=dict(label=label,command=command,pid=child.pid,returncode=child.returncode,seconds=time.time()-start,
+                        stdout_sha256=sha(raw/(label+'.stdout')),stderr_sha256=sha(raw/(label+'.stderr')))
+                records.append(record);write(raw/'records.json',records);assert record['returncode']==0,(out+err)[-6000:]
                 counts=re.findall(r'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;',out)
                 assert counts and all(int(f)==int(i)==0 for _,f,i in counts)
                 passed=sum(int(p) for p,_,_ in counts);assert passed==expected,(label,passed,expected)
@@ -69,8 +88,8 @@ def main():
                 assert all(sha(ROOT/p)==h for p,h in frozen.items());print(label,'passed',passed,flush=True)
         output=ROOT/'results'/RUN;output.mkdir(exist_ok=False)
         write(output/'summary.json',dict(status='passed',source_revision=revision,raw=str(raw.relative_to(ROOT)),
-            plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),tests=totals,commands=8,outputs=outputs,
-            setup_seconds=sum(r['seconds'] for r in records),original_project_guest_commands=0,native_fixture_execution=True,
+            plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),tests=totals,commands=7,reused_commands=1,validated_commands=8,outputs=outputs,
+            setup_seconds=sum(r['seconds'] for r in records if 'reused_from' not in r),original_project_guest_commands=0,native_fixture_execution=True,
             owned_session_processes=8,expected_protocol_rejections=2,experimental_feature=True,default_runtime_adoption=False,performance_measurement=False))
 
 if __name__=='__main__':

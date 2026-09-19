@@ -31,7 +31,7 @@ impl Budget {
 #[serde(tag="command",rename_all="snake_case",deny_unknown_fields)]
 enum Body {
     Run {artifact:Binding,catalog:Binding,report:String,cwd:String,budget:Budget,environment:Environment},
-    Shutdown,
+    Shutdown {},
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -232,7 +232,7 @@ fn serve()->Result<(),String> {
         let request:Request=serde_json::from_slice(&frame).map_err(|e|e.to_string())?;
         if request.schema!=1 || request.id!=expected || expected>4096 {return Err("session request schema, sequence or count differs".into());}
         expected+=1;
-        if matches!(request.body,Body::Shutdown) {break;}
+        if matches!(request.body,Body::Shutdown{}) {break;}
         let started=Instant::now();let mut response=match run_request(&mut pool,request.id,request.body) {
             Ok(result)=>result,
             Err(error)=>json!({"kind":"error","id":request.id,"error":error.chars().take(4096).collect::<String>(),

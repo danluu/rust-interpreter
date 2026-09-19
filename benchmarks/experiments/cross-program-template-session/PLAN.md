@@ -101,3 +101,11 @@ process accounting must reconcile startup/tails/teardown in the later E2E driver
 Error responses conservatively report that execution may have occurred; clients
 never automatically retry. A worker/channel failure closes this owned session
 after joining its workers; guest assertion failures leave later requests usable.
+
+Transport01 passes the five feature environment tests, then a wire negative test
+finds that serde accepts unknown fields on an internally tagged unit variant even
+with deny_unknown_fields. The other two wire/CPU tests pass; no fixture session
+process starts. Close this failure. Transport02 uses an empty struct variant for
+Shutdown so its fields are checked, retains the negative test, verifies every
+non-server Rust/Cargo hash, and reuses the completed environment command. Seven
+remaining/corrected commands run; no successful library command is repeated.
