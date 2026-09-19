@@ -30,6 +30,9 @@ suite receipts. PreparedJit already retains compiled code within each worker.
 Measure remaining preparation before proposing cross-process native reuse.
 Sum overlapping worker durations honestly; counters are not CPU time or causal
 wall savings. No new guest, compiler build or runtime change is needed.
+The95-receipt audit and6controls are prepared in
+`benchmarks/experiments/jit-preparation-costs`, including the incremental parser
+and latest primary baseline. Close the finished audit before changing its inputs.
 
 Candidate audit inputs: the adopted baseline rows (only) from closed
 `runtime-composition-edit-{token,folded,pgrust,rg-aot,nushell}-02`, optionally
