@@ -45,6 +45,21 @@ struct CallInput<'a> {
     args:&'a [crate::Slot],result:&'a crate::Slot,
     scalar:Option<(usize,usize,Option<usize>,usize)>,
 }
+// A private request computes identity once and keeps the exact current owner
+// immutably borrowed through lookup, restore and emission/capture. Callers cannot
+// supply a free-standing digest for a different owner/function/options tuple.
+struct Request<'j,'p> {jit:&'j Jit<'p>,id:usize,emitter:[u8;32],key:[u8;32],rebind:bool}
+struct Emission<'r,'j,'p> {request:&'r Request<'j,'p>,compiled:CompiledFunction<'p>}
+impl<'j,'p> Request<'j,'p> {
+    fn new(checked:&Checked<'p>,jit:&'j Jit<'p>,id:usize,emitter:[u8;32],rebind:bool)->Option<Self> {
+        let key=identity_mode(checked,jit,id,&emitter,MAX_KEY_BYTES,rebind)?;
+        Some(Self{jit,id,emitter,key,rebind})
+    }
+    fn emit(&self,word_budget:usize)->Result<Option<Emission<'_,'j,'p>>,EmitError> {
+        Ok(self.jit.emit_function(&self.jit.program.functions[self.id],word_budget)?
+            .map(|compiled|Emission{request:self,compiled}))
+    }
+}
 fn identity(checked:&Checked<'_>,jit:&Jit<'_>,id:usize,emitter:&[u8;32],limit:usize)->Option<[u8;32]> {
     identity_mode(checked,jit,id,emitter,limit,false)
 }
@@ -167,8 +182,15 @@ impl Template {
         Self::capture_mode(checked,jit,id,emitter,staged,limit,false)
     }
     fn capture_mode(checked:&Checked<'_>,jit:&Jit<'_>,id:usize,emitter:[u8;32],staged:&CompiledFunction<'_>,limit:usize,rebind:bool)->Option<Self> {
+        let request=Request::new(checked,jit,id,emitter,rebind)?;
+        Self::capture_request(&request,staged,limit)
+    }
+    fn capture_emission(emission:&Emission<'_,'_,'_>,limit:usize)->Option<Self> {
+        Self::capture_request(emission.request,&emission.compiled,limit)
+    }
+    fn capture_request(request:&Request<'_,'_>,staged:&CompiledFunction<'_>,limit:usize)->Option<Self> {
         if limit>MAX_RETAINED {return None;}
-        let key=identity_mode(checked,jit,id,&emitter,MAX_KEY_BYTES,rebind)?;
+        let Request{jit,id,emitter,key,rebind}=*request;
         let f=jit.program.functions.get(id)?;
         let minimum=staged.words.len().checked_mul(4)?
             .checked_add(staged.entries.len().checked_mul(std::mem::size_of::<Option<Block>>())?)?
@@ -196,7 +218,12 @@ impl Template {
         (result.valid(f) && result.charge()?<=limit).then_some(result)
     }
     fn restore<'p>(&self,checked:&Checked<'p>,jit:&Jit<'p>,id:usize,emitter:&[u8;32],word_budget:usize)->Option<CompiledFunction<'p>> {
-        if *emitter!=self.emitter || identity_mode(checked,jit,id,emitter,MAX_KEY_BYTES,self.rebind)?!=self.key {return None;}
+        let request=Request::new(checked,jit,id,*emitter,self.rebind)?;
+        self.restore_request(&request,word_budget)
+    }
+    fn restore_request<'p>(&self,request:&Request<'_,'p>,word_budget:usize)->Option<CompiledFunction<'p>> {
+        let Request{jit,id,emitter,key,rebind}=*request;
+        if emitter!=self.emitter || key!=self.key || rebind!=self.rebind {return None;}
         let f=jit.program.functions.get(id)?;
         if !self.valid(f) || self.words.len()>word_budget || self.words.len()>jit.capacity.checked_sub(jit.bytes)?/4
             || !jit.resumable.as_ref()?.fits(f.code.len()) {return None;}
@@ -476,5 +503,34 @@ fn cross_program_template_history_reuses_checked_body_variants_with_fresh_owner_
         assert!(j.code.is_none());assert_eq!(j.bytes,0);
     }
     assert_eq!(hits,2);assert_eq!(history.entries.len(),2);assert_eq!(history.order.len(),2);
+}
+
+#[test]
+fn cross_program_template_bound_request_emission_and_restore_keep_exact_current_identity() {
+    let p=fixture();let mut a=owner(&p);scalar(&mut a,0x123456780000);let c=Checked::new(&p).unwrap();
+    let request=Request::new(&c,&a,0,EMITTER,true).unwrap();let emitted=request.emit(MAX_CODE_BYTES/4).unwrap().unwrap();
+    let t=Template::capture_emission(&emitted,MAX_RETAINED).unwrap();assert_eq!(t.key,request.key);
+    let mut q=p.clone();q.data[0]=7;let d=Checked::new(&q).unwrap();let mut b=owner(&q);
+    scalar(&mut b,0x234567890000);prior_assertions(&mut b,3);
+    let current=Request::new(&d,&b,0,EMITTER,true).unwrap();
+    let fresh=current.emit(MAX_CODE_BYTES/4).unwrap().unwrap();
+    same(&fresh.compiled,&t.restore_request(&current,MAX_CODE_BYTES/4).unwrap());
+    let recaptured=Template::capture_emission(&fresh,MAX_RETAINED).unwrap();
+    same(&emitted.compiled,&recaptured.restore_request(&request,MAX_CODE_BYTES/4).unwrap());
+    assert!(a.code.is_none() && b.code.is_none());
+}
+#[test]
+fn cross_program_template_bound_request_rejects_foreign_checks_functions_modes_and_budgets() {
+    let p=fixture();let a=owner(&p);let c=Checked::new(&p).unwrap();let request=Request::new(&c,&a,0,EMITTER,true).unwrap();
+    let emitted=request.emit(MAX_CODE_BYTES/4).unwrap().unwrap();let t=Template::capture_emission(&emitted,MAX_RETAINED).unwrap();
+    let mut q=p.clone();q.functions[0].code[0]=Op::Imm{dst:0,value:2};let b=owner(&q);let d=Checked::new(&q).unwrap();
+    assert!(Request::new(&d,&a,0,EMITTER,true).is_none());
+    for invalid in [Request::new(&d,&b,0,EMITTER,true).unwrap(),Request::new(&c,&a,1,EMITTER,true).unwrap(),
+        Request::new(&c,&a,0,[18;32],true).unwrap(),Request::new(&c,&a,0,EMITTER,false).unwrap()] {
+        assert!(t.restore_request(&invalid,MAX_CODE_BYTES/4).is_none());
+    }
+    assert!(t.restore_request(&request,t.words.len()-1).is_none());
+    assert!(Template::capture_emission(&emitted,0).is_none());assert!(request.emit(0).unwrap().is_none());
+    same(&emitted.compiled,&t.restore_request(&request,t.words.len()).unwrap());assert!(a.code.is_none() && b.code.is_none());
 }
 }

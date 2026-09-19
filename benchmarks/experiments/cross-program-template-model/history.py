@@ -5,7 +5,7 @@ import focus
 ROOT=focus.ROOT
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='cross-program-template-history-01'
+RUN='cross-program-template-history-02'
 def read(p):return json.loads(p.read_text())
 
 def main():
@@ -25,10 +25,11 @@ def main():
             assert c['status']=='closed' and c['all_hashes_verified']
             bind(folder/'terminal.json',c['terminal_sha256'])
             return bind(folder/'summary.json',c['summary_sha256'])
-        model=closed('cross-program-template-model-04');assert model['status']=='passed' and model['tests_per_profile']==14
+        model=closed('cross-program-template-model-05');assert model['status']=='passed' and model['tests_per_profile']==16
         model_plan=bind(ROOT/model['raw']/'plan.json',model['plan_sha256'])
         for p,h in model_plan['frozen'].items():
             if p.startswith('crates/') or p in ['Cargo.toml','Cargo.lock','rust-toolchain.toml']:bind(ROOT/p,h)
+        previous=closed('cross-program-template-history-01');assert previous['status']=='passed'
         original=closed('cross-program-template-replay-01');assert original['status']=='passed'
         old=ROOT/original['raw'];bind(old/'plan.json',original['plan_sha256']);bind(old/'records.json',original['records_sha256'])
         source=old/'input.json';inputs=bind(source,original['outputs'][str(source.relative_to(ROOT))])
@@ -61,7 +62,7 @@ def main():
         write(raw/'records.json',[dict(label='history',command=command,pid=child.pid,returncode=child.returncode,seconds=time.time()-start,
             stdout_sha256=sha(raw/'history.stdout'),stderr_sha256=sha(raw/'history.stderr'))])
         assert child.returncode==0 and 'test result: ok. 1 passed; 0 failed; 0 ignored;' in out,(out+err)[-6000:]
-        report=read(raw/'report.json');assert report['schema_version']==1 and report['populated_history'] is True
+        report=read(raw/'report.json');assert report['schema_version']==1 and report['populated_history'] is True and report['bound_requests'] is True
         assert report['input_sha256']==sha(raw/'input.json') and len(report['workers'])==2
         assert report['original_project_guest_commands']==report['executable_code_publications']==0
         assert report['production_cache_admission'] is False;summaries=[]
@@ -89,7 +90,7 @@ def main():
         write(output/'summary.json',dict(status='passed',source_revision=revision,commands=1,workers=summaries,
             raw=str(raw.relative_to(ROOT)),plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),
             outputs={str(p.relative_to(ROOT)):sha(p) for p in [raw/'input.json',raw/'report.json']},
-            original_project_guest_commands=0,executable_code_publications=0,production_cache_admission=False,
+            original_project_guest_commands=0,executable_code_publications=0,production_cache_admission=False,bound_requests=True,
             performance_measurement=False,diagnostic_intervals=True,scope=report['scope'],scalar_admission=report['scalar_admission']))
         print(json.dumps(summaries,sort_keys=True),flush=True)
 

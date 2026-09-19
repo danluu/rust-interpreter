@@ -146,3 +146,22 @@ Do not associate a newer cached variant with the old function's preparation
 interval: names/bodies at a numeric ID may have changed. Report diagnostic
 lookup/restore, fresh and capture/insert intervals separately, with no command
 speedup calculation. Native file/IPC storage and publication remain absent.
+
+## Model05 and History02: bind identity once per operation
+
+Model04 and History01 are closed before this change. History01 restores every
+hit exactly, but computes identity both before lookup and inside restore/capture.
+Introduce a private Request containing the computed key, exact immutable JIT
+borrow, function ID, emitter and mode. Restore accepts that request directly;
+callers cannot pair a standalone digest with another owner. Request emission
+produces an Emission tied to the same request, so the new capture path obtains
+both metadata and code from that exact operation. Immutable borrows prevent
+intervening owner mutation. Legacy wrappers remain for the prior negative tests.
+
+Two new controls bring qualification to16/profile: exact cross-owner emission/
+restoration/recapture, and foreign checks/functions/modes/emitters plus code and
+storage bounds. After closure, History02 uses the bound request through lookup,
+restore and capture on the same saved input. Prior History01 proved these input
+keys fit unchanged limits; the new replay explicitly requires that property.
+Preserve the older diagnostic rather than treating either single interval run
+as a statistical timing comparison. No production cache or native publication.

@@ -147,27 +147,27 @@ fn cross_program_template_replay_populated_parser_history() {
             let before_evictions=history.evictions;let mut outcomes=vec![];
             for row in &worker.functions {
                 let id=row.function;
-                let Some(f)=p.functions.get(id) else {outcomes.push((id,"unavailable"));continue;};
-                let start=Instant::now();let key=identity_mode(&checked,&jit,id,&emitter,MAX_KEY_BYTES,true);
+                let Some(_)=p.functions.get(id) else {outcomes.push((id,"unavailable"));continue;};
+                let start=Instant::now();let request=Request::new(&checked,&jit,id,emitter,true)
+                    .expect("all keys in the closed history fit the unchanged identity bounds");
                 key_ns+=start.elapsed().as_nanos();
                 let start=Instant::now();let mut outcome="key_miss";
-                let restored=key.and_then(|key|history.get(&key)).and_then(|template|{
-                    outcome="restore_miss";template.restore(&checked,&jit,id,&emitter,MAX_CODE_BYTES/4)
+                let restored=history.get(&request.key).and_then(|template|{
+                    outcome="restore_miss";template.restore_request(&request,MAX_CODE_BYTES/4)
                 });
                 restore_ns+=start.elapsed().as_nanos();
                 let start=Instant::now();
-                let fresh=match jit.emit_function(f,MAX_CODE_BYTES/4) {
+                let fresh=match request.emit(MAX_CODE_BYTES/4) {
                     Ok(staged)=>staged,Err(EmitError::Limit(_))=>None,
                     Err(error)=>panic!("invalid fresh history staging for {id}: {error:?}"),
                 };
                 let nanos=start.elapsed().as_nanos();fresh_ns+=nanos;
                 if let Some(restored)=restored {
                     let fresh=fresh.as_ref().expect("restoration succeeded but fresh emission declined");
-                    tests::same(&restored,fresh);words+=restored.words.len();fresh_exact_ns+=nanos;outcome="exact";
+                    tests::same(&restored,&fresh.compiled);words+=restored.words.len();fresh_exact_ns+=nanos;outcome="exact";
                 } else if let Some(fresh)=fresh {
                     let start=Instant::now();
-                    let stored=Template::capture_mode(&checked,&jit,id,emitter,&fresh,MAX_RETAINED,true)
-                        .and_then(|template|history.insert(template));
+                    let stored=Template::capture_emission(&fresh,MAX_RETAINED).and_then(|template|history.insert(template));
                     if stored.is_some() {inserted+=1;} else {capture_declines+=1;}
                     insert_ns+=start.elapsed().as_nanos();
                 } else {emission_declines+=1;}
@@ -185,7 +185,7 @@ fn cross_program_template_replay_populated_parser_history() {
         }
         reports.push(serde_json::json!({"worker":worker.worker,"observed_functions":worker.functions.len(),"comparisons":comparisons}));
     }
-    let report=serde_json::json!({"schema_version":1,"populated_history":true,"input_sha256":digest(&input_bytes),"workers":reports,
+    let report=serde_json::json!({"schema_version":1,"populated_history":true,"bound_requests":true,"input_sha256":digest(&input_bytes),"workers":reports,
         "original_project_guest_commands":0,"executable_code_publications":0,"production_cache_admission":false,
         "scalar_admission":"modeled current proof in ascending callee order; synthetic addresses; no arena accounting",
         "scope":"Bounded populated staging history over eight actual artifacts and fixed original numeric function sets. Every hit equals fresh staging. Later reachability/order is not measured. Test-mode intervals exclude storage and publication; no predicted command saving."});
