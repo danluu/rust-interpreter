@@ -89,7 +89,7 @@ parsing only. There is still no concrete runnable admission packet, and final
 B3/native/run-make schemas must pass discovery against their actual results.
 
 The B3 source and work references select composition07, the planned successor
-to composition06. Its 97 parser controls passed, including the complete saved
+to composition06. Composition06's 97 controls passed, including the complete saved
 compiler-producer history. Read-only discovery then rejected a normal bootstrap
 source symlink before any composition or launch packet existed. The successor
 must qualify its narrow source-link inventory handling separately; updating
