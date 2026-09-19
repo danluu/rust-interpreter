@@ -332,3 +332,23 @@ benchmarks/experiments/cross-program-template-screen. Fortyactualsourcecommands
 plus2untimedstrict type/borrow controls; requires24GiB and2workers. Fullserver
 startup/tails/teardown charged; noautomaticretry orchangedgate. Sourcepin/oldnative
 inventory/artifact equality and originaloutcomes preserved. Notyetstarted.
+
+ACTIVE: cross-program-template-parser-screen-incremental-01 source756f304d,
+supervisor8562/controller8796. First actualprimary started atSep18 22:51 local.
+Both strictcontrols completedreturn101 withservernextIDstill1. Originalnative
+command completed; remaining40-commandprimary running underrootbenchmarklock.
+Freezeallruntime/scripts/screencontrollers/PLAN untilterminalandclosure. Do not
+restart or rerun completedcommands; recover via .work/experiments/.../status.json,
+rawrecords/strict/sessions and individual session identity.json/terminal.json.
+Savedgoalpaused; nopeerprocesscontrols. SOURCE parse.rs is temporarily edited
+by the ownedcontroller and its SourceEdit guard; do not touch duringthisstage.
+
+PRIMARY COMPLETED/CLOSED:40sourcecommands+2strictcontrols source756f304d,
+8562/8796, CLOSED90499/90502. NOACTIVEEXPERIMENT. Allfunctionalcontrols pass;
+PERFORMANCEFAIL: wall1.011019314+A/A.038794140=1.049813455; CPU.986869804+
+.028475789=1.015345594. Cached/sessionoff wall.947186741, CPU.965556486;
+sessionoff/adopted wall1.067391751. Cached/nativewall1.357563363. Lifecyclewall
+25.1ms totalcached/30.4ms off fullycharged; kernelCPUreconciled. Do notadopt or
+retimeunchanged; largercomparisons unstarted. Next analyze retainedstageintervals
+and choose materialper-request overhead reduction while preservingallchecks.
+Assessment docs/TEMPLATE-SESSION-PRIMARY-20260918.md.
