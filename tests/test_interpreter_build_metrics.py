@@ -347,8 +347,21 @@ class InterpreterBuildMetricsTests(unittest.TestCase):
         vm=self.invocations[1][0];self.assertEqual(vm[vm.index('--jit-template-session')+1],str(ready))
         self.assertEqual(vm[vm.index('--suite-catalog')+1],str(self.entry_catalog))
         read_receipt.assert_called_once_with(ready,(self.root/'suite.json').resolve(),self.artifact,self.entry_catalog,0,
-            expected_artifact_sha256=hashlib.sha256(self.artifact.read_bytes()).hexdigest())
+            expected_artifact_sha256=hashlib.sha256(self.artifact.read_bytes()).hexdigest(),
+            expected_jit_options=dict(persistent_registers=False,scalar_calls=False,indirect_calls=False))
         [stats]=self.launch_stats();self.assertEqual(stats['template_session'],identity)
+
+    def test_session_composition_forwards_enabled_options_to_client_and_receipt_validation(self):
+        self.isolated_suite(filtered=True)
+        ready=(self.root/'session-ready.json').resolve();ready.write_text('{"indirect_calls":true}')
+        with patch('template_session_receipt.read_receipt',return_value={}) as read_receipt:
+            self.assertEqual(self.launch(['--jit-template-session',str(ready),'--jit-indirect-calls',
+                '--jit-scalar-calls','--jit-persistent-registers'],arguments=()),0)
+        vm=self.invocations[1][0]
+        for option in ['--jit-indirect-calls','--jit-scalar-calls','--jit-persistent-registers']:
+            self.assertEqual(vm.count(option),1)
+        self.assertEqual(read_receipt.call_args.kwargs['expected_jit_options'],
+            dict(persistent_registers=True,scalar_calls=True,indirect_calls=True))
 
     def test_strict_cargo_failure_never_contacts_the_selected_session(self):
         self.isolated_suite(filtered=True);self.cargo_returncode=101

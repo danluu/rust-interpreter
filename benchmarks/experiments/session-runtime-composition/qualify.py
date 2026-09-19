@@ -6,7 +6,7 @@ import focus
 ROOT=focus.ROOT
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-RUN='session-runtime-composition-qualification-01'
+RUN='session-runtime-composition-qualification-02'
 def read(p):return json.loads(p.read_text())
 def main():
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
@@ -23,10 +23,19 @@ def main():
         assert proof['status']=='passed' and proof['tests']==dict(python=8,debug=6,release=6)
         focused_plan=ROOT/proof['raw']/'plan.json';assert sha(focused_plan)==proof['plan_sha256']
         for p,h in read(focused_plan)['frozen'].items():
+            # This module was not imported/executed by the focused eight-test
+            # command. Its updated launcher contract runs fresh below.
+            if p=='tests/test_interpreter_build_metrics.py':continue
             if p.startswith(('crates/','scripts/','tests/')) or p in ['Cargo.toml','Cargo.lock','rust-toolchain.toml']:assert sha(ROOT/p)==h,p
         paths=[ROOT/p for p in subprocess.check_output(['git','ls-files','crates','scripts','tests','Cargo.toml','Cargo.lock','rust-toolchain.toml'],text=True).splitlines()]
         paths += list(Path(__file__).parent.glob('*.py'))+list(Path(__file__).parent.glob('*.md'))
         paths += [Path(focus.__file__),focused/'closure.json',focused/'summary.json',focused_plan]
+        failed=ROOT/'results/session-runtime-composition-qualification-01'
+        previous=read(failed/'summary.json');previous_closure=read(failed/'closure.json')
+        assert previous_closure['status']=='closed' and previous_closure['all_hashes_verified']
+        assert sha(failed/'summary.json')==previous_closure['summary_sha256']
+        assert previous['status']=='focused-failed' and previous['commands']==1 and previous['returncodes']==[1]
+        paths += [failed/'summary.json',failed/'closure.json',failed/'terminal.json']
         frozen={str(p.relative_to(ROOT)):sha(p) for p in paths}
         assert not subprocess.check_output(['git','diff','--name-only','HEAD']).strip()
         revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
@@ -70,7 +79,7 @@ def main():
             write(raw/'records.json',records);assert child.returncode==0,(out+err)[-6000:]
             if label=='python':
                 count,=re.findall(r'Ran (\d+) tests? in ',err);skipped,=re.findall(r'^OK(?: \(skipped=(\d+)\))?$',err,re.M)
-                assert int(count)>=467 and int(skipped or 0)==22
+                assert int(count)>=468 and int(skipped or 0)==22
                 totals[label]=dict(discovered=int(count),passed=int(count)-int(skipped),skipped=int(skipped))
                 assert 'test_session_composition_' in err
             elif label!='default-vm':
