@@ -62,15 +62,20 @@ fault/replay and private memory; call/branch/resource controls retained.
   Native wall1.5416394568, CPU1.9224508795. No adoption from this screen.
 - Full public protocol01 sourcef36e8c8d:5058/5061,10 fresh controls plus12
   exact unchanged accounting controls, CLOSED42265:529 inputs/54 evidence.
-- Full fre token01 sourcef43a950e is ACTIVE:43562/43565, launched03:31:46.
-  176 changed-source commands across3cycles/8arms plus2 strict controls.
-  Controller session-runtime-composition-guards/benchmark.py; do not change its
-  frozen inputs or owned fre source through independent close.py.
+- Full fre token01 sourcef43a950e:43562/43565, all176 changed-source commands
+  across3cycles/8arms plus2 strict controls pass, independently CLOSED35515.
+  Wall/adopted.9414513615 + A/A.0268743944 = .9683257559 PASS;
+  CPU/adopted.9390737150 + A/A.0239171867 = .9629909017 PASS.
+  Native wall1.5806520070, CPU1.9441990829. All12 outcomes and restoration pass.
+- Exact closed-primary cache retirement is ACTIVE:42462/42465, started03:41:57,
+  source73b34df0 (script97de6f71). Only six previously closed primary namespaces.
+  Wait for terminal, then close.py with source73b34df0. Do not repeat or broaden.
 
 ## Next actions
 
-Finish and independently close the active full fre history. A pass admits folded
-then pgrust public guards. The private/Nushell adapters and both parser guards
+Finish/close the active exact cache retirement, then qualify the prepared parser
+and large adapters under lock and close both protocol receipts. The closed full
+fre pass admits folded, then pgrust public guards. The private/Nushell adapters and both parser guards
 remain required before integration. Their controllers are now PREPARED ONLY in
 session-runtime-composition-large-guards and session-runtime-composition-parser-guards;
 no protocol tests or timing commands have run. Order: public three, private rg-aot,
@@ -106,8 +111,8 @@ reread this turn. Detailed dispositions docs/SUGGESTIONS-REVIEW-20260913-1245.md
 Main publicationda279a9a pushed closed fre/install/primary/full-protocol evidence,
 preserving peerd8da0b18. Experimental branch pushed through97de6f71. Prepared
 closed-primary cache retirement (session-runtime-primary-cache-retirement) selects
-only six completed primary namespaces, UNSTARTED. May execute under lock if free
-is below max(24GiB,8GiB+2*shared target allocation); independently close after.
+only six completed primary namespaces, ACTIVE42462/42465. Its fresh admission
+check requires free below max(24GiB,8GiB+2*shared target allocation); close after.
 Never touch the active full-history caches. Publish qualified evidence regularly.
 Publish exact proof/docs paths on main, fetch/ff first; do not copy experimental
 runtime or overwrite compiler work. Prior detail archived at

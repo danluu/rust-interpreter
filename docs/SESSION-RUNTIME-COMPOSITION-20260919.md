@@ -46,11 +46,18 @@ allowance0.0373937777 gives0.9911015281. CPU ratio0.9303316367 plus A/A0.0284700
 gives0.9588016423. Candidate/native wall remains1.5416394568, CPU1.9224508795.
 All original12 outcomes and the two strict unreachable type/borrow controls pass.
 
-The full176-command, three-cycle fre history is running after
-[22 controller controls](../results/session-runtime-composition-guard-protocol-01/summary.json),
-including10 freshly executed and12 exact unchanged accounting controls. It uses
-eight arms, including the identical runtime with history disabled, native builds,
-and Cargo check. Full kernel CPU and session startup/shutdown are charged.
+The independently closed [full176-command fre history](../results/session-runtime-composition-edit-token-01/summary.json)
+also passes. Median candidate/adopted wall0.9414513615 plus per-edit median
+A/A0.0268743944 gives0.9683257559. CPU0.9390737150 plus A/A0.0239171867
+gives0.9629909017. Candidate/native wall is1.5806520070, CPU1.9441990829.
+All original12 outcomes, wrong-source controls, strict rejection and restoration
+pass across three cycles. Startup, shutdown and full server kernel CPU are charged.
+
+The identical composed runtime without history has median wall/baseline0.9592759008;
+candidate/history-off is0.9773742242. These ratios describe distinct paired
+comparisons and are not additive component gains. Folded, pgrust, private rg-aot,
+both parser profiles and Nushell remain outstanding. Their controllers are
+prepared; later timing still requires each preceding gate to pass and close.
 A primary pass admits these guards; it does not establish adoption. Later project
 and both parser gates remain required. No timing retries or main runtime adoption
 follow a failed gate. Experimental sources remain on
