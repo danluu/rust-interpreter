@@ -86,3 +86,10 @@ templatekey: resumable_call embeds zeroes[callee], but CallInput lacksit. Prior
 callee-changes tests varied scalarplan/currentdata, not this derivedproperty with
 scalarcallsdisabled. Prioritize concrete failing regression and fix before more
 reuse execution. Adopted mainruntime has no cross-programhistory and unchanged.
+
+Calleeinit repro4ee4f999 ran30646/controllerreceipt, both controls expected101:
+oldkey wronglyequal despite differentcallerwords, andcachedexecutionfailsnewcallee
+zeroassertion whileinterpreter/freshJITpass. CLOSED40201/40204. FixedCallInput
+initial_register_zeroes andinternalkeydomainv3. Full654/profile+16ignored qualification
+plus33diagnosticcontrols/defaultVM prepared, notstarted;Python442+22skip preserved
+after script/tests bindingchecks. Actual16savedparser verifyeveryhit replay prepared.

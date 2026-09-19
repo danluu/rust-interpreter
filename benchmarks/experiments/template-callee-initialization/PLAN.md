@@ -21,3 +21,17 @@ or replay of earlier performance histories. Locks/resources and ownership match
 existing runtime experiments:2workers, shared target never cleaned, dynamicbuild
 floor max(14GiB,8GiB+2*allocated target),8GiB before children/closure. No peer work,
 subagents, goal calls or service activation.
+
+The two expected failures are now reproduced and closed: caller emission changes
+while the old key stays equal; cached execution fails the new zero-register assertion
+while fresh execution passes. Fix binds the exact current precomputed boolean and
+bumps the internal key domain tov3. Other direct-callee emission inputs inspected:
+call-slot argument sizes, frame/register/result layout, scalar eligibility/extent/
+maximum and success steps/current target. Existing relocation/current-assertion and
+code/entry budgets remain. This audit is not a formal completeness proof.
+
+Qualification runs654workspace tests/profile+16ignored,33diagnostic integration
+controls and a feature-off VM build. Reuse only the exact442Python+22skip record
+after unchanged scripts/tests hashes.36sessions69clients reaped. Preserve standard
+and diagnostic binaries separately. Replay16actual saved parser suites with every
+hit freshly verified and all1,824original outcomes matched before diagnostic replay.

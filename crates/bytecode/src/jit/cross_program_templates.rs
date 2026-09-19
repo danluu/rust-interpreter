@@ -47,6 +47,7 @@ impl Write for BoundedHash {
 #[derive(Serialize)]
 struct CallInput<'a> {
     id:usize,frame_size:usize,frame_align:usize,registers:usize,
+    initial_register_zeroes:bool,
     args:&'a [crate::Slot],result:&'a crate::Slot,
     scalar:Option<(usize,usize,Option<usize>,usize)>,
 }
@@ -86,6 +87,9 @@ fn identity_mode(checked:&Checked<'_>,jit:&Jit<'_>,id:usize,emitter:&[u8;32],lim
     for id in ids {
         let c=jit.program.functions.get(id)?;
         calls.push(CallInput{id,frame_size:c.frame_size,frame_align:c.frame_align,registers:c.registers,
+            // Resumable caller code embeds this callee-body-derived decision.
+            // Layout and scalar admission alone do not determine register clearing.
+            initial_register_zeroes:jit.resumable.as_ref()?.zeroes[id],
             args:&c.args,result:&c.result,scalar:jit.scalar_entry(id).map(|e|{
                 let (bytes,maximum,success,target)=e.template_model_identity();
                 (bytes,maximum,success,if rebind {0} else {target})
@@ -100,7 +104,7 @@ fn identity_mode(checked:&Checked<'_>,jit:&Jit<'_>,id:usize,emitter:&[u8;32],lim
     let context=(cfg!(test),jit.program.version,&jit.program.target,jit.program.functions.len(),jit.uses_heap,
         jit.persistent_registers,jit.scalar.is_some(),test_flags,assertion_base);
     let mut sink=BoundedHash{hash:Sha256::new(),bytes:0,limit};
-    bincode::serialize_into(&mut sink,&("cross-program-staging-model-v2",rebind,emitter,context,id,f,calls)).ok()?;
+    bincode::serialize_into(&mut sink,&("cross-program-staging-model-v3",rebind,emitter,context,id,f,calls)).ok()?;
     Some(sink.hash.finalize().into())
 }
 
