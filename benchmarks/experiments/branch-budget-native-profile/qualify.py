@@ -116,6 +116,7 @@ def main():
         result=ROOT/'results'/RUN;result.mkdir(exist_ok=False)
         write(result/'summary.json',dict(status='passed',source_revision=revision,raw=str(raw.relative_to(ROOT)),commands=3,
             comparisons=comparisons,vm_sha256=vm_hash,reused_model_controls=9,original_project_guest_commands=3,
+            adopted_tool_key=BASELINE,cargo_features=build['cargo_features'],
             exact_per_pc_counts=True,exact_memory_and_entropy=True,exact_operation_maps=True,
             plan_sha256=sha(raw/'plan.json'),records_sha256=sha(raw/'records.json'),performance_measurement=False,default_runtime_adoption=False))
 
