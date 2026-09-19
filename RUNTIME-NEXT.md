@@ -1,41 +1,26 @@
 # Next runtime work
 
-New session/indirect/readonly/spill composition has passed full qualification:
-720 Rust tests per profile,446 Python passes/22 skips,52 owned servers/108 clients.
-Parser replay passed1824 original invocations and19815 verified template hits;
-fre replay passed192 invocations/14548 verified hits; both are closed. Installed
-tool3ebea1cd. The fresh40-command fre primary passed and is independently closed:
-wall/adopted.9537077504 + A/A.0373937777 = .9911015281; CPU margin.9588016423.
-Candidate/native wall1.5416394568. Full176-command fre history also passed and
-is closed35515: wall/adopted.9414513615 + A/A.0268743944 = .9683257559;
-CPU margin.9629909017, nativewall1.5806520070. Exact closed-primary compiler-cache
-retirement is CLOSED60900. Parser14 controls and large/private23 controls are
-closed. Folded176-command regression guard passed and CLOSED95676 (wall change
-within A/A). Full-token cache retirement CLOSED33463 preserves3759hashes.
-Pgrust01 failed before timings: its borrow fixture used std in a no_std crate.
-Two compiler errors,zero server requests; source restored and failure CLOSED97727.
-Dedicated pgrust02 uses core and fresh namespaces. Its26-control protocol passed
-and CLOSED40059, including four real std/no_std compiler probes. Pgrust02 is
-complete53869/53872 with176 commands+2strict, independently CLOSED4260. Initial
-audit90875 failed only on tuple-vs-JSON-list metadata; preserved without rerunning
-any timing. Regression margins wall1.0152011429/CPU1.0136701561 pass; four tests.
-Parser protocol02 passed14 controls and CLOSED23181; large protocol02 passed23
-and CLOSED43657. First rg admission and first large audit timed out on the shared
-lock before work; both preserved. Actual rg-aot176 commands+2strict passed and
-CLOSED94315 under outer suffix-admitted-02. Wall margin1.0308613865 and CPU
-margin1.0375064256 pass; nativewall.5910980861. No clear gain versus adopted.
+Current composition is PARKED after the complete110-command parser gate:
+correctness passes, wall.9191148450+A/A.1141285168=1.0332433618 is UNMEASURABLE.
+Independent closure40244; all114tests and strict controls preserved. Four earlier
+176-command project guards passed. Repository-default and Nushell are cancelled/
+unstarted; no unchanged timing retries or adoption. Main stays df4006e0.
 
-Next: parser incremental, parser repository defaults, Nushell last. Transparent
-compression of373 closed public bytecode copies is independently CLOSED52338,
-saving7.31GiB allocated blocks while preserving every original plaintext hash
-and required metadata. Partial conversion and both disposable metadata probes
-are retained; continuation02 finished only241 uncompleted entries. Never rerun
-these mutations or old stat inventories. Free24.7GiB now meets parser24GiB;
-recheck at admission. Nushell66.54872655GiB remains unmet. Saved-history cost
-analysis is independently CLOSED70818; no new timings. Main proof publicationc08fb7ce.
+All15 parser control pairs are independently audited68081. The largest wall
+variation is mostly in build-to-ready (226ms of234ms), with no proven host cause.
+Next investigate the current composition's normal emitted code on fre's longest
+original tests. First qualify sampler indirect-option transport/receipt validation,
+then freeze one fresh3s normal-entropy native-PC window for block and exhaustive.
+Use exact owned processes, current tool/VM hashes, original limits/assertions and
+same-process code reconstruction. Old duration-parent samples are not current
+composition samples. No validation-cache or generic-address speculation.
 
-Both parents failed. Main runtime stays scratch/scalar df4006e0 until every guard
-and current-main integration passes. No unchanged timing retries. No subagents
-or goal tools; two workers, shared lock, dynamic admission. Primary/token and old
-parser/Nushell retirements are complete and MUST NOT repeat. See STATE.md.
-Continue indefinitely and publish qualified evidence regularly.
+Storage:373 exact public artifact copies compressed, all original hashes and
+required metadata verified;7.31GiB allocated saved. Both metadata failures and
+132-prefix/241-continuation retained, CLOSED52338. Folded cache retirement is
+CLOSED30514 (13399removed/3750protected). NEVER repeat any prior mutation or
+old inode inventory. Shared target and peer/private data stay untouched.
+
+Manual work indefinitely; no goal tools or subagents. Two workers/shared lock,
+dynamic disk admission. Lastfree23.5GiB. Current decisions and exact identities
+are in STATE.md. Publish qualified proofs regularly; experimental runtime stays off main.
