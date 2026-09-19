@@ -32,6 +32,11 @@ has gone; their total-time difference is not a controlled command-speedup estima
 Worker assignment makes cache-hit counts unsuitable as an improvement metric.
 [Attribution](../results/session-artifact-digest-phases-parser-01/summary.json).
 
-Tool composition and a new changed-source primary remain pending. The8.6ms prior catalog phase is a
+Tool composition0df0d368 completed17757/17795 and closed20907/20912, preserving
+byte-identical adopted exporter/wrapper. Candidate tool
+66f56fdaa94e8ac7220acd6806da9c99dbc8e45cd67a52e381a39afc41390b46
+uses the corrected cache key and qualified release binaries, observer disabled.
+[Composition](../results/session-artifact-digest-install-01/summary.json).
+The new changed-source primary remains pending disk admission. The8.6ms prior catalog phase is a
 motivation, not a claimed command speedup. No experimental runtime is adopted;
 the earlier unmeasurable and failed comparisons remain unchanged.
