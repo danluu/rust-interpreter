@@ -33,31 +33,8 @@ path = "src/address_census.rs"
 # Explicit diagnostics only; absent from ordinary VM builds.
 [features]
 indirect-target-observer = []
-# Experimental trusted in-memory reuse across fully checked Programs.
-jit-template-session = []
-# Bounded diagnostic counters only; never used for acceptance timing.
-jit-preparation-observer = ["jit-template-session"]
-# Experimental size tier; explicit candidate builds only.
-jit-large-function-interpreter = ["jit-template-session"]
-# Experimental request-local reuse of a digest computed from owned bytes.
-jit-artifact-digest-reuse = ["jit-large-function-interpreter"]
-# Experimental buffering; preserves the exact v3 template key bytes and digest.
-jit-buffered-template-keys = ["jit-artifact-digest-reuse"]
-# Diagnostic only: bounded per-function history events, absent from normal builds.
-jit-template-miss-observer = ["jit-artifact-digest-reuse", "jit-preparation-observer"]
-# Experimental explicit literal parameters, with opaque analysis and relocations.
-jit-parameterized-literals = ["jit-artifact-digest-reuse"]
-# Experimental immutable per-request function-key sharing across workers.
-jit-shared-literal-keys = ["jit-parameterized-literals"]
-# Experimental advisory ordering from the previous completed session request.
-jit-session-duration-order = ["jit-parameterized-literals"]
 
 [[bin]]
 name = "rust-interp-indirect-observer"
 path = "src/indirect_observer.rs"
 required-features = ["indirect-target-observer"]
-
-[[bin]]
-name = "rust-interp-template-session"
-path = "src/template_session.rs"
-required-features = ["jit-template-session"]

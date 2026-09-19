@@ -49,18 +49,12 @@ pub use indirect_trace::observe_saved_indirect_targets;
 pub use float::{FloatBinary, FloatUnary, FloatConversion};
 pub use profile::{ExecutionProfile, FunctionProfile};
 pub use prepared::PreparedJit;
-#[cfg(feature = "jit-template-session")]
-pub use prepared::ValidatedProgram;
-#[cfg(feature = "jit-template-session")]
-pub use jit::cross_program_templates::{TemplateHistory, TemplateStorage, Counts as TemplateStatistics};
 pub use jit::{register_width_census, register_width_profile_census, register_lifetime_census, constant_call_argument_census};
 pub use jit::address_reuse_census;
 pub use jit::region_fact_census;
 pub use jit::range_group_census;
 pub use jit::disjoint_frame_census;
 pub use entry_catalog::{EntryCatalog, SelectedEntry};
-#[cfg(feature = "jit-artifact-digest-reuse")]
-pub use entry_catalog::HashedArtifactBytes;
 pub use optimize::{remove_fallthrough_jumps, optimize_calls, CallOptimizationReport};
 pub use control_flow::{optimize_control_flow, ControlFlowReport, FunctionControlFlowReport};
 pub use inline::{transform as inline_leaves, Options as LeafInlineOptions};
@@ -453,9 +447,6 @@ pub struct Limits {
     pub jit_resumable_calls: bool,
     /// Experimental confined scalar leaves called directly by resumable code.
     pub jit_scalar_calls: bool,
-    /// Experimental native indirect Calls with exact signature/layout metadata.
-    /// Requires resumable calls; disabled by default.
-    pub jit_indirect_calls: bool,
     /// Diagnostic only: create a new directory containing published JIT bytes
     /// and address ranges after successful execution. Requires Engine::Jit.
     pub jit_code_dump: Option<std::path::PathBuf>,
@@ -478,7 +469,6 @@ impl Default for Limits {
             jit_persistent_registers: false,
             jit_resumable_calls: false,
             jit_scalar_calls: false,
-            jit_indirect_calls: false,
             jit_code_dump: None,
             jit_operation_map: false,
         }
@@ -739,9 +729,6 @@ fn execute_observed<const PROFILE: bool>(
     if engine == Engine::Interpreter && limits.jit_persistent_registers {
         return Err("persistent registers require the JIT engine".into());
     }
-    if limits.jit_indirect_calls && !limits.jit_resumable_calls {
-        return Err("native indirect calls require resumable calls".into());
-    }
     if limits.jit_resumable_calls {
         if engine != Engine::Jit { return Err("resumable calls require the JIT engine".into()); }
         if limits.jit_native_calls || limits.jit_native_call_stubs {
@@ -794,10 +781,6 @@ fn create_jit<'program, const PROFILE: bool, const USE_JIT: bool, const CALL_STU
             if program.version & PARTIAL_VALIDATION != 0 { return Err("scalar calls require full validation".into()); }
             jit.enable_scalar_calls();
         }
-        if limits.jit_indirect_calls {
-            if program.version & PARTIAL_VALIDATION != 0 { return Err("native indirect calls require full validation".into()); }
-            jit.enable_indirect_calls();
-        }
         jit.compile_nanos = started.elapsed().as_nanos();
     }
     Ok(jit)
@@ -815,19 +798,7 @@ impl ExecutionMetadata {
         let environment = if program.functions.iter().any(|f| f.code.iter().any(|op| matches!(op, Op::EnvironmentGet {..}))) {
             Some(environment::Snapshot::capture(memory_limit)?)
         } else { None };
-        Ok(Self::with_snapshot(program, jit, resumable, environment))
-    }
-    #[cfg(feature = "jit-template-session")]
-    fn with_environment(program: &Program, jit: Option<&jit::Jit<'_>>, memory_limit: usize,
-        pairs: &[(Vec<u8>, Vec<u8>)]) -> Result<Self, String> {
-        let environment = if program.functions.iter().any(|f| f.code.iter().any(|op| matches!(op, Op::EnvironmentGet {..}))) {
-            Some(environment::Snapshot::from_pairs(pairs.iter().cloned(), memory_limit)?)
-        } else { None };
-        Ok(Self::with_snapshot(program, jit, true, environment))
-    }
-    fn with_snapshot(program: &Program, jit: Option<&jit::Jit<'_>>, resumable: bool,
-        environment: Option<environment::Snapshot>) -> Self {
-        Self {
+        Ok(Self {
             needs_register_zeroes: if resumable {
                 jit.unwrap().resumable_register_zeroes().to_vec()
             } else { program.functions.iter().map(registers::needs_initial_zeroes).collect() },
@@ -835,7 +806,7 @@ impl ExecutionMetadata {
             environment,
             has_descriptor_io: program.functions.iter().any(|f| f.code.iter().any(descriptor_io::is_descriptor_op)),
             has_getcwd: program.functions.iter().any(|f| f.code.iter().any(|op| matches!(op, Op::CurrentDirectory { .. }))),
-        }
+        })
     }
 }
 

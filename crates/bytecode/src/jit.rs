@@ -41,7 +41,6 @@ mod native_calls;
 mod native_regions;
 mod resumable;
 mod scalar_calls;
-mod indirect;
 mod call_slots;
 mod code_dump;
 mod code_spans;
@@ -50,23 +49,13 @@ mod transfers;
 mod guarded_ranges;
 mod scratch_values;
 mod compact_switch;
-#[cfg(feature = "jit-parameterized-literals")]
-mod parameterized_literals;
-#[cfg(any(test, feature = "jit-template-session"))]
-pub(crate) mod cross_program_templates;
-#[cfg(feature = "jit-preparation-observer")]
-mod preparation_observer;
 
 #[cfg(test)]
 mod limit_tests;
 #[cfg(test)]
-mod relocatable_immediate_census;
-#[cfg(test)]
 mod scratch_locals;
 #[cfg(test)]
 mod flush_census;
-#[cfg(test)]
-mod successor_flush_tests;
 #[cfg(test)]
 mod memory_parts;
 #[cfg(test)]
@@ -331,10 +320,6 @@ enum FaultKind { Assertion, Trap }
 pub(crate) const MAX_CODE_BYTES: usize = 16 * 1024 * 1024;
 
 struct CompiledFunction<'a> {
-    #[cfg(feature = "jit-parameterized-literals")]
-    literal_sites:Vec<parameterized_literals::Site>,
-    #[cfg(any(test, feature = "jit-template-session"))]
-    model_relocations: Vec<cross_program_templates::Relocation>,
     #[cfg(test)]
     local_forwarding: Vec<(usize, &'static str)>,
     #[cfg(test)]
@@ -359,12 +344,6 @@ struct CompiledFunction<'a> {
 }
 
 pub(crate) struct Jit<'a> {
-    #[cfg(feature = "jit-preparation-observer")]
-    preparation_observer: preparation_observer::Observation,
-    #[cfg(feature = "jit-preparation-observer")]
-    preparation_decline: std::cell::Cell<Option<preparation_observer::Site>>,
-    #[cfg(any(test, feature = "jit-template-session"))]
-    template_model_context: Option<std::rc::Rc<cross_program_templates::Context<'a>>>,
     // MAP_JIT write protection is per-thread. Make confinement intentional,
     // including on platforms whose placeholder Code type contains no pointer.
     _thread_bound: std::marker::PhantomData<std::rc::Rc<()>>,
@@ -388,7 +367,6 @@ pub(crate) struct Jit<'a> {
     persistent_registers: bool,
     resumable: Option<resumable::Entries>,
     scalar: Option<scalar_calls::State>,
-    indirect: Option<indirect::Metadata<'a>>,
     #[cfg(test)]
     disable_call_slot_hints: bool,
     #[cfg(test)]
@@ -405,27 +383,11 @@ pub(crate) struct Jit<'a> {
     observe_flush: bool,
     #[cfg(test)]
     observe_memory_parts: bool,
-    #[cfg(test)]
-    omit_dead_exit_spills: bool,
     pub register_functions: usize,
     pub register_pairs: usize,
     pub liveness_declines: usize,
 }
 impl<'a> Jit<'a> {
-    #[cfg(feature = "jit-preparation-observer")]
-    pub(crate) fn preparation_observation(&self) -> serde_json::Value {
-        serde_json::to_value(&self.preparation_observer).unwrap()
-    }
-    #[cfg(feature = "jit-template-session")]
-    pub(crate) fn attach_templates(&mut self, context: std::rc::Rc<cross_program_templates::Context<'a>>) {
-        assert!(self.template_model_context.is_none() && self.bytes == 0);
-        self.template_model_context = Some(context);
-    }
-    #[cfg(feature = "jit-template-session")]
-    pub(crate) fn template_statistics(&self) -> Option<cross_program_templates::Counts> {
-        self.template_model_context.as_ref().map(|c| c.statistics())
-    }
-
     pub fn new(program: &'a Program, profiled: bool, capacity: usize) -> Result<Self, String> {
         Self::new_with_call_stubs(program, profiled, capacity, false)
     }
@@ -444,13 +406,10 @@ impl<'a> Jit<'a> {
                 | Op::CurrentDirectory { .. })
         });
         Ok(Self { _thread_bound: std::marker::PhantomData, program, profiled, uses_heap, capacity, code: None,
-            #[cfg(feature = "jit-preparation-observer")] preparation_observer: Default::default(),
-            #[cfg(feature = "jit-preparation-observer")] preparation_decline: Default::default(),
-            #[cfg(any(test, feature = "jit-template-session"))] template_model_context: None,
             prepared: vec![false; program.functions.len()],
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
-            assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None, scalar: None, indirect: None,
+            assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None, scalar: None,
             #[cfg(test)]
             disable_call_slot_hints: false,
             #[cfg(test)]
@@ -467,8 +426,6 @@ impl<'a> Jit<'a> {
             observe_flush: false,
             #[cfg(test)]
             observe_memory_parts: false,
-            #[cfg(test)]
-            omit_dead_exit_spills: true,
             persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
             region_plans: if native_call_stubs { vec![native_regions::RegionPlan::default(); program.functions.len()] } else { vec![] } })
     }
@@ -494,39 +451,11 @@ impl<'a> Jit<'a> {
         result
     }
     fn prepare_function(&mut self, id: usize) -> Result<bool, String> {
-        #[cfg(feature = "jit-large-function-interpreter")]
-        if self.resumable.is_some() && self.program.functions[id].code.len() > 65_536 {
-            // Development tiering heuristic, not a claim of inevitable emission
-            // failure. Avoid scalar-callee staging and discarded whole-function
-            // emission; callees still prepare independently when reached.
-            return self.finish_preparation(id, Ok(None));
-        }
         if self.native_call_stubs { self.prepare_region_calls(id)?; }
-        #[cfg(feature = "jit-preparation-observer")]
-        let scalar_started = std::time::Instant::now();
         if self.scalar.is_some() { self.prepare_scalar_callees(id)?; }
-        #[cfg(feature = "jit-preparation-observer")]
-        let scalar_ns = scalar_started.elapsed().as_nanos();
         let remaining = (self.capacity - self.bytes) / 4;
-        #[cfg(feature = "jit-preparation-observer")]
-        let ordinary_started = {
-            self.preparation_decline.set(None);
-            std::time::Instant::now()
-        };
-        #[cfg(any(test, feature = "jit-template-session"))]
-        let staged = if let Some(context) = &self.template_model_context {
-            context.stage(self, id, remaining)
-        } else { self.emit_function(&self.program.functions[id], remaining) };
-        #[cfg(not(any(test, feature = "jit-template-session")))]
         let staged = self.emit_function(&self.program.functions[id], remaining);
-        #[cfg(feature = "jit-preparation-observer")]
-        let (ordinary_ns, outcome, publication_started) = (
-            ordinary_started.elapsed().as_nanos(), preparation_observer::outcome(&staged), std::time::Instant::now());
-        let result = self.finish_preparation(id, staged);
-        #[cfg(feature = "jit-preparation-observer")]
-        self.preparation_observer.record(id, self.program.functions[id].code.len(), remaining,
-            scalar_ns, ordinary_ns, publication_started.elapsed().as_nanos(), outcome, self.preparation_decline.get());
-        result
+        self.finish_preparation(id, staged)
     }
 
     fn finish_preparation(&mut self, id: usize, staged: Result<Option<CompiledFunction<'a>>, EmitError>) -> Result<bool, String> {
@@ -581,11 +510,7 @@ impl<'a> Jit<'a> {
     }
 
     fn emit_function(&self, f: &'a Function, word_budget: usize) -> Result<Option<CompiledFunction<'a>>, EmitError> {
-        if self.resumable.as_ref().is_some_and(|tables| !tables.fits(f.code.len())) {
-            #[cfg(feature = "jit-preparation-observer")]
-            self.preparation_decline.set(Some(preparation_observer::Site{kind:"resume-table",pc:0,emitted_words:0,next_words:0}));
-            return Ok(None);
-        }
+        if self.resumable.as_ref().is_some_and(|tables| !tables.fits(f.code.len())) { return Ok(None); }
         self.emit_function_inner(f, word_budget, self.assertions.len(), None)
     }
 
@@ -595,10 +520,6 @@ impl<'a> Jit<'a> {
         mut spans: Option<&mut code_spans::Collector>) -> Result<Option<CompiledFunction<'a>>, EmitError> {
         let resumable = self.resumable.is_some();
         let mut words = vec![];
-        #[cfg(any(test, feature = "jit-template-session"))]
-        let mut model_relocations = vec![];
-        #[cfg(feature = "jit-parameterized-literals")]
-        let mut literal_sites=vec![];
         #[cfg(test)]
         let mut local_forwarding = vec![];
         #[cfg(test)]
@@ -617,12 +538,7 @@ impl<'a> Jit<'a> {
         let reads = read_registers(f);
         let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
         let fills = local_fills(f);
-        #[cfg(feature = "jit-parameterized-literals")]
-        let literals=parameterized_literals::selected_with_fills(f,&fills);
-        #[cfg(not(feature = "jit-parameterized-literals"))]
         let slots = if resumable { call_slots::collect(f, self.program) } else { std::collections::BTreeMap::new() };
-        #[cfg(feature = "jit-parameterized-literals")]
-        let slots = if resumable { call_slots::collect_with_literals(f,self.program,&literals) } else { BTreeMap::new() };
         #[cfg(test)]
         let slots = if self.disable_call_slot_hints { std::collections::BTreeMap::new() } else { slots };
         let native = |pc: usize| supported(&f.code[pc]) || fills.contains_key(&pc)
@@ -688,8 +604,6 @@ impl<'a> Jit<'a> {
                     region_end: pc,
                     values: values.as_ref(),
                     resumable,
-                    #[cfg(feature = "jit-parameterized-literals")]
-                    literals:Some(&literals),
                     ..Assembler::default()
                 };
                 let mut covered = 0;
@@ -709,10 +623,7 @@ impl<'a> Jit<'a> {
                 // Every internal/resume entry runs this preflight. Declines
                 // consume no guest work and use the existing resumable tail.
                 let range_declines = if resumable {
-                    #[cfg(not(feature = "jit-parameterized-literals"))]
                     let plan = range_groups::runtime_plan(f, start, pc, &mut range_work);
-                    #[cfg(feature = "jit-parameterized-literals")]
-                    let plan = range_groups::runtime_plan_with_literals(f,start,pc,&mut range_work,&literals);
                     a.prepare_guarded_range(plan)?
                 } else { vec![] };
                 span!(RangeGuard, None);
@@ -762,11 +673,7 @@ impl<'a> Jit<'a> {
                 }
                 #[cfg(test)]
                 { a.flush_tail_consumed = terminal.is_none(); }
-                #[cfg(test)]
-                let retain_tail_reads = !self.omit_dead_exit_spills;
-                #[cfg(not(test))]
-                let retain_tail_reads = false;
-                a.flush_facts(start, pc, retain_tail_reads);
+                a.flush_facts(start, pc);
                 span!(Flush, None);
                 a.exit(terminal, pc)?;
                 if terminal.is_some() { span!(Operation, Some(pc - 1)); }
@@ -792,11 +699,6 @@ impl<'a> Jit<'a> {
                 for (at, code) in std::mem::take(&mut a.assertions) {
                     let target = a.words.len();
                     a.imm(0, code);
-                    #[cfg(any(test, feature = "jit-template-session"))]
-                    a.model_relocations.push(cross_program_templates::Relocation {
-                        word: target, words: a.words.len() - target, value: code,
-                        kind: cross_program_templates::Kind::Assertion((ASSERTION_FAILURE_BASE - code) as usize - assertion_base),
-                    });
                     a.return_to_vm();
                     span!(AssertionTail, None);
                     a.patch_conditional(at, target)?;
@@ -817,9 +719,6 @@ impl<'a> Jit<'a> {
                 }
                 debug_assert_eq!(covered, a.words.len());
                 if a.words.len() > word_budget.saturating_sub(words.len()) {
-                    #[cfg(feature = "jit-preparation-observer")]
-                    self.preparation_decline.set(Some(preparation_observer::Site{kind:"region-word-budget",pc:start,
-                        emitted_words:words.len(),next_words:a.words.len()}));
                     return Ok(None);
                 }
                 #[cfg(test)]
@@ -840,31 +739,17 @@ impl<'a> Jit<'a> {
                     }
                     retained_local_writes.extend(a.retained_local_writes);
                 }
-                #[cfg(any(test, feature = "jit-template-session"))]
-                cross_program_templates::append(&mut model_relocations, a.model_relocations, words.len());
-                #[cfg(feature = "jit-parameterized-literals")]
-                parameterized_literals::append(&mut literal_sites,a.literal_sites,words.len());
                 words.extend(a.words);
                 entries[start] = Some(Block { offset, end: pc });
                 operations += pc - start;
             }
             if pc == start {
-                if resumable && (matches!(f.code[pc], Op::Call { .. } | Op::Return)
-                    || match &f.code[pc] {
-                        Op::CallIndirect {arg_sizes,result_size,..} => self.indirect.as_ref()
-                            .and_then(|m|m.signature(arg_sizes,*result_size)).is_some(),
-                        _ => false,
-                    }) {
+                if resumable && matches!(f.code[pc], Op::Call { .. } | Op::Return) {
                     let offset = words.len() * 4;
                     let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), slots.get(&pc).map(Vec::as_slice))?;
                     code_spans::record(&mut spans, words.len(), pc, Some(pc),
                         code_spans::Kind::Transition, 0, a.words.len())?;
-                    if a.words.len() > word_budget.saturating_sub(words.len()) {
-                        #[cfg(feature = "jit-preparation-observer")]
-                        self.preparation_decline.set(Some(preparation_observer::Site{kind:"transition-word-budget",pc,
-                            emitted_words:words.len(),next_words:a.words.len()}));
-                        return Ok(None);
-                    }
+                    if a.words.len() > word_budget.saturating_sub(words.len()) { return Ok(None); }
                     resumes[pc] = Some(words.len() + resume);
                     internal_entries[pc] = Some(words.len() + internal);
                     entries[pc] = Some(Block { offset, end: pc + 1 });
@@ -873,10 +758,6 @@ impl<'a> Jit<'a> {
                         let fallback = *a.scalar_fallbacks.get(&at).ok_or(EmitError::InvalidRelocation("missing scalar successor fallback"))?;
                         links.push((words.len() + at, successor, words.len() + fallback));
                     }
-                    #[cfg(any(test, feature = "jit-template-session"))]
-                    cross_program_templates::append(&mut model_relocations, a.model_relocations, words.len());
-                    #[cfg(feature = "jit-parameterized-literals")]
-                    parameterized_literals::append(&mut literal_sites,a.literal_sites,words.len());
                     words.extend(a.words);
                 }
                 if self.native_call_stubs {
@@ -905,8 +786,6 @@ impl<'a> Jit<'a> {
             patch_jump(&mut words, at, target)?;
         }
         Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
-            #[cfg(feature = "jit-parameterized-literals")] literal_sites,
-            #[cfg(any(test, feature = "jit-template-session"))] model_relocations,
             #[cfg(test)] memory_spans,
             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
             liveness_declined: self.persistent_registers && values.is_none(),
@@ -1036,7 +915,7 @@ fn patch_jump(words: &mut [u32], at: usize, target: usize) -> Result<(), EmitErr
 
 #[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
 mod link_tests {
-use super::*;
+    use super::*;
     use crate::{Slot, VERSION};
 
     #[test]
@@ -1180,8 +1059,6 @@ enum Failure {
 #[derive(Clone, Copy)]
 enum Fact {
     Imm(u128),
-    #[cfg(feature = "jit-parameterized-literals")]
-    Literal {pc:usize,value:u128},
     Local(usize),
     Cached { lo: u32, high_zero: bool },
     Physical { lo: u32 },
@@ -1189,12 +1066,6 @@ enum Fact {
 
 #[cfg_attr(not(test), derive(Default))]
 struct Assembler<'a> {
-    #[cfg(feature = "jit-parameterized-literals")]
-    literals:Option<&'a BTreeSet<usize>>,
-    #[cfg(feature = "jit-parameterized-literals")]
-    literal_sites:Vec<parameterized_literals::Site>,
-    #[cfg(any(test, feature = "jit-template-session"))]
-    model_relocations: Vec<cross_program_templates::Relocation>,
     scalar_fallbacks: BTreeMap<usize, usize>,
     #[cfg(test)]
     observe_guarded_local_retention: bool,
@@ -1250,11 +1121,6 @@ struct Assembler<'a> {
 impl Default for Assembler<'_> {
     fn default() -> Self {
         Self {
-            #[cfg(feature = "jit-parameterized-literals")]
-            literals:None,
-            #[cfg(feature = "jit-parameterized-literals")]
-            literal_sites:vec![],
-            model_relocations: vec![],
             observe_guarded_local_retention: true,
             observe_static_local_facts: true,
             observe_scalar_copy: true,
@@ -1683,8 +1549,6 @@ impl Assembler<'_> {
                 self.mov(rd, if high { if high_zero { 31 } else { 6 } } else { lo });
             },
             Fact::Imm(value) => self.imm(rd, if high { (value >> 64) as u64 } else { value as u64 }),
-            #[cfg(feature = "jit-parameterized-literals")]
-            Fact::Literal{pc,value} => self.literal(rd,pc,value,high),
             Fact::Local(_) if high => self.mov(rd, 31),
             Fact::Local(offset) => {
                 if offset < 4096 {
@@ -1696,7 +1560,7 @@ impl Assembler<'_> {
             }
         }
     }
-    fn flush_facts(&mut self, start: usize, end: usize, retain_tail_reads: bool) {
+    fn flush_facts(&mut self, start: usize, end: usize) {
         // Registers are not guest-addressable. A value used only inside this
         // straight-line region needs no spill. Conservatively retain every
         // value read elsewhere. Also retain values read before their first
@@ -1705,10 +1569,7 @@ impl Assembler<'_> {
         let live: Vec<_> = self.facts.iter().filter_map(|(&reg, &fact)| {
             if matches!(fact, Fact::Physical { .. }) { return None; }
             if let Some(values) = self.values {
-                // exit() consumes its branch operand from the unchanged facts
-                // and x5/x6 after flushing. Tree-call tails keep their prior rule.
-                return (values.live.after(end - 1, reg)
-                    || retain_tail_reads && values.live.at(end - 1, reg)).then_some((reg, fact));
+                return (values.live.at(end - 1, reg) || values.live.after(end - 1, reg)).then_some((reg, fact));
             }
             self.reads[reg as usize]
                 .filter(|&(first, last)| matches!(fact, Fact::Cached { .. }) || first < start || last >= end || self.live_in.contains(&reg))
@@ -1780,13 +1641,7 @@ impl Assembler<'_> {
     }
     fn fold(&mut self, op: &Op) -> bool {
         match *op {
-            Op::Imm {dst, value} => {
-                #[cfg(feature = "jit-parameterized-literals")]
-                if self.literals.is_some_and(|pcs|pcs.contains(&self.current_pc)) {
-                    self.remember(dst,Fact::Literal{pc:self.current_pc,value});return true;
-                }
-                self.remember(dst, Fact::Imm(value));
-            },
+            Op::Imm {dst, value} => self.remember(dst, Fact::Imm(value)),
             Op::Local {dst, offset} => self.remember(dst, Fact::Local(offset)),
             Op::Binary {dst, overflow, op, a, b, bits, signed} => {
                 let left = self.facts.get(&a).copied();

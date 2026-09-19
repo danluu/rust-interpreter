@@ -115,8 +115,7 @@ fn observe_saved_protocol() {
     }
     assert_eq!(number(&mapping, "code_bytes"), bytes.len());
     assert_eq!(mapping["code_sha256"], format!("{:x}", Sha256::digest(&bytes)));
-    let mut jit = Jit::new_resumable(&program, false, MAX_CODE_BYTES, true).unwrap();
-    jit.omit_dead_exit_spills = false;
+    let jit = Jit::new_resumable(&program, false, MAX_CODE_BYTES, true).unwrap();
     let (mut cursor, mut assertions, mut count) = (0, 0, 0);
     let mut seen = BTreeSet::new();
     let mut output = vec![];

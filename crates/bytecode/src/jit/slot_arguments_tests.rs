@@ -65,7 +65,7 @@ fn direct_entry(p:&Program,jit:&Jit<'_>,values:[u128;3],budget:u64,frame_end:usi
         peak_linear:48,register_len:n,frame_len:1,calls:0,returns:0},
         frames:frames.as_mut_ptr(),registers:registers.as_mut_ptr(),
         entries:jit.resumable.as_ref().unwrap().pointers.as_ptr(),profiles:profiles.as_ptr(),
-        memory_end:256,register_end:n+16,frame_end:frame_end.min(3),working_budget:1024*1024,indirect_layout:std::ptr::null(),indirect_layouts:std::ptr::null() };
+        memory_end:256,register_end:n+16,frame_end:frame_end.min(3),working_budget:1024*1024 };
     let args=[registers.as_mut_ptr() as usize,16,memory.as_mut_ptr() as usize,48,16,
         heap.as_mut_ptr() as usize,heap.len(),std::ptr::addr_of_mut!(cursor) as usize];
     // SAFETY: emitter-owned entry and prepared initialized/canary-backed storage.

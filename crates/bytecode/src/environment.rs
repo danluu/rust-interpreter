@@ -22,7 +22,7 @@ impl Snapshot {
         { let _ = limit; Err("guest environment reads require a Unix host".into()) }
     }
 
-    pub(super) fn from_pairs(pairs: impl IntoIterator<Item = (Vec<u8>, Vec<u8>)>, limit: usize) -> Result<Self, String> {
+    fn from_pairs(pairs: impl IntoIterator<Item = (Vec<u8>, Vec<u8>)>, limit: usize) -> Result<Self, String> {
         let mut snapshot = Self { bytes: vec![], offsets: BTreeMap::new(), index_bytes: 0 };
         for (name, value) in pairs {
             if name.contains(&0) || value.contains(&0) {

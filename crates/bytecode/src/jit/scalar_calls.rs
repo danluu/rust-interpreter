@@ -20,12 +20,6 @@ pub(super) struct Entry {
     success_steps: Option<usize>,
     target: usize,
 }
-#[cfg(any(test, feature = "jit-template-session"))]
-impl Entry {
-    pub(super) fn template_model_identity(self)->(usize,usize,Option<usize>,usize) {
-        (self.bytes,self.maximum_steps,self.success_steps,self.target)
-    }
-}
 impl Jit<'_> {
     pub(crate) fn enable_scalar_calls(&mut self) {
         assert!(self.resumable.is_some() && self.scalar.is_none());
@@ -40,9 +34,9 @@ impl Jit<'_> {
         assert!(self.code.is_none() && self.bytes==0 && self.scalar_entry(id).is_none());
         assert!(offset%4==0 && bytes>0 && bytes%4==0 && offset.checked_add(bytes).is_some_and(|end|end<=self.capacity));
         let mut work=proof::MAX_GLOBAL_WORK;
-        let memory=proof::memory_plan_for_call(self.program,id,&mut work);
+        let memory=proof::memory_plan(self.program,id,&mut work);
         let plan=scalar_ir::lower(&self.program.functions[id],&memory,250_000).unwrap();
-        let emitted=scalar_ir::native_leaf::emit_call_with_heap(&plan,self.profiled,self.uses_heap).unwrap();
+        let emitted=scalar_ir::native_leaf::emit_call(&plan,self.profiled).unwrap();
         assert_eq!(emitted.words.len()*4,bytes);
         self.scalar.as_mut().unwrap().entries[id]=Some(Entry {offset,bytes,
             maximum_steps:plan.maximum_steps,success_steps:emitted.success_steps,
@@ -62,12 +56,12 @@ impl Jit<'_> {
         let f=&self.program.functions[id];
         // Bound host Call scratch independently of scalar SSA spill storage.
         if f.args.len()>64 || self.bytes>=self.capacity {return Ok(());}
-        let memory=proof::memory_plan_for_call(self.program,id,&mut scalar.proof_work);
+        let memory=proof::memory_plan(self.program,id,&mut scalar.proof_work);
         let limit=scalar.scalar_work.min(250_000);
         let plan=scalar_ir::lower(f,&memory,limit);
         scalar.scalar_work=scalar.scalar_work.saturating_sub(match &plan {Ok(p)=>p.work,Err("no_memory_plan")=>0,Err(_)=>limit});
         let Ok(plan)=plan else {return Ok(());};
-        let Ok(emitted)=scalar_ir::native_leaf::emit_call_with_heap(&plan,self.profiled,self.uses_heap) else {return Ok(());};
+        let Ok(emitted)=scalar_ir::native_leaf::emit_call(&plan,self.profiled) else {return Ok(());};
         let bytes=emitted.words.len()*4;
         if bytes>self.capacity-self.bytes {return Ok(());}
         if self.code.is_none() {self.code=Some(platform::Code::reserve(self.capacity)?);}
@@ -80,10 +74,10 @@ impl Jit<'_> {
     pub(super) fn reconstruct_scalar(&self,id:usize)->Result<Vec<u32>,String> {
         let entry=self.scalar_entry(id).ok_or("missing scalar entry")?;
         let mut work=proof::MAX_GLOBAL_WORK;
-        let memory=proof::memory_plan_for_call(self.program,id,&mut work);
+        let memory=proof::memory_plan(self.program,id,&mut work);
         let plan=scalar_ir::lower(&self.program.functions[id],&memory,250_000).map_err(str::to_string)?;
         if plan.maximum_steps!=entry.maximum_steps {return Err("scalar reconstruction budget mismatch".into());}
-        let emitted=scalar_ir::native_leaf::emit_call_with_heap(&plan,self.profiled,self.uses_heap).map_err(str::to_string)?;
+        let emitted=scalar_ir::native_leaf::emit_call(&plan,self.profiled).map_err(str::to_string)?;
         if emitted.success_steps!=entry.success_steps {return Err("scalar reconstruction success-count mismatch".into());}
         if emitted.words.len()*4!=entry.bytes {return Err("scalar reconstruction extent mismatch".into());}
         Ok(emitted.words)
@@ -146,14 +140,7 @@ impl Assembler<'_> {
         // Private leaf inputs and Output live at fixed caller-SP offsets;
         // x21 is the prechecked logical base. x0–x2, x4–x8 and x19–x29 stay
         // live. Only the allocator's x3 and the link register need restoring.
-        #[cfg(any(test, feature = "jit-template-session"))]
-        let target_word=self.words.len();
         self.imm(16,entry.target as u64);
-        #[cfg(any(test, feature = "jit-template-session"))]
-        self.model_relocations.push(cross_program_templates::Relocation {
-            word:target_word,words:self.words.len()-target_word,value:entry.target as u64,
-            kind:cross_program_templates::Kind::Scalar{function:id,pc},
-        });
         self.emit(0xd63f0200); // blr x16: one nonrecursive native leaf
         self.cmp(9,31);self.decline(Cond::Ne,&mut private);
 
