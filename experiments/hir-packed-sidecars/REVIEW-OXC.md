@@ -1,0 +1,7 @@
+# Independent source review of packed candidate 02
+
+Reviewed commit `5d74ff0c97537b7295f333f9ffb6ba15c0c7fb85` read-only. No compiler or test was executed. All nine candidate-file hashes, 28 identity inputs, identity `fc368af0…` and patch `93e9220a…` matched their manifest and base Git blobs.
+
+No concrete Rust type/lifetime/API, session-ownership, framing-bound or failure-cleanup blocker was found. Both `IncrCompSession` constructors initialize the cache; the corrected replay receiver uses `context.tcx`. The session crate already declares `libc`. Returned opaque bytes still pass the original key/checksum and current semantic validation. Finalization follows the existing no-errors/delayed-bugs assertion and precedes session rename; `Drop` does not publish. The exact-length read, overflow byte, strict IDs/count/record/pack bounds, fresh temporary inode, close-before-rename and failure cleanup are consistent with the documented controls.
+
+Telemetry caveat: `publication=published` means the pack replacement succeeded in the working session directory. The subsequent incremental-session directory rename can still fail. Consumers must verify actual finalized-directory files; that line alone does not establish availability to the next session. The proposed qualification already requires filesystem evidence. Compiler lifecycle, memory peaks and performance remain unqualified until the complete reviewed controls execute.
