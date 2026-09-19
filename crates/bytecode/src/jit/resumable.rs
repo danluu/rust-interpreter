@@ -297,7 +297,6 @@ impl<'a> Jit<'a> {
         slots: Option<&[Option<usize>]>,
     ) -> Result<(Assembler<'b>, usize, usize), EmitError> {
         let mut a = Assembler {
-            record_templates: cfg!(test) || self.templates.is_some(),
             heap: self.uses_heap,
             reads,
             values,

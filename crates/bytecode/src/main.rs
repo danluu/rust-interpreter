@@ -15,16 +15,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut suite_report = None;
     let mut suite_catalog = None;
     let mut suite_workers = None;
-    let mut shared_templates = false;
     let mut path = args.next().ok_or(
         "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-scalar-calls] [--jit-code-dump NEW_DIRECTORY [--jit-operation-map]] [--guest-descriptor-io] [--guest-getcwd] [--instruction-limit N] [--allocation-limit N] [--select-test EXACT_NAME --suite-catalog CATALOG] [--profile NEW_JSON_PATH [--profile-test EXACT_NAME --suite-catalog CATALOG]] [--isolated-batch fresh|prepared --suite-report NEW_JSON_PATH [--suite-workers N]] PROGRAM [unsigned integer arguments ...]",
     )?;
     loop {
         match path.as_str() {
-            "--jit-shared-templates" => {
-                if shared_templates {return Err("duplicate shared template option".into());}
-                shared_templates=true;
-            }
             "--isolated-batch" => {
                 if isolated_batch.is_some() { return Err("duplicate isolated batch mode".into()); }
                 isolated_batch = Some(match args.next().as_deref() {
@@ -167,9 +162,6 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     if suite_workers.is_some() && isolated_batch.is_none() {
         return Err("suite workers require an isolated batch".into());
     }
-    if shared_templates && !matches!(isolated_batch,Some(suite::Mode::Prepared)) {
-        return Err("shared templates require a prepared isolated batch".into());
-    }
     if let Some(mode) = isolated_batch {
         if engine != Engine::Jit || !limits.jit_resumable_calls || limits.jit_native_calls
             || limits.jit_native_call_stubs || profile_path.is_some() || limits.jit_code_dump.is_some()
@@ -177,7 +169,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         {
             return Err("isolated batches require resumable JIT execution without tree/stub, profile, code dump or entry arguments".into());
         }
-        suite::run(&program, mode, &limits, suite_report.as_deref().unwrap(), catalog.as_ref(), &bytes, suite_workers.unwrap_or(1),shared_templates)?;
+        suite::run(&program, mode, &limits, suite_report.as_deref().unwrap(), catalog.as_ref(), &bytes, suite_workers.unwrap_or(1))?;
         println!("0");
         return Ok(());
     }

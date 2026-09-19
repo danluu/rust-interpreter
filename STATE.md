@@ -2,6 +2,7 @@
 
 Continue manual optimization indefinitely; saved goal stays PAUSED. No goal
 calls, subagents or independent model calls. Root owns /Users/danluu/dev/rust-interp.
+Current branch experiment/jit-preparation-phases-20260918.
 Private repository danluu/rust-interpreter. Push qualified work regularly; main
 must preserve peer commits. Do not stop at milestones.
 
@@ -21,9 +22,8 @@ Qualified635Rust/profile14ignored;434Pythonpass22skip;121strict/cache commands;
 13originalsuite/CLI checks;19protocol controls. Suite qualification hits797on
 original parser and53on wrong source; one-worker/one-entry fallback inactive.
 Production option remained defaultoff, same checked Program, independent arenas/
-state/budgets,64MiB store. No runtime merged to main. Docs/results were pushed
-maine7ffb8dc, retaining peers throughba0972f3; latest cost-audit publication is
-pending/check push session94221 completion already proved prior publication.
+state/budgets,64MiB store. No runtime merged to main. Docs/results and cost audit are pushed main995b04df, preserving peers through
+45563c5e. The parked branch is pushed through1246eabc.
 
 Saved preparation audit shared-template-costs01 under66923/66952 is CLOSED
 80552/80555, source045376fb:10controls,15existing edited receipts, no new guest
@@ -34,8 +34,9 @@ additive or causal savings. Two declined function owners persist, but names
 and their cost are not in these receipts. Removing just5.6ms store construction
 is not enough justification for another timing attempt.
 
-Next branch experiment/jit-preparation-phases-20260918; restore Rust/Cargo
-production sources exactly to adoptedfca687eb before adding a diagnostic.
+Root is now on experiment/jit-preparation-phases-20260918. Rust/Cargo
+production sources are restored exactly to adoptedfca687eb; diff verification
+passes before adding any diagnostic.
 Keep all failed candidate source/evidence on its pushed branch. Build an explicit
 feature-gated standalone preparation observer (existing indirect observer warns
 that libtest cannot supply the required main thread). Record per-function and
@@ -82,7 +83,7 @@ zero unassigned. Preserve every successful capture without reruns.
   Do not repair/restart/compete with it. Never control any peer process/session.
 - Compiler/Cargo/frontend and application-admission work belongs to peers.
   Preserve their worktrees. Root publication worktree `.work/publication-main`
-  is clean atbb0d32f0 on `integration/guarded-local-facts-main-20260913`; fetch
+  is clean at995b04df on `integration/guarded-local-facts-main-20260913`; fetch
   before publishing, preserve peer commits and never force push.
 - No AWS activation/purchase/model/billing fallback and no browser.
 - `suggestions.txt` is user-owned/untracked, SHA256

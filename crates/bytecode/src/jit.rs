@@ -49,8 +49,6 @@ mod transfers;
 mod guarded_ranges;
 mod scratch_values;
 
-pub(crate) mod emission_templates;
-
 #[cfg(test)]
 mod limit_tests;
 #[cfg(test)]
@@ -321,8 +319,6 @@ enum FaultKind { Assertion, Trap }
 pub(crate) const MAX_CODE_BYTES: usize = 16 * 1024 * 1024;
 
 struct CompiledFunction<'a> {
-    template_relocations: Vec<emission_templates::Relocation>,
-    template_assertion_pcs: Vec<usize>,
     #[cfg(test)]
     local_forwarding: Vec<(usize, &'static str)>,
     #[cfg(test)]
@@ -347,8 +343,6 @@ struct CompiledFunction<'a> {
 }
 
 pub(crate) struct Jit<'a> {
-    pub(crate) templates: Option<std::sync::Arc<emission_templates::Store<'a>>>,
-    pub(crate) template_stats: emission_templates::TemplateStats,
     // MAP_JIT write protection is per-thread. Make confinement intentional,
     // including on platforms whose placeholder Code type contains no pointer.
     _thread_bound: std::marker::PhantomData<std::rc::Rc<()>>,
@@ -410,8 +404,7 @@ impl<'a> Jit<'a> {
                 | Op::CAllocate { .. } | Op::CReallocate { .. } | Op::CAlignedAllocate { .. }
                 | Op::CurrentDirectory { .. })
         });
-        Ok(Self { templates:None,template_stats:Default::default(),
-            _thread_bound: std::marker::PhantomData, program, profiled, uses_heap, capacity, code: None,
+        Ok(Self { _thread_bound: std::marker::PhantomData, program, profiled, uses_heap, capacity, code: None,
             prepared: vec![false; program.functions.len()],
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
@@ -459,21 +452,6 @@ impl<'a> Jit<'a> {
     fn prepare_function(&mut self, id: usize) -> Result<bool, String> {
         if self.native_call_stubs { self.prepare_region_calls(id)?; }
         if self.scalar.is_some() { self.prepare_scalar_callees(id)?; }
-        if let Some(store)=self.templates.clone() {
-            if let Some(staged)=store.snapshot(self.program,id).and_then(|t|t.restore(self,id)) {
-                self.template_stats.hits+=1;
-                self.template_stats.restored_code_bytes+=staged.words.len()*4;
-                return self.finish_preparation(id,Ok(Some(staged)));
-            }
-            self.template_stats.misses+=1;
-            let staged=self.emit_function(&self.program.functions[id],(self.capacity-self.bytes)/4);
-            let candidate=store.available(id).and_then(|available|staged.as_ref().ok().and_then(|s|s.as_ref())
-                .and_then(|s|emission_templates::Template::capture_bounded(self,id,s,available)));
-            let before=self.compiled_functions;
-            let result=self.finish_preparation(id,staged)?;
-            if self.compiled_functions>before {if let Some(candidate)=candidate {store.retain(candidate);}}
-            return Ok(result);
-        }
         let remaining = (self.capacity - self.bytes) / 4;
         let staged = self.emit_function(&self.program.functions[id], remaining);
         self.finish_preparation(id, staged)
@@ -554,9 +532,6 @@ impl<'a> Jit<'a> {
         #[cfg(test)]
         let mut memory_spans = vec![];
         let mut assertions = vec![];
-        let mut template_relocations = vec![];
-        let mut template_assertion_pcs = vec![];
-        let record_templates=cfg!(test) || self.templates.is_some();
         let mut operations = 0;
         let mut range_work = 4_000_000;
         let reads = read_registers(f);
@@ -683,7 +658,6 @@ impl<'a> Jit<'a> {
                     if let Op::Assert { value, expected, message } = op {
                         let code = assertion_code(assertion_base, assertions.len())?;
                         assertions.push(Assertion { message, function: &f.name, kind: FaultKind::Assertion });
-                        if record_templates {template_assertion_pcs.push(start + index);}
                         a.assertion(*value, *expected, code);
                     } else if let Some(fill) = fills.get(&(start + index)) {
                         memory_part!(a, "fused_fill", a.local_fill(*fill));
@@ -724,10 +698,6 @@ impl<'a> Jit<'a> {
                 for (at, code) in std::mem::take(&mut a.assertions) {
                     let target = a.words.len();
                     a.imm(0, code);
-                    if record_templates {a.template_relocations.push(emission_templates::Relocation {
-                        word: target, words: a.words.len() - target, value: code,
-                        kind: emission_templates::Kind::Assertion((ASSERTION_FAILURE_BASE - code) as usize - assertion_base),
-                    });}
                     a.return_to_vm();
                     span!(AssertionTail, None);
                     a.patch_conditional(at, target)?;
@@ -768,7 +738,6 @@ impl<'a> Jit<'a> {
                     }
                     retained_local_writes.extend(a.retained_local_writes);
                 }
-                emission_templates::append(&mut template_relocations, a.template_relocations, words.len());
                 words.extend(a.words);
                 entries[start] = Some(Block { offset, end: pc });
                 operations += pc - start;
@@ -788,7 +757,6 @@ impl<'a> Jit<'a> {
                         let fallback = *a.scalar_fallbacks.get(&at).ok_or(EmitError::InvalidRelocation("missing scalar successor fallback"))?;
                         links.push((words.len() + at, successor, words.len() + fallback));
                     }
-                    emission_templates::append(&mut template_relocations, a.template_relocations, words.len());
                     words.extend(a.words);
                 }
                 if self.native_call_stubs {
@@ -817,7 +785,6 @@ impl<'a> Jit<'a> {
             patch_jump(&mut words, at, target)?;
         }
         Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
-            template_relocations,template_assertion_pcs,
             #[cfg(test)] memory_spans,
             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
             liveness_declined: self.persistent_registers && values.is_none(),
@@ -1098,8 +1065,6 @@ enum Fact {
 
 #[cfg_attr(not(test), derive(Default))]
 struct Assembler<'a> {
-    template_relocations: Vec<emission_templates::Relocation>,
-    record_templates: bool,
     scalar_fallbacks: BTreeMap<usize, usize>,
     #[cfg(test)]
     observe_guarded_local_retention: bool,
@@ -1155,8 +1120,6 @@ struct Assembler<'a> {
 impl Default for Assembler<'_> {
     fn default() -> Self {
         Self {
-            template_relocations: vec![],
-            record_templates: true,
             observe_guarded_local_retention: true,
             observe_static_local_facts: true,
             observe_scalar_copy: true,
