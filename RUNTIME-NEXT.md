@@ -24,10 +24,18 @@ Protocol02 source126020d8 COMPLETE63564 CLOSED67895,8unchangedaccountingcontrols
 Full03 sourceb2adc45f COMPLETE70158/70161 CLOSED51019:110+2strictcorrect,
 15pairs;wall.924398703+A/A.045926122=.970324825 PASS;CPU.902712343+.039480337
 =.94219268 PASS. Nativewall1.249979858; noadoption until otherprojectguards.
-Savedcosts7e6ba673 COMPLETE53038,closureunderway:build1223.803ms/exec267.423ms,
+Savedcosts7e6ba673 COMPLETE53038 CLOSED69433:build1223.803ms/exec267.423ms,
 longest210.638ms/preceding0/serveroutside29.520ms; overlapping/nonadditive.
-Fre token verified replay controller d5d57790 prepared, requireclosedfullpass;
-8savedartifactsx2modesx12tests=192invocations, everyhit independentlyverified.
+Fre token replay22ebd53b COMPLETE70196/70201 CLOSED10305:192invocations,
+14892independentlyverifiedhits. Next implement actualsource session-project-guards
+controller/prerequisites/closure. PLAN/accounting/tests/check now exist; protocol01
+c567045e COMPLETE56848 CLOSED68597:12controls pass. Do not mutate qualifiedfiles
+without updating/requalifying affected proof; no sourcebenchmark forfre launched.
+Eightmode public guards176commands retainoriginalanchor/native_lines/check plus
+same-runtimehistoryoff; originaltoken strictwin andotherheldout5%rules, fullCPU.
+Need raise public admission for addednamespace (propose16GiBfre/12pgrust), specify
+and qualify currentcontroller beforetiming. Private/Nushell adapters remainpending.
+Main7e64e149 pushedfullparser/costs preservingpeercee8324a; sourcebranchonly.
 Primary06cachecleanup CLOSED2706 after93584 source2838da6e:15152files/2991235289bytes,
 11413protectedhashesunchanged. Failedsetupcachecleanup bc52545f COMPLETE20731
 CLOSED28087:941files438200579bytes,2209protectedhashesunchanged. NEVER repeat
