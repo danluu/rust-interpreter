@@ -24,7 +24,8 @@ def main():
         assert shutil.disk_usage(ROOT).free>=needed,'insufficient conservative build admission'
         modified=subprocess.check_output(['git','diff','--name-only',BASE,'HEAD','--','crates','Cargo.toml','Cargo.lock','rust-toolchain.toml'],cwd=ROOT,text=True).splitlines()
         assert sorted(modified)==sorted(['crates/bytecode/src/jit.rs',
-            'crates/bytecode/src/jit/shared_fault_tails.rs','crates/bytecode/src/jit/shared_fault_tails_tests.rs']),modified
+            'crates/bytecode/src/jit/shared_fault_tails.rs','crates/bytecode/src/jit/shared_fault_tails_tests.rs',
+            'crates/bytecode/src/jit/code_spans.rs','crates/bytecode/src/jit/code_spans/cold_tails.rs']),modified
         paths=[ROOT/p for p in subprocess.check_output(['git','ls-files','crates','Cargo.toml','Cargo.lock','rust-toolchain.toml'],cwd=ROOT,text=True).splitlines()]
         paths += [p for p in Path(__file__).parent.iterdir() if p.suffix in ['.py','.md']]
         paths += [ROOT/'scripts'/p for p in ['compare_saved_runtime.py','workflow_io.py']]
@@ -38,6 +39,7 @@ def main():
         revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
         raw=ROOT/'.work'/RUN;raw.mkdir(exist_ok=False)
         write(raw/'plan.json',dict(owner=str(ROOT),source_revision=revision,frozen=frozen,
+            controller_command=[sys.executable,*sys.argv],
             adopted_rust_base=BASE,modified_rust_inputs=modified,target=str(target.relative_to(ROOT)),
             allocated_target_bytes=allocated,required_free_bytes=needed,minimum_child_gib=8,
             expected_commands=2,tests_per_profile=4,original_project_guest_commands=0,
