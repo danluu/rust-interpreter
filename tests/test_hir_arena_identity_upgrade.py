@@ -28,6 +28,7 @@ class ArenaIdentityUpgradeTests(unittest.TestCase):
         with patch.object(m, 'PATCH_SHA', '0' * 64):
             with self.assertRaisesRegex(RuntimeError, 'wrong arena-identity'): m.checkpoint()
 
+    @patch.object(m, 'ARCHIVE', ROOT / 'results/hir-diagnostic-native-01')
     def test_diagnostic_cannot_be_promoted_to_native_success_or_change_source_or_observation(self):
         reference = m.diagnostic_reference()
         self.assertEqual(len(reference['required']), 250)
