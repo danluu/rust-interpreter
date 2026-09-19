@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-04/entry.py", line 400, in <module>
+    args=parser.parse_args();execute(args.packet,args.inputs_sha256,args.snapshot_plan_sha256)
+                             ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-04/entry.py", line 394, in execute
+    controller.save();controller.execute()
+                      ~~~~~~~~~~~~~~~~~~^^
+  File "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/hir-options-hash/runtime-installation-01/controller.py", line 168, in execute
+    self.record.update(status='running', admitted_at=time.time(), free_bytes_before=self.owned.disk(R, 24))
+                                                                                    ~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/stable-cgu/owned_stage.py", line 83, in disk
+    require(free >= minimum_gib * GIB, 'insufficient free space: ' + str(free))
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/stable-cgu/owned_stage.py", line 20, in require
+    raise RuntimeError(message)
+RuntimeError: insufficient free space: 23099760640
