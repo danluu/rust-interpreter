@@ -23,20 +23,26 @@ cause is inferred. Candidate parser medians: command1.6260s, build1.2821s,
 execution.272664s, longest test.214753s, compile work.052302s, preparation
 work.033261s,3609template hits. Separate intervals/work medians are not additive.
 
-Next: fresh normal-VM native-PC diagnostics of current composition on the two
-original fre token block/exhaustive tests, prioritizing the longest block test.
-Existing samples are from the older duration-only parent, not this composition.
-First extend/qualify scripts/sample_owned_vm.py and summarize_owned_sample.py to
-accept, record, forward and validate --jit-indirect-calls (requires resumable).
-Preserve old summary option shapes when the field is absent; reject an unrecorded
-indirect flag. Extend attribution controls and validate CLI rejects bad options
-before launching a child. No Rust/runtime implementation change yet.
-Then prepare exact frozen artifact/catalog/source/tool identities and same-process
-code reconstruction before any new sample. One fresh3s window/test, ordinary
-entropy/assertions/limits, exact owned PID/parent/cwd checks; let guest exit normally.
-Diagnostic samples are perturbed and must not be used as latency or speedup claims.
-Do not repeat old general-address/bias/budget/frame-base/threshold candidates.
-Single-digit-ms parser validation does not justify a speculative validation cache.
+Current native diagnostics are CLOSED94441. Both original fre block/exhaustive
+capture guests passed once with zero declines; no execution/sampling reruns.
+Generated self-PC totals1514/1306, all assigned: Copy414/243,Call284/317,
+Load186/84,Switch116/78,Budget102/75,Scalar74/113,Return70/159,Flush16/13,
+Indirect7/10. These standalone partial perturbed windows are NOT latency or
+persistent-session measurements. Original profiles are static identities only.
+Sampler indirect-option qualification CLOSED16432 (11controls/14oldreports).
+New region reader CLOSED73875 (5controls and both complete byte/PC maps,
+30/28indirectregions). Initial analysis failed on legacy region-kind rejection;
+its successful block summary and failed terminal are preserved. Continuation02
+created only the missing exhaustive summary and both attributions, sourcea7202fd4.
+Folders composed-native-attribution[-continuation], composed-fre-runtime-sampling.
+Docs COMPOSED-NATIVE-COSTS-20260919.md. All frozen source revisions remain in Git.
+
+Next inspect small switch native comparisons in the saved captures, then qualify
+one meaningful mechanism before any new changed-source primary screen. Current
+emitter compares both64-bit halves for each case; zero/all-narrow cases offer
+potential simpler emission preserving full128-bit values and first match. This
+is a hypothesis, not a measured gain. Do not repeat old general-address/bias/
+budget/frame-base/threshold candidates or speculative validation caches.
 
 ## Qualified candidate identities
 
@@ -112,14 +118,12 @@ Last free23.5GiB. Memory check before parser:48GiB host,46% free. Recheck.
 Cleaner read-only: /usr/bin/python3 /Users/danluu/dev/disk-cleanup-monitor-20260912.py status.
 No competing cleanup/guard, signaling, or peer session manipulation.
 
-Current root branch experiment/session-runtime-composition-20260919; last commit
-d71152ec closes parser-variance audit. No commands remain active after68081.
-Main last pushedf8253368 preserves peerdfc0b83e and closed storage/four-history
-costs. Parser decision/variance/folded-retirement proof publication is pending.
-Root remote lastb77d3754. Fetch/ff publication-main, copy exact qualified paths,
-never overwrite compiler work or merge experimental runtime. Push root regularly.
-Create a new experimental branch for the diagnostic helper changes after committing
-this checkpoint. All old qualified source files stay available in Git.
+Current root branch experiment/composed-native-costs-20260919. All current
+capture/analysis/closure commands are finished. Root latesta7202fd4 before docs
+and final proof checkpoint. Main last18e85fd0 preserves peerdbd119ff; current
+sampler helpers and closed diagnostics are ready for publication. Fetch/ff
+publication-main, copy exact qualified paths, never overwrite compiler work or
+merge experimental runtime. Push root regularly. Lastfree24.8GiB; recheck.
 
 suggestions.txt is unchanged,user-owned/untracked,SHA256
 4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f.

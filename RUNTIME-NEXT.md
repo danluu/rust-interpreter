@@ -8,12 +8,15 @@ unstarted; no unchanged timing retries or adoption. Main stays df4006e0.
 
 All15 parser control pairs are independently audited68081. The largest wall
 variation is mostly in build-to-ready (226ms of234ms), with no proven host cause.
-Next investigate the current composition's normal emitted code on fre's longest
-original tests. First qualify sampler indirect-option transport/receipt validation,
-then freeze one fresh3s normal-entropy native-PC window for block and exhaustive.
-Use exact owned processes, current tool/VM hashes, original limits/assertions and
-same-process code reconstruction. Old duration-parent samples are not current
-composition samples. No validation-cache or generic-address speculation.
+Current native-PC diagnostics now independently CLOSED94441: original block/
+exhaustive captures once each; both passed with zero declines. No guest reruns.
+All1514/1306 generated self samples assigned. Copy414/243,Call284/317,
+Load186/84,Switch116/78; details docs/COMPOSED-NATIVE-COSTS-20260919.md.
+Legacy reader failure preserved; new reader5controls CLOSED73875; analysis02
+reuses prior block summary. Sourcea7202fd4; all commands completed.
+Next inspect captured small switch sites and design compact full128-bit native
+comparisons while preserving first-match/budget/fallback semantics. No speed
+claim yet. Continue to avoid previously rejected generic address variants.
 
 Storage:373 exact public artifact copies compressed, all original hashes and
 required metadata verified;7.31GiB allocated saved. Both metadata failures and
