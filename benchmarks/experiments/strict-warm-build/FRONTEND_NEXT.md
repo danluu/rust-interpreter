@@ -47,12 +47,15 @@ are not a causal decomposition of total wall time. The reader's total is a sum
 of per-thread elapsed spans, not CPU time. See the
 [Ruff self-profile](../../../results/runtime-ruff-hir-self-profile-01/README.md).
 
-Three independent compiler candidates address repeated work without changing the
+The next compiler changes address repeated work without changing the
 application. The [options-hash candidate](../../../experiments/hir-options-hash/README.md)
 stores the immutable incremental-options hash once per compiler context while
 preserving its wire encoding. Its compiler build and direct crate tests passed;
 see the [compiler evidence](../../../results/hir-options-hash-build-02/README.md).
-Its application build time has not been measured. Separately,
+Its native role and behavior checks are now qualified through a separate
+read-only audit of the saved commands, with the original failed controllers
+preserved in the [native evidence](../../../results/hir-options-hash-native-reconciliation-01/README.md).
+Its hash-driver checks, runtime installation and application timing remain pending. Separately,
 the [packed body-cache candidate](../../../experiments/hir-packed-sidecars/README.md)
 reduces file count while preserving record keys, checksums, reconstruction and
 validation; its memory cost and successful-session publication need actual
@@ -60,9 +63,13 @@ qualification. A [single-traversal candidate](../../../experiments/hir-input-wal
 constructs normalized input and node order together, replacing a repeated walk
 and comparison with a private construction invariant. Its source review accounts
 for symbol interning, allocation bookkeeping and span dependency tracking.
-The packed-cache and single-traversal candidates remain uncompiled. None of the
-three has established an application performance gain. Their source changes and
-later measurements must remain attributable.
+The packed-cache and single-traversal candidates remain uncompiled. A
+[combined options-hash and packed-cache source](../../../experiments/hir-options-hash-packed-sidecars/STATUS.md)
+has now been generated and independently checked. It preserves the cached hash
+accessor and has its own source identity; no compiler build or application
+measurement has run for that combined candidate. None of these changes has
+established an application performance gain. Their source changes and later
+measurements must remain attributable.
 
 [Target selection](TARGET-SELECTION.md) retains Ruff as the immediate measured
 development target, adds pinned Oxc as another development target, and keeps
