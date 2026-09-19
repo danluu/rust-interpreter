@@ -1,0 +1,39 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hash-driver-success-evidence-01/execute.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hash-driver-success-evidence-02/execute.py
+@@ -5,14 +5,14 @@
+ R=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ X=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ P=Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14')
+-AUDITOR=R/'experiments/hash-driver-success-evidence-01/archive.py'
+-E=R/'.work/hash-driver-success-retention-execution-01'
++AUDITOR=R/'experiments/hash-driver-success-evidence-02/archive.py'
++E=R/'.work/hash-driver-success-retention-execution-02'
+ RESULT=R/'results/hir-options-hash-driver-02/summary.json'
+ WORK=R/'.work/hash-driver-success-evidence-01'
+ PROPOSAL=A/'.work/hash-driver02-lossless-publication-scope-02.json'
+ OWNED=X/'experiments/stable-cgu/owned_stage.py'
+ RESERVATION=64*2**20
+-EXPECTED={AUDITOR:'c0c4b601f7f7aeb5f57a31bafc6df75bd1ef7a28d36a0fd65bbdb14304a87c64',
++EXPECTED={AUDITOR:'c14818c16d8d3863bc9135203749f9ab75b46fe6b32b288e5357609627d4a39e',
+  OWNED:'7021a15d3b806ab908f03276051d9d9ca9c9e208bbf8933a60229c9fb35bb68e',
+  PROPOSAL:'f6ea57ce5485de96bcc00aa6bb872cf2560ba023df48affea533806e3fac7264'}
+ def require(ok,message):
+@@ -27,7 +27,7 @@
+ require(Path.cwd()==R and sys.dont_write_bytecode and not sys.flags.optimize and Path(sys.executable).resolve()==P,'fixed Python/owner')
+ require(all(not p.exists() and not p.is_symlink() for p in [E,WORK,RESULT.parent]),'fresh archive execution/work/result')
+ sources();entry=shutil.disk_usage(R).free;require(entry>=9*2**30+RESERVATION,'fresh9GiB plus64MiB reserve before archive evidence/child')
+-spec=importlib.util.spec_from_file_location('_qualified_driver_archive01_owned',OWNED);owned=importlib.util.module_from_spec(spec);spec.loader.exec_module(owned)
++spec=importlib.util.spec_from_file_location('_qualified_driver_archive02_owned',OWNED);owned=importlib.util.module_from_spec(spec);spec.loader.exec_module(owned)
+ E.mkdir(mode=0o700);(E/'source').mkdir(mode=0o700)
+ for source,name in [(AUDITOR,'archive.py'),(PROPOSAL,'proposal.json'),(OWNED,'owned_stage.py'),(Path(__file__).resolve(),'execution.py')]:
+  before=sha(source);data=source.read_bytes();require(hashlib.sha256(data).hexdigest()==before,'retained wrapper source differs')
+@@ -89,6 +89,9 @@
+    and terminal['startup_environment_additions']==report['startup_environment_additions']=={'__CF_USER_TEXT_ENCODING':'0x1F5:0x0:0x52'}
+    and terminal['observed_environment']==report['observed_environment']=={**env,'__CF_USER_TEXT_ENCODING':'0x1F5:0x0:0x52'}
+    and terminal['engine_sha256']==EXPECTED[AUDITOR] and terminal['proposal_sha256']==report['proposal_sha256']==EXPECTED[PROPOSAL]
++   and terminal['previous_attempt_sha256']==report['previous_attempt_sha256']==sha(RESULT.parent/'previous-attempt.json')
++   and terminal['previous_archive_schema_failure']==dict(record_sha256='f77467941c8b264b1a64904565bfff0151737e4ddcbf72f6cb8a3896884ac6c0',actual_archive_processing_children=1)
++   and report['failure_archive_publication']['git_blob']=='09c50202c9b3241d7c620053cd47c3f283136c88'
+    and terminal['summary_sha256']==sha(RESULT) and terminal['manifest_sha256']==report['manifest_sha256']==sha(RESULT.parent/'manifest.json')
+    and terminal['archive_sha256']==report['archive']['sha256']==sha(RESULT.parent/'evidence.tar.gz')
+    and report['archive']['members']==terminal['member_count']==241 and report['archive']['logical_bytes']==terminal['logical_bytes']==13880266

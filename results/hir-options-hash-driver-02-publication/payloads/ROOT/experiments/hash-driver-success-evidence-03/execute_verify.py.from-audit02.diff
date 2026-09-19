@@ -1,0 +1,52 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hash-driver-success-evidence-02/execute_verify.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/hash-driver-success-evidence-03/execute_verify.py
+@@ -5,17 +5,21 @@
+ R=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+ X=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918')
+ P=Path('/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14')
+-AUDITOR=R/'experiments/hash-driver-success-evidence-02/verify.py'
+-E=A/'.work/hash-driver-success-retention-audit-execution-02'
+-RESULT=A/'.work/hash-driver-success-retention-independent-verification-02.json'
++AUDITOR=R/'experiments/hash-driver-success-evidence-03/verify.py'
++E=A/'.work/hash-driver-success-retention-audit-execution-03'
++RESULT=A/'.work/hash-driver-success-retention-independent-verification-03.json'
+ H=R/'experiments/hash-driver-success-evidence-02'
+ W=R/'.work/hash-driver-success-evidence-01'
+ D=R/'results/hir-options-hash-driver-02'
+ CLOSED=R/'.work/hash-driver-success-retention-execution-02'
+ OWNED=Path('/Users/danluu/dev/rust-interp-runtime-exporter-20260918/experiments/stable-cgu/owned_stage.py')
+ PROPOSAL=A/'.work/hash-driver02-lossless-publication-scope-02.json'
++GIT_SOURCE=R/'.work/verify_published_failure_archive_git_01.py'
++GIT_REPORT=R/'.work/published-failure-archive-git-proof-01/report.json'
+ ACTUAL={'receipt': 'a53d103bb9b4072699870502506ecf8776a7d2f2f83364c349c691235c9c4e1b', 'execution_record': 'e6eabc1215529605254a42fa5ffe0068200e2681b1fcd2054f52147db8f53237', 'summary': '0a33a5b5eafa2224f325452c3518c0a3a547e23aec718c410f2ae877d45b2cb0'}  # Observed passed archive02 and explicit wrapper closure; unbound source retained.
+-EXPECTED={AUDITOR:'83091dcd44a00ef1294eaf177bf49146d61d98883b566fb7a107aa8607fe2bde',
++EXPECTED={GIT_SOURCE:'8b758427668a1fd6fc26aae802164fa477b5354c77243627762dd567d6be08e7',
++ GIT_REPORT:'38d5711a6550be87368ce98595e655d3c3de586c50f75d7a2702e0b5d47da38b',
++ AUDITOR:'3f7b797b3e37e029545850e327cdee720aca3e4b19cc092efbbc7cbf3dba9e82',
+  H/'archive.py':'c14818c16d8d3863bc9135203749f9ab75b46fe6b32b288e5357609627d4a39e',
+  H/'execute.py':'8987c2eb72a52b2deb5c6304901d6c419c19d46f87132bdca89b9958a9d97de0',
+  OWNED:'7021a15d3b806ab908f03276051d9d9ca9c9e208bbf8933a60229c9fb35bb68e',
+@@ -34,9 +38,9 @@
+ require(Path.cwd()==A and sys.dont_write_bytecode and not sys.flags.optimize and Path(sys.executable).resolve()==P,'fixed Python/owner')
+ require(not E.exists() and not E.is_symlink() and not RESULT.exists() and not RESULT.is_symlink(),'fresh audit evidence/result')
+ sources();entry=shutil.disk_usage(A).free;require(entry>=16*2**30,'fresh16GiB before audit evidence/child')
+-spec=importlib.util.spec_from_file_location('_success_archive_audit02_owned',OWNED);owned=importlib.util.module_from_spec(spec);spec.loader.exec_module(owned)
++spec=importlib.util.spec_from_file_location('_success_archive_audit03_owned',OWNED);owned=importlib.util.module_from_spec(spec);spec.loader.exec_module(owned)
+ E.mkdir(mode=0o700);(E/'source').mkdir(mode=0o700)
+-for source,name in [(AUDITOR,'audit.py'),(H/'archive.py','archive.py'),(H/'execute.py','archive-execution.py'),(PROPOSAL,'proposal.json'),(OWNED,'owned_stage.py'),(Path(__file__).resolve(),'execution.py')]:
++for source,name in [(GIT_SOURCE,'git-proof-source.py'),(GIT_REPORT,'git-proof-report.json'),(AUDITOR,'audit.py'),(H/'archive.py','archive.py'),(H/'execute.py','archive-execution.py'),(PROPOSAL,'proposal.json'),(OWNED,'owned_stage.py'),(Path(__file__).resolve(),'execution.py')]:
+  before=sha(source);data=source.read_bytes();require(hashlib.sha256(data).hexdigest()==before,'retained wrapper source differs')
+  with (E/'source'/name).open('xb') as stream:stream.write(data);stream.flush();os.fsync(stream.fileno())
+  require(sha(source)==before==sha(E/'source'/name),'stable exact retained source')
+@@ -85,7 +89,10 @@
+    and report['retained_current_qualified_children']==3 and report['retained_historical_failed_compiler_children']==1
+    and report['retained_total_actual_hash_children']==4 and report['complete_tree_stamps']==10
+    and report['external_references']['reused_blobs']==93 and report['new_gzip_blobs']==54
+-   and all(report[k] is False for k in ['application_qualified','performance_measurement','runtime_installation']),'exact independent archive audit association')
++   and all(report[k] is False for k in ['application_qualified','performance_measurement','runtime_installation'])
++   and report['previous_archive_audit']['record']['sha256']=='b8664ef82a249e224601327fb5df55520ef1e3f78e8a34f862fae8e3908d9858'
++   and report['git_publication_transition']['report']['sha256']==EXPECTED[GIT_REPORT]
++   and report['git_publication_transition']['source']['sha256']==EXPECTED[GIT_SOURCE],'exact independent archive audit association')
+   r.update(result_sha256=sha(RESULT),free_bytes_after=owned.disk(A,9));save()
+   require(all(row['free_bytes']>=9*2**30 for row in r['disk_samples']),'observed live-floor violation')
+  r['canonical_released_at']=time.time();save()
