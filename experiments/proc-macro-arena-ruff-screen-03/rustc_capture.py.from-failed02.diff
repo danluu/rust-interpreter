@@ -1,0 +1,25 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-ruff-screen-02/rustc_capture.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-ruff-screen-03/rustc_capture.py
+@@ -3,8 +3,8 @@
+ from pathlib import Path
+ import hashlib,json,os,sys,time
+ HERE=Path(__file__).absolute().parent
+-COMMON_SHA='67ffc35ad943aab6cc8cf2050a337a6129ef55d9df12466eb43795e747732548'  # Bound when all sources are reviewed; no unbound execution.
+-ATTEMPTS=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-ruff-screen-02/wrapper-attempts')
++COMMON_SHA='b911630c2e8fa59e867abd3368b3e93c81d20aae78b243bf900ad77ba7e38bde'  # Bound when all sources are reviewed; no unbound execution.
++ATTEMPTS=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913/results/proc-macro-arena-ruff-screen-03/wrapper-attempts')
+ ATTEMPT=None
+ ATTEMPT_PATH=None
+ 
+@@ -73,8 +73,10 @@
+     if '-' in original:
+         stdin_bytes=sys.stdin.buffer.read(2**20+1);c.require(len(stdin_bytes)<=2**20,'bounded compiler query/probe stdin')
+     record=c.run(forwarded,os.getcwd(),environment,call,fd=fd,seconds=180,cpu=180,inherit_stdin=stdin_bytes is None,stdin_bytes=stdin_bytes,until=context['absolute_deadline_monotonic'])
+-    if classification['kind']=='proc-macro2-probe':
++    if 'source_row' in classification:
+         c.require(c.file(classification['probe_source'])==classification['source_row'],'probe source changed during compile')
++    if 'callsite_source' in classification:
++        ref=classification['callsite_source'];c.require(c.file(ref['path'])=={k:ref[k] for k in ['bytes','sha256','identity']},'stdin generator/call-site changed during compile')
+     c.require(record['returncode'] in classification.get('expected_exit_set',[0]),'unexpected actual compiler/probe exit')
+     route.update(record=dict(path=str(call/'record.json'),**c.file(call/'record.json')),finished_at=time.time())
+     c.write(call/'route.json',route)

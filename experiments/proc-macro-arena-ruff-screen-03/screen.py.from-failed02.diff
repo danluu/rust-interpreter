@@ -1,0 +1,76 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-ruff-screen-02/screen.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-ruff-screen-03/screen.py
+@@ -4,7 +4,7 @@
+ HERE=Path(__file__).absolute().parent
+ # All local executable source bytes are authenticated before importing common.
+ def bootstrap(sha):
+-    route=HERE.parents[1]/'.work/proc-macro-arena-ruff-screen-invocation-02.json'
++    route=HERE.parents[1]/'.work/proc-macro-arena-ruff-screen-invocation-03.json'
+     raw=route.read_bytes();assert len(raw)<=2**20 and hashlib.sha256(raw).hexdigest()==sha
+     invocation=json.loads(raw);source=HERE/'source-manifest.json';payload=source.read_bytes()
+     assert len(payload)<=2**20 and hashlib.sha256(payload).hexdigest()==invocation['source_manifest_sha256']
+@@ -119,18 +119,13 @@
+ 
+ 
+ def dependency_proof(route,overlay,arm):
+-    args=route['forwarded_arguments'];cwd=Path(route['cwd']);crate=c.option(args,'--crate-name')
+-    output=c.option(args,'--out-dir');extra=[]
+-    for i,a in enumerate(args):
+-        if a=='-C' and i+1<len(args) and args[i+1].startswith('extra-filename='):extra.append(args[i+1].split('=',1)[1])
+-        elif a.startswith('-Cextra-filename='):extra.append(a.split('=',1)[1])
+-    c.require(output is not None and len(extra)==1,'captured Cargo compile output key')
+-    path=Path(output)/(crate+extra[0]+'.d');row,text,paths=dep_paths(path,cwd)
++    args=route['forwarded_arguments'];cwd=Path(route['cwd'])
++    path=c.cargo_depinfo_path(args,cwd);row,text,paths=dep_paths(path,cwd)
+     other='candidate' if arm=='stock' else 'stock'
+     c.require('/.rustup/toolchains/' not in text and str(Path(overlay['overlay_work'])/other/'sysroot') not in text,'foreign Rust libraries in dep-info')
+     c.require('libproc_macro-452900db9815e688.' not in text and 'librustc_literal_escaper-f4f532eb55f87a02.' not in text,'old client/literal fallback')
+     selected={}
+-    if c.option(args,'--crate-type')=='proc-macro':
++    if 'proc-macro' in c.crate_types(args):
+         for name,value in overlay['overlay_data']['overlays-after.json']['entries'].items():
+             if value['kind']=='file' and Path(name).is_relative_to(Path(overlay['overlay_work'])/arm/'sysroot'):
+                 c.require(name in paths,'host macro did not link each arm-owned client/literal flavor')
+@@ -176,7 +171,7 @@
+     capture=c.OUT/'capture'/arm;capture.mkdir(parents=True)
+     context=dict(arm=arm,compiler=plan['compiler'],compiler_row=c.file(plan['compiler']),
+         sysroot=str(Path(plan['overlay_work'])/arm/'sysroot'),common_sha256=manifest['files']['common.py']['sha256'],
+-        wrapper_sha256=manifest['files']['rustc_capture.py']['sha256'],probe_sources=plan['proc_macro2_probe_sources'],absolute_deadline_monotonic=DEADLINE)
++        wrapper_sha256=manifest['files']['rustc_capture.py']['sha256'],probe_sources=plan['probe_sources'],absolute_deadline_monotonic=DEADLINE)
+     cp=c.WORK/'contexts'/(arm+'.json');c.write(cp,context)
+     env=dict(plan['environment'],RUSTC=str(HERE/'rustc_capture.py'),RUSTC_WRAPPER='',RUSTC_WORKSPACE_WRAPPER='',
+         TMPDIR=str(temporary),ARENA_SCREEN_CONTEXT=str(cp),ARENA_SCREEN_CONTEXT_SHA=c.file(cp)['sha256'],ARENA_SCREEN_LOCK_FD=str(fd))
+@@ -210,7 +205,7 @@
+             if proof['selected']:macros.append(dict(crate=c.option(child['command'],'--crate-name'),route=str(directory/'route.json'),proof=proof))
+             if c.option(child['command'],'--crate-name')=='ruff_linter' and '--test' in child['command']:selected.append(route)
+         elif classification['kind'].endswith('-probe'):
+-            source_sha=child['stdin']['sha256'] if classification['kind']=='autocfg-probe' else classification['source_row']['sha256']
++            source_sha=child['stdin']['sha256'] if classification['probe_source']=='captured stdin' else classification['source_row']['sha256']
+             probes.append(dict(kind=classification['kind'],cwd=route['cwd'],source_sha256=source_sha,returncode=child['returncode'],
+                 out_dir=route['forwarded_environment']['OUT_DIR'],route=str(directory/'route.json'),record=str(directory/'record.json')))
+         routes.append(route)
+@@ -352,10 +347,11 @@
+     c.require(audit['status']=='verified' and audit['command_count']==20 and audit['stable_caller_pairs']==9 and audit['default_discovery_qualified'] is True,'independent actual semantic proof')
+     c.require(audit['result']==invocation['overlay_proofs']['result.json'] and audit['execution']==invocation['overlay_proofs']['execution.json'],'independent same actual closure')
+     c.require(proof==plan['overlay_independent_readback'] and invocation['overlay_proofs']['result.json']['sha256']==plan['overlay_result_sha256'],'exact reviewed actual prerequisite')
+-    previous=plan['failed_predecessor'];failure=c.read(previous['independent_readback']['path'],previous['independent_readback']['sha256'])
+-    failed=c.read(previous['execution']['path'],previous['execution']['sha256'])
+-    c.require(failure['status']=='verified-failed-screen-before-crate-compilation' and failure['crate_compilations']==failure['timed_calls']==failure['source_edits']==0,'actual failed predecessor scope')
+-    c.require(failure['execution']['sha256']==previous['execution']['sha256'] and failed['status']=='failed' and failed['samples']==failed['edits']==[],'same preserved failed execution')
++    for previous in [plan['earlier_failed_predecessor'],plan['failed_predecessor']]:
++        failure=c.read(previous['independent_readback']['path'],previous['independent_readback']['sha256'])
++        failed=c.read(previous['execution']['path'],previous['execution']['sha256'])
++        c.require(failure['status']==previous['readback_status'] and failure['crate_compilations']==previous['crate_compilations'] and failure['timed_calls']==failure['source_edits']==0,'actual failed predecessor scope')
++        c.require(failure['execution']['sha256']==previous['execution']['sha256'] and failed['status']=='failed' and failed['samples']==failed['edits']==[],'same preserved failed execution')
+     invocation=dict(invocation,overlay_data=data,overlay_work=plan['overlay_work'],runtime_root=str(Path(plan['compiler']).parent.parent))
+     c.require(c.file(plan['cargo'])==invocation['cargo'],'exact installed Cargo bytes and current identity')
+     c.overlay_guard(invocation,True);return invocation
+@@ -368,7 +364,7 @@
+     c.require(not os.path.lexists(c.WORK) and not os.path.lexists(c.OUT),'fresh owned work/results')
+     c.require(plan['actual_result'] is None and len(plan['schedule'])==36,'fixed unrun screen')
+     SOURCE_CURRENT={str(HERE/name):c.file(HERE/name) for name in [*manifest['files'],'source-manifest.json']}
+-    for ref in [*plan['probe_source_references'],*plan['proc_macro2_probe_sources'].values()]:
++    for ref in [*plan['probe_source_references'],*plan['probe_sources'].values()]:
+         row=c.file(ref['path']);c.require(row['sha256']==ref['sha256'] and row['bytes']==ref['bytes'],'source-read probe implementation unchanged')
+         SOURCE_CURRENT[ref['path']]=row
+     c.disk(True);c.OUT.mkdir();c.WORK.mkdir();(c.WORK/'contexts').mkdir();(c.OUT/'wrapper-attempts').mkdir()

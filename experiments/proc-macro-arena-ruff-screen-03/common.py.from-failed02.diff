@@ -1,0 +1,79 @@
+--- /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-ruff-screen-02/common.py
++++ /Users/danluu/dev/rust-interp-semantic-reuse-20260913/experiments/proc-macro-arena-ruff-screen-03/common.py
+@@ -2,9 +2,9 @@
+ from pathlib import Path
+ import fcntl, hashlib, json, os, re, resource, shutil, stat, subprocess, threading, time
+ ROOT=Path('/Users/danluu/dev/rust-interp-semantic-reuse-20260913')
+-SOURCE=ROOT/'experiments/proc-macro-arena-ruff-screen-02'
+-WORK=ROOT/'.work/proc-macro-arena-ruff-screen-02'
+-OUT=ROOT/'results/proc-macro-arena-ruff-screen-02'
++SOURCE=ROOT/'experiments/proc-macro-arena-ruff-screen-03'
++WORK=ROOT/'.work/proc-macro-arena-ruff-screen-03'
++OUT=ROOT/'results/proc-macro-arena-ruff-screen-03'
+ LOCK=Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+ FIELDS=('dev','ino','mode','nlink','size','mtime_ns','ctime_ns')
+ 
+@@ -187,8 +187,29 @@
+         else:result.append(arg);i+=1
+     return result
+ 
++def crate_types(args):
++    values=[]
++    for i,arg in enumerate(args):
++        if arg=='--crate-type':
++            require(i+1<len(args),'missing crate type');values.extend(args[i+1].split(','))
++        elif arg.startswith('--crate-type='):values.extend(arg.split('=',1)[1].split(','))
++    require(len(values)==len(set(values)) and set(values)<={'bin','lib','rlib','dylib','cdylib','staticlib','proc-macro'},'distinct actual crate types')
++    return values
++
++
++def cargo_depinfo_path(args,cwd):
++    crate=option(args,'--crate-name');output=option(args,'--out-dir');extra=[]
++    for i,arg in enumerate(args):
++        if arg=='-C' and i+1<len(args) and args[i+1].startswith('extra-filename='):extra.append(args[i+1].split('=',1)[1])
++        elif arg.startswith('-Cextra-filename='):extra.append(arg.split('=',1)[1])
++    require(crate is not None and output is not None and len(extra)<=1,'captured Cargo dependency output key')
++    if not extra:
++        require(crate=='build_script_build' and crate_types(args)==['bin'] and option(args,'--emit')=='dep-info,link','only normal build-script binary omits suffix')
++    return Path(output)/(crate+(extra[0] if extra else '')+'.d')
++
++
+ def classify_rustc(args,environment,cwd,target,probe_sources):
+-    """Only actual Cargo crates, version/print queries, or two source-read probe families."""
++    """Only actual Cargo crates, version/print queries, or five source-read probe families."""
+     if args in [['-vV'],['-V'],['--version'],['--version','--verbose'],['--verbose','--version']]:
+         return dict(kind='query',query='version')
+     if any(a=='--print' or a.startswith('--print=') for a in args):
+@@ -215,8 +236,31 @@
+         if triple is not None:require(triple=='aarch64-apple-darwin','native probe target');expected+=['--target',triple]
+         require(args==expected,'exact proc-macro2 source-derived command')
+         return dict(kind='proc-macro2-probe',probe_source=source,source_row=file(source),expected_exit_set=[0,1])
++    if crate in ['thiserror','anyhow'] and not any(a.startswith(('metadata=','-Cmetadata=')) for a in args):
++        relative='build/probe.rs' if crate=='thiserror' else 'src/nightly.rs'
++        source=str((Path(cwd)/relative).resolve(strict=True))
++        require(source in probe_sources and file(source)['sha256']==probe_sources[source]['sha256'],'exact pinned capability probe source')
++        require(environment.get('CARGO_PKG_NAME')==crate and environment.get('CARGO_MANIFEST_DIR')==str(Path(cwd)),'actual probe package ownership')
++        require(base is not None and base.is_relative_to(target) and output==str(base/'probe'),'capability probe owns only declared output')
++        expected=(['--cfg=anyhow_build_probe'] if crate=='anyhow' else [])+['--edition=2018','--crate-name='+crate,'--crate-type=lib','--cap-lints=allow','--emit=dep-info,metadata','--out-dir',output,relative]
++        triple=option(args,'--target')
++        if triple is not None:require(triple=='aarch64-apple-darwin','native probe target');expected+=['--target',triple]
++        require(args==expected,'exact upstream capability command; no injected flags')
++        return dict(kind=crate+'-probe',probe_source=source,source_row=file(source),expected_exit_set=[0,1])
++    if environment.get('CARGO_PKG_NAME')=='rustix' and args and args[-1]=='-':
++        source=str((Path(cwd)/'build.rs').resolve(strict=True))
++        require(source in probe_sources and file(source)['sha256']==probe_sources[source]['sha256'],'pinned rustix stdin generator/call-site')
++        require(environment.get('CARGO_MANIFEST_DIR')==str(Path(cwd)) and base is not None and base.is_relative_to(target),'rustix package/output ownership')
++        expected=['--crate-type=rlib','--emit=metadata','--target','aarch64-apple-darwin','-o',str(base/'rustix_test_can_compile'),'-']
++        require(args==expected,'exact source-derived rustix stdin probe')
++        return dict(kind='rustix-probe',probe_source='captured stdin',callsite_source=dict(path=source,**file(source)),expected_exit_set=[0,1])
+     extra=[a for a in args if a.startswith('extra-filename=') or a.startswith('-Cextra-filename=')]
+     metadata=[a for a in args if a.startswith('metadata=') or a.startswith('-Cmetadata=')]
+-    require(crate is not None and output is not None and Path(output).is_relative_to(target) and len(extra)==len(metadata)==1,'actual Cargo crate metadata/output shape')
++    require(crate is not None and output is not None and Path(output).is_relative_to(target) and len(metadata)==1 and len(extra)<=1,'actual Cargo crate metadata/output shape')
+     require(len([a for a in args if a.endswith('.rs')])==1 and 'dep-info' in (option(args,'--emit') or '').split(','),'actual Cargo crate source and dep-info')
++    if not extra:
++        require(crate=='build_script_build' and crate_types(args)==['bin'] and option(args,'--emit')=='dep-info,link' and environment.get('CARGO_CRATE_NAME')==crate,'normal Cargo build-script binary without filename suffix')
++        source=next(a for a in args if a.endswith('.rs'));manifest_dir=Path(environment['CARGO_MANIFEST_DIR'])
++        require((Path(cwd)/source).resolve(strict=True).is_relative_to(manifest_dir.resolve(strict=True)),'build-script source belongs to actual package')
++    crate_types(args);cargo_depinfo_path(args,cwd)
+     return dict(kind='cargo-crate',expected_exit_set=[0])
